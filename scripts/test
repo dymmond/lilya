@@ -13,9 +13,8 @@ if [ -z $GITHUB_ACTIONS ]; then
   scripts/check
 fi
 
-${PREFIX}coverage run -m pytest $@
+export LILYA_SETTINGS_MODULE='tests.settings.TestSettings'
 
-if [ -z $GITHUB_ACTIONS ]; then
-  scripts/coverage
-fi
+${PREFIX}pytest $@
 
+unset LILYA_SETTINGS_MODULE

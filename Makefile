@@ -25,7 +25,7 @@ build-docs: ## Runs the local docs
 
 .PHONY: test
 test: ## Runs the tests
-	pytest $(TESTONLY) --disable-pytest-warnings -s -vv && scripts/clean
+	LILYA_SETTINGS_MODULE='tests.settings.TestSettings' pytest $(TESTONLY) --disable-pytest-warnings -s -vv && scripts/clean
 
 .PHONY: requirements
 requirements: ## Install requirements for development
