@@ -1,28 +1,14 @@
 from __future__ import annotations
 
-from typing import (
-    Any,
-    AsyncContextManager,
-    Awaitable,
-    Callable,
-    Dict,
-    List,
-    Mapping,
-    MutableMapping,
-    Optional,
-    Sequence,
-    Set,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import Any, Callable, Mapping, Optional, Sequence, Union
 
 from typing_extensions import Annotated, Doc
 
 from lilya._utils import is_class_and_subclass
 from lilya.conf.exceptions import FieldException
 from lilya.conf.global_settings import Settings
-from lilya.types import ApplicationType, ASGIApp, ExceptionHandler, Lifespan, Receive, Scope, Send
+from lilya.datastructures import State
+from lilya.types import ApplicationType, ASGIApp, ExceptionHandler, Lifespan
 
 
 class Lilya:
@@ -57,7 +43,7 @@ class Lilya:
         permissions: Union[Sequence[Any], None] = None,
         on_startup: Sequence[Callable[[], Any]] | None = None,
         on_shutdown: Sequence[Callable[[], Any]] | None = None,
-        lifespan: Optional[Lifespan["ApplicationType"]] = None,
+        lifespan: Optional[Lifespan[ApplicationType]] = None,
         settings_config: Annotated[
             Optional[Settings],
             Doc(
@@ -95,3 +81,32 @@ class Lilya:
                 self.settings_config = settings_config  # type: ignore
             elif is_class_and_subclass(settings_config, Settings):
                 self.settings_config = settings_config()
+
+        self.debug = debug
+        self.state = State()
+        self.exception_handlers = {} if exception_handlers is None else dict(exception_handlers)
+        self.permissions = [] if permissions is None else list(permissions)
+        self.middleware_stack: Union[ASGIApp, None] = None
+        self.custom_middleware = [] if middleware is None else list(middleware)
+
+    # def build_middleware_stack(self) -> ASGIApp:
+    #     debug = self.debug
+    #     error_handler = None
+    #     exception_handlers: Dict[Any, Callable[[Request, Exception], Response]] = {}
+
+    #     for key, value in self.exception_handlers.items():
+    #         if key in (500, Exception):
+    #             error_handler = value
+    #         else:
+    #             exception_handlers[key] = value
+
+    #     middleware = (
+    #         [Middleware(ServerErrorMiddleware, handler=error_handler, debug=debug)]
+    #         + self.custom_middleware
+    #         + [Middleware(ExceptionMiddleware, handlers=exception_handlers, debug=debug)]
+    #     )
+
+    #     app = self.router
+    #     for cls, options in reversed(middleware):
+    #         app = cls(app=app, **options)
+    #     return app

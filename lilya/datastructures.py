@@ -1,22 +1,30 @@
 from __future__ import annotations
 
 from copy import copy
-from typing import (
-    Any,
-    AsyncContextManager,
-    Awaitable,
-    Callable,
-    Dict,
-    List,
-    Mapping,
-    MutableMapping,
-    Optional,
-    Sequence,
-    Set,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import Any, Dict, Optional
+
+from multidict import CIMultiDict
+
+
+class Header(CIMultiDict):
+    """
+    Header that handles both request and response.
+    It subclasses the [CIMultiDict](https://multidict.readthedocs.io/en/stable/multidict.html#cimultidictproxy)
+
+    [MultiDict documentation](https://multidict.readthedocs.io/en/stable/multidict.html#multidict)
+    for more details about how to use the object. In general, it should work
+    very similar to a regular dictionary.
+    """
+
+    def __getattr__(self, key: str) -> str:
+        if not key.startswith("_"):
+            key = key.rstrip("_").replace("_", "-")
+            return ",".join(self.getall(key, default=[]))
+        return self.__getattribute__(key)
+
+    def get_all(self, key: str):
+        """Convenience method mapped to ``getall()``."""
+        return self.getall(key, default=[])
 
 
 class State:
@@ -33,7 +41,7 @@ class State:
     def __delattr__(self, key: Any) -> None:
         del self._state[key]
 
-    def __copy__(self) -> "State":
+    def __copy__(self) -> State:
         return self.__class__(copy(self._state))
 
     def __len__(self) -> int:
@@ -48,5 +56,5 @@ class State:
     def __getitem__(self, key: str) -> Any:
         return self._state[key]
 
-    def copy(self) -> "State":
+    def copy(self) -> State:
         return copy(self)
