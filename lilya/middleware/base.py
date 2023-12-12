@@ -27,7 +27,7 @@ class CreateMiddleware:
     Wrapper that create the middleware classes.
     """
 
-    __slots__ = ("app", "args", "kwargs")
+    __slots__ = ("app", "args", "kwargs", "middleware")
 
     def __init__(self, cls: Callable[..., ASGIApp], *args: Any, **kwargs: Any) -> None:
         self.middleware = cls

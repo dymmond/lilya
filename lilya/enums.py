@@ -1,9 +1,10 @@
-from enum import Enum
+from enum import IntEnum
+from typing import List
 
 from lilya.conf.enums import BaseEnum
 
 
-class DefaultPort(int, Enum):
+class DefaultPort(IntEnum):
     """
     Enum representing the default ports.
     """
@@ -16,10 +17,19 @@ class DefaultPort(int, Enum):
     def __int__(self) -> int:
         return self.value
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> int:  # type: ignore
         return int(self)
 
 
 class ScopeType(BaseEnum):
     HTTP = "http"
     WEBSOCKET = "websocket"
+
+
+class HTTPType(BaseEnum):
+    HTTP = "http"
+    HTTPS = "https"
+
+    @classmethod
+    def get_https_types(cls) -> List[str]:
+        return [str(value) for value in cls]

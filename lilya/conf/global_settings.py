@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from functools import cached_property
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, List, Optional, Sequence, Union
+from dataclasses import asdict, astuple, dataclass, field
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
-from typing_extensions import Annotated, Doc, Protocol
+from typing_extensions import Annotated, Doc
 
 from lilya import __version__
 from lilya.conf.enums import EnvironmentType
-from lilya.types import ApplicationType, ASGIApp, ExceptionHandler, Lifespan, Receive, Scope, Send
+from lilya.types import ApplicationType, ExceptionHandler
 
 
 @dataclass
@@ -22,8 +21,11 @@ class BaseSettings:
         Dumps all the settings into a python dictionary.
         """
         if not exclude_none:
-            return {k: v for k, v in self.__dict__.items()}
+            return asdict(self)
         return {k: v for k, v in self.__dict__.items() if v is not None}
+
+    def tuple(self) -> Tuple[Any]:
+        return astuple(self)
 
 
 @dataclass
@@ -79,7 +81,7 @@ class Settings(BaseSettings):
         return []
 
     @property
-    def exception_handlers(self) -> ExceptionHandler:
+    def exception_handlers(self) -> Union[ExceptionHandler, Dict[Any, Any]]:
         return {}
 
     @property

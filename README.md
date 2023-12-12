@@ -1,3 +1,3 @@
-# lilya
+# Lilya
 
-The ASGI toolkit that delivers
+The ASGI toolkit that delivers.

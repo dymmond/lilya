@@ -18,6 +18,14 @@ def test_test_dict():
     assert settings_dict["include_in_schema"] is True
 
 
+def test_test_tuple():
+    settings = Settings()
+
+    settings_dict = settings.tuple()
+
+    assert len(settings_dict) == 4
+
+
 def test_conf_settings():
     assert settings.debug is True
     assert settings.environment == EnvironmentType.TESTING
