@@ -21,7 +21,7 @@ def _next(iterator: Iterator[T]) -> T:
     try:
         return next(iterator)
     except StopIteration:
-        raise IterationStop
+        raise IterationStop from None
 
 
 async def iterate_in_threadpool(

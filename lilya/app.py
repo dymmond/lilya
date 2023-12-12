@@ -75,11 +75,11 @@ class Lilya:
         if settings_config:
             if not isinstance(settings_config, Settings) and not is_class_and_subclass(
                 settings_config, Settings
-            ):
+            ):  # type: ignore
                 raise FieldException("'settings_config' must be a subclass of Settings")
             elif isinstance(settings_config, Settings):
-                self.settings_config = settings_config  # type: ignore
-            elif is_class_and_subclass(settings_config, Settings):
+                self.settings_config = settings_config
+            elif is_class_and_subclass(settings_config, Settings):  # type: ignore
                 self.settings_config = settings_config()
 
         self.debug = debug

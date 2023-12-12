@@ -33,3 +33,7 @@ class Connection(Mapping[str, Any]):
 
     __eq__ = object.__eq__
     __hash__ = object.__hash__
+
+    @property
+    def app(self) -> Any:
+        return self.scope["app"]

@@ -126,13 +126,14 @@ source = ["tests", "lilya"]
 # omit = []
 
 [[tool.mypy.overrides]]
+module = ["multipart.*"]
+ignore_missing_imports = true
+ignore_errors = true
+
+[[tool.mypy.overrides]]
 module = "lilya.tests.*"
 ignore_missing_imports = true
 check_untyped_defs = true
-
-[[tool.mypy.overrides]]
-ignore_missing_imports = true
-ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = "docs_src.*"

@@ -25,10 +25,11 @@ class HTTPException(LilyaException):
 
     def __init__(
         self,
+        *args: Any,
         status_code: int,
         detail: Union[str, None] = None,
         headers: Union[Dict[str, str], None] = None,
-        *extra: Any,
+        **extra: Any,
     ) -> None:
         detail = detail or getattr(self, "detail", None)
         status_code = status_code or getattr(self, "status_code", None)
