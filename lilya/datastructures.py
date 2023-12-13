@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import copy
+from dataclasses import dataclass
 from functools import lru_cache
 from typing import Any, Dict, List, Optional, Sequence, Union, cast
 from urllib.parse import SplitResult, parse_qsl, urlencode, urlsplit, urlunsplit
@@ -88,7 +89,7 @@ class URL:
     port: Union[int, None] = None
     hostname: Union[str, None] = None
 
-    def __new__(cls, url: Union[str, SplitResult]) -> "URL":
+    def __new__(cls, url: Union[str, SplitResult]) -> URL:
         """
         Overrides the new base class to create a new structure
         for the URL.
@@ -98,7 +99,7 @@ class URL:
 
     @classmethod
     @lru_cache
-    def __create__(cls, url: Union[str, SplitResult]) -> "URL":
+    def __create__(cls, url: Union[str, SplitResult]) -> URL:
         """
         Creates a new url
         """
@@ -176,7 +177,7 @@ class URL:
             netloc = f"{userpass}@{netloc}"
         return netloc
 
-    def replace(self, **kwargs: Any) -> "URL":
+    def replace(self, **kwargs: Any) -> URL:
         if (
             "username" in kwargs
             or "password" in kwargs
@@ -192,13 +193,13 @@ class URL:
         components = self.parsed_url._replace(**kwargs)
         return self.__class__(components.geturl())
 
-    def include_query_params(self, **kwargs: Any) -> "URL":
+    def include_query_params(self, **kwargs: Any) -> URL:
         params = MultiDict(parse_qsl(self.query, keep_blank_values=True))
         params.update({str(key): str(value) for key, value in kwargs.items()})
         query = urlencode(params.multi_items())
         return self.replace(query=query)
 
-    def remove_query_params(self, keys: Union[str, Sequence[str]]) -> "URL":
+    def remove_query_params(self, keys: Union[str, Sequence[str]]) -> URL:
         if isinstance(keys, str):
             keys = [keys]
         params = MultiDict(parse_qsl(self.query, keep_blank_values=True))
@@ -207,7 +208,7 @@ class URL:
         query = urlencode(params.multi_items())
         return self.replace(query=query)
 
-    def replace_query_params(self, **kwargs: Any) -> "URL":
+    def replace_query_params(self, **kwargs: Any) -> URL:
         values = [(str(key), str(value)) for key, value in kwargs.items()]
         query = urlencode(values)
         return self.replace(query=query)
@@ -221,5 +222,25 @@ class URL:
     def __repr__(self) -> str:
         url = str(self)
         if self.password:
-            url = str(self.replace(password="********"))
+            url = str(self.replace(password="***********"))
         return f"{self.__class__.__name__}({repr(url)})"
+
+
+@dataclass
+class Secret:
+    """
+    Holds the information about a string secret.
+    This will make sure no secrets are leaked
+    in stack traces.
+    """
+
+    value: str = None
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}('***********')"
+
+    def __str__(self) -> str:
+        return self.value
+
+    def __bool__(self) -> bool:
+        return bool(self.value)

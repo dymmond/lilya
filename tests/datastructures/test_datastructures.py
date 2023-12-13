@@ -1,4 +1,4 @@
-from lilya.datastructures import URL
+from lilya.datastructures import URL, Secret
 
 
 def test_url_structure():
@@ -69,4 +69,11 @@ def test_hidden_password():
     assert repr(url) == "URL('https://username@example.org/path/to/somewhere')"
 
     url = URL("https://username:password@example.org/path/to/somewhere")
-    assert repr(url) == "URL('https://username:********@example.org/path/to/somewhere')"
+    assert repr(url) == "URL('https://username:***********@example.org/path/to/somewhere')"
+
+
+def test_secret():
+    value = Secret("a-value-being-passed")
+
+    assert repr(value) == "Secret('***********')"
+    assert str(value) == "a-value-being-passed"
