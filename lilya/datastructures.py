@@ -3,24 +3,167 @@ from __future__ import annotations
 from copy import copy
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Any, Dict, List, Optional, Sequence, Union, cast
+from typing import (
+    Any,
+    Dict,
+    ItemsView,
+    Iterable,
+    Iterator,
+    KeysView,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+    ValuesView,
+    cast,
+)
 from urllib.parse import SplitResult, parse_qsl, urlencode, urlsplit, urlunsplit
 
 import multidict
 
 from lilya.enums import HTTPType
 
+_KeyType = TypeVar("_KeyType")
+# Mapping keys are invariant but their values are covariant since
+# you can only read them
+# that is, you can't do `Mapping[str, Animal]()["fido"] = Dog()`
+_CovariantValueType = TypeVar("_CovariantValueType", covariant=True)
 
-class MultiDict(multidict.MultiDict):
-    """
-    Multidict that handles with majority of the multidict cases
-    an adds some extra functionalities on top of it.
 
-    You can read more about how the [Multidict](https://multidict.aio-libs.org/en/stable/multidict.html#multidict) operates and what you can do with it.
-    """
+class ImmutableMultiDict(Mapping[_KeyType, _CovariantValueType]):
+    _dict: Dict[_KeyType, _CovariantValueType]
 
-    def multi_items(self) -> List[Any]:
-        return list(self.items())
+    def __init__(
+        self,
+        *args: Union[
+            ImmutableMultiDict[_KeyType, _CovariantValueType],
+            Mapping[_KeyType, _CovariantValueType],
+            Iterable[Tuple[_KeyType, _CovariantValueType]],
+        ],
+        **kwargs: Any,
+    ) -> None:
+        assert len(args) < 2, "Too many arguments."
+
+        value: Any = args[0] if args else []
+        if kwargs:
+            value = (
+                ImmutableMultiDict(value).multi_items() + ImmutableMultiDict(kwargs).multi_items()
+            )
+
+        if not value:
+            _items: List[Tuple[Any, Any]] = []
+        elif hasattr(value, "multi_items"):
+            value = cast(ImmutableMultiDict[_KeyType, _CovariantValueType], value)
+            _items = list(value.multi_items())
+        elif hasattr(value, "items"):
+            value = cast(Mapping[_KeyType, _CovariantValueType], value)
+            _items = list(value.items())
+        else:
+            value = cast(List[Tuple[Any, Any]], value)
+            _items = list(value)
+
+        self._dict = dict(_items)
+        self._list = _items
+
+    def getlist(self, key: Any) -> List[_CovariantValueType]:
+        return [item_value for item_key, item_value in self._list if item_key == key]
+
+    def keys(self) -> KeysView[_KeyType]:
+        return self._dict.keys()
+
+    def values(self) -> ValuesView[_CovariantValueType]:
+        return self._dict.values()
+
+    def items(self) -> ItemsView[_KeyType, _CovariantValueType]:
+        return self._dict.items()
+
+    def multi_items(self) -> List[Tuple[_KeyType, _CovariantValueType]]:
+        return list(self._list)
+
+    def __getitem__(self, key: _KeyType) -> _CovariantValueType:
+        return self._dict[key]
+
+    def __contains__(self, key: Any) -> bool:
+        return key in self._dict
+
+    def __iter__(self) -> Iterator[_KeyType]:
+        return iter(self.keys())
+
+    def __len__(self) -> int:
+        return len(self._dict)
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, self.__class__):
+            return False
+        return sorted(self._list) == sorted(other._list)
+
+    def __repr__(self) -> str:
+        class_name = self.__class__.__name__
+        items = self.multi_items()
+        return f"{class_name}({items!r})"
+
+
+class MultiDict(ImmutableMultiDict[Any, Any]):
+    def __setitem__(self, key: Any, value: Any) -> None:
+        self.setlist(key, [value])
+
+    def __delitem__(self, key: Any) -> None:
+        self._list = [(k, v) for k, v in self._list if k != key]
+        del self._dict[key]
+
+    def pop(self, key: Any, default: Any = None) -> Any:
+        self._list = [(k, v) for k, v in self._list if k != key]
+        return self._dict.pop(key, default)
+
+    def popitem(self) -> Tuple[Any, Any]:
+        key, value = self._dict.popitem()
+        self._list = [(k, v) for k, v in self._list if k != key]
+        return key, value
+
+    def poplist(self, key: Any) -> List[Any]:
+        values = [v for k, v in self._list if k == key]
+        self.pop(key)
+        return values
+
+    def clear(self) -> None:
+        self._dict.clear()
+        self._list.clear()
+
+    def setdefault(self, key: Any, default: Any = None) -> Any:
+        if key not in self:
+            self._dict[key] = default
+            self._list.append((key, default))
+
+        return self[key]
+
+    def setlist(self, key: Any, values: List[Any]) -> None:
+        if not values:
+            self.pop(key, None)
+        else:
+            existing_items = [(k, v) for (k, v) in self._list if k != key]
+            self._list = existing_items + [(key, value) for value in values]
+            self._dict[key] = values[-1]
+
+    def append(self, key: Any, value: Any) -> None:
+        self._list.append((key, value))
+        self._dict[key] = value
+
+    def update(
+        self,
+        *args: Union[
+            MultiDict,
+            Mapping[Any, Any],
+            List[Tuple[Any, Any]],
+        ],
+        **kwargs: Any,
+    ) -> None:
+        value = MultiDict(*args, **kwargs)
+        existing_items = [(k, v) for (k, v) in self._list if k not in value.keys()]
+        self._list = existing_items + value.multi_items()
+        self._dict.update(value)
 
 
 class Header(multidict.CIMultiDict):

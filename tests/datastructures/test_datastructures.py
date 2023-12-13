@@ -1,4 +1,4 @@
-from lilya.datastructures import URL, Secret
+from lilya.datastructures import URL, MultiDict, Secret
 
 
 def test_url_structure():
@@ -77,3 +77,92 @@ def test_secret():
 
     assert repr(value) == "Secret('***********')"
     assert str(value) == "a-value-being-passed"
+
+
+def test_multidict():
+    query = MultiDict([("a", "123"), ("a", "456"), ("b", "789")])
+    assert "a" in query
+    assert "A" not in query
+    assert "c" not in query
+    assert query["a"] == "456"
+    assert query.get("a") == "456"
+    assert query.get("nope", default=None) is None
+    assert query.getlist("a") == ["123", "456"]
+    assert list(query.keys()) == ["a", "b"]
+    assert list(query.values()) == ["456", "789"]
+    assert list(query.items()) == [("a", "456"), ("b", "789")]
+    assert len(query) == 2
+    assert list(query) == ["a", "b"]
+    assert dict(query) == {"a": "456", "b": "789"}
+    assert str(query) == "MultiDict([('a', '123'), ('a', '456'), ('b', '789')])"
+    assert repr(query) == "MultiDict([('a', '123'), ('a', '456'), ('b', '789')])"
+    assert MultiDict({"a": "123", "b": "456"}) == MultiDict([("a", "123"), ("b", "456")])
+    assert MultiDict({"a": "123", "b": "456"}) == MultiDict({"b": "456", "a": "123"})
+    assert MultiDict() == MultiDict({})
+    assert MultiDict({"a": "123", "b": "456"}) != "invalid"
+
+    query = MultiDict([("a", "123"), ("a", "456")])
+    assert MultiDict(query) == query
+
+    query = MultiDict([("a", "123"), ("a", "456")])
+    query["a"] = "789"
+    assert query["a"] == "789"
+    assert query.get("a") == "789"
+    assert query.getlist("a") == ["789"]
+
+    query = MultiDict([("a", "123"), ("a", "456")])
+    del query["a"]
+    assert query.get("a") is None
+    assert repr(query) == "MultiDict([])"
+
+    query = MultiDict([("a", "123"), ("a", "456"), ("b", "789")])
+    assert query.pop("a") == "456"
+    assert query.get("a", None) is None
+    assert repr(query) == "MultiDict([('b', '789')])"
+
+    query = MultiDict([("a", "123"), ("a", "456"), ("b", "789")])
+    item = query.popitem()
+    assert query.get(item[0]) is None
+
+    query = MultiDict([("a", "123"), ("a", "456"), ("b", "789")])
+    assert query.poplist("a") == ["123", "456"]
+    assert query.get("a") is None
+    assert repr(query) == "MultiDict([('b', '789')])"
+
+    query = MultiDict([("a", "123"), ("a", "456"), ("b", "789")])
+    query.clear()
+    assert query.get("a") is None
+    assert repr(query) == "MultiDict([])"
+
+    query = MultiDict([("a", "123")])
+    query.setlist("a", ["456", "789"])
+    assert query.getlist("a") == ["456", "789"]
+    query.setlist("b", [])
+    assert "b" not in query
+
+    query = MultiDict([("a", "123")])
+    assert query.setdefault("a", "456") == "123"
+    assert query.getlist("a") == ["123"]
+    assert query.setdefault("b", "456") == "456"
+    assert query.getlist("b") == ["456"]
+    assert repr(query) == "MultiDict([('a', '123'), ('b', '456')])"
+
+    query = MultiDict([("a", "123")])
+    query.append("a", "456")
+    assert query.getlist("a") == ["123", "456"]
+    assert repr(query) == "MultiDict([('a', '123'), ('a', '456')])"
+
+    query = MultiDict([("a", "123"), ("b", "456")])
+    query.update({"a": "789"})
+    assert query.getlist("a") == ["789"]
+    assert query == MultiDict([("a", "789"), ("b", "456")])
+
+    query = MultiDict([("a", "123"), ("b", "456")])
+    query.update(query)
+    assert repr(query) == "MultiDict([('a', '123'), ('b', '456')])"
+
+    query = MultiDict([("a", "123"), ("a", "456")])
+    query.update([("a", "123")])
+    assert query.getlist("a") == ["123"]
+    query.update([("a", "456")], a="789", b="123")
+    assert query == MultiDict([("a", "456"), ("a", "789"), ("b", "123")])
