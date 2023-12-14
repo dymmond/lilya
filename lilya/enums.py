@@ -1,5 +1,5 @@
 from enum import IntEnum
-from typing import List
+from typing import Dict, List
 
 from lilya.conf.enums import BaseEnum
 
@@ -20,6 +20,15 @@ class DefaultPort(IntEnum):
     def __repr__(self) -> int:  # type: ignore
         return int(self)
 
+    @classmethod
+    def to_dict(cls) -> Dict[str, int]:
+        return {
+            "http": cls.HTTP.value,
+            "https": cls.HTTPS.value,
+            "ws": cls.WS.value,
+            "wss": cls.WSS.value,
+        }
+
 
 class ScopeType(BaseEnum):
     HTTP = "http"
@@ -29,6 +38,15 @@ class ScopeType(BaseEnum):
 class HTTPType(BaseEnum):
     HTTP = "http"
     HTTPS = "https"
+
+    @classmethod
+    def get_https_types(cls) -> List[str]:
+        return [str(value) for value in cls]
+
+
+class WebsocketType(BaseEnum):
+    WS = "ws"
+    WSS = "wss"
 
     @classmethod
     def get_https_types(cls) -> List[str]:
