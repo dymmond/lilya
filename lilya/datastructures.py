@@ -3,6 +3,7 @@ from __future__ import annotations
 from copy import copy
 from dataclasses import dataclass
 from functools import lru_cache
+from shlex import shlex
 from typing import (
     Any,
     Dict,
@@ -24,12 +25,10 @@ from urllib.parse import SplitResult, parse_qsl, urlencode, urlsplit, urlunsplit
 
 import multidict
 
-from lilya.enums import HTTPType
+from lilya.enums import DefaultPort, HTTPType, ScopeType, WebsocketType
+from lilya.types import Scope
 
 _KeyType = TypeVar("_KeyType")
-# Mapping keys are invariant but their values are covariant since
-# you can only read them
-# that is, you can't do `Mapping[str, Animal]()["fido"] = Dog()`
 _CovariantValueType = TypeVar("_CovariantValueType", covariant=True)
 
 
@@ -187,34 +186,35 @@ class Header(multidict.CIMultiDict):
         return self.getall(key, default=[])
 
 
+@dataclass(init=True)
 class State:
-    _state: Dict[str, Any]
+    state: Dict[str, Any] = None
 
     def __init__(self, state: Optional[Dict[str, Any]] = None):
         if state is None:
-            state = {}
-        super().__setattr__("_state", state)
+            self.state = {}
+        super().__setattr__("state", state)
 
     def __setattr__(self, key: Any, value: Any) -> None:
-        self._state[key] = value
+        self.state[key] = value
 
     def __delattr__(self, key: Any) -> None:
-        del self._state[key]
+        del self.state[key]
 
     def __copy__(self) -> State:
-        return self.__class__(copy(self._state))
+        return self.__class__(copy(self.state))
 
     def __len__(self) -> int:
-        return len(self._state)
+        return len(self.state)
 
     def __getattr__(self, key: str) -> Any:
         try:
-            return self._state[key]
+            return self.state[key]
         except KeyError as e:
             raise AttributeError(f"State has no key '{key}'") from e
 
     def __getitem__(self, key: str) -> Any:
-        return self._state[key]
+        return self.state[key]
 
     def copy(self) -> State:
         return copy(self)
@@ -269,6 +269,42 @@ class URL:
         instance.port = instance.parsed_url.port
         instance.hostname = instance.parsed_url.hostname
         return instance
+
+    @classmethod
+    @lru_cache
+    def build_from_scope(cls, scope: Scope) -> URL:
+        """
+        Builds the URL from the Scope.
+
+        The path is built based on the `root_path` with the `path` provided
+        by the scope.
+        """
+        scheme = scope.get("scheme", HTTPType.HTTP.value)
+        server = scope.get("server")
+        path = scope.get("root_path", "") + scope["path"]
+        query_string = scope.get("query_string", b"")
+
+        host_header = None
+        for key, value in scope["headers"]:
+            if key == b"host":
+                host_header = value.decode("latin-1")
+                break
+
+        if host_header is not None:
+            url = f"{scheme}://{host_header}{path}"
+        elif server is None:
+            url = path
+        else:
+            host, port = server
+            default_port = DefaultPort.to_dict()[scheme]
+            if port == default_port:
+                url = f"{scheme}://{host}{path}"
+            else:
+                url = f"{scheme}://{host}:{port}{path}"
+
+        if query_string:
+            url += "?" + query_string.decode()
+        return cls(url)
 
     @property
     def parsed_url(self) -> SplitResult:
@@ -369,6 +405,85 @@ class URL:
         return f"{self.__class__.__name__}({repr(url)})"
 
 
+class URLPath(str):
+    def __new__(cls, path: str, protocol: str = "", host: str = "") -> URLPath:
+        assert protocol in (ScopeType.HTTP.value, ScopeType.WEBSOCKET.value, "")
+        return str.__new__(cls, path)
+
+    def __init__(self, path: str, protocol: str = "", host: str = "") -> None:
+        self.protocol = protocol
+        self.host = host
+        self.path = path
+
+    def make_absolute_url(self, base_url: Union[str, URL]) -> URL:
+        if isinstance(base_url, str):
+            base_url = URL(base_url)
+        if self.protocol:
+            scheme = {
+                ScopeType.HTTP.value: {True: HTTPType.HTTPS.value, False: HTTPType.HTTP.value},
+                ScopeType.WEBSOCKET.value: {
+                    True: WebsocketType.WSS.value,
+                    False: WebsocketType.WS.value,
+                },
+            }[self.protocol][base_url.is_secure]
+        else:
+            scheme = base_url.scheme
+
+        netloc = self.host or base_url.netloc
+        path = base_url.path.rstrip("/") + str(self)
+        url = f"{scheme}://{netloc}{path}"
+        return URL(url)
+
+
+class CommaSeparatedStr:
+    value: Union[str, Sequence[str]]
+
+    def __new__(cls, value: Union[str, Sequence[str]]) -> CommaSeparatedStr:
+        instance = cls.__create__(value=value)
+        return instance
+
+    @classmethod
+    def __create__(
+        cls,
+        value: Union[str, Sequence[str]],
+        whitespace: str = ",",
+        whitespace_split: bool = True,
+    ) -> CommaSeparatedStr:
+        instance: CommaSeparatedStr = super().__new__(cls)
+        if not isinstance(value, str):
+            instance.items = list(value)
+            return instance
+        split = shlex(value, posix=True)
+        split.whitespace = whitespace
+        split.whitespace_split = whitespace_split
+        instance.items = [item.strip() for item in split]
+        return instance
+
+    @property
+    def items(self) -> List[str]:
+        return getattr(self, "_items", [])
+
+    @items.setter
+    def items(self, value: Union[str, Sequence[str]]) -> None:
+        self._items = value
+
+    def __len__(self) -> int:
+        return len(self.items)
+
+    def __getitem__(self, index: Union[int, slice]) -> Any:
+        return self.items[index]
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self.items)
+
+    def __repr__(self) -> str:
+        items = list(self)
+        return f"{self.__class__.__name__}({items!r})"
+
+    def __str__(self) -> str:
+        return ", ".join(repr(item) for item in self)
+
+
 @dataclass
 class Secret:
     """
@@ -387,3 +502,41 @@ class Secret:
 
     def __bool__(self) -> bool:
         return bool(self.value)
+
+
+class QueryParam(ImmutableMultiDict[str, str]):
+    """
+    An immutable multidict.
+    """
+
+    def __init__(
+        self,
+        *args: Union[
+            ImmutableMultiDict[Any, Any],
+            Mapping[Any, Any],
+            List[Tuple[Any, Any]],
+            str,
+            bytes,
+        ],
+        **kwargs: Any,
+    ) -> None:
+        assert len(args) < 2, "Too many arguments."
+
+        value = args[0] if args else []
+
+        if isinstance(value, str):
+            super().__init__(parse_qsl(value, keep_blank_values=True), **kwargs)
+        elif isinstance(value, bytes):
+            super().__init__(parse_qsl(value.decode("latin-1"), keep_blank_values=True), **kwargs)
+        else:
+            super().__init__(*args, **kwargs)  # type: ignore[arg-type]
+        self._list = [(str(k), str(v)) for k, v in self._list]
+        self._dict = {str(k): str(v) for k, v in self._dict.items()}
+
+    def __str__(self) -> str:
+        return urlencode(self._list)
+
+    def __repr__(self) -> str:
+        class_name = self.__class__.__name__
+        query_string = str(self)
+        return f"{class_name}({query_string!r})"

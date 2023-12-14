@@ -1,4 +1,4 @@
-from lilya.datastructures import URL, MultiDict, Secret
+from lilya.datastructures import URL, CommaSeparatedStr, MultiDict, QueryParam, Secret
 
 
 def test_url_structure():
@@ -77,6 +77,30 @@ def test_secret():
 
     assert repr(value) == "Secret('***********')"
     assert str(value) == "a-value-being-passed"
+
+
+def test_comma_separated():
+    csv = CommaSeparatedStr('"localhost", "127.0.0.1", 0.0.0.0')
+    assert list(csv) == ["localhost", "127.0.0.1", "0.0.0.0"]
+    assert repr(csv) == "CommaSeparatedStr(['localhost', '127.0.0.1', '0.0.0.0'])"
+    assert str(csv) == "'localhost', '127.0.0.1', '0.0.0.0'"
+    assert csv[0] == "localhost"
+    assert len(csv) == 3
+
+    csv = CommaSeparatedStr("'localhost', '127.0.0.1', 0.0.0.0")
+    assert list(csv) == ["localhost", "127.0.0.1", "0.0.0.0"]
+    assert repr(csv) == "CommaSeparatedStr(['localhost', '127.0.0.1', '0.0.0.0'])"
+    assert str(csv) == "'localhost', '127.0.0.1', '0.0.0.0'"
+
+    csv = CommaSeparatedStr("localhost, 127.0.0.1, 0.0.0.0")
+    assert list(csv) == ["localhost", "127.0.0.1", "0.0.0.0"]
+    assert repr(csv) == "CommaSeparatedStr(['localhost', '127.0.0.1', '0.0.0.0'])"
+    assert str(csv) == "'localhost', '127.0.0.1', '0.0.0.0'"
+
+    csv = CommaSeparatedStr(["localhost", "127.0.0.1", "0.0.0.0"])
+    assert list(csv) == ["localhost", "127.0.0.1", "0.0.0.0"]
+    assert repr(csv) == "CommaSeparatedStr(['localhost', '127.0.0.1', '0.0.0.0'])"
+    assert str(csv) == "'localhost', '127.0.0.1', '0.0.0.0'"
 
 
 def test_multidict():
@@ -166,3 +190,44 @@ def test_multidict():
     assert query.getlist("a") == ["123"]
     query.update([("a", "456")], a="789", b="123")
     assert query == MultiDict([("a", "456"), ("a", "789"), ("b", "123")])
+
+
+def test_url_blank_params():
+    query = QueryParam("a=123&abc&def&b=456")
+    assert "a" in query
+    assert "abc" in query
+    assert "def" in query
+    assert "b" in query
+    val = query.get("abc")
+    assert val is not None
+    assert len(val) == 0
+    assert len(query["a"]) == 3
+    assert list(query.keys()) == ["a", "abc", "def", "b"]
+
+
+def test_queryparams():
+    query = QueryParam("a=123&a=456&b=789")
+    assert "a" in query
+    assert "A" not in query
+    assert "c" not in query
+    assert query["a"] == "456"
+    assert query.get("a") == "456"
+    assert query.get("nope", default=None) is None
+    assert query.getlist("a") == ["123", "456"]
+    assert list(query.keys()) == ["a", "b"]
+    assert list(query.values()) == ["456", "789"]
+    assert list(query.items()) == [("a", "456"), ("b", "789")]
+    assert len(query) == 2
+    assert list(query) == ["a", "b"]
+    assert dict(query) == {"a": "456", "b": "789"}
+    assert str(query) == "a=123&a=456&b=789"
+    assert repr(query) == "QueryParam('a=123&a=456&b=789')"
+    assert QueryParam({"a": "123", "b": "456"}) == QueryParam([("a", "123"), ("b", "456")])
+    assert QueryParam({"a": "123", "b": "456"}) == QueryParam("a=123&b=456")
+    assert QueryParam({"a": "123", "b": "456"}) == QueryParam({"b": "456", "a": "123"})
+    assert QueryParam() == QueryParam({})
+    assert QueryParam([("a", "123"), ("a", "456")]) == QueryParam("a=123&a=456")
+    assert QueryParam({"a": "123", "b": "456"}) != "invalid"
+
+    query = QueryParam([("a", "123"), ("a", "456")])
+    assert QueryParam(query) == query
