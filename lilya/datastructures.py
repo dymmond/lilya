@@ -6,6 +6,7 @@ from functools import lru_cache
 from shlex import shlex
 from typing import (
     Any,
+    BinaryIO,
     Dict,
     ItemsView,
     Iterable,
@@ -25,6 +26,7 @@ from urllib.parse import SplitResult, parse_qsl, urlencode, urlsplit, urlunsplit
 
 import multidict
 
+from lilya.concurrency import run_in_threadpool
 from lilya.enums import DefaultPort, HTTPType, ScopeType, WebsocketType
 from lilya.types import Scope
 
@@ -165,7 +167,7 @@ class MultiDict(ImmutableMultiDict[Any, Any]):
         self._dict.update(value)
 
 
-class Header(multidict.CIMultiDict):
+class Headers(multidict.CIMultiDict):
     """
     Header that handles both request and response.
     It subclasses the [CIMultiDict](https://multidict.readthedocs.io/en/stable/multidict.html#cimultidictproxy)
@@ -184,6 +186,13 @@ class Header(multidict.CIMultiDict):
     def get_all(self, key: str) -> Any:
         """Convenience method mapped to ``getall()``."""
         return self.getall(key, default=[])
+
+    def __repr__(self) -> str:
+        class_name = self.__class__.__name__
+        as_dict = dict(self.items())
+        if len(as_dict) == len(self):
+            return f"{class_name}({as_dict!r})"
+        return f"{class_name}(raw={self.raw!r})"
 
 
 @dataclass(init=True)
@@ -540,3 +549,88 @@ class QueryParam(ImmutableMultiDict[str, str]):
         class_name = self.__class__.__name__
         query_string = str(self)
         return f"{class_name}({query_string!r})"
+
+
+class UploadFile:
+    """
+    An uploaded file included as part of the request data.
+    """
+
+    def __init__(
+        self,
+        file: BinaryIO,
+        *,
+        size: Optional[int] = None,
+        filename: Optional[str] = None,
+        headers: Optional[Headers] = None,
+    ) -> None:
+        self.filename = filename
+        self.file = file
+        self.size = size
+        self.headers = headers or Headers()
+
+    @property
+    def content_type(self) -> Optional[str]:
+        return self.headers.get("content-type", None)
+
+    @property
+    def _in_memory(self) -> bool:
+        # check for SpooledTemporaryFile._rolled
+        rolled_to_disk = getattr(self.file, "_rolled", True)
+        return not rolled_to_disk
+
+    async def write(self, data: bytes) -> None:
+        if self.size is not None:
+            self.size += len(data)
+
+        if self._in_memory:
+            self.file.write(data)
+        else:
+            await run_in_threadpool(self.file.write, data)
+
+    async def read(self, size: int = -1) -> bytes:
+        if self._in_memory:
+            return self.file.read(size)
+        return await run_in_threadpool(self.file.read, size)
+
+    async def seek(self, offset: int) -> None:
+        if self._in_memory:
+            self.file.seek(offset)
+        else:
+            await run_in_threadpool(self.file.seek, offset)
+
+    async def close(self) -> None:
+        if self._in_memory:
+            self.file.close()
+        else:
+            await run_in_threadpool(self.file.close)
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}("
+            f"filename={self.filename!r}, "
+            f"size={self.size!r}, "
+            f"headers={self.headers!r})"
+        )
+
+
+class FormData(ImmutableMultiDict[str, Union[UploadFile, str]]):
+    """
+    An immutable multidict, containing both file uploads and text input.
+    """
+
+    def __init__(
+        self,
+        *args: Union[
+            FormData,
+            Mapping[str, Union[str, UploadFile]],
+            List[Tuple[str, Union[str, UploadFile]]],
+        ],
+        **kwargs: Union[str, UploadFile],
+    ) -> None:
+        super().__init__(*args, **kwargs)
+
+    async def close(self) -> None:
+        for _, value in self.multi_items():
+            if isinstance(value, UploadFile):
+                await value.close()
