@@ -75,3 +75,13 @@ class HTTPMethod(BaseEnum):
     HEAD = "HEAD"
     OPTIONS = "OPTIONS"
     TRACE = "TRACE"
+
+
+class MediaType(BaseEnum):
+    JSON = "application/json"
+    HTML = "text/html"
+    TEXT = "text/plain"
+    MESSAGE_PACK = "application/x-msgpack"
+    TEXT_CHARSET = "text/plain; charset=utf-8"
+    PNG = "image/png"
+    OCTET = "application/octet-stream"
