@@ -575,7 +575,6 @@ class UploadFile:
 
     @property
     def _in_memory(self) -> bool:
-        # check for SpooledTemporaryFile._rolled
         rolled_to_disk = getattr(self.file, "_rolled", True)
         return not rolled_to_disk
 
