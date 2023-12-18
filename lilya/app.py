@@ -8,6 +8,7 @@ from lilya._utils import is_class_and_subclass
 from lilya.conf.exceptions import FieldException
 from lilya.conf.global_settings import Settings
 from lilya.datastructures import State
+from lilya.permissions.base import Permission
 from lilya.types import ApplicationType, ASGIApp, ExceptionHandler, Lifespan
 
 
@@ -40,7 +41,7 @@ class Lilya:
         routes: Union[Sequence[Any], None] = None,
         middleware: Union[Sequence[Any], None] = None,
         exception_handlers: Union[Mapping[Any, ExceptionHandler], None] = None,
-        permissions: Union[Sequence[Any], None] = None,
+        permissions: Union[Sequence[Permission], None] = None,
         on_startup: Sequence[Callable[[], Any]] | None = None,
         on_shutdown: Sequence[Callable[[], Any]] | None = None,
         lifespan: Optional[Lifespan[ApplicationType]] = None,

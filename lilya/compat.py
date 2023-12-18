@@ -22,6 +22,9 @@ except TypeError:  # pragma: no cover
 
 
 def is_async_callable(obj: Any) -> Any:
+    """
+    Validates if a given object is an async callable or not.
+    """
     while isinstance(obj, functools.partial):
         obj = obj.func
 
@@ -74,13 +77,3 @@ def handle_lifespan_events(
     elif lifespan:
         return lifespan
     return None
-
-
-def generate_lifespan_events(
-    on_startup: Union[Sequence[Any], None] = None,
-    on_shutdown: Union[Sequence[Any], None] = None,
-    lifespan: Union[Lifespan[Any], None] = None,
-) -> Any:  # pragma: no cover
-    if lifespan:
-        return lifespan
-    return AyncLifespanContextManager(on_startup=on_startup, on_shutdown=on_shutdown)

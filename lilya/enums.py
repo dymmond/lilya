@@ -58,3 +58,20 @@ class Event(BaseEnum):
     HTTP_DISCONNECT = "http.disconnect"
     WEBSOCKET_CONNECT = "websocket.connect"
     WEBSOCKET_DISCONNECT = "websocket.disconnect"
+
+
+class Match(IntEnum):
+    NONE = 0
+    PARTIAL = 1
+    FULL = 2
+
+
+class HTTPMethod(BaseEnum):
+    GET = "GET"
+    POST = "POST"
+    PUT = "PUT"
+    PATCH = "PATCH"
+    DELETE = "DELETE"
+    HEAD = "HEAD"
+    OPTIONS = "OPTIONS"
+    TRACE = "TRACE"
