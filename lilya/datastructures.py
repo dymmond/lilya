@@ -177,6 +177,13 @@ class Headers(multidict.CIMultiDict):
     very similar to a regular dictionary.
     """
 
+    @classmethod
+    def from_scope(cls, scope: Scope) -> Headers:
+        """
+        Builds the headers from the scope.
+        """
+        return cls(scope["headers"])
+
     def __getattr__(self, key: str) -> Any:
         if not key.startswith("_"):
             key = key.rstrip("_").replace("_", "-")

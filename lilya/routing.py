@@ -1,13 +1,24 @@
 from __future__ import annotations
 
 import inspect
-from typing import Any, Callable, List, Sequence, Set, Tuple, Union
+from typing import Any, Callable, Dict, List, Sequence, Set, Tuple, Union
 
 from lilya.datastructures import URLPath
 from lilya.enums import HTTPMethod, Match
 from lilya.middleware.base import Middleware
 from lilya.permissions.base import Permission
-from lilya.types import Receive, Scope, Send
+from lilya.types import ASGIApp, Lifespan, Receive, Scope, Send
+
+
+class NoMatchFound(Exception):
+    """
+    Raised by `.url_for(name, **path_params)` and `.url_path_for(name, **path_params)`
+    if no matching route exists.
+    """
+
+    def __init__(self, name: str, path_params: Dict[str, Any]) -> None:
+        params = ", ".join(list(path_params.keys()))
+        super().__init__(f'No route exists for name "{name}" and params "{params}".')
 
 
 def get_name(handler: Callable[..., Any]) -> str:
@@ -44,6 +55,56 @@ class BasePath:
         Handles the matched ASGI route.
         """
         raise NotImplementedError()  # pragma: no cover
+
+
+class Router:
+    """
+    A Lilya router object.
+    """
+
+    def __init__(
+        self,
+        routes: Union[Sequence[BasePath], None] = None,
+        redirect_slashes: bool = True,
+        default: Union[ASGIApp, None] = None,
+        on_startup: Union[Sequence[Callable[[], Any]], None] = None,
+        on_shutdown: Union[Sequence[Callable[[], Any]], None] = None,
+        lifespan: Union[Lifespan[Any], None] = None,
+        *,
+        middleware: Union[Sequence[Middleware], None] = None,
+        permissions: Union[Sequence[Permission], None] = None,
+        include_in_schema: bool = True,
+    ) -> None:
+        self.routes = [] if routes is None else list(routes)
+        self.redirect_slashes = redirect_slashes
+        self.default = self.raise_404 if default is None else default
+        self.on_startup = [] if on_startup is None else list(on_startup)
+        self.on_shutdown = [] if on_shutdown is None else list(on_shutdown)
+        self.include_in_schema = include_in_schema
+
+        self.middleware = middleware if middleware is not None else list(middleware)
+        self.permissions = permissions if permissions is not None else list(permissions)
+
+        # # Execute the middlewares
+        # if middleware is not None:
+        #     for cls, options in reversed(middleware):
+        #         self.middleware_stack = cls(app=self.app, **options)
+
+        # # Execute the permissions
+        # if permissions is not None:
+        #     for cls, options in reversed(permissions):
+        #         self.permission_stack = cls(app=self.app, **options)
+
+    async def raise_404(self, scope: Scope, receive: Receive, send: Send) -> None:
+        ...
+
+    def path_for(self, name: str, /, **path_params: Any) -> URLPath:
+        for route in self.routes:
+            try:
+                return route.path_for(name, **path_params)
+            except NoMatchFound:
+                ...
+        raise NoMatchFound(name, path_params)
 
 
 class Path(BasePath):
@@ -95,3 +156,15 @@ class Path(BasePath):
             self.methods = {method.upper() for method in methods}
             if HTTPMethod.GET in self.methods:
                 self.methods.add(HTTPMethod.HEAD)
+
+
+class WebsocketPath(BasePath):
+    ...
+
+
+class Mount(BasePath):
+    ...
+
+
+class Host(BasePath):
+    ...

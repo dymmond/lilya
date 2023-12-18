@@ -1,11 +1,22 @@
 import asyncio
 import functools
 import hashlib
-from typing import Any, Sequence, TypeVar, Union
+from typing import Any, Awaitable, Generator, Generic, Protocol, Sequence, TypeVar, Union
 
 from lilya.types import Lifespan, Receive, Scope, Send
 
 T = TypeVar("T")
+
+
+class SupportsAsyncClose(Protocol):
+    async def close(self) -> None:
+        ...  # pragma: no cover
+
+
+SupportsAsyncCloseType = TypeVar(
+    "SupportsAsyncCloseType", bound=SupportsAsyncClose, covariant=False
+)
+
 
 try:
     hashlib.md5(b"data", usedforsecurity=False)  # type: ignore[call-arg]
@@ -77,3 +88,21 @@ def handle_lifespan_events(
     elif lifespan:
         return lifespan
     return None
+
+
+class AwaitableOrContextManager(Generic[SupportsAsyncCloseType]):
+    __slots__ = ("aw", "entered")
+
+    def __init__(self, aw: Awaitable[SupportsAsyncCloseType]) -> None:
+        self.aw = aw
+
+    def __await__(self) -> Generator[Any, None, SupportsAsyncCloseType]:
+        return self.aw.__await__()
+
+    async def __aenter__(self) -> SupportsAsyncCloseType:
+        self.entered = await self.aw
+        return self.entered
+
+    async def __aexit__(self, *args: Any) -> Union[None, bool]:
+        await self.entered.close()
+        return None

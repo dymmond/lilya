@@ -9,6 +9,7 @@ from lilya.conf.exceptions import FieldException
 from lilya.conf.global_settings import Settings
 from lilya.datastructures import State
 from lilya.permissions.base import Permission
+from lilya.routing import Router
 from lilya.types import ApplicationType, ASGIApp, ExceptionHandler, Lifespan
 
 
@@ -44,7 +45,9 @@ class Lilya:
         permissions: Union[Sequence[Permission], None] = None,
         on_startup: Sequence[Callable[[], Any]] | None = None,
         on_shutdown: Sequence[Callable[[], Any]] | None = None,
+        redirect_slashes: bool = True,
         lifespan: Optional[Lifespan[ApplicationType]] = None,
+        include_in_schema: bool = True,
         settings_config: Annotated[
             Optional[Settings],
             Doc(
@@ -54,15 +57,6 @@ class Lilya:
 
                 When the `settings_config` is provided, it will make sure it takes priority over
                 any other settings provided for the instance.
-
-
-                !!! Tip
-                    The settings module can be very useful if you want to have, for example, a
-                    [ChildEsmerald](https://esmerald.dev/routing/router/?h=childe#child-esmerald-application) that needs completely different settings
-                    from the main app.
-
-                    Example: A `ChildEsmerald` that takes care of the authentication into a cloud
-                    provider such as AWS and handles the `boto3` module.
                 """
             ),
         ] = None,
@@ -89,6 +83,15 @@ class Lilya:
         self.permissions = [] if permissions is None else list(permissions)
         self.middleware_stack: Union[ASGIApp, None] = None
         self.custom_middleware = [] if middleware is None else list(middleware)
+        self.router: Router = Router(
+            redirect_slashes=redirect_slashes,
+            on_startup=on_startup,
+            on_shutdown=on_shutdown,
+            lifespan=lifespan,
+            middleware=middleware,
+            permissions=permissions,
+            include_in_schema=include_in_schema,
+        )
 
     # def build_middleware_stack(self) -> ASGIApp:
     #     debug = self.debug

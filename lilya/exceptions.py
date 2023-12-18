@@ -26,7 +26,7 @@ class HTTPException(LilyaException):
     def __init__(
         self,
         *args: Any,
-        status_code: int,
+        status_code: Union[int, None] = None,
         detail: Union[str, None] = None,
         headers: Union[Dict[str, str], None] = None,
         **extra: Any,
@@ -61,3 +61,7 @@ class WebSocketException(Exception):
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
         return f"{class_name}(code={self.code!r}, reason={self.reason!r})"
+
+
+class ImproperlyConfigured(HTTPException, ValueError):
+    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR

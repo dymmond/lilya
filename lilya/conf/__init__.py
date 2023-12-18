@@ -1,7 +1,7 @@
 import os
 from typing import TYPE_CHECKING, Any, Optional, Type
 
-from lilya._internal.module_loading import import_string
+from lilya._internal._module_loading import import_string
 from lilya.conf._internal.functional import LazyObject, empty
 
 if TYPE_CHECKING:

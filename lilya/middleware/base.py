@@ -1,6 +1,6 @@
 from typing import Any, Callable
 
-from lilya._internal.iterables import BaseWrapper
+from lilya._internal._iterables import BaseWrapper
 from lilya.types import ASGIApp
 
 
