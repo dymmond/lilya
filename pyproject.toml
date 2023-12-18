@@ -65,7 +65,7 @@ test = [
     "trio==0.23.2",
 ]
 
-dev = ["ipdb>=0.13.13,<1.0.0", "pre-commit>=3.3.1,<4.0.0"]
+dev = ["ipdb>=0.13.13,<1.0.0", "pre-commit>=3.3.1,<4.0.0", "devtools>=0.12.2"]
 
 doc = [
     "griffe-typingdoc>=0.2.2,<1.0",

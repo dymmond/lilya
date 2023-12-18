@@ -125,13 +125,13 @@ class Connection(Mapping[str, Any]):
 
     @property
     def client(self) -> Union[Address, None]:
-        """Return the ``client`` data of this connection's ``Scope``.
-
-        Returns:
-            A two tuple of the host name and port number.
-        """
         client = self.scope.get("client")
         return Address(*client) if client else None
+
+    @property
+    def server(self) -> Union[Address, None]:
+        server = self.scope.get("server")
+        return Address(*server) if server else None
 
     @property
     def auth(self) -> Any:
