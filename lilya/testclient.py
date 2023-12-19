@@ -333,6 +333,7 @@ class _TestClientTransport(httpx.BaseTransport):
 
             if message["type"] == "http.response.start":
                 assert not response_started, 'Received multiple "http.response.start" messages.'
+                # breakpoint()
                 raw_kwargs["status_code"] = message["status"]
                 raw_kwargs["headers"] = [
                     (key.decode(), value.decode()) for key, value in message.get("headers", [])
