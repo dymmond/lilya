@@ -62,7 +62,10 @@ class Response:
         if HeaderHelper.has_entity_header_status(self.status_code):
             headers = HeaderHelper.remove_entity_headers(headers)
         if HeaderHelper.has_body_message(self.status_code):
-            headers.setdefault("content-type", self.media_type)
+            content_type = HeaderHelper.get_content_type(
+                charset=self.charset, media_type=self.media_type
+            )
+            headers.setdefault("content-type", content_type)
 
         raw_headers = [  # type: ignore
             (name.encode("latin-1"), f"{value}".encode(errors="surrogateescape"))

@@ -35,9 +35,8 @@ class HeaderHelper:
     ) -> Dict[str, str]:
         """
         Removes all the entity headers present in the headers given.
-        According to RFC 2616 Section 10.3.5,
-        Content-Location and Expires are allowed as for the
-        "strong cache validator".
+        According to RFC 2616 Section 10.3.5.
+
         https://tools.ietf.org/html/rfc2616#section-10.3.5
         """
         if allowed is None:
@@ -55,8 +54,18 @@ class HeaderHelper:
     def has_body_message(cls, status_code: int) -> bool:
         """
         Based on the RFC specificiation the response status of 1XX, 204 and 304
-        body and length **MUST NOT** be included..
+        body and length **MUST NOT** be included.
+
         https://tools.ietf.org/html/rfc2616#section-4.4
         https://tools.ietf.org/html/rfc2616#section-4.3
         """
         return bool(status_code not in (204, 304) and not (100 <= status_code < 200))
+
+    @classmethod
+    def get_content_type(self, charset: str, media_type: Union[str, None] = None) -> str:
+        """
+        Builds the content-type based on the media type and charset.
+        """
+        if media_type is not None and media_type.startswith("text/"):
+            return f"{media_type}; charset={charset}"
+        return media_type
