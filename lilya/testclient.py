@@ -55,7 +55,7 @@ except ModuleNotFoundError:  # pragma: no cover
         "The lilya.testclient module requires the httpx package to be installed.\n"
         "You can install this with:\n"
         "    $ pip install httpx\n"
-    )
+    ) from None
 _PortalFactoryType = typing.Callable[[], typing.ContextManager[anyio.abc.BlockingPortal]]
 
 ASGIInstance = typing.Callable[[Receive, Send], typing.Awaitable[None]]
@@ -107,7 +107,7 @@ class WebSocketTestSession:
         self.accepted_subprotocol = None
         self.portal_factory = portal_factory
         self._receive_queue: "queue.Queue[Message]" = queue.Queue()
-        self._send_queue: "queue.Queue[Message | BaseException]" = queue.Queue()
+        self._send_queue: "queue.Queue[Union[Message, BaseException]]" = queue.Queue()
         self.extra_headers = None
 
     def __enter__(self) -> "WebSocketTestSession":
@@ -828,8 +828,8 @@ def create_client(
     permissions: Union[Sequence[Permission], None] = None,
     middleware: Union[Sequence[Any], None] = None,
     exception_handlers: Union[Mapping[Any, ExceptionHandler], None] = None,
-    on_startup: Sequence[Callable[[], Any]] | None = None,
-    on_shutdown: Sequence[Callable[[], Any]] | None = None,
+    on_startup: Union[Sequence[Callable[[], Any]], None] = None,
+    on_shutdown: Union[Sequence[Callable[[], Any]], None] = None,
     include_in_schema: bool = True,
     raise_server_exceptions: bool = True,
     lifespan: Optional[Lifespan[ApplicationType]] = None,
