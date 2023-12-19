@@ -84,6 +84,7 @@ class Lilya:
         self.middleware_stack: Union[ASGIApp, None] = None
         self.custom_middleware = [] if middleware is None else list(middleware)
         self.router: Router = Router(
+            routes=routes,
             redirect_slashes=redirect_slashes,
             on_startup=on_startup,
             on_shutdown=on_shutdown,

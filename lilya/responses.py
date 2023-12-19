@@ -64,11 +64,11 @@ class Response:
         if HeaderHelper.has_body_message(self.status_code):
             headers.setdefault("content-type", self.media_type)
 
-        self._headers = headers  # type: ignore
-        return (  # type: ignore
+        raw_headers = [  # type: ignore
             (name.encode("latin-1"), f"{value}".encode(errors="surrogateescape"))
             for name, value in headers.items()
-        )
+        ]
+        self._headers = raw_headers  # type: ignore
 
     @property
     def headers(self) -> Headers:
@@ -136,16 +136,17 @@ class Response:
             samesite=samesite,
         )
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        await send(
-            {
-                "type": "http.response.start",
-                "status": self.status_code,
-                "headers": self._headers,
-            }
-        )
-        await send({"type": "http.response.body", "body": self.body})
+    @property
+    def message(self) -> Dict[str, Any]:
+        return {
+            "type": "http.response.start",
+            "status": self.status_code,
+            "headers": self._headers,
+        }
 
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        await send(self.message)
+        await send({"type": "http.response.body", "body": self.body})
         if self.background is not None:
             await self.background()
 
