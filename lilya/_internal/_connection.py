@@ -2,7 +2,7 @@ from typing import Any, Dict, Iterator, Mapping, NoReturn, Union, cast
 
 from lilya._internal._message import Address
 from lilya._internal._parsers import cookie_parser
-from lilya.datastructures import URL, MutableHeaders, QueryParam, State
+from lilya.datastructures import URL, Header, QueryParam, State
 from lilya.enums import ScopeType
 from lilya.exceptions import ImproperlyConfigured
 from lilya.routing import Router
@@ -53,7 +53,7 @@ class Connection(Mapping[str, Any]):
         self.scope = scope
         self._url: Union[URL, None] = None
         self._base_url: Union[URL, None] = None
-        self._headers: Union[MutableHeaders, None] = None
+        self._headers: Union[Header, None] = None
         self._state: Union[State, None] = None
         self._query_params: Union[QueryParam, None] = None
         self._cookies: Union[Dict[str, str], None] = None
@@ -91,9 +91,9 @@ class Connection(Mapping[str, Any]):
         return self._base_url
 
     @property
-    def headers(self) -> MutableHeaders:
+    def headers(self) -> Header:
         if self._headers is None:
-            self._headers = MutableHeaders(scope=self.scope)
+            self._headers = Header(scope=self.scope)
         return self._headers
 
     @property

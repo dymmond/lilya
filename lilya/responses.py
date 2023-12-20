@@ -31,7 +31,7 @@ from lilya._internal._helpers import HeaderHelper
 from lilya.background import Task
 from lilya.compat import md5_hexdigest
 from lilya.concurrency import iterate_in_threadpool
-from lilya.datastructures import URL, MutableHeaders
+from lilya.datastructures import URL, Header
 from lilya.enums import Event, HTTPMethod, MediaType
 from lilya.types import Receive, Scope, Send
 
@@ -62,8 +62,8 @@ class Response:
         self.background = background
         self.cookies = cookies
         self.body = self.make_response(content)
-        self._headers: Union[MutableHeaders, List[MutableHeaders]] = []
-        self._raw_headers: [List[Any]] = []
+        self._headers: Union[Header, List[Header]] = []
+        self._raw_headers: List[Any] = []
         self.make_headers(headers)
 
     def make_response(self, content: Any) -> Union[bytes, str]:
@@ -78,12 +78,14 @@ class Response:
             return json.dumps(content)
         return content.encode(self.charset)  # type: ignore
 
-    def make_headers(self, content_headers: Union[Mapping[str, str], None] = None) -> None:
+    def make_headers(
+        self, content_headers: Union[Mapping[str, str], Dict[str, str], None] = None
+    ) -> None:
         """
         Initialises the headers by builing the proper conditions and
         restrictions based on RFC specification.
         """
-        headers: Dict[str, str] = {} if content_headers is None else content_headers
+        headers: Dict[str, str] = {} if content_headers is None else content_headers  # type: ignore
 
         if HeaderHelper.has_entity_header_status(self.status_code):
             headers = HeaderHelper.remove_entity_headers(headers)
@@ -93,16 +95,16 @@ class Response:
             )
             headers.setdefault("content-type", content_type)
 
-        raw_headers = [  # type: ignore
+        raw_headers = [
             (name.encode("latin-1"), f"{value}".encode(errors="surrogateescape"))
             for name, value in headers.items()
         ]
         self._headers = raw_headers  # type: ignore
 
     @property
-    def headers(self) -> MutableHeaders:
+    def headers(self) -> Header:
         if self._headers is not None:
-            self._headers = MutableHeaders(raw=self._headers)  # type: ignore
+            self._headers = Header(self._headers)  # type: ignore
         return self._headers
 
     def set_cookie(

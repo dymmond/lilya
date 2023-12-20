@@ -7,7 +7,7 @@ from tempfile import SpooledTemporaryFile
 from typing import Dict
 from urllib.parse import unquote, unquote_plus
 
-from lilya.datastructures import FormData, Headers, UploadFile
+from lilya.datastructures import FormData, Header, UploadFile
 
 try:
     import multipart
@@ -63,7 +63,7 @@ class MultiPartException(Exception):
 
 
 class FormParser:
-    def __init__(self, headers: Headers, stream: typing.AsyncGenerator[bytes, None]) -> None:
+    def __init__(self, headers: Header, stream: typing.AsyncGenerator[bytes, None]) -> None:
         assert (
             multipart is not None
         ), "The `python-multipart` library must be installed to use form parsing."
@@ -137,7 +137,7 @@ class MultiPartParser:
 
     def __init__(
         self,
-        headers: Headers,
+        headers: Header,
         stream: typing.AsyncGenerator[bytes, None],
         *,
         max_files: typing.Union[int, float] = 1000,
@@ -221,7 +221,7 @@ class MultiPartParser:
                 file=tempfile,  # type: ignore[arg-type]
                 size=0,
                 filename=filename,
-                headers=Headers(raw=self._current_part.item_headers),
+                headers=Header(raw=self._current_part.item_headers),
             )
         else:
             self._current_fields += 1

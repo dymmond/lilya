@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import ABC
 from copy import copy
 from dataclasses import dataclass
 from functools import lru_cache
@@ -8,239 +9,173 @@ from typing import (
     Any,
     BinaryIO,
     Dict,
-    ItemsView,
+    Generator,
+    Generic,
     Iterable,
     Iterator,
-    KeysView,
     List,
     Mapping,
-    MutableMapping,
     Optional,
     Sequence,
     Tuple,
     TypeVar,
     Union,
-    ValuesView,
     cast,
 )
 from urllib.parse import SplitResult, parse_qsl, urlencode, urlsplit, urlunsplit
 
-from lilya.concurrency import run_in_threadpool
+from anyio.to_thread import run_sync
+from multidict import MultiDict as BaseMultiDict
+from multidict import MultiDictProxy, MultiMapping
+
 from lilya.enums import DefaultPort, HTTPType, ScopeType, WebsocketType
 from lilya.types import Scope
 
-_KeyType = TypeVar("_KeyType")
-_CovariantValueType = TypeVar("_CovariantValueType", covariant=True)
+T = TypeVar("T")
 
 
-class ImmutableMultiDict(Mapping[_KeyType, _CovariantValueType]):
-    _dict: Dict[_KeyType, _CovariantValueType]
+class MultiMixin(Generic[T], MultiMapping[T], ABC):
+    """Mixin providing common methods for multi dicts"""
 
+    def dump(self) -> Dict[str, Any]:
+        """
+        Returns the dictionary without duplicates.
+        """
+        return dict(self.items())
+
+    def dump_list(self) -> List[Any]:
+        """
+        Returns the dictionary without duplicates.
+        """
+        return list(self.dump().items())
+
+    def dict(self) -> Dict[str, List[Any]]:
+        """Return the multi-dict as a dict of lists.
+
+        Returns:
+            A dict of lists
+        """
+        return {k: self.getall(k) for k in set(self.keys())}
+
+    def multi_items(self) -> Generator[tuple[str, T], None, None]:
+        """Get all keys and values, including duplicates.
+
+        Returns:
+            A list of tuples containing key-value pairs
+        """
+        for key in set(self):
+            for value in self.getall(key):
+                yield key, value
+
+    def get_multi_items(self) -> List[Any]:
+        """
+        Returns a list of values from the multi items
+        """
+        return list(self.multi_items())
+
+
+class MultiDict(BaseMultiDict, MultiMixin[T], Generic[T]):
     def __init__(
         self,
-        *args: Union[
-            ImmutableMultiDict[_KeyType, _CovariantValueType],
-            Mapping[_KeyType, _CovariantValueType],
-            Iterable[Tuple[_KeyType, _CovariantValueType]],
-        ],
+        args: Union[MultiMapping, Mapping[str, T], Iterable[tuple[str, T]], None] = None,
         **kwargs: Any,
     ) -> None:
-        assert len(args) < 2, "Too many arguments."
+        """Initialize MultiDict from a MultiMapping, :class:`Mapping <Mapping>` or an iterable of tuples.
 
-        value: Any = args[0] if args else []
-        if kwargs:
-            value = (
-                ImmutableMultiDict(value).multi_items() + ImmutableMultiDict(kwargs).multi_items()
-            )
+        Args:
+            args: Mapping-like structure to create the MultiDict from
+        """
+        super().__init__(args or {})
 
-        if not value:
-            _items: List[Tuple[Any, Any]] = []
-        elif hasattr(value, "multi_items"):
-            value = cast(ImmutableMultiDict[_KeyType, _CovariantValueType], value)
-            _items = list(value.multi_items())
-        elif hasattr(value, "items"):
-            value = cast(Mapping[_KeyType, _CovariantValueType], value)
-            _items = list(value.items())
-        else:
-            value = cast(List[Tuple[Any, Any]], value)
-            _items = list(value)
+    def immutable(self) -> ImmutableMultiDict[T]:
+        """Create an immutable dict view.
 
-        self._dict = dict(_items)
-        self._list = _items
+        Returns:
+            An immutable multi dict
+        """
+        return ImmutableMultiDict[T](self)
 
-    def getlist(self, key: Any) -> List[_CovariantValueType]:
-        return [item_value for item_key, item_value in self._list if item_key == key]
+    def getlist(self, key: Any) -> List[Any]:
+        return [item_value for item_key, item_value in list(self.multi_items()) if item_key == key]
 
-    def keys(self) -> KeysView[_KeyType]:
-        return self._dict.keys()
-
-    def values(self) -> ValuesView[_CovariantValueType]:
-        return self._dict.values()
-
-    def items(self) -> ItemsView[_KeyType, _CovariantValueType]:
-        return self._dict.items()
-
-    def multi_items(self) -> List[Tuple[_KeyType, _CovariantValueType]]:
-        return list(self._list)
-
-    def __getitem__(self, key: _KeyType) -> _CovariantValueType:
-        return self._dict[key]
-
-    def __contains__(self, key: Any) -> bool:
-        return key in self._dict
-
-    def __iter__(self) -> Iterator[_KeyType]:
-        return iter(self.keys())
-
-    def __len__(self) -> int:
-        return len(self._dict)
+    def poplist(self, key: Any) -> List[Any]:
+        values = [v for k, v in list(self.multi_items()) if k == key]
+        self.pop(key)
+        return values
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, self.__class__):
             return False
-        return sorted(self._list) == sorted(other._list)
+        return sorted(self.multi_items()) == sorted(other.multi_items())
 
     def __repr__(self) -> str:
-        class_name = self.__class__.__name__
-        items = self.multi_items()
-        return f"{class_name}({items!r})"
+        """
+        Visual representation of the object sorted by keys.
+        """
+        items = sorted(self.items())
+        return f"{self.__class__.__name__}({items!r})"
 
 
-class MultiDict(ImmutableMultiDict[Any, Any]):
-    def __setitem__(self, key: Any, value: Any) -> None:
-        self.setlist(key, [value])
-
-    def __delitem__(self, key: Any) -> None:
-        self._list = [(k, v) for k, v in self._list if k != key]
-        del self._dict[key]
-
-    def pop(self, key: Any, default: Any = None) -> Any:
-        self._list = [(k, v) for k, v in self._list if k != key]
-        return self._dict.pop(key, default)
-
-    def popitem(self) -> Tuple[Any, Any]:
-        key, value = self._dict.popitem()
-        self._list = [(k, v) for k, v in self._list if k != key]
-        return key, value
-
-    def poplist(self, key: Any) -> List[Any]:
-        values = [v for k, v in self._list if k == key]
-        self.pop(key)
-        return values
-
-    def clear(self) -> None:
-        self._dict.clear()
-        self._list.clear()
-
-    def setdefault(self, key: Any, default: Any = None) -> Any:
-        if key not in self:
-            self._dict[key] = default
-            self._list.append((key, default))
-
-        return self[key]
-
-    def setlist(self, key: Any, values: List[Any]) -> None:
-        if not values:
-            self.pop(key, None)
-        else:
-            existing_items = [(k, v) for (k, v) in self._list if k != key]
-            self._list = existing_items + [(key, value) for value in values]
-            self._dict[key] = values[-1]
-
-    def append(self, key: Any, value: Any) -> None:
-        self._list.append((key, value))
-        self._dict[key] = value
-
-    def update(
-        self,
-        *args: Union[
-            MultiDict,
-            Mapping[Any, Any],
-            List[Tuple[Any, Any]],
-        ],
-        **kwargs: Any,
-    ) -> None:
-        value = MultiDict(*args, **kwargs)
-        existing_items = [(k, v) for (k, v) in self._list if k not in value.keys()]
-        self._list = existing_items + value.multi_items()
-        self._dict.update(value)
-
-
-class Headers(Mapping[str, str]):
-    """
-    An immutable, case-insensitive multidict.
-    """
-
+class ImmutableMultiDict(MultiDictProxy[T], MultiMixin[T], Generic[T]):
     def __init__(
         self,
-        headers: Optional[Mapping[str, str]] = None,
-        raw: Optional[List[Tuple[bytes, bytes]]] = None,
-        scope: Optional[MutableMapping[str, Any]] = None,
+        args: Union[MultiMapping, Mapping[str, Any], Iterable[tuple[str, Any]], Any, None] = None,
+        **kwargs: Any,
     ) -> None:
-        self._list: List[Tuple[bytes, bytes]] = []
-        if headers is not None:
-            assert raw is None, 'Cannot set both "headers" and "raw".'
-            assert scope is None, 'Cannot set both "headers" and "scope".'
-            self._list = [
-                (key.lower().encode("latin-1"), value.encode("latin-1"))
-                for key, value in headers.items()
-            ]
-        elif raw is not None:
-            assert scope is None, 'Cannot set both "raw" and "scope".'
-            self._list = raw
-        elif scope is not None:
-            # scope["headers"] isn't necessarily a list
-            # it might be a tuple or other iterable
-            self._list = scope["headers"] = list(scope["headers"])
-
-    @property
-    def raw(self) -> List[Tuple[bytes, bytes]]:
-        return list(self._list)
-
-    def keys(self) -> List[str]:  # type: ignore[override]
-        return [key.decode("latin-1") for key, value in self._list]
-
-    def values(self) -> List[str]:  # type: ignore[override]
-        return [value.decode("latin-1") for key, value in self._list]
-
-    def items(self) -> List[Tuple[str, str]]:  # type: ignore[override]
-        return [(key.decode("latin-1"), value.decode("latin-1")) for key, value in self._list]
-
-    def getlist(self, key: str) -> List[str]:
-        get_header_key = key.lower().encode("latin-1")
-        return [
-            item_value.decode("latin-1")
-            for item_key, item_value in self._list
-            if item_key == get_header_key
-        ]
-
-    def mutablecopy(self) -> MutableHeaders:
-        return MutableHeaders(raw=self._list[:])
-
-    def __getitem__(self, key: str) -> str:
-        get_header_key = key.lower().encode("latin-1")
-        for header_key, header_value in self._list:
-            if header_key == get_header_key:
-                return header_value.decode("latin-1")
-        raise KeyError(key)
-
-    def __contains__(self, key: Any) -> bool:
-        get_header_key = key.lower().encode("latin-1")
-        for header_key, _header_value in self._list:
-            if header_key == get_header_key:
-                return True
-        return False
-
-    def __iter__(self) -> Iterator[Any]:
-        return iter(self.keys())
-
-    def __len__(self) -> int:
-        return len(self._list)
+        super().__init__(BaseMultiDict(args or {}))
 
     def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, Headers):
+        if not isinstance(other, self.__class__):
             return False
-        return sorted(self._list) == sorted(other._list)
+        return sorted(self.multi_items()) == sorted(other.multi_items())
+
+    def mutablecopy(self) -> MultiDict[T]:
+        """Create a mutable copy as a.
+
+        Returns:
+            A mutable MultiDict.
+        """
+        return MultiDict(list(self.multi_items()))
+
+    def __repr__(self) -> str:
+        """
+        Visual representation of the object sorted by keys.
+        """
+        items = sorted(self.items())
+        return f"{self.__class__.__name__}({items!r})"
+
+
+class FormMultiDict(ImmutableMultiDict[Any]):
+    """MultiDict for form data."""
+
+    async def close(self) -> None:
+        """Close all files in the multi-dict.
+
+        Returns:
+            None
+        """
+        for _, value in self.multi_items():
+            if isinstance(value, UploadFile):
+                await value.close()
+
+
+class Header(MultiDict):
+    """Container used for both request and response headers.
+    It is a subclass of  [CIMultiDict](https://multidict.readthedocs.io/en/stable/multidict.html#cimultidictproxy)
+
+    Please checkout [the MultiDict documentation](https://multidict.readthedocs.io/en/stable/multidict.html#multidict)
+    for more details about how to use the object.
+    """  # noqa: E501
+
+    def __getattr__(self, key: str) -> str:
+        if key.startswith("_"):
+            return cast(str, self.__getattribute__(key))
+        key = key.rstrip("_").replace("_", "-")
+        return ",".join(self.getall(key, default=[]))
+
+    def get_all(self, key: str) -> List[Any]:
+        """Convenience method mapped to getall()."""
+        return self.getall(key, default=[])
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
@@ -248,94 +183,6 @@ class Headers(Mapping[str, str]):
         if len(as_dict) == len(self):
             return f"{class_name}({as_dict!r})"
         return f"{class_name}(raw={self.raw!r})"
-
-
-class MutableHeaders(Headers):
-    def __setitem__(self, key: str, value: str) -> None:
-        """
-        Set the header `key` to `value`, removing any duplicate entries.
-        Retains insertion order.
-        """
-        set_key = key.lower().encode("latin-1")
-        set_value = value.encode("latin-1")
-
-        found_indexes: List[int] = []
-        for idx, (item_key, _item_value) in enumerate(self._list):
-            if item_key == set_key:
-                found_indexes.append(idx)
-
-        for idx in reversed(found_indexes[1:]):
-            del self._list[idx]
-
-        if found_indexes:
-            idx = found_indexes[0]
-            self._list[idx] = (set_key, set_value)
-        else:
-            self._list.append((set_key, set_value))
-
-    def __delitem__(self, key: str) -> None:
-        """
-        Remove the header `key`.
-        """
-        del_key = key.lower().encode("latin-1")
-
-        pop_indexes: List[int] = []
-        for idx, (item_key, _item_value) in enumerate(self._list):
-            if item_key == del_key:
-                pop_indexes.append(idx)
-
-        for idx in reversed(pop_indexes):
-            del self._list[idx]
-
-    def __ior__(self, other: Mapping[str, str]) -> MutableHeaders:
-        if not isinstance(other, Mapping):
-            raise TypeError(f"Expected a mapping but got {other.__class__.__name__}")
-        self.update(other)
-        return self
-
-    def __or__(self, other: Mapping[str, str]) -> MutableHeaders:
-        if not isinstance(other, Mapping):
-            raise TypeError(f"Expected a mapping but got {other.__class__.__name__}")
-        new = self.mutablecopy()
-        new.update(other)
-        return new
-
-    @property
-    def raw(self) -> List[Tuple[bytes, bytes]]:
-        return self._list
-
-    def setdefault(self, key: str, value: str) -> str:
-        """
-        If the header `key` does not exist, then set it to `value`.
-        Returns the header value.
-        """
-        set_key = key.lower().encode("latin-1")
-        set_value = value.encode("latin-1")
-
-        # breakpoint()
-        for _idx, (item_key, item_value) in enumerate(self._list):
-            if item_key == set_key:
-                return item_value.decode("latin-1")
-        self._list.append((set_key, set_value))
-        return value
-
-    def update(self, other: Mapping[str, str]) -> None:
-        for key, val in other.items():
-            self[key] = val
-
-    def append(self, key: str, value: str) -> None:
-        """
-        Append a header, preserving any duplicate entries.
-        """
-        append_key = key.lower().encode("latin-1")
-        append_value = value.encode("latin-1")
-        self._list.append((append_key, append_value))
-
-    def add_vary_header(self, vary: str) -> None:
-        existing = self.get("vary")
-        if existing is not None:
-            vary = ", ".join([existing, vary])
-        self["vary"] = vary
 
 
 @dataclass(init=True)
@@ -527,7 +374,7 @@ class URL:
     def include_query_params(self, **kwargs: Any) -> URL:
         params = MultiDict(parse_qsl(self.query, keep_blank_values=True))
         params.update({str(key): str(value) for key, value in kwargs.items()})
-        query = urlencode(params.multi_items())
+        query = urlencode(sorted(params.multi_items()))
         return self.replace(query=query)
 
     def remove_query_params(self, keys: Union[str, Sequence[str]]) -> URL:
@@ -536,7 +383,7 @@ class URL:
         params = MultiDict(parse_qsl(self.query, keep_blank_values=True))
         for key in keys:
             params.pop(key, None)
-        query = urlencode(params.multi_items())
+        query = urlencode(sorted(params.multi_items()))
         return self.replace(query=query)
 
     def replace_query_params(self, **kwargs: Any) -> URL:
@@ -656,37 +503,27 @@ class Secret:
         return bool(self.value)
 
 
-class QueryParam(ImmutableMultiDict[str, str]):
+class QueryParam(ImmutableMultiDict[Any]):
     """
     An immutable multidict.
     """
 
     def __init__(
         self,
-        *args: Union[
-            ImmutableMultiDict[Any, Any],
-            Mapping[Any, Any],
-            List[Tuple[Any, Any]],
-            str,
-            bytes,
-        ],
-        **kwargs: Any,
+        *args: Union[MultiMapping, Mapping[str, Any], Iterable[tuple[str, Any]], None],
     ) -> None:
         assert len(args) < 2, "Too many arguments."
-
         value = args[0] if args else []
 
-        if isinstance(value, str):
-            super().__init__(parse_qsl(value, keep_blank_values=True), **kwargs)
-        elif isinstance(value, bytes):
-            super().__init__(parse_qsl(value.decode("latin-1"), keep_blank_values=True), **kwargs)
+        if isinstance(value, str):  # type: ignore
+            super().__init__(parse_qsl(value, keep_blank_values=True))  # type: ignore
+        elif isinstance(value, bytes):  # type: ignore
+            super().__init__(parse_qsl(value.decode("latin-1"), keep_blank_values=True))  # type: ignore
         else:
-            super().__init__(*args, **kwargs)  # type: ignore[arg-type]
-        self._list = [(str(k), str(v)) for k, v in self._list]
-        self._dict = {str(k): str(v) for k, v in self._dict.items()}
+            super().__init__(*args)
 
     def __str__(self) -> str:
-        return urlencode(self._list)
+        return urlencode(sorted(self.multi_items()))
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
@@ -705,47 +542,43 @@ class UploadFile:
         *,
         size: Optional[int] = None,
         filename: Optional[str] = None,
-        headers: Optional[Headers] = None,
+        headers: Optional[Header] = None,
     ) -> None:
         self.filename = filename
         self.file = file
         self.size = size
-        self.headers = headers or Headers()
+        self.headers = headers or Header()
 
     @property
     def content_type(self) -> Optional[str]:
         return self.headers.get("content-type", None)
 
     @property
-    def _in_memory(self) -> bool:
-        rolled_to_disk = getattr(self.file, "_rolled", True)
-        return not rolled_to_disk
+    def in_memory(self) -> bool:
+        return getattr(self.file, "_rolled", False)
 
-    async def write(self, data: bytes) -> None:
+    async def write(self, data: bytes) -> int:
         if self.size is not None:
             self.size += len(data)
 
-        if self._in_memory:
-            self.file.write(data)
-        else:
-            await run_in_threadpool(self.file.write, data)
+        if self.in_memory:
+            return await run_sync(self.file.write, data)
+        return self.file.write(data)
 
     async def read(self, size: int = -1) -> bytes:
-        if self._in_memory:
+        if self.in_memory:
             return self.file.read(size)
-        return await run_in_threadpool(self.file.read, size)
+        return await run_sync(self.file.read, size)
 
-    async def seek(self, offset: int) -> None:
-        if self._in_memory:
-            self.file.seek(offset)
-        else:
-            await run_in_threadpool(self.file.seek, offset)
+    async def seek(self, offset: int) -> int:
+        if self.in_memory:
+            return await run_sync(self.file.seek, offset)
+        return self.file.seek(offset)
 
-    async def close(self) -> None:
-        if self._in_memory:
-            self.file.close()
-        else:
-            await run_in_threadpool(self.file.close)
+    async def close(self) -> int:
+        if self.in_memory:
+            return await run_sync(self.file.close)
+        return self.file.close()
 
     def __repr__(self) -> str:
         return (
@@ -756,7 +589,7 @@ class UploadFile:
         )
 
 
-class FormData(ImmutableMultiDict[str, Union[UploadFile, str]]):
+class FormData(ImmutableMultiDict[Any]):
     """
     An immutable multidict, containing both file uploads and text input.
     """

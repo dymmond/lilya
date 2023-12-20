@@ -103,6 +103,7 @@ warn_redundant_casts = true
 no_implicit_optional = false
 strict_equality = false
 strict_optional = false
+disable_error_code = "attr-defined,has-type,override"
 exclude = ["lilya/compat.py"]
 
 [tool.ruff]

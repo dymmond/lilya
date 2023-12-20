@@ -32,7 +32,7 @@ except TypeError:  # pragma: no cover
         return hashlib.md5(data).hexdigest()
 
 
-def is_async_callable(obj: Any) -> Any:
+def is_async_callable(obj: Any) -> bool:
     """
     Validates if a given object is an async callable or not.
     """

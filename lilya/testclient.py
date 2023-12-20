@@ -309,8 +309,8 @@ class _TestClientTransport(httpx.BaseTransport):
                 return {"type": "http.disconnect"}
 
             body = request.read()
-            if isinstance(body, str):
-                body_bytes: bytes = body.encode("utf-8")  # pragma: no cover
+            if isinstance(body, str):  # type: ignore
+                body_bytes: bytes = body.encode("utf-8")  # type: ignore
             elif body is None:
                 body_bytes = b""  # pragma: no cover
             elif isinstance(body, GeneratorType):
@@ -333,7 +333,6 @@ class _TestClientTransport(httpx.BaseTransport):
 
             if message["type"] == "http.response.start":
                 assert not response_started, 'Received multiple "http.response.start" messages.'
-                # breakpoint()
                 raw_kwargs["status_code"] = message["status"]
                 raw_kwargs["headers"] = [
                     (key.decode(), value.decode()) for key, value in message.get("headers", [])
@@ -448,7 +447,7 @@ class TestClient(httpx.Client):
             message = (
                 "The `allow_redirects` argument is deprecated. " "Use `follow_redirects` instead."
             )
-            warnings.warn(message, DeprecationWarning)
+            warnings.warn(message, DeprecationWarning, stacklevel=2)
             redirect = allow_redirects
         if follow_redirects is not None:
             redirect = follow_redirects
@@ -854,7 +853,7 @@ def create_client(
     ```
     """
     return TestClient(
-        app=Lilya(
+        app=Lilya(  # type: ignore
             settings_config=settings_config,
             debug=debug,
             routes=cast("Any", routes if isinstance(routes, list) else [routes]),
