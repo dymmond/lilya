@@ -30,3 +30,7 @@ Lifespan = Union[StatelessLifespan[ApplicationType], StatefulLifespan[Applicatio
 HTTPExceptionHandler = Callable[[Any, Exception], Union[Any, Awaitable[Any]]]
 WebSocketExceptionHandler = Callable[[Any, Exception], Awaitable[None]]
 ExceptionHandler = Union[HTTPExceptionHandler, WebSocketExceptionHandler]
+
+
+class Empty:
+    """A placeholder class."""

@@ -51,3 +51,37 @@ class WebsocketType(BaseEnum):
     @classmethod
     def get_https_types(cls) -> List[str]:
         return [str(value) for value in cls]
+
+
+class Event(BaseEnum):
+    HTTP_REQUEST = "http.request"
+    HTTP_DISCONNECT = "http.disconnect"
+    WEBSOCKET_CONNECT = "websocket.connect"
+    WEBSOCKET_DISCONNECT = "websocket.disconnect"
+
+
+class Match(IntEnum):
+    NONE = 0
+    PARTIAL = 1
+    FULL = 2
+
+
+class HTTPMethod(BaseEnum):
+    GET = "GET"
+    POST = "POST"
+    PUT = "PUT"
+    PATCH = "PATCH"
+    DELETE = "DELETE"
+    HEAD = "HEAD"
+    OPTIONS = "OPTIONS"
+    TRACE = "TRACE"
+
+
+class MediaType(BaseEnum):
+    JSON = "application/json"
+    HTML = "text/html"
+    TEXT = "text/plain"
+    MESSAGE_PACK = "application/x-msgpack"
+    TEXT_CHARSET = "text/plain; charset=utf-8"
+    PNG = "image/png"
+    OCTET = "application/octet-stream"

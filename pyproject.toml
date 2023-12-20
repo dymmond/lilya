@@ -56,6 +56,7 @@ Source = "https://github.com/dymmond/lilya"
 test = [
     "autoflake>=2.0.2,<3.0.0",
     "black>=23.3.0,<24.0.0",
+    "httpx>=0.25.2,<1.0.0",
     "isort>=5.12.0,<6.0.0",
     "mypy==1.7.1",
     "pytest>=7.2.2,<8.0.0",
@@ -65,7 +66,7 @@ test = [
     "trio==0.23.2",
 ]
 
-dev = ["ipdb>=0.13.13,<1.0.0", "pre-commit>=3.3.1,<4.0.0"]
+dev = ["ipdb>=0.13.13,<1.0.0", "pre-commit>=3.3.1,<4.0.0", "devtools>=0.12.2"]
 
 doc = [
     "griffe-typingdoc>=0.2.2,<1.0",
@@ -102,6 +103,7 @@ warn_redundant_casts = true
 no_implicit_optional = false
 strict_equality = false
 strict_optional = false
+disable_error_code = "attr-defined,has-type,override"
 exclude = ["lilya/compat.py"]
 
 [tool.ruff]
