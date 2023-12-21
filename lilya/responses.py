@@ -42,9 +42,9 @@ ContentStream = Union[AsyncContentStream, SyncContentStream]
 
 
 class Response:
-    media_type = None
-    status_code = None
-    charset = "utf-8"
+    media_type: Union[str, None] = None
+    status_code: Union[int, None] = None
+    charset: str = "utf-8"
 
     def __init__(
         self,

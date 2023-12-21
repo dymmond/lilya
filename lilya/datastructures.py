@@ -25,6 +25,7 @@ from typing import (
 from urllib.parse import SplitResult, parse_qsl, urlencode, urlsplit, urlunsplit
 
 from anyio.to_thread import run_sync
+from multidict import CIMultiDict
 from multidict import MultiDict as BaseMultiDict
 from multidict import MultiDictProxy, MultiMapping
 
@@ -50,19 +51,11 @@ class MultiMixin(Generic[T], MultiMapping[T], ABC):
         return list(self.dump().items())
 
     def dict(self) -> Dict[str, List[Any]]:
-        """Return the multi-dict as a dict of lists.
-
-        Returns:
-            A dict of lists
-        """
+        """Return the multi-dict as a dict of lists."""
         return {k: self.getall(k) for k in set(self.keys())}
 
     def multi_items(self) -> Generator[tuple[str, T], None, None]:
-        """Get all keys and values, including duplicates.
-
-        Returns:
-            A list of tuples containing key-value pairs
-        """
+        """Get all keys and values, including duplicates."""
         for key in set(self):
             for value in self.getall(key):
                 yield key, value
@@ -80,11 +73,6 @@ class MultiDict(BaseMultiDict, MultiMixin[T], Generic[T]):
         args: Union[MultiMapping, Mapping[str, T], Iterable[tuple[str, T]], None] = None,
         **kwargs: Any,
     ) -> None:
-        """Initialize MultiDict from a MultiMapping, :class:`Mapping <Mapping>` or an iterable of tuples.
-
-        Args:
-            args: Mapping-like structure to create the MultiDict from
-        """
         super().__init__(args or {})
 
     def to_immutable(self) -> ImmutableMultiDict[T]:
@@ -145,22 +133,17 @@ class FormMultiDict(ImmutableMultiDict[Any]):
     """MultiDict for form data."""
 
     async def close(self) -> None:
-        """Close all files in the multi-dict.
-
-        Returns:
-            None
-        """
+        """Close all files in the FormMultiDict."""
         for _, value in self.multi_items():
             if isinstance(value, UploadFile):
                 await value.close()
 
 
-class Header(MultiDict):
+class Header(MultiDict, CIMultiDict):  # type: ignore
     """Container used for both request and response headers.
     It is a subclass of  [CIMultiDict](https://multidict.readthedocs.io/en/stable/multidict.html#cimultidictproxy)
 
-    Please checkout [the MultiDict documentation](https://multidict.readthedocs.io/en/stable/multidict.html#multidict)
-    for more details about how to use the object.
+    Please checkout [the MultiDict documentation](https://multidict.readthedocs.io/en/stable/multidict.html#multidict) for more details.
     """
 
     def __init__(
@@ -191,16 +174,15 @@ class Header(MultiDict):
 
         if isinstance(value, dict):
             for k, v in value.items():
-                if isinstance(k, bytes):
-                    headers.append((k.decode("latin-1"), v))
-                else:
-                    headers.append((k, v))
+                key = k.decode("latin-1") if isinstance(k, bytes) else k
+                value = v.decode("latin-1") if isinstance(v, bytes) else v
+                headers.append((key, value))
         if isinstance(value, list):
             for k, v in value:
-                if isinstance(k, bytes):
-                    headers.append((k.decode("latin-1"), v))
-                else:
-                    headers.append((k, v))
+                key = k.decode("latin-1") if isinstance(k, bytes) else k
+                value = v.decode("latin-1") if isinstance(v, bytes) else v
+                headers.append((key, value))
+
         return headers
 
     def __getattr__(self, key: str) -> str:
@@ -313,7 +295,6 @@ class URL:
         return instance
 
     @classmethod
-    @lru_cache
     def build_from_scope(cls, scope: Scope) -> URL:
         """
         Builds the URL from the Scope.

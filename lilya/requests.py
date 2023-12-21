@@ -61,17 +61,17 @@ class Request(Connection):
         if self._body is Empty:
             if self._stream_consumed:
                 raise RuntimeError("Stream consumed")
-            while event := await self.receive():
+            while not self._stream_consumed:
+                event = await self._receive()
                 if event["type"] == Event.HTTP_REQUEST:
+                    if not event.get("more_body", False):
+                        self._stream_consumed = True
                     if event["body"]:
                         yield event["body"]
 
-                    if not event.get("more_body", False):
-                        break
-
-                if event["type"] == Event.HTTP_DISCONNECT:
+                elif event["type"] == Event.HTTP_DISCONNECT:
+                    self._is_disconnected = True
                     raise ClientDisconnect()
-            self.is_connected = False
             yield b""
 
         else:
