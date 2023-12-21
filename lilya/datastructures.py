@@ -108,11 +108,6 @@ class ImmutableMultiDict(MultiDictProxy[T], MultiMixin[T], Generic[T]):
     ) -> None:
         super().__init__(BaseMultiDict(args or {}))
 
-    def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, self.__class__):
-            return False
-        return sorted(self.multi_items()) == sorted(other.multi_items())
-
     def mutablecopy(self) -> MultiDict[T]:
         """Create a mutable copy as a.
 
@@ -120,6 +115,11 @@ class ImmutableMultiDict(MultiDictProxy[T], MultiMixin[T], Generic[T]):
             A mutable MultiDict.
         """
         return MultiDict(list(self.multi_items()))
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, self.__class__):
+            return False
+        return sorted(self.multi_items()) == sorted(other.multi_items())
 
     def __repr__(self) -> str:
         """
@@ -499,12 +499,12 @@ class CommaSeparatedStr:
     def __iter__(self) -> Iterator[str]:
         return iter(self.items)
 
+    def __str__(self) -> str:
+        return ", ".join(repr(item) for item in self)
+
     def __repr__(self) -> str:
         items = list(self)
         return f"{self.__class__.__name__}({items!r})"
-
-    def __str__(self) -> str:
-        return ", ".join(repr(item) for item in self)
 
 
 @dataclass
@@ -517,11 +517,11 @@ class Secret:
 
     value: str = None
 
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}('***********')"
-
     def __str__(self) -> str:
         return self.value
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}('***********')"
 
     def __bool__(self) -> bool:
         return bool(self.value)
