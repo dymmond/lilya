@@ -164,3 +164,6 @@ class Request(Connection):
                 for value in self.headers.getlist(name):
                     raw_headers.append((name.encode("latin-1"), value.encode("latin-1")))
             await self._send({"type": "http.response.push", "path": path, "headers": raw_headers})
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}()"

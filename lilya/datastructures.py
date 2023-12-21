@@ -165,7 +165,47 @@ class Header(MultiDict):
 
     Please checkout [the MultiDict documentation](https://multidict.readthedocs.io/en/stable/multidict.html#multidict)
     for more details about how to use the object.
-    """  # noqa: E501
+    """
+
+    def __init__(
+        self,
+        *args: Union[
+            MultiMapping,
+            Mapping[str, Any],
+            Iterable[tuple[str, Any]],
+            List[Tuple[bytes, bytes]],
+            None,
+        ],
+    ) -> None:
+        assert len(args) < 2, "Too many arguments."
+        value = args[0] if args else []
+
+        assert isinstance(
+            value, (dict, list)
+        ), "The headers must be in the format of a list of tuples or dicttionary."
+
+        headers: List[Tuple[str, Any]] = self.parse_headers(value)
+        super().__init__(headers)
+
+    def parse_headers(self, value: Any) -> List[Tuple[str, Any]]:
+        """
+        Parses the headers and validates if its bytes or str.
+        """
+        headers: List[Tuple[str, Any]] = []
+
+        if isinstance(value, dict):
+            for k, v in value.items():
+                if isinstance(k, bytes):
+                    headers.append((k.decode("latin-1"), v))
+                else:
+                    headers.append((k, v))
+        if isinstance(value, list):
+            for k, v in value:
+                if isinstance(k, bytes):
+                    headers.append((k.decode("latin-1"), v))
+                else:
+                    headers.append((k, v))
+        return headers
 
     def __getattr__(self, key: str) -> str:
         if key.startswith("_"):
@@ -177,12 +217,19 @@ class Header(MultiDict):
         """Convenience method mapped to getall()."""
         return self.getall(key, default=[])
 
+    @classmethod
+    def from_scope(cls, scope: Any) -> Header:
+        """
+        Builds the headers from the scope.
+        """
+        return cls(scope["headers"])
+
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
         as_dict = dict(self.items())
         if len(as_dict) == len(self):
             return f"{class_name}({as_dict!r})"
-        return f"{class_name}(raw={self.raw!r})"
+        return class_name
 
 
 @dataclass(init=True)

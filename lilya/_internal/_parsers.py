@@ -1,10 +1,9 @@
 import http.cookies
-import typing
 from dataclasses import dataclass, field
 from enum import Enum
 from functools import lru_cache
 from tempfile import SpooledTemporaryFile
-from typing import Dict
+from typing import AsyncGenerator, Dict, List, Optional, Tuple, Union
 from urllib.parse import unquote, unquote_plus
 
 from lilya.datastructures import FormData, Header, UploadFile
@@ -18,19 +17,24 @@ except ModuleNotFoundError:  # pragma: nocover
 
 
 @lru_cache(1024)
-def cookie_parser(cookie_string: str) -> Dict[str, str]:
+def cookie_parser(cookie_string: Union[str, bytes]) -> Dict[str, str]:
+    """
+    Parses a `Cookie` HTTP header into a dictionary of key/value pairs.
+    This function has been adapted from Django 3.1.0.
+    """
+    if isinstance(cookie_string, bytes):
+        cookie_string = cookie_string.decode()
+
     cookies = [
         cookie.split("=", 1) if "=" in cookie else ("", cookie)
         for cookie in cookie_string.split(";")
     ]
-    output: Dict[str, str] = {
-        k: unquote(http.cookies._unquote(v))
-        for k, v in filter(
-            lambda x: x[0] or x[1],
-            ((k.strip(), v.strip()) for k, v in cookies),
-        )
+
+    cookie_dict: Dict[str, str] = {
+        cookie[0].strip(): unquote(http.cookies._unquote(cookie[1].strip())) for cookie in cookies
     }
-    return output
+
+    return cookie_dict
 
 
 class FormMessage(Enum):
@@ -43,11 +47,11 @@ class FormMessage(Enum):
 
 @dataclass
 class MultipartPart:
-    content_disposition: typing.Optional[bytes] = None
+    content_disposition: Optional[bytes] = None
     field_name: str = ""
     data: bytes = b""
-    file: typing.Optional[UploadFile] = None
-    item_headers: typing.List[typing.Tuple[bytes, bytes]] = field(default_factory=list)
+    file: Optional[UploadFile] = None
+    item_headers: List[Tuple[bytes, bytes]] = field(default_factory=list)
 
 
 def _user_safe_decode(src: bytes, codec: str) -> str:
@@ -63,13 +67,13 @@ class MultiPartException(Exception):
 
 
 class FormParser:
-    def __init__(self, headers: Header, stream: typing.AsyncGenerator[bytes, None]) -> None:
+    def __init__(self, headers: Header, stream: AsyncGenerator[bytes, None]) -> None:
         assert (
             multipart is not None
         ), "The `python-multipart` library must be installed to use form parsing."
         self.headers = headers
         self.stream = stream
-        self.messages: typing.List[typing.Tuple[FormMessage, bytes]] = []
+        self.messages: List[Tuple[FormMessage, bytes]] = []
 
     def on_field_start(self) -> None:
         message = (FormMessage.FIELD_START, b"")
@@ -106,7 +110,7 @@ class FormParser:
         field_name = b""
         field_value = b""
 
-        items: typing.List[typing.Tuple[str, typing.Union[str, UploadFile]]] = []
+        items: List[Tuple[str, Union[str, UploadFile]]] = []
 
         # Feed the parser with data from the request.
         async for chunk in self.stream:
@@ -138,10 +142,10 @@ class MultiPartParser:
     def __init__(
         self,
         headers: Header,
-        stream: typing.AsyncGenerator[bytes, None],
+        stream: AsyncGenerator[bytes, None],
         *,
-        max_files: typing.Union[int, float] = 1000,
-        max_fields: typing.Union[int, float] = 1000,
+        max_files: Union[int, float] = 1000,
+        max_fields: Union[int, float] = 1000,
     ) -> None:
         assert (
             multipart is not None
@@ -150,16 +154,16 @@ class MultiPartParser:
         self.stream = stream
         self.max_files = max_files
         self.max_fields = max_fields
-        self.items: typing.List[typing.Tuple[str, typing.Union[str, UploadFile]]] = []
+        self.items: List[Tuple[str, Union[str, UploadFile]]] = []
         self._current_files = 0
         self._current_fields = 0
         self._current_partial_header_name: bytes = b""
         self._current_partial_header_value: bytes = b""
         self._current_part = MultipartPart()
         self._charset = ""
-        self._file_parts_to_write: typing.List[typing.Tuple[MultipartPart, bytes]] = []
-        self._file_parts_to_finish: typing.List[MultipartPart] = []
-        self._files_to_close_on_error: typing.List[SpooledTemporaryFile[bytes]] = []
+        self._file_parts_to_write: List[Tuple[MultipartPart, bytes]] = []
+        self._file_parts_to_finish: List[MultipartPart] = []
+        self._files_to_close_on_error: List[SpooledTemporaryFile[bytes]] = []
 
     def on_part_begin(self) -> None:
         self._current_part = MultipartPart()
@@ -221,7 +225,7 @@ class MultiPartParser:
                 file=tempfile,  # type: ignore[arg-type]
                 size=0,
                 filename=filename,
-                headers=Header(raw=self._current_part.item_headers),
+                headers=Header(self._current_part.item_headers),
             )
         else:
             self._current_fields += 1
