@@ -1,14 +1,17 @@
 import io
 from tempfile import SpooledTemporaryFile
-from typing import BinaryIO
+from typing import BinaryIO, Type, Union
 
 import pytest
+from pytest_mock import MockerFixture
 
 from lilya.datastructures import (
     URL,
     CommaSeparatedStr,
     FormData,
+    FormMultiDict,
     Header,
+    ImmutableMultiDict,
     MultiDict,
     QueryParam,
     Secret,
@@ -328,3 +331,47 @@ async def test_upload_file_repr_headers():
     stream = io.BytesIO(b"data")
     file = UploadFile(filename="file", file=stream, headers=Header({"foo": "bar"}))
     assert repr(file) == "UploadFile(filename='file', size=None, headers=Header({'foo': 'bar'}))"
+
+
+@pytest.mark.parametrize("multi_dict", [MultiDict, ImmutableMultiDict, Header, QueryParam])
+def test_multi_to_dict(multi_dict: Type[Union[MultiDict, ImmutableMultiDict]]) -> None:
+    multi = multi_dict([("a", "a"), ("a", "a2"), ("b", "b")])
+
+    assert multi.dict() == {"a": ["a", "a2"], "b": ["b"]}
+
+
+@pytest.mark.parametrize("multi_dict", [MultiDict, ImmutableMultiDict, Header, QueryParam])
+def test_multi_items(multi_dict: Type[Union[MultiDict, ImmutableMultiDict]]) -> None:
+    data = [("a", "a"), ("a", "a2"), ("b", "b")]
+    multi = multi_dict(data)
+
+    assert sorted(multi.multi_items()) == sorted(data)
+
+
+@pytest.mark.parametrize("multi_dict", [MultiDict, Header])
+def test_to_immutable(multi_dict) -> None:
+    data = [("a", "a"), ("a", "a2"), ("b", "b")]
+    multi = multi_dict[str](data)
+    assert multi.to_immutable().dict() == ImmutableMultiDict(data).dict()
+
+
+def test_to_immutable_multi_dict_as_mutable() -> None:
+    data = [("a", "a"), ("a", "a2"), ("b", "b")]
+    multi = ImmutableMultiDict[str](data)
+    assert multi.mutablecopy().dict() == MultiDict(data).dict()
+
+
+@pytest.mark.anyio
+async def test_form_multi_close(mocker: MockerFixture) -> None:
+    close = mocker.patch("lilya.datastructures.UploadFile.close")
+    stream = io.BytesIO(b"data")
+
+    multi_dict = FormMultiDict(
+        [
+            ("file", UploadFile(filename="file", file=stream)),
+            ("another-file", UploadFile(filename="another-file", file=stream)),
+        ]
+    )
+
+    await multi_dict.close()
+    assert close.call_count == 2

@@ -87,12 +87,8 @@ class MultiDict(BaseMultiDict, MultiMixin[T], Generic[T]):
         """
         super().__init__(args or {})
 
-    def immutable(self) -> ImmutableMultiDict[T]:
-        """Create an immutable dict view.
-
-        Returns:
-            An immutable multi dict
-        """
+    def to_immutable(self) -> ImmutableMultiDict[T]:
+        """Create an immutable dictionary view."""
         return ImmutableMultiDict[T](self)
 
     def getlist(self, key: Any) -> List[Any]:
@@ -583,18 +579,20 @@ class UploadFile:
     An uploaded file included as part of the request data.
     """
 
+    __slots__ = ("file", "size", "filename", "headers")
+
     def __init__(
         self,
-        file: BinaryIO,
         *,
+        file: BinaryIO,
         size: Optional[int] = None,
         filename: Optional[str] = None,
         headers: Optional[Header] = None,
     ) -> None:
         self.filename = filename
-        self.file = file
         self.size = size
         self.headers = headers or Header()
+        self.file = file
 
     @property
     def content_type(self) -> Optional[str]:
