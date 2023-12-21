@@ -9,9 +9,12 @@ import pytest
 
 from lilya import status
 from lilya.background import Task
+from lilya.requests import Request
 from lilya.responses import (
+    Error,
     FileResponse,
     JSONResponse,
+    Ok,
     RedirectResponse,
     Response,
     StreamingResponse,
@@ -26,6 +29,27 @@ def test_text_response(test_client_factory):
 
     client = test_client_factory(app)
     response = client.get("/")
+    assert response.text == "hello, world"
+
+
+def test_ok_response(test_client_factory):
+    async def app(scope, receive, send):
+        response = Ok("hello, world")
+        await response(scope, receive, send)
+
+    client = test_client_factory(app)
+    response = client.get("/")
+    assert response.json() == "hello, world"
+
+
+def test_error_response(test_client_factory):
+    async def app(scope, receive, send):
+        response = Error("hello, world")
+        await response(scope, receive, send)
+
+    client = test_client_factory(app)
+    response = client.get("/")
+    assert response.headers["content-type"] == "text/html; charset=utf-8"
     assert response.text == "hello, world"
 
 
@@ -50,7 +74,7 @@ def test_json_none_response(test_client_factory):
     assert response.content == b"null"
 
 
-def xtest_redirect_response(test_client_factory):
+def test_redirect_response(test_client_factory):
     async def app(scope, receive, send):
         if scope["path"] == "/":
             response = Response("hello, world", media_type="text/plain")
@@ -147,7 +171,7 @@ def test_sync_streaming_response(test_client_factory):
     assert response.text == "1, 2, 3, 4, 5"
 
 
-def xtest_response_headers(test_client_factory):
+def test_response_headers(test_client_factory):
     async def app(scope, receive, send):
         headers = {"x-header-1": "123", "x-header-2": "456"}
         response = Response("hello, world", media_type="text/plain", headers=headers)
@@ -172,7 +196,7 @@ def test_response_phrase(test_client_factory):
     assert response.reason_phrase == ""
 
 
-def xtest_file_response(tmpdir, test_client_factory):
+def test_file_response(tmpdir, test_client_factory):
     path = os.path.join(tmpdir, "xyz")
     content = b"<file content>" * 1000
     with open(path, "wb") as file:
@@ -212,51 +236,51 @@ def xtest_file_response(tmpdir, test_client_factory):
     assert filled_by_bg_task == "6, 7, 8, 9"
 
 
-# def test_file_response_with_directory_raises_error(tmpdir, test_client_factory):
-#     app = FileResponse(path=tmpdir, filename="example.png")
-#     client = test_client_factory(app)
-#     with pytest.raises(RuntimeError) as exc_info:
-#         client.get("/")
-#     assert "is not a file" in str(exc_info.value)
+def test_file_response_with_directory_raises_error(tmpdir, test_client_factory):
+    app = FileResponse(path=tmpdir, filename="example.png")
+    client = test_client_factory(app)
+    with pytest.raises(RuntimeError) as exc_info:
+        client.get("/")
+    assert "is not a file" in str(exc_info.value)
 
 
-# def test_file_response_with_missing_file_raises_error(tmpdir, test_client_factory):
-#     path = os.path.join(tmpdir, "404.txt")
-#     app = FileResponse(path=path, filename="404.txt")
-#     client = test_client_factory(app)
-#     with pytest.raises(RuntimeError) as exc_info:
-#         client.get("/")
-#     assert "does not exist" in str(exc_info.value)
+def test_file_response_with_missing_file_raises_error(tmpdir, test_client_factory):
+    path = os.path.join(tmpdir, "404.txt")
+    app = FileResponse(path=path, filename="404.txt")
+    client = test_client_factory(app)
+    with pytest.raises(RuntimeError) as exc_info:
+        client.get("/")
+    assert "does not exist" in str(exc_info.value)
 
 
-# def xtest_file_response_with_chinese_filename(tmpdir, test_client_factory):
-#     content = b"file content"
-#     filename = "你好.txt"  # probably "Hello.txt" in Chinese
-#     path = os.path.join(tmpdir, filename)
-#     with open(path, "wb") as f:
-#         f.write(content)
-#     app = FileResponse(path=path, filename=filename)
-#     client = test_client_factory(app)
-#     response = client.get("/")
-#     expected_disposition = "attachment; filename*=utf-8''%E4%BD%A0%E5%A5%BD.txt"
-#     assert response.status_code == status.HTTP_200_OK
-#     assert response.content == content
-#     assert response.headers["content-disposition"] == expected_disposition
+def test_file_response_with_chinese_filename(tmpdir, test_client_factory):
+    content = b"file content"
+    filename = "你好.txt"  # probably "Hello.txt" in Chinese
+    path = os.path.join(tmpdir, filename)
+    with open(path, "wb") as f:
+        f.write(content)
+    app = FileResponse(path=path, filename=filename)
+    client = test_client_factory(app)
+    response = client.get("/")
+    expected_disposition = "attachment; filename*=utf-8''%E4%BD%A0%E5%A5%BD.txt"
+    assert response.status_code == status.HTTP_200_OK
+    assert response.content == content
+    assert response.headers["content-disposition"] == expected_disposition
 
 
-# def xtest_file_response_with_inline_disposition(tmpdir, test_client_factory):
-#     content = b"file content"
-#     filename = "hello.txt"
-#     path = os.path.join(tmpdir, filename)
-#     with open(path, "wb") as f:
-#         f.write(content)
-#     app = FileResponse(path=path, filename=filename, content_disposition_type="inline")
-#     client = test_client_factory(app)
-#     response = client.get("/")
-#     expected_disposition = 'inline; filename="hello.txt"'
-#     assert response.status_code == status.HTTP_200_OK
-#     assert response.content == content
-#     assert response.headers["content-disposition"] == expected_disposition
+def test_file_response_with_inline_disposition(tmpdir, test_client_factory):
+    content = b"file content"
+    filename = "hello.txt"
+    path = os.path.join(tmpdir, filename)
+    with open(path, "wb") as f:
+        f.write(content)
+    app = FileResponse(path=path, filename=filename, content_disposition_type="inline")
+    client = test_client_factory(app)
+    response = client.get("/")
+    expected_disposition = 'inline; filename="hello.txt"'
+    assert response.status_code == status.HTTP_200_OK
+    assert response.content == content
+    assert response.headers["content-disposition"] == expected_disposition
 
 
 def test_set_cookie(test_client_factory, monkeypatch):
@@ -313,30 +337,30 @@ def test_expires_on_set_cookie(test_client_factory, monkeypatch, expires):
     assert cookie["mycookie"]["expires"] == "Thu, 22 Jan 2037 12:00:10 GMT"
 
 
-# def test_delete_cookie(test_client_factory):
-#     async def app(scope, receive, send):
-#         request = Request(scope, receive)
-#         response = Response("Hello, world!", media_type="text/plain")
-#         if request.cookies.get("mycookie"):
-#             response.delete_cookie("mycookie")
-#         else:
-#             response.set_cookie("mycookie", "myvalue")
-#         await response(scope, receive, send)
+def test_delete_cookie(test_client_factory):
+    async def app(scope, receive, send):
+        request = Request(scope, receive)
+        response = Response("Hello, world!", media_type="text/plain")
+        if request.cookies.get("mycookie"):
+            response.delete_cookie("mycookie")
+        else:
+            response.set_cookie("mycookie", "myvalue")
+        await response(scope, receive, send)
 
-#     client = test_client_factory(app)
-#     response = client.get("/")
-#     assert response.cookies["mycookie"]
-#     response = client.get("/")
-#     assert not response.cookies.get("mycookie")
+    client = test_client_factory(app)
+    response = client.get("/")
+    assert response.cookies["mycookie"]
+    response = client.get("/")
+    assert not response.cookies.get("mycookie")
 
 
-# def test_populate_headers(test_client_factory):
-#     app = Response(content="hi", headers={}, media_type="text/html")
-#     client = test_client_factory(app)
-#     response = client.get("/")
-#     assert response.text == "hi"
-#     assert response.headers["content-length"] == "2"
-#     assert response.headers["content-type"] == "text/html; charset=utf-8"
+def test_populate_headers(test_client_factory):
+    app = Response(content="hi", headers={}, media_type="text/html")
+    client = test_client_factory(app)
+    response = client.get("/")
+    assert response.text == "hi"
+    assert response.headers["content-type"] == "text/html; charset=utf-8"
+    assert response.headers["content-length"] == "2"
 
 
 def test_head_method(test_client_factory):
@@ -346,13 +370,13 @@ def test_head_method(test_client_factory):
     assert response.text == ""
 
 
-# def test_empty_response(test_client_factory):
-#     app = Response()
-#     client: TestClient = test_client_factory(app)
-#     response = client.get("/")
-#     assert response.content == b""
-#     assert response.headers["content-length"] == "0"
-#     assert "content-type" not in response.headers
+def test_empty_response(test_client_factory):
+    app = Response()
+    client: TestClient = test_client_factory(app)
+    response = client.get("/")
+    assert response.content == b""
+    assert response.headers["content-length"] == "0"
+    assert "content-type" not in response.headers
 
 
 def test_empty_204_response(test_client_factory):
@@ -362,23 +386,23 @@ def test_empty_204_response(test_client_factory):
     assert "content-length" not in response.headers
 
 
-# def test_non_empty_response(test_client_factory):
-#     app = Response(content="hi")
-#     client: TestClient = test_client_factory(app)
-#     response = client.get("/")
-#     assert response.headers["content-length"] == "2"
+def test_non_empty_response(test_client_factory):
+    app = Response(content="hi")
+    client: TestClient = test_client_factory(app)
+    response = client.get("/")
+    assert response.headers["content-length"] == "2"
 
 
-# def xtest_file_response_known_size(tmpdir, test_client_factory):
-#     path = os.path.join(tmpdir, "xyz")
-#     content = b"<file content>" * 1000
-#     with open(path, "wb") as file:
-#         file.write(content)
+def test_file_response_known_size(tmpdir, test_client_factory):
+    path = os.path.join(tmpdir, "xyz")
+    content = b"<file content>" * 1000
+    with open(path, "wb") as file:
+        file.write(content)
 
-#     app = FileResponse(path=path, filename="example.png")
-#     client: TestClient = test_client_factory(app)
-#     response = client.get("/")
-#     assert response.headers["content-length"] == str(len(content))
+    app = FileResponse(path=path, filename="example.png")
+    client: TestClient = test_client_factory(app)
+    response = client.get("/")
+    assert response.headers["content-length"] == str(len(content))
 
 
 def test_streaming_response_unknown_size(test_client_factory):

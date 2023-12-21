@@ -87,13 +87,13 @@ class Connection(Mapping[str, Any]):
             base_url_scope["path"] = "/"
             base_url_scope["query_string"] = b""
             base_url_scope["root_path"] = cast(URL, base_url_scope.get("root_path", ""))
-            self._base_url = URL.build_from_scope(scope=base_url_scope)  # type: ignore[arg-type]
+            self._base_url = URL.build_from_scope(scope=base_url_scope)
         return self._base_url
 
     @property
     def headers(self) -> Header:
         if self._headers is None:
-            self._headers = Header(scope=self.scope)
+            self._headers = Header.from_scope(scope=self.scope)
         return self._headers
 
     @property
@@ -107,7 +107,7 @@ class Connection(Mapping[str, Any]):
     def query_params(self) -> QueryParam:
         if self._query_params is None:
             self._query_params = QueryParam(self.scope["query_string"])
-        return self.query_params
+        return self._query_params
 
     @property
     def path_params(self) -> Dict[str, Any]:

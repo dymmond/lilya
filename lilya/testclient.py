@@ -334,9 +334,7 @@ class _TestClientTransport(httpx.BaseTransport):
             if message["type"] == "http.response.start":
                 assert not response_started, 'Received multiple "http.response.start" messages.'
                 raw_kwargs["status_code"] = message["status"]
-                raw_kwargs["headers"] = [
-                    (key.decode(), value.decode()) for key, value in message.get("headers", [])
-                ]
+                raw_kwargs["headers"] = list(message.get("headers", []))
                 response_started = True
             elif message["type"] == "http.response.body":
                 assert (

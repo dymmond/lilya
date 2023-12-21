@@ -25,6 +25,7 @@ from typing import (
 from urllib.parse import SplitResult, parse_qsl, urlencode, urlsplit, urlunsplit
 
 from anyio.to_thread import run_sync
+from multidict import CIMultiDict
 from multidict import MultiDict as BaseMultiDict
 from multidict import MultiDictProxy, MultiMapping
 
@@ -50,19 +51,11 @@ class MultiMixin(Generic[T], MultiMapping[T], ABC):
         return list(self.dump().items())
 
     def dict(self) -> Dict[str, List[Any]]:
-        """Return the multi-dict as a dict of lists.
-
-        Returns:
-            A dict of lists
-        """
+        """Return the multi-dict as a dict of lists."""
         return {k: self.getall(k) for k in set(self.keys())}
 
     def multi_items(self) -> Generator[tuple[str, T], None, None]:
-        """Get all keys and values, including duplicates.
-
-        Returns:
-            A list of tuples containing key-value pairs
-        """
+        """Get all keys and values, including duplicates."""
         for key in set(self):
             for value in self.getall(key):
                 yield key, value
@@ -80,19 +73,10 @@ class MultiDict(BaseMultiDict, MultiMixin[T], Generic[T]):
         args: Union[MultiMapping, Mapping[str, T], Iterable[tuple[str, T]], None] = None,
         **kwargs: Any,
     ) -> None:
-        """Initialize MultiDict from a MultiMapping, :class:`Mapping <Mapping>` or an iterable of tuples.
-
-        Args:
-            args: Mapping-like structure to create the MultiDict from
-        """
         super().__init__(args or {})
 
-    def immutable(self) -> ImmutableMultiDict[T]:
-        """Create an immutable dict view.
-
-        Returns:
-            An immutable multi dict
-        """
+    def to_immutable(self) -> ImmutableMultiDict[T]:
+        """Create an immutable dictionary view."""
         return ImmutableMultiDict[T](self)
 
     def getlist(self, key: Any) -> List[Any]:
@@ -149,23 +133,57 @@ class FormMultiDict(ImmutableMultiDict[Any]):
     """MultiDict for form data."""
 
     async def close(self) -> None:
-        """Close all files in the multi-dict.
-
-        Returns:
-            None
-        """
+        """Close all files in the FormMultiDict."""
         for _, value in self.multi_items():
             if isinstance(value, UploadFile):
                 await value.close()
 
 
-class Header(MultiDict):
+class Header(MultiDict, CIMultiDict):  # type: ignore
     """Container used for both request and response headers.
     It is a subclass of  [CIMultiDict](https://multidict.readthedocs.io/en/stable/multidict.html#cimultidictproxy)
 
-    Please checkout [the MultiDict documentation](https://multidict.readthedocs.io/en/stable/multidict.html#multidict)
-    for more details about how to use the object.
-    """  # noqa: E501
+    Please checkout [the MultiDict documentation](https://multidict.readthedocs.io/en/stable/multidict.html#multidict) for more details.
+    """
+
+    def __init__(
+        self,
+        *args: Union[
+            MultiMapping,
+            Mapping[str, Any],
+            Iterable[tuple[str, Any]],
+            List[Tuple[bytes, bytes]],
+            None,
+        ],
+    ) -> None:
+        assert len(args) < 2, "Too many arguments."
+        value = args[0] if args else []
+
+        assert isinstance(
+            value, (dict, list)
+        ), "The headers must be in the format of a list of tuples or dicttionary."
+
+        headers: List[Tuple[str, Any]] = self.parse_headers(value)
+        super().__init__(headers)
+
+    def parse_headers(self, value: Any) -> List[Tuple[str, Any]]:
+        """
+        Parses the headers and validates if its bytes or str.
+        """
+        headers: List[Tuple[str, Any]] = []
+
+        if isinstance(value, dict):
+            for k, v in value.items():
+                key = k.decode("latin-1") if isinstance(k, bytes) else k
+                value = v.decode("latin-1") if isinstance(v, bytes) else v
+                headers.append((key, value))
+        if isinstance(value, list):
+            for k, v in value:
+                key = k.decode("latin-1") if isinstance(k, bytes) else k
+                value = v.decode("latin-1") if isinstance(v, bytes) else v
+                headers.append((key, value))
+
+        return headers
 
     def __getattr__(self, key: str) -> str:
         if key.startswith("_"):
@@ -177,12 +195,19 @@ class Header(MultiDict):
         """Convenience method mapped to getall()."""
         return self.getall(key, default=[])
 
+    @classmethod
+    def from_scope(cls, scope: Any) -> Header:
+        """
+        Builds the headers from the scope.
+        """
+        return cls(scope["headers"])
+
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
         as_dict = dict(self.items())
         if len(as_dict) == len(self):
             return f"{class_name}({as_dict!r})"
-        return f"{class_name}(raw={self.raw!r})"
+        return class_name
 
 
 @dataclass(init=True)
@@ -270,7 +295,6 @@ class URL:
         return instance
 
     @classmethod
-    @lru_cache
     def build_from_scope(cls, scope: Scope) -> URL:
         """
         Builds the URL from the Scope.
@@ -536,18 +560,20 @@ class UploadFile:
     An uploaded file included as part of the request data.
     """
 
+    __slots__ = ("file", "size", "filename", "headers")
+
     def __init__(
         self,
-        file: BinaryIO,
         *,
+        file: BinaryIO,
         size: Optional[int] = None,
         filename: Optional[str] = None,
         headers: Optional[Header] = None,
     ) -> None:
         self.filename = filename
-        self.file = file
         self.size = size
         self.headers = headers or Header()
+        self.file = file
 
     @property
     def content_type(self) -> Optional[str]:

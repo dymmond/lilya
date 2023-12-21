@@ -42,9 +42,9 @@ ContentStream = Union[AsyncContentStream, SyncContentStream]
 
 
 class Response:
-    media_type = None
-    status_code = None
-    charset = "utf-8"
+    media_type: Union[str, None] = None
+    status_code: Union[int, None] = None
+    charset: str = "utf-8"
 
     def __init__(
         self,
@@ -62,8 +62,7 @@ class Response:
         self.background = background
         self.cookies = cookies
         self.body = self.make_response(content)
-        self._headers: Union[Header, List[Header]] = []
-        self._raw_headers: List[Any] = []
+        self.raw_headers: List[Any] = []
         self.make_headers(headers)
 
     def make_response(self, content: Any) -> Union[bytes, str]:
@@ -74,8 +73,6 @@ class Response:
             return b""
         if isinstance(content, bytes):
             return content
-        if self.media_type == MediaType.JSON:
-            return json.dumps(content)
         return content.encode(self.charset)  # type: ignore
 
     def make_headers(
@@ -93,18 +90,23 @@ class Response:
             content_type = HeaderHelper.get_content_type(
                 charset=self.charset, media_type=self.media_type
             )
-            headers.setdefault("content-type", content_type)
+            if hasattr(self, "body") and self.body is not None:
+                headers.setdefault("content-length", str(len(self.body)))
+
+            # Populates the content type if exists
+            if content_type is not None:
+                headers.setdefault("content-type", content_type)
 
         raw_headers = [
             (name.encode("latin-1"), f"{value}".encode(errors="surrogateescape"))
             for name, value in headers.items()
         ]
-        self._headers = raw_headers  # type: ignore
+        self.raw_headers = raw_headers
 
     @property
     def headers(self) -> Header:
-        if self._headers is not None:
-            self._headers = Header(self._headers)  # type: ignore
+        if not hasattr(self, "_headers"):
+            self._headers = Header(self.raw_headers)
         return self._headers
 
     def set_cookie(
@@ -145,7 +147,7 @@ class Response:
             ], "samesite must be either 'strict', 'lax' or 'none'"
             cookie[key]["samesite"] = samesite
         cookie_val = cookie.output(header="").strip()
-        self._headers.append((b"set-cookie", cookie_val.encode("latin-1")))  # type: ignore
+        self.headers.add("set-cookie", cookie_val.encode("latin-1"))
 
     def delete_cookie(
         self,
@@ -172,7 +174,7 @@ class Response:
         return {
             "type": "http.response.start",
             "status": self.status_code,
-            "headers": self._headers,
+            "headers": list(self.headers.multi_items()),
         }
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
@@ -181,13 +183,12 @@ class Response:
         if self.background is not None:
             await self.background()
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(media_type={self.media_type}, status_code={self.status_code}, charset={self.charset})"
+
 
 class HTMLResponse(Response):
     media_type = MediaType.HTML
-
-
-class Ok(Response):
-    media_type = MediaType.JSON
 
 
 class Error(Response):
@@ -226,6 +227,10 @@ class JSONResponse(Response):
             indent=None,
             separators=(",", ":"),
         ).encode(self.charset)
+
+
+class Ok(JSONResponse):
+    media_type = MediaType.JSON
 
 
 class RedirectResponse(Response):
