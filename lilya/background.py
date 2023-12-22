@@ -54,9 +54,9 @@ class Tasks(Task):
             await task()
 
     async def run_as_group(self) -> None:
-        async with anyio.create_task_group() as task_group:
+        async with anyio.create_task_group() as group:
             for task in self.tasks:
-                task_group.start_soon(task)
+                group.start_soon(task)
 
     async def __call__(self) -> None:
         if not self.as_group:

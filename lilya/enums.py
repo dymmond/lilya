@@ -1,7 +1,7 @@
 from enum import IntEnum
 from typing import Dict, List
 
-from lilya.conf.enums import BaseEnum
+from lilya.conf.enums import StrEnum
 
 
 class DefaultPort(IntEnum):
@@ -30,12 +30,12 @@ class DefaultPort(IntEnum):
         }
 
 
-class ScopeType(BaseEnum):
+class ScopeType(StrEnum):
     HTTP = "http"
     WEBSOCKET = "websocket"
 
 
-class HTTPType(BaseEnum):
+class HTTPType(StrEnum):
     HTTP = "http"
     HTTPS = "https"
 
@@ -44,7 +44,7 @@ class HTTPType(BaseEnum):
         return [str(value) for value in cls]
 
 
-class WebsocketType(BaseEnum):
+class WebsocketType(StrEnum):
     WS = "ws"
     WSS = "wss"
 
@@ -53,7 +53,7 @@ class WebsocketType(BaseEnum):
         return [str(value) for value in cls]
 
 
-class Event(BaseEnum):
+class Event(StrEnum):
     HTTP_REQUEST = "http.request"
     HTTP_DISCONNECT = "http.disconnect"
     WEBSOCKET_CONNECT = "websocket.connect"
@@ -66,7 +66,7 @@ class Match(IntEnum):
     FULL = 2
 
 
-class HTTPMethod(BaseEnum):
+class HTTPMethod(StrEnum):
     GET = "GET"
     POST = "POST"
     PUT = "PUT"
@@ -77,7 +77,7 @@ class HTTPMethod(BaseEnum):
     TRACE = "TRACE"
 
 
-class MediaType(BaseEnum):
+class MediaType(StrEnum):
     JSON = "application/json"
     HTML = "text/html"
     TEXT = "text/plain"

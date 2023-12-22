@@ -1,31 +1,14 @@
 from __future__ import annotations
 
-from dataclasses import asdict, astuple, dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from dataclasses import dataclass, field
+from typing import Any, Callable, Dict, List, Optional, Sequence, Union
 
+from dymmond_settings import Settings as BaseSettings
+from dymmond_settings.enums import EnvironmentType
 from typing_extensions import Annotated, Doc
 
 from lilya import __version__
-from lilya.conf.enums import EnvironmentType
 from lilya.types import ApplicationType, ExceptionHandler
-
-
-@dataclass
-class BaseSettings:
-    """
-    Base of all the settings for the system.
-    """
-
-    def dict(self, exclude_none: bool = False) -> Dict[str, Any]:
-        """
-        Dumps all the settings into a python dictionary.
-        """
-        if not exclude_none:
-            return asdict(self)
-        return {k: v for k, v in self.__dict__.items() if v is not None}
-
-    def tuple(self) -> Tuple[Any]:
-        return astuple(self)
 
 
 @dataclass
