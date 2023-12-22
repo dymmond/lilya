@@ -6,6 +6,7 @@ import pytest
 from anyio.abc import ObjectReceiveStream, ObjectSendStream
 
 from lilya import status
+from lilya.exceptions import WebSocketRuntimeError
 from lilya.testclient import TestClient
 from lilya.types import Receive, Scope, Send
 from lilya.websockets import WebSocket, WebSocketDisconnect, WebSocketState
@@ -324,7 +325,7 @@ def test_duplicate_close(test_client_factory):
         await websocket.close()
 
     client = test_client_factory(app)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(WebSocketRuntimeError):
         with client.websocket_connect("/"):
             pass  # pragma: nocover
 
@@ -338,7 +339,7 @@ def test_duplicate_disconnect(test_client_factory):
         message = await websocket.receive()
 
     client = test_client_factory(app)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(WebSocketRuntimeError):
         with client.websocket_connect("/") as websocket:
             websocket.close()
 
@@ -396,7 +397,7 @@ def test_send_json_invalid_mode(test_client_factory):
         await websocket.send_json({}, mode="invalid")
 
     client = test_client_factory(app)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(WebSocketRuntimeError):
         with client.websocket_connect("/"):
             pass  # pragma: nocover
 
@@ -408,7 +409,7 @@ def test_receive_json_invalid_mode(test_client_factory):
         await websocket.receive_json(mode="invalid")
 
     client = test_client_factory(app)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(WebSocketRuntimeError):
         with client.websocket_connect("/"):
             pass  # pragma: nocover
 
@@ -419,7 +420,7 @@ def test_receive_text_before_accept(test_client_factory):
         await websocket.receive_text()
 
     client = test_client_factory(app)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(WebSocketRuntimeError):
         with client.websocket_connect("/"):
             pass  # pragma: nocover
 
@@ -430,7 +431,7 @@ def test_receive_bytes_before_accept(test_client_factory):
         await websocket.receive_bytes()
 
     client = test_client_factory(app)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(WebSocketRuntimeError):
         with client.websocket_connect("/"):
             pass  # pragma: nocover
 
@@ -441,7 +442,7 @@ def test_receive_json_before_accept(test_client_factory):
         await websocket.receive_json()
 
     client = test_client_factory(app)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(WebSocketRuntimeError):
         with client.websocket_connect("/"):
             pass  # pragma: nocover
 
@@ -452,7 +453,7 @@ def test_send_before_accept(test_client_factory):
         await websocket.send({"type": "websocket.send"})
 
     client = test_client_factory(app)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(WebSocketRuntimeError):
         with client.websocket_connect("/"):
             pass  # pragma: nocover
 
@@ -464,7 +465,7 @@ def test_send_wrong_message_type(test_client_factory):
         await websocket.send({"type": "websocket.accept"})
 
     client = test_client_factory(app)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(WebSocketRuntimeError):
         with client.websocket_connect("/"):
             pass  # pragma: nocover
 
@@ -477,7 +478,7 @@ def test_receive_before_accept(test_client_factory):
         await websocket.receive()
 
     client = test_client_factory(app)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(WebSocketRuntimeError):
         with client.websocket_connect("/") as websocket:
             websocket.send({"type": "websocket.send"})
 
@@ -489,6 +490,6 @@ def test_receive_wrong_message_type(test_client_factory):
         await websocket.receive()
 
     client = test_client_factory(app)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(WebSocketRuntimeError):
         with client.websocket_connect("/") as websocket:
             websocket.send({"type": "websocket.connect"})

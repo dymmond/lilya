@@ -1,7 +1,8 @@
 import functools
-from typing import Any, AsyncIterator, Awaitable, Callable, Iterator, TypeVar
+from typing import Any, AsyncIterator, Awaitable, Callable, Iterable, TypeVar
 
 import anyio.to_thread
+from anyio import create_task_group, get_cancelled_exc_class, to_thread
 
 from lilya.compat import is_async_callable
 
@@ -26,37 +27,34 @@ def enforce_async_callable(func: Callable[..., Any]) -> Callable[..., Awaitable[
 
 class AsyncCallable:
     """
-    Creates an async callable and when called, runs in a threapool.
+    Creates an async callable and when called, runs in a thread pool.
     """
+
+    __slots__ = ("_callable", "default_kwargs")
 
     def __init__(self, func: Callable[..., Any], **kwargs: Any) -> None:
         self._callable = func
-        self.kwargs = kwargs
+        self.default_kwargs = kwargs
 
     def __call__(self, *args: Any, **kwargs: Any) -> Awaitable[T]:
-        values = kwargs if not self.kwargs else self.kwargs
-        return anyio.to_thread.run_sync(functools.partial(self._callable, **values), *args)
+        combined_kwargs = {**self.default_kwargs, **kwargs}
+        return anyio.to_thread.run_sync(
+            functools.partial(self._callable, **combined_kwargs), *args
+        )
 
     async def run_in_threadpool(self, *args: Any, **kwargs: Any) -> T:
         return await self(*args, **kwargs)
 
 
-class IterationStop(Exception):
-    ...
+async def iterate_in_threadpool(iterator: Iterable[T]) -> AsyncIterator[T]:
+    async def worker() -> AsyncIterator[T]:
+        for item in iterator:
+            yield item
 
-
-def _next(iterator: Iterator[T]) -> T:
-    try:
-        return next(iterator)
-    except StopIteration:
-        raise IterationStop from None
-
-
-async def iterate_in_threadpool(
-    iterator: Iterator[T],
-) -> AsyncIterator[T]:
-    while True:
+    async with create_task_group():
+        stream = await to_thread.run_sync(worker)
         try:
-            yield await anyio.to_thread.run_sync(_next, iterator)
-        except IterationStop:
-            break
+            async for item in stream:
+                yield item
+        except get_cancelled_exc_class():
+            ...

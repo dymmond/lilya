@@ -15,7 +15,7 @@ from typing import (
     Awaitable,
     Callable,
     Dict,
-    Iterator,
+    Iterable,
     List,
     Literal,
     Mapping,
@@ -36,7 +36,7 @@ from lilya.enums import Event, HTTPMethod, MediaType
 from lilya.types import Receive, Scope, Send
 
 Content = Union[str, bytes]
-SyncContentStream = Iterator[Content]
+SyncContentStream = Iterable[Content]
 AsyncContentStream = AsyncIterable[Content]
 ContentStream = Union[AsyncContentStream, SyncContentStream]
 
