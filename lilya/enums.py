@@ -58,6 +58,16 @@ class Event(StrEnum):
     HTTP_DISCONNECT = "http.disconnect"
     WEBSOCKET_CONNECT = "websocket.connect"
     WEBSOCKET_DISCONNECT = "websocket.disconnect"
+    WEBSOCKET_ACCEPT = "websocket.accept"
+    WEBSOCKET_RECEIVE = "websocket.receive"
+    WEBSOCKET_CLOSE = "websocket.close"
+    WEBSOCKET_SEND = "websocket.send"
+
+
+class MessageMode(StrEnum):
+    TEXT = "text"
+    BYTES = "bytes"
+    BINARY = "binary"
 
 
 class Match(IntEnum):
@@ -85,3 +95,9 @@ class MediaType(StrEnum):
     TEXT_CHARSET = "text/plain; charset=utf-8"
     PNG = "image/png"
     OCTET = "application/octet-stream"
+
+
+class WebSocketState(IntEnum):
+    CONNECTING = 0
+    CONNECTED = 1
+    DISCONNECTED = 2
