@@ -3,8 +3,10 @@ from __future__ import annotations
 import inspect
 from typing import Any, Callable, Dict, List, Sequence, Set, Tuple, Union
 
+from lilya.core.urls import include
 from lilya.datastructures import URLPath
 from lilya.enums import HTTPMethod, Match
+from lilya.exceptions import ImproperlyConfigured
 from lilya.middleware.base import Middleware
 from lilya.permissions.base import Permission
 from lilya.types import ASGIApp, Lifespan, Receive, Scope, Send
@@ -159,11 +161,89 @@ class Path(BasePath):
 
 
 class WebsocketPath(BasePath):
-    ...
+    def __init__(
+        self,
+        path: str,
+        handler: Callable[..., Any],
+        *,
+        methods: Union[List[str], None] = None,
+        name: Union[str, None] = None,
+        include_in_schema: bool = True,
+        middleware: Union[Sequence[Middleware], None] = None,
+        permissions: Union[Sequence[Permission], None] = None,
+    ) -> None:
+        assert path.startswith("/"), "Paths must start with '/'"
+        self.path = path
+        self.handler = handler
+        self.name = get_name(handler) if name is None else name
+        self.include_in_schema = include_in_schema
+        self.methods: Union[List[str], Set[str], None] = methods
 
 
 class Include(BasePath):
-    ...
+    __slots__ = (
+        "path",
+        "app",
+        "namespace",
+        "pattern",
+        "name",
+        "exception_handlers",
+        "permissions",
+        "middleware",
+    )
+
+    def __init__(
+        self,
+        path: str,
+        app: Union[ASGIApp, None] = None,
+        routes: Union[Sequence[BasePath], None] = None,
+        namespace: Union[str, None] = None,
+        pattern: Union[str, None] = None,
+        name: Union[str, None] = None,
+        *,
+        middleware: Union[Sequence[Middleware], None] = None,
+        permissions: Union[Sequence[Permission], None] = None,
+        include_in_schema: bool = True,
+    ) -> None:
+        assert path == "" or path.startswith("/"), "Routed paths must start with '/'"
+        assert (
+            app is not None or routes is not None
+        ), "Either 'app=...', or 'routes=' must be specified"
+        self.path = path.rstrip("/")
+
+        assert (
+            namespace is None or routes is None
+        ), "Either 'namespace=...' or 'routes=', not both."
+
+        if namespace and not isinstance(namespace, str):
+            raise ImproperlyConfigured("Namespace must be a string. Example: 'myapp.routes'.")
+
+        if pattern and not isinstance(pattern, str):
+            raise ImproperlyConfigured("Pattern must be a string. Example: 'route_patterns'.")
+
+        if pattern and routes:
+            raise ImproperlyConfigured("Pattern must be used only with namespace.")
+
+        if namespace is not None:
+            routes = include(namespace, pattern)
+
+        if app is not None:
+            self._base_app: ASGIApp = app
+        else:
+            self._base_app = Router(routes=routes)  # type: ignore
+        self.app = self._base_app
+
+        # if middleware is not None:
+        #     for cls, options in reversed(middleware):
+        #         self.app = cls(app=self.app, **options)
+
+        # if permissions is not None:
+        #     for cls, options in reversed(permissions):
+        #         self.app = cls(app=self.app, **options)
+        self.name = name
+        self.include_in_schema = include_in_schema
+        self.middleware = middleware if middleware is not None else list(middleware)
+        self.permissions = permissions if permissions is not None else list(permissions)
 
 
 class Host(BasePath):

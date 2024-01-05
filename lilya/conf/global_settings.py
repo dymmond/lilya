@@ -50,10 +50,29 @@ class Settings(BaseSettings):
         bool,
         Doc(
             """
-        If all the APIs of a Lylia Application should be included in the OpenAPI Schema.
-        """
+            If all the APIs of a Lylia Application should be included in the OpenAPI Schema.
+            """
         ),
     ] = field(default=True)
+
+    default_pattern: Annotated[
+        str,
+        Doc(
+            """
+            The default patterns used with the `Include` when looking up.
+            When nothing is specified or changed, it will default to lookup
+            for a `route_patterns` inside the specified namespace.
+
+            **Example**
+
+            ```python
+            from lilya.routing import Include
+
+            Include(path="/", namespace="myapp.urls")
+            ```
+            """
+        ),
+    ] = field(default="route_patterns")
 
     @property
     def routes(self) -> List[Any]:
