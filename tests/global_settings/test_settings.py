@@ -23,7 +23,7 @@ def test_test_tuple():
 
     settings_dict = settings.tuple()
 
-    assert len(settings_dict) == 4
+    assert len(settings_dict) == 5
 
 
 def test_conf_settings():
