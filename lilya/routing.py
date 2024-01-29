@@ -2,15 +2,31 @@ from __future__ import annotations
 
 import inspect
 import re
-from typing import Any, Callable, Dict, List, Pattern, Sequence, Set, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    List,
+    Pattern,
+    Sequence,
+    Set,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 from lilya.core.urls import include
 from lilya.datastructures import URLPath
-from lilya.enums import HTTPMethod, Match
+from lilya.enums import HTTPMethod, Match, ScopeType
 from lilya.exceptions import ImproperlyConfigured
 from lilya.middleware.base import Middleware
 from lilya.permissions.base import Permission
+from lilya.responses import PlainText
 from lilya.types import ASGIApp, Lifespan, Receive, Scope, Send
+from lilya.websockets import WebSocketClose
+
+T = TypeVar("T")
 
 
 class NoMatchFound(Exception):
@@ -35,16 +51,36 @@ def get_name(handler: Callable[..., Any]) -> str:
     )
 
 
-class Convertor:
+def replace_params(
+    path: str,
+    param_convertors: dict[str, Convertor[Any]],
+    path_params: dict[str, str],
+) -> tuple[str, dict[str, str]]:
+    for key, value in list(path_params.items()):
+        if "{" + key + "}" in path:
+            convertor = param_convertors[key]
+            value = convertor.to_string(value)
+            path = path.replace("{" + key + "}", value)
+            path_params.pop(key)
+    return path, path_params
+
+
+class Convertor(Generic[T]):
     def __init__(self, regex: str) -> None:
         self.regex = regex
+
+    def convert(self, value: str) -> T:
+        raise NotImplementedError()  # pragma: no cover
+
+    def to_string(self, value: T) -> str:
+        raise NotImplementedError()  # pragma: no cover
 
 
 # Regular expression pattern to match parameter placeholders
 PARAM_REGEX = re.compile(r"{([^:]+):([^}]+)}")
 
 # Available converter types
-CONVERTOR_TYPES = {
+CONVERTOR_TYPES: Dict[str, Convertor] = {
     "str": Convertor("[^/]+"),
     "int": Convertor(r"\d+"),
 }
@@ -129,6 +165,20 @@ class BasePath:
         """
         raise NotImplementedError()  # pragma: no cover
 
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        match, child_scope = self.matches(scope)
+        if match == Match.NONE:
+            if scope["type"] == ScopeType.HTTP:
+                response = PlainText("Not Found", status_code=404)
+                await response(scope, receive, send)
+            elif scope["type"] == "websocket":
+                websocket_close = WebSocketClose()
+                await websocket_close(scope, receive, send)
+            return
+
+        scope.update(child_scope)
+        await self.dispatch(scope, receive, send)
+
 
 class Router:
     """
@@ -158,15 +208,15 @@ class Router:
         self.middleware = middleware if middleware is not None else list(middleware)
         self.permissions = permissions if permissions is not None else list(permissions)
 
-        # # Execute the middlewares
-        # if middleware is not None:
-        #     for cls, options in reversed(middleware):
-        #         self.middleware_stack = cls(app=self.app, **options)
+        # Execute the middlewares
+        if middleware is not None:
+            for cls, options in reversed(middleware):
+                self.middleware_stack = cls(app=self.app, **options)
 
-        # # Execute the permissions
-        # if permissions is not None:
-        #     for cls, options in reversed(permissions):
-        #         self.permission_stack = cls(app=self.app, **options)
+        # Execute the permissions
+        if permissions is not None:
+            for cls, options in reversed(permissions):
+                self.permission_stack = cls(app=self.app, **options)
 
     async def raise_404(self, scope: Scope, receive: Receive, send: Send) -> None: ...
 
@@ -229,6 +279,21 @@ class Path(BasePath):
             if HTTPMethod.GET in self.methods:
                 self.methods.add(HTTPMethod.HEAD)
 
+        self.path_regex, self.path_format, self.param_convertors = compile_path(path)
+
+    async def path_for(self, name: str, /, **path_params: Any) -> URLPath:
+        seen_params = set(path_params.keys())
+        expected_params = set(self.param_convertors.keys())
+
+        if name != self.name or seen_params != expected_params:
+            raise NoMatchFound(name, path_params)
+
+        path, remaining_params = replace_params(
+            self.path_format, self.param_convertors, path_params
+        )
+        assert not remaining_params
+        return URLPath(path=path, protocol="http")
+
 
 class WebsocketPath(BasePath):
     def __init__(
@@ -248,6 +313,16 @@ class WebsocketPath(BasePath):
         self.name = get_name(handler) if name is None else name
         self.include_in_schema = include_in_schema
         self.methods: Union[List[str], Set[str], None] = methods
+
+        # Execute the middlewares
+        if middleware is not None:
+            for cls, options in reversed(middleware):
+                self.app = cls(app=self.app, **options)
+
+        # Execute the permissions
+        if permissions is not None:
+            for cls, options in reversed(permissions):
+                self.app = cls(app=self.app, **options)
 
 
 class Include(BasePath):

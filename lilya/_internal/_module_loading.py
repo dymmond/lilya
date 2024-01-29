@@ -1,6 +1,13 @@
 import inspect
+import sys
 from importlib import import_module
-from typing import Any, ParamSpec
+from typing import Any
+
+if sys.version_info >= (3, 10):  # pragma: no cover
+    from typing import ParamSpec
+else:  # pragma: no cover
+    from typing_extensions import ParamSpec
+
 
 P = ParamSpec("P")
 

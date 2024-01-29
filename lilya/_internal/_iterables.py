@@ -1,4 +1,10 @@
-from typing import Any, Iterator, ParamSpec
+import sys
+from typing import Any, Iterator
+
+if sys.version_info >= (3, 10):  # pragma: no cover
+    from typing import ParamSpec
+else:  # pragma: no cover
+    from typing_extensions import ParamSpec
 
 P = ParamSpec("P")
 

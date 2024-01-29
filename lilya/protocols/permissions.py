@@ -1,4 +1,9 @@
-from typing import ParamSpec
+import sys
+
+if sys.version_info >= (3, 10):  # pragma: no cover
+    from typing import ParamSpec
+else:  # pragma: no cover
+    from typing_extensions import ParamSpec
 
 from typing_extensions import Protocol, runtime_checkable
 
