@@ -182,10 +182,10 @@ class WebSocket(WebsocketMixin):
 
         text = json.dumps(data, separators=(",", ":"), ensure_ascii=False)
 
-        await self.send(
-            {"type": Event.WEBSOCKET_SEND, "text": text}
-        ) if mode == MessageMode.TEXT else await self.send(
-            {"type": Event.WEBSOCKET_SEND, "bytes": text.encode("utf-8")}
+        (
+            await self.send({"type": Event.WEBSOCKET_SEND, "text": text})
+            if mode == MessageMode.TEXT
+            else await self.send({"type": Event.WEBSOCKET_SEND, "bytes": text.encode("utf-8")})
         )
 
     async def close(self, code: int = 1000, reason: Union[str, None] = None) -> None:

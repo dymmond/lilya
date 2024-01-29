@@ -1,6 +1,7 @@
 """
 Cases copied from Starlette implementation
 """
+
 import sys
 from typing import List, Optional
 

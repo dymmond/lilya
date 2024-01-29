@@ -67,5 +67,4 @@ class ImproperlyConfigured(HTTPException, ValueError):
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
 
 
-class WebSocketRuntimeError(RuntimeError):
-    ...
+class WebSocketRuntimeError(RuntimeError): ...

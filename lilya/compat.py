@@ -9,8 +9,7 @@ T = TypeVar("T")
 
 
 class SupportsAsyncClose(Protocol):
-    async def close(self) -> None:
-        ...  # pragma: no cover
+    async def close(self) -> None: ...  # pragma: no cover
 
 
 SupportsAsyncCloseType = TypeVar(

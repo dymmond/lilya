@@ -39,8 +39,7 @@ async def empty_send(message: Message) -> NoReturn:  # pragma: no cover
     raise RuntimeError()
 
 
-class ClientDisconnect(Exception):
-    ...
+class ClientDisconnect(Exception): ...
 
 
 class Connection(Mapping[str, Any]):

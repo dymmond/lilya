@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import inspect
-from typing import Any, Callable, Dict, List, Sequence, Set, Tuple, Union
+import re
+from typing import Any, Callable, Dict, List, Pattern, Sequence, Set, Tuple, Union
 
 from lilya.core.urls import include
 from lilya.datastructures import URLPath
@@ -32,6 +33,76 @@ def get_name(handler: Callable[..., Any]) -> str:
         if inspect.isroutine(handler) or inspect.isclass(handler)
         else handler.__class__.__name__
     )
+
+
+class Convertor:
+    def __init__(self, regex: str) -> None:
+        self.regex = regex
+
+
+# Regular expression pattern to match parameter placeholders
+PARAM_REGEX = re.compile(r"{([^:]+):([^}]+)}")
+
+# Available converter types
+CONVERTOR_TYPES = {
+    "str": Convertor("[^/]+"),
+    "int": Convertor(r"\d+"),
+}
+
+
+def compile_path(path: str) -> Tuple[Pattern[str], str, Dict[str, Convertor]]:
+    """
+    Compile a path or host string into a three-tuple of (regex, format, {param_name:convertor}).
+
+    Args:
+        path (str): The path or host string.
+
+    Returns:
+        Tuple[Pattern[str], str, Dict[str, Convertor[Any]]]: The compiled regex pattern, format string,
+        and a dictionary of parameter names and converters.
+    """
+    is_host = not path.startswith("/")
+    path_regex = "^"
+    path_format = ""
+    duplicated_params = set()
+
+    idx = 0
+    param_convertors = {}
+
+    for match in PARAM_REGEX.finditer(path):
+        param_name, convertor_type = match.groups("str")
+        convertor_type = convertor_type.lstrip(":")
+
+        assert convertor_type in CONVERTOR_TYPES, f"Unknown path convertor '{convertor_type}'"
+        convertor = CONVERTOR_TYPES[convertor_type]
+
+        path_regex += re.escape(path[idx : match.start()])
+        path_regex += f"(?P<{param_name}>{convertor.regex})"
+
+        path_format += path[idx : match.start()]
+        path_format += "{%s}" % param_name
+
+        if param_name in param_convertors:
+            duplicated_params.add(param_name)
+
+        param_convertors[param_name] = convertor
+        idx = match.end()
+
+    if duplicated_params:
+        names = ", ".join(sorted(duplicated_params))
+        ending = "s" if len(duplicated_params) > 1 else ""
+        raise ValueError(f"Duplicated param name{ending} {names} at path {path}")
+
+    if is_host:
+        # Align with `Host.matches()` behavior, which ignores port.
+        hostname = path[idx:].split(":")[0]
+        path_regex += re.escape(hostname) + "$"
+    else:
+        path_regex += re.escape(path[idx:]) + "$"
+
+    path_format += path[idx:]
+
+    return re.compile(path_regex), path_format, param_convertors
 
 
 class BasePath:
@@ -97,8 +168,7 @@ class Router:
         #     for cls, options in reversed(permissions):
         #         self.permission_stack = cls(app=self.app, **options)
 
-    async def raise_404(self, scope: Scope, receive: Receive, send: Send) -> None:
-        ...
+    async def raise_404(self, scope: Scope, receive: Receive, send: Send) -> None: ...
 
     def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         for route in self.routes:
@@ -240,11 +310,11 @@ class Include(BasePath):
         # if permissions is not None:
         #     for cls, options in reversed(permissions):
         #         self.app = cls(app=self.app, **options)
+
         self.name = name
         self.include_in_schema = include_in_schema
         self.middleware = middleware if middleware is not None else list(middleware)
         self.permissions = permissions if permissions is not None else list(permissions)
 
 
-class Host(BasePath):
-    ...
+class Host(BasePath): ...
