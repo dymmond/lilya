@@ -9,7 +9,7 @@ from lilya import status
 from lilya._internal._path import clean_path, compile_path, get_route_path, replace_params
 from lilya._internal._responses import BaseHandler
 from lilya.core.urls import include
-from lilya.datastructures import URLPath
+from lilya.datastructures import Header, URLPath
 from lilya.enums import HTTPMethod, Match, ScopeType
 from lilya.exceptions import HTTPException, ImproperlyConfigured
 from lilya.middleware.base import Middleware
@@ -137,6 +137,16 @@ class Path(BaseHandler, BasePath):
     ```
     """
 
+    __slots__ = (
+        "path",
+        "handler",
+        "methods",
+        "name",
+        "include_in_schema",
+        "middleware",
+        "permissions",
+    )
+
     def __init__(
         self,
         path: str,
@@ -168,15 +178,8 @@ class Path(BaseHandler, BasePath):
             if methods is None:
                 methods = {HTTPMethod.GET}
 
-        # Execute the middlewares
-        if middleware is not None:
-            for cls, options in reversed(middleware):
-                self.app = cls(app=self.app, **options)
-
-        # Execute the permissions
-        if permissions is not None:
-            for cls, options in reversed(permissions):
-                self.app = cls(app=self.app, **options)
+        self._apply_middleware(middleware)
+        self._apply_permissions(permissions)
 
         if self.methods is not None:
             self.methods = {method.upper() for method in methods}
@@ -186,6 +189,34 @@ class Path(BaseHandler, BasePath):
         self.path_regex, self.path_format, self.param_convertors, self.path_start = compile_path(
             self.path
         )
+
+    def _apply_middleware(self, middleware: Union[Sequence[Middleware], None]) -> None:
+        """
+        Apply middleware to the app.
+
+        Args:
+            middleware (Union[Sequence[Middleware], None]): The middleware.
+
+        Returns:
+            None
+        """
+        if middleware is not None:
+            for cls, options in reversed(middleware):
+                self.app = cls(app=self.app, **options)
+
+    def _apply_permissions(self, permissions: Union[Sequence[Permission], None]) -> None:
+        """
+        Apply permissions to the app.
+
+        Args:
+            permissions (Union[Sequence[Permission], None]): The permissions.
+
+        Returns:
+            None
+        """
+        if permissions is not None:
+            for cls, options in reversed(permissions):
+                self.app = cls(app=self.app, **options)
 
     async def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         """
@@ -294,12 +325,20 @@ class Path(BaseHandler, BasePath):
 
 
 class WebsocketPath(BaseHandler, BasePath):
+    __slots__ = (
+        "path",
+        "handler",
+        "name",
+        "include_in_schema",
+        "middleware",
+        "permissions",
+    )
+
     def __init__(
         self,
         path: str,
         handler: Callable[..., Any],
         *,
-        methods: Union[List[str], None] = None,
         name: Union[str, None] = None,
         include_in_schema: bool = True,
         middleware: Union[Sequence[Middleware], None] = None,
@@ -311,7 +350,6 @@ class WebsocketPath(BaseHandler, BasePath):
         self.handler = handler
         self.name = get_name(handler) if name is None else name
         self.include_in_schema = include_in_schema
-        self.methods: Union[List[str], Set[str], None] = methods
         self.signature: inspect.Signature = inspect.signature(self.handler)
 
         # Defition of the app
@@ -324,19 +362,40 @@ class WebsocketPath(BaseHandler, BasePath):
         else:
             self.app = handler_app
 
-        # Execute the middlewares
-        if middleware is not None:
-            for cls, options in reversed(middleware):
-                self.app = cls(app=self.app, **options)
-
-        # Execute the permissions
-        if permissions is not None:
-            for cls, options in reversed(permissions):
-                self.app = cls(app=self.app, **options)
+        self._apply_middleware(middleware)
+        self._apply_permissions(permissions)
 
         self.path_regex, self.path_format, self.param_convertors, self.path_start = compile_path(
             self.path
         )
+
+    def _apply_middleware(self, middleware: Union[Sequence[Middleware], None]) -> None:
+        """
+        Apply middleware to the app.
+
+        Args:
+            middleware (Union[Sequence[Middleware], None]): The middleware.
+
+        Returns:
+            None
+        """
+        if middleware is not None:
+            for cls, options in reversed(middleware):
+                self.app = cls(app=self.app, **options)
+
+    def _apply_permissions(self, permissions: Union[Sequence[Permission], None]) -> None:
+        """
+        Apply permissions to the app.
+
+        Args:
+            permissions (Union[Sequence[Permission], None]): The permissions.
+
+        Returns:
+            None
+        """
+        if permissions is not None:
+            for cls, options in reversed(permissions):
+                self.app = cls(app=self.app, **options)
 
     def search(self, scope: Scope) -> tuple[Match, Scope]:
         """
@@ -458,6 +517,23 @@ class Include(BasePath):
         permissions: Union[Sequence[Permission], None] = None,
         include_in_schema: bool = True,
     ) -> None:
+        """
+        Initialize the router with specified parameters.
+
+        Args:
+            path (str): The path associated with the router.
+            app (Union[ASGIApp, None]): The ASGI app.
+            routes (Union[Sequence[BasePath], None]): The routes.
+            namespace (Union[str, None]): The namespace.
+            pattern (Union[str, None]): The pattern.
+            name (Union[str, None]): The name.
+            middleware (Union[Sequence[Middleware], None]): The middleware.
+            permissions (Union[Sequence[Permission], None]): The permissions.
+            include_in_schema (bool): Flag to include in the schema.
+
+        Returns:
+            None
+        """
         assert path == "" or path.startswith("/"), "Routed paths must start with '/'"
         assert (
             app is not None or routes is not None
@@ -480,19 +556,13 @@ class Include(BasePath):
         if namespace is not None:
             routes = include(namespace, pattern)
 
-        if app is not None:
-            self.__base_app__: ASGIApp = app
-        else:
-            self.__base_app__ = Router(routes=routes)  # type: ignore
+        self.__base_app__: Union[ASGIApp, Router] = (
+            app if app is not None else Router(routes=routes)
+        )
         self.app = self.__base_app__
 
-        if middleware is not None:
-            for cls, options in reversed(middleware):
-                self.app = cls(app=self.app, **options)
-
-        if permissions is not None:
-            for cls, options in reversed(permissions):
-                self.app = cls(app=self.app, **options)
+        self._apply_middleware(middleware)
+        self._apply_permissions(permissions)
 
         self.name = name
         self.include_in_schema = include_in_schema
@@ -502,6 +572,34 @@ class Include(BasePath):
         self.path_regex, self.path_format, self.param_convertors, self.path_start = compile_path(
             self.path
         )
+
+    def _apply_middleware(self, middleware: Union[Sequence[Middleware], None]) -> None:
+        """
+        Apply middleware to the app.
+
+        Args:
+            middleware (Union[Sequence[Middleware], None]): The middleware.
+
+        Returns:
+            None
+        """
+        if middleware is not None:
+            for cls, options in reversed(middleware):
+                self.app = cls(app=self.app, **options)
+
+    def _apply_permissions(self, permissions: Union[Sequence[Permission], None]) -> None:
+        """
+        Apply permissions to the app.
+
+        Args:
+            permissions (Union[Sequence[Permission], None]): The permissions.
+
+        Returns:
+            None
+        """
+        if permissions is not None:
+            for cls, options in reversed(permissions):
+                self.app = cls(app=self.app, **options)
 
     @property
     def routes(self) -> List[BasePath]:
@@ -643,7 +741,150 @@ class Include(BasePath):
         return remaining_params, remaining_name, path_prefix
 
 
-class Host(BasePath): ...
+class Host(BasePath):
+    __slots__ = (
+        "host",
+        "app",
+        "name",
+    )
+
+    def __init__(self, host: str, app: ASGIApp, name: Union[str, None] = None) -> None:
+        assert not host.startswith("/"), "Host must not start with '/'"
+        self.host = host
+        self.app = app
+        self.name = name
+        self.host_regex, self.host_format, self.param_convertors, self.path_start = compile_path(
+            host
+        )
+
+    @property
+    def routes(self) -> List[BasePath]:
+        """
+        Returns a list of declared path objects.
+        """
+        return getattr(self.app, "routes", [])
+
+    def search(self, scope: Scope) -> tuple[Match, Scope]:
+        """
+        Searches within the route patterns and matches against the regex.
+
+        If found, then dispatches the request to the handler of the object.
+
+        Args:
+            scope (Scope): The request scope.
+
+        Returns:
+            Tuple[Match, Scope]: The match result and child scope.
+        """
+        if scope["type"] in {ScopeType.HTTP, ScopeType.WEBSOCKET}:
+            headers = Header.from_scope(scope=scope)
+            host = headers.get("host", "").split(":")[0]
+            match = self.host_regex.match(host)
+
+            if match:
+                return self.handle_match(scope, match)
+
+        return Match.NONE, {}
+
+    def handle_match(self, scope: Scope, match: re.Match) -> Tuple[Match, Scope]:
+        """
+        Handles the case when a match is found in the route patterns.
+
+        Args:
+            scope (Scope): The request scope.
+            match: The match object from the regex.
+
+        Returns:
+            Tuple[Match, Scope]: The match result and child scope.
+        """
+        matched_params = {
+            key: self.param_convertors[key].transform(value)
+            for key, value in match.groupdict().items()
+        }
+        path_params = {**scope.get("path_params", {}), **matched_params}
+        child_scope = {
+            "path_params": path_params,
+            "handler": self.app,
+        }
+        return Match.FULL, child_scope
+
+    async def handle_dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """
+        Handles the dispatch of the request to the appropriate handler.
+
+        Args:
+            scope (Scope): The request scope.
+            receive (Receive): The receive channel.
+            send (Send): The send channel.
+
+        Returns:
+            None
+        """
+        await self.app(scope, receive, send)
+
+    def path_for(self, name: str, /, **path_params: Any) -> URLPath:
+        """
+        Generates a URL path for the specified route name and parameters.
+
+        Args:
+            name (str): The name of the route.
+            path_params (dict): The path parameters.
+
+        Returns:
+            URLPath: The generated URL path.
+
+        Raises:
+            NoMatchFound: If there is no match for the given name and parameters.
+        """
+        remaining_params, remaining_name = self.validate_params(name, path_params)
+        host, remaining_params = replace_params(
+            self.host_format, self.param_convertors, remaining_params
+        )
+
+        if not remaining_params:
+            return URLPath(path=path_params.pop("path"), host=host)
+
+        for route in self.routes or []:
+            try:
+                url = route.path_for(remaining_name, **remaining_params)
+                return URLPath(path=str(url), protocol=url.protocol, host=host)
+            except NoMatchFound:
+                pass
+
+        raise NoMatchFound(name, path_params)
+
+    def validate_params(
+        self, name: str, path_params: Dict[str, Any]
+    ) -> Tuple[Dict[str, Any], str]:
+        """
+        Validates the route name and path parameters.
+
+        Args:
+            name (str): The name of the route.
+            path_params (dict): The path parameters.
+
+        Returns:
+            Dict[str, Any]: The validated path parameters.
+
+        Raises:
+            NoMatchFound: If there is a mismatch in route name or parameters.
+        """
+        remaining_params = {}
+
+        if (self.name is not None and name == self.name and "path" in path_params) or (
+            self.name is None or name.startswith(self.name + ":")
+        ):
+            if self.name is None:
+                remaining_name = name
+            else:
+                remaining_name = name[len(self.name) + 1 :]
+
+            path_params.pop("path")  # Remove 'path' from path_params
+            remaining_params = self._replace_params(
+                self.host_format, self.param_convertors, path_params
+            )
+
+        return remaining_params, remaining_name
 
 
 class Router:
@@ -684,8 +925,6 @@ class Router:
             for cls, options in reversed(permissions):
                 self.permission_stack = cls(app=self.app, **options)
 
-    async def raise_404(self, scope: Scope, receive: Receive, send: Send) -> None: ...
-
     def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         for route in self.routes:
             try:
@@ -693,3 +932,70 @@ class Router:
             except NoMatchFound:
                 ...
         raise NoMatchFound(name, path_params)
+
+    def search(self, scope: Scope) -> Tuple[Match, Scope]:
+        """
+        Searches for a matching route.
+        """
+        raise NotImplementedError()  # pragma: no cover
+
+    async def dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """
+        Dispatches the request to the appropriate handler.
+
+        Args:
+            scope (Scope): The request scope.
+            receive (Receive): The receive channel.
+            send (Send): The send channel.
+
+        Returns:
+            None
+        """
+        match, child_scope = self.search(scope)
+
+        if match == Match.NONE:
+            await self.handle_not_found(scope, receive, send)
+            return
+
+        scope.update(child_scope)
+        await self.handle_dispatch(scope, receive, send)  # type: ignore
+
+    async def handle_not_found(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """
+        Handles the case when no match is found.
+
+        Args:
+            scope (Scope): The request scope.
+            receive (Receive): The receive channel.
+            send (Send): The send channel.
+
+        Returns:
+            None
+        """
+        if scope["type"] == ScopeType.HTTP:
+            response = PlainText("Not Found", status_code=status.HTTP_404_NOT_FOUND)
+            await response(scope, receive, send)
+        elif scope["type"] == ScopeType.WEBSOCKET:
+            websocket_close = WebSocketClose()
+            await websocket_close(scope, receive, send)
+
+    def handle_dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """
+        Handles the dispatch of the request to the appropriate handler.
+
+        Args:
+            scope (Scope): The request scope.
+            receive (Receive): The receive channel.
+            send (Send): The send channel.
+
+        Returns:
+            None
+        """
+        raise NotImplementedError()  # pragma: no cover
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        await self.dispatch(scope=scope, receive=receive, send=send)
+
+    def __repr__(self) -> str:
+        name = self.name or ""
+        return f"{self.__class__.__name__}(path={self.path!r}, name={name!r}, app={self.app!r})"

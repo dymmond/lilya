@@ -22,7 +22,6 @@ async def websocket_endpoint(session: WebSocket):
 
 
 def test_path(test_client_factory):
-    breakpoint()
     path = Path(path="/test/{name}", handler=home)
 
     client = TestClient(path)
