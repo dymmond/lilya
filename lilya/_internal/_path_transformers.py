@@ -4,7 +4,7 @@ import math
 import re
 import uuid
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import datetime
 from typing import ClassVar, Dict, Generic, TypeVar
 
 T = TypeVar("T")
@@ -98,22 +98,11 @@ class UUIDConvertor(Transformer[uuid.UUID]):
 class DatetimeConvertor(Transformer[datetime]):
     regex = "[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(.[0-9]+)?"
 
-    def transform(self, value: str) -> str:
-        return datetime.strftime(value, "%Y-%m-%dT%H:%M:%S")
+    def transform(self, value: str) -> datetime:
+        return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S")
 
     def normalise(self, value: datetime) -> str:
         return value.strftime("%Y-%m-%dT%H:%M:%S")
-
-
-@dataclass
-class DateConvertor(Transformer[datetime]):
-    regex = "[0-9]{4}-[0-9]{2}-[0-9]{2}?"
-
-    def transform(self, value: str) -> datetime:
-        return datetime.strftime(value, "%Y-%m-%d")
-
-    def normalise(self, value: date) -> str:
-        return value.strftime("%Y-%m-%d")
 
 
 # Available converter types
@@ -124,5 +113,4 @@ CONVERTOR_TYPES: Dict[str, Transformer] = {
     "float": FloatConvertor(),
     "uuid": UUIDConvertor(),
     "datetime": DatetimeConvertor(),
-    "date": DateConvertor(),
 }

@@ -66,7 +66,7 @@ def replace_params(
     return updated_path, remaining_params
 
 
-def compile_path(path: str) -> Tuple[Pattern[str], str, Dict[str, Transformer[Any]]]:
+def compile_path(path: str) -> Tuple[Pattern[str], str, Dict[str, Transformer[Any]], str]:
     """
     Compile a path or host string into a three-tuple of (regex, format, {param_name:convertor}).
 
@@ -89,8 +89,8 @@ def compile_path(path: str) -> Tuple[Pattern[str], str, Dict[str, Transformer[An
     return re.compile(path_regex), path_format, param_convertors, path_start
 
 
-def generate_regex_and_format(path: str) -> Tuple[str, str, Dict[str, Transformer[Any]]]:
-    path_regex, path_format, param_convertors, idx = "^", "", {}, 0
+def generate_regex_and_format(path: str) -> Tuple[str, str, Dict[str, Transformer[Any]], str]:
+    path_regex, path_format, param_convertors, idx = "^", "", {}, 0  # type: ignore
 
     for match in re.finditer(r"{([^:]+)(?::([^}]+))?}", path):
         param_name, convertor_type = match.groups("str")
@@ -121,7 +121,7 @@ def update_paths_and_convertors(
     param_name: str,
     convertor: Transformer[Any],
     match: re.Match,
-) -> Tuple[str, str, Dict[str, Transformer[Any]], int]:
+) -> Tuple[str, str, Dict[str, Transformer[Any]], int, str]:
     path_start = path[idx : match.start()]
 
     path_regex += re.escape(path_start)

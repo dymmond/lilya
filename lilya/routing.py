@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+import functools
 import inspect
+import re
 from typing import Any, Callable, Dict, List, Sequence, Set, Tuple, TypeVar, Union
 
 from lilya import status
 from lilya._internal._path import clean_path, compile_path, get_route_path, replace_params
+from lilya._internal._responses import BaseHandler
 from lilya.core.urls import include
 from lilya.datastructures import URLPath
 from lilya.enums import HTTPMethod, Match, ScopeType
-from lilya.exceptions import ImproperlyConfigured
+from lilya.exceptions import HTTPException, ImproperlyConfigured
 from lilya.middleware.base import Middleware
 from lilya.permissions.base import Permission
 from lilya.responses import PlainText
@@ -77,7 +80,7 @@ class BasePath:
             return
 
         scope.update(child_scope)
-        await self.handle_dispatch(scope, receive, send)
+        await self.handle_dispatch(scope, receive, send)  # type: ignore
 
     async def handle_not_found(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -116,7 +119,7 @@ class BasePath:
         await self.dispatch(scope=scope, receive=receive, send=send)
 
 
-class Path(BasePath):
+class Path(BaseHandler, BasePath):
     """
     The way you can define a route in Lilya and apply the corresponding
     path definition.
@@ -135,7 +138,7 @@ class Path(BasePath):
         path: str,
         handler: Callable[..., Any],
         *,
-        methods: Union[List[str], None] = None,
+        methods: Union[List[str], Set[str], None] = None,
         name: Union[str, None] = None,
         include_in_schema: bool = True,
         middleware: Union[Sequence[Middleware], None] = None,
@@ -147,9 +150,19 @@ class Path(BasePath):
         self.name = get_name(handler) if name is None else name
         self.include_in_schema = include_in_schema
         self.methods: Union[List[str], Set[str], None] = methods
+        self.signature: inspect.Signature = inspect.signature(self.handler)
 
         # Defition of the app
-        self.app = handler
+        handler_app = handler
+        while isinstance(handler_app, functools.partial):
+            handler_app = handler_app.func
+
+        if inspect.isfunction(handler_app) or inspect.ismethod(handler_app):
+            self.app = self.handle_response(handler_app)
+        else:
+            self.app = handler_app
+            if methods is None:
+                methods = {HTTPMethod.GET}
 
         # Execute the middlewares
         if middleware is not None:
@@ -231,7 +244,7 @@ class Path(BasePath):
 
         return Match.NONE, {}
 
-    def handle_match(self, scope: Scope, match) -> Tuple[Match, Scope]:
+    def handle_match(self, scope: Scope, match: re.Match) -> Tuple[Match, Scope]:
         """
         Handles the case when a match is found in the route patterns.
 
@@ -255,10 +268,29 @@ class Path(BasePath):
             return Match.FULL, child_scope
 
     async def handle_dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
-        return await super().handle_dispatch(scope, receive, send)
+        """
+        Handles the dispatch of the request to the appropriate handler.
+
+        Args:
+            scope (Scope): The request scope.
+            receive (Receive): The receive channel.
+            send (Send): The send channel.
+
+        Returns:
+            None
+        """
+        if self.methods and scope["method"] not in self.methods:
+            headers = {"Allow": ", ".join(self.methods)}
+            if "app" in scope:
+                raise HTTPException(status_code=405, headers=headers)
+            else:
+                response = PlainText("Method Not Allowed", status_code=405, headers=headers)
+            await response(scope, receive, send)
+        else:
+            await self.app(scope, receive, send)
 
 
-class WebsocketPath(BasePath):
+class WebsocketPath(BaseHandler, BasePath):
     def __init__(
         self,
         path: str,
@@ -271,11 +303,13 @@ class WebsocketPath(BasePath):
         permissions: Union[Sequence[Permission], None] = None,
     ) -> None:
         assert path.startswith("/"), "Paths must start with '/'"
-        self.path = path
+        self.path = clean_path(path)
+
         self.handler = handler
         self.name = get_name(handler) if name is None else name
         self.include_in_schema = include_in_schema
         self.methods: Union[List[str], Set[str], None] = methods
+        self.signature: inspect.Signature = inspect.signature(self.handler)
 
         # Execute the middlewares
         if middleware is not None:
@@ -286,6 +320,10 @@ class WebsocketPath(BasePath):
         if permissions is not None:
             for cls, options in reversed(permissions):
                 self.app = cls(app=self.app, **options)
+
+        self.path_regex, self.path_format, self.param_convertors, self.path_start = compile_path(
+            self.path
+        )
 
 
 class Include(BasePath):
