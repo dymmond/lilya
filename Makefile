@@ -11,6 +11,10 @@ clean: clean_pyc ## Clean all PYC in the system
 clean_pyc: ## Cleans all *.pyc in the system
 	find . -type f -name "*.pyc" -delete || true
 
+.PHONY: clean_pyi
+clean_pyi: ## Cleans all *.pyi in the system
+	find . -type f -name "*.pyi" -delete || true
+
 .PHONY: clean_pycache
 clean_pycache: ## Removes the __pycaches__
 	find . -type d -name "*__pycache__*" -delete

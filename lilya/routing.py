@@ -1,21 +1,9 @@
 from __future__ import annotations
 
 import inspect
-import re
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Generic,
-    List,
-    Pattern,
-    Sequence,
-    Set,
-    Tuple,
-    TypeVar,
-    Union,
-)
+from typing import Any, Callable, Dict, List, Sequence, Set, Tuple, TypeVar, Union
 
+from lilya._internal._path import clean_path, compile_path, get_route_path, replace_params
 from lilya.core.urls import include
 from lilya.datastructures import URLPath
 from lilya.enums import HTTPMethod, Match, ScopeType
@@ -51,96 +39,6 @@ def get_name(handler: Callable[..., Any]) -> str:
     )
 
 
-def replace_params(
-    path: str,
-    param_convertors: dict[str, Convertor[Any]],
-    path_params: dict[str, str],
-) -> tuple[str, dict[str, str]]:
-    for key, value in list(path_params.items()):
-        if "{" + key + "}" in path:
-            convertor = param_convertors[key]
-            value = convertor.to_string(value)
-            path = path.replace("{" + key + "}", value)
-            path_params.pop(key)
-    return path, path_params
-
-
-class Convertor(Generic[T]):
-    def __init__(self, regex: str) -> None:
-        self.regex = regex
-
-    def convert(self, value: str) -> T:
-        raise NotImplementedError()  # pragma: no cover
-
-    def to_string(self, value: T) -> str:
-        raise NotImplementedError()  # pragma: no cover
-
-
-# Regular expression pattern to match parameter placeholders
-PARAM_REGEX = re.compile(r"{([^:]+):([^}]+)}")
-
-# Available converter types
-CONVERTOR_TYPES: Dict[str, Convertor] = {
-    "str": Convertor("[^/]+"),
-    "int": Convertor(r"\d+"),
-}
-
-
-def compile_path(path: str) -> Tuple[Pattern[str], str, Dict[str, Convertor]]:
-    """
-    Compile a path or host string into a three-tuple of (regex, format, {param_name:convertor}).
-
-    Args:
-        path (str): The path or host string.
-
-    Returns:
-        Tuple[Pattern[str], str, Dict[str, Convertor[Any]]]: The compiled regex pattern, format string,
-        and a dictionary of parameter names and converters.
-    """
-    is_host = not path.startswith("/")
-    path_regex = "^"
-    path_format = ""
-    duplicated_params = set()
-
-    idx = 0
-    param_convertors = {}
-
-    for match in PARAM_REGEX.finditer(path):
-        param_name, convertor_type = match.groups("str")
-        convertor_type = convertor_type.lstrip(":")
-
-        assert convertor_type in CONVERTOR_TYPES, f"Unknown path convertor '{convertor_type}'"
-        convertor = CONVERTOR_TYPES[convertor_type]
-
-        path_regex += re.escape(path[idx : match.start()])
-        path_regex += f"(?P<{param_name}>{convertor.regex})"
-
-        path_format += path[idx : match.start()]
-        path_format += "{%s}" % param_name
-
-        if param_name in param_convertors:
-            duplicated_params.add(param_name)
-
-        param_convertors[param_name] = convertor
-        idx = match.end()
-
-    if duplicated_params:
-        names = ", ".join(sorted(duplicated_params))
-        ending = "s" if len(duplicated_params) > 1 else ""
-        raise ValueError(f"Duplicated param name{ending} {names} at path {path}")
-
-    if is_host:
-        # Align with `Host.matches()` behavior, which ignores port.
-        hostname = path[idx:].split(":")[0]
-        path_regex += re.escape(hostname) + "$"
-    else:
-        path_regex += re.escape(path[idx:]) + "$"
-
-    path_format += path[idx:]
-
-    return re.compile(path_regex), path_format, param_convertors
-
-
 class BasePath:
     """
     The base of all paths (routes) for any ASGI application
@@ -166,67 +64,19 @@ class BasePath:
         raise NotImplementedError()  # pragma: no cover
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        match, child_scope = self.matches(scope)
+        breakpoint()
+        match, child_scope = self.search(scope)
         if match == Match.NONE:
             if scope["type"] == ScopeType.HTTP:
                 response = PlainText("Not Found", status_code=404)
                 await response(scope, receive, send)
-            elif scope["type"] == "websocket":
+            elif scope["type"] == ScopeType.WEBSOCKET:
                 websocket_close = WebSocketClose()
                 await websocket_close(scope, receive, send)
             return
 
         scope.update(child_scope)
         await self.dispatch(scope, receive, send)
-
-
-class Router:
-    """
-    A Lilya router object.
-    """
-
-    def __init__(
-        self,
-        routes: Union[Sequence[BasePath], None] = None,
-        redirect_slashes: bool = True,
-        default: Union[ASGIApp, None] = None,
-        on_startup: Union[Sequence[Callable[[], Any]], None] = None,
-        on_shutdown: Union[Sequence[Callable[[], Any]], None] = None,
-        lifespan: Union[Lifespan[Any], None] = None,
-        *,
-        middleware: Union[Sequence[Middleware], None] = None,
-        permissions: Union[Sequence[Permission], None] = None,
-        include_in_schema: bool = True,
-    ) -> None:
-        self.routes = [] if routes is None else list(routes)
-        self.redirect_slashes = redirect_slashes
-        self.default = self.raise_404 if default is None else default
-        self.on_startup = [] if on_startup is None else list(on_startup)
-        self.on_shutdown = [] if on_shutdown is None else list(on_shutdown)
-        self.include_in_schema = include_in_schema
-
-        self.middleware = middleware if middleware is not None else list(middleware)
-        self.permissions = permissions if permissions is not None else list(permissions)
-
-        # Execute the middlewares
-        if middleware is not None:
-            for cls, options in reversed(middleware):
-                self.middleware_stack = cls(app=self.app, **options)
-
-        # Execute the permissions
-        if permissions is not None:
-            for cls, options in reversed(permissions):
-                self.permission_stack = cls(app=self.app, **options)
-
-    async def raise_404(self, scope: Scope, receive: Receive, send: Send) -> None: ...
-
-    def path_for(self, name: str, /, **path_params: Any) -> URLPath:
-        for route in self.routes:
-            try:
-                return route.path_for(name, **path_params)
-            except NoMatchFound:
-                ...
-        raise NoMatchFound(name, path_params)
 
 
 class Path(BasePath):
@@ -255,7 +105,7 @@ class Path(BasePath):
         permissions: Union[Sequence[Permission], None] = None,
     ) -> None:
         assert path.startswith("/"), "Paths must start with '/'"
-        self.path = path
+        self.path = clean_path(path)
         self.handler = handler
         self.name = get_name(handler) if name is None else name
         self.include_in_schema = include_in_schema
@@ -279,7 +129,9 @@ class Path(BasePath):
             if HTTPMethod.GET in self.methods:
                 self.methods.add(HTTPMethod.HEAD)
 
-        self.path_regex, self.path_format, self.param_convertors = compile_path(path)
+        self.path_regex, self.path_format, self.param_convertors, self.path_start = compile_path(
+            self.path
+        )
 
     async def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         seen_params = set(path_params.keys())
@@ -292,7 +144,36 @@ class Path(BasePath):
             self.path_format, self.param_convertors, path_params
         )
         assert not remaining_params
-        return URLPath(path=path, protocol="http")
+        return URLPath(path=path, protocol=ScopeType.HTTP)
+
+    async def dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
+        breakpoint()
+        return await super().dispatch(scope, receive, send)
+
+    def search(self, scope: Scope) -> tuple[Match, Scope]:
+        """
+        Searches within the route patterns and matches
+        against the regex.
+
+        If found, then dispatches the request to the handler
+        of the object.
+        """
+        path_params: Dict[str, Any]
+        if scope["type"] == ScopeType.HTTP:
+            route_path = get_route_path(scope)
+            match = self.path_regex.match(route_path)
+            if match:
+                matched_params = match.groupdict()
+                for key, value in matched_params.items():
+                    matched_params[key] = self.param_convertors[key].render(value)
+                path_params = dict(scope.get("path_params", {}))
+                path_params.update(matched_params)
+                child_scope = {"handler": self.handler, "path_params": path_params}
+                if self.methods and scope["method"] not in self.methods:
+                    return Match.PARTIAL, child_scope
+                else:
+                    return Match.FULL, child_scope
+        return Match.NONE, {}
 
 
 class WebsocketPath(BasePath):
@@ -393,3 +274,52 @@ class Include(BasePath):
 
 
 class Host(BasePath): ...
+
+
+class Router:
+    """
+    A Lilya router object.
+    """
+
+    def __init__(
+        self,
+        routes: Union[Sequence[BasePath], None] = None,
+        redirect_slashes: bool = True,
+        default: Union[ASGIApp, None] = None,
+        on_startup: Union[Sequence[Callable[[], Any]], None] = None,
+        on_shutdown: Union[Sequence[Callable[[], Any]], None] = None,
+        lifespan: Union[Lifespan[Any], None] = None,
+        *,
+        middleware: Union[Sequence[Middleware], None] = None,
+        permissions: Union[Sequence[Permission], None] = None,
+        include_in_schema: bool = True,
+    ) -> None:
+        self.routes = [] if routes is None else list(routes)
+        self.redirect_slashes = redirect_slashes
+        self.default = self.raise_404 if default is None else default
+        self.on_startup = [] if on_startup is None else list(on_startup)
+        self.on_shutdown = [] if on_shutdown is None else list(on_shutdown)
+        self.include_in_schema = include_in_schema
+
+        self.middleware = middleware if middleware is not None else list(middleware)
+        self.permissions = permissions if permissions is not None else list(permissions)
+
+        # Execute the middlewares
+        if middleware is not None:
+            for cls, options in reversed(middleware):
+                self.middleware_stack = cls(app=self.app, **options)
+
+        # Execute the permissions
+        if permissions is not None:
+            for cls, options in reversed(permissions):
+                self.permission_stack = cls(app=self.app, **options)
+
+    async def raise_404(self, scope: Scope, receive: Receive, send: Send) -> None: ...
+
+    def path_for(self, name: str, /, **path_params: Any) -> URLPath:
+        for route in self.routes:
+            try:
+                return route.path_for(name, **path_params)
+            except NoMatchFound:
+                ...
+        raise NoMatchFound(name, path_params)
