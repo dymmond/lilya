@@ -23,7 +23,7 @@ StatusHandlers = Dict[int, ExceptionHandler]
 
 def _lookup_exception_handler(
     exc_handlers: ExceptionHandlers, exc: Exception
-) -> ExceptionHandler | None:
+) -> Union[ExceptionHandler, None]:
     """
     Looks up an exception handler for a given exception type in the exception handlers dictionary.
 
