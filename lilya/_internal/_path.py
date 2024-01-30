@@ -3,12 +3,11 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, Iterable, Pattern, Tuple, TypeVar
 
-from lilya._internal._path_transformers import CONVERTOR_TYPES, PathTransformer
+from lilya._internal._path_transformers import CONVERTOR_TYPES, Transformer
 from lilya.types import Scope
 
 T = TypeVar("T")
 
-# path_regex = re.compile(r"{(.*?)}")
 PATH_REGEX = re.compile("{([a-zA-Z_][a-zA-Z0-9_]*)(:[a-zA-Z_][a-zA-Z0-9_]*)?}")
 
 
@@ -36,19 +35,19 @@ def get_route_path(scope: Scope) -> str:
 
 def replace_params(
     path: str,
-    param_convertors: dict[str, PathTransformer[Any]],
+    param_convertors: dict[str, Transformer[Any]],
     path_params: dict[str, str],
 ) -> tuple[str, dict[str, str]]:
     for key, value in list(path_params.items()):
         if "{" + key + "}" in path:
             convertor = param_convertors[key]
-            value = convertor.to_string(value)
+            value = convertor.normalise(value)
             path = path.replace("{" + key + "}", value)
             path_params.pop(key)
     return path, path_params
 
 
-def compile_path(path: str) -> Tuple[Pattern[str], str, Dict[str, PathTransformer[Any]]]:
+def compile_path(path: str) -> Tuple[Pattern[str], str, Dict[str, Transformer[Any]]]:
     """
     Compile a path or host string into a three-tuple of (regex, format, {param_name:convertor}).
 
@@ -56,7 +55,7 @@ def compile_path(path: str) -> Tuple[Pattern[str], str, Dict[str, PathTransforme
         path (str): The path or host string.
 
     Returns:
-        Tuple[Pattern[str], str, Dict[str, 'PathTransformer[Any]']]: The compiled regex pattern, format string,
+        Tuple[Pattern[str], str, Dict[str, 'Transformer[Any]']]: The compiled regex pattern, format string,
         and a dictionary of parameter names and converters.
     """
     is_host = not path.startswith("/")
@@ -71,7 +70,7 @@ def compile_path(path: str) -> Tuple[Pattern[str], str, Dict[str, PathTransforme
     return re.compile(path_regex), path_format, param_convertors, path_start
 
 
-def generate_regex_and_format(path: str) -> Tuple[str, str, Dict[str, PathTransformer[Any]]]:
+def generate_regex_and_format(path: str) -> Tuple[str, str, Dict[str, Transformer[Any]]]:
     path_regex, path_format, param_convertors, idx = "^", "", {}, 0
 
     for match in re.finditer(r"{([^:]+)(?::([^}]+))?}", path):
@@ -89,7 +88,7 @@ def generate_regex_and_format(path: str) -> Tuple[str, str, Dict[str, PathTransf
     return path_regex, path_format, param_convertors, path_start
 
 
-def get_convertor(convertor_type: str) -> PathTransformer[Any]:
+def get_convertor(convertor_type: str) -> Transformer[Any]:
     assert convertor_type in CONVERTOR_TYPES, f"Unknown path convertor '{convertor_type}'"
     return CONVERTOR_TYPES[convertor_type]
 
@@ -98,12 +97,12 @@ def update_paths_and_convertors(
     path: str,
     path_regex: str,
     path_format: str,
-    param_convertors: Dict[str, PathTransformer[Any]],
+    param_convertors: Dict[str, Transformer[Any]],
     idx: int,
     param_name: str,
-    convertor: PathTransformer[Any],
+    convertor: Transformer[Any],
     match: re.Match,
-) -> Tuple[str, str, Dict[str, PathTransformer[Any]], int]:
+) -> Tuple[str, str, Dict[str, Transformer[Any]], int]:
     path_start = path[idx : match.start()]
 
     path_regex += re.escape(path_start)
@@ -121,7 +120,7 @@ def update_paths_and_convertors(
     return path_regex, path_format, param_convertors, idx, path_start
 
 
-def check_for_duplicate_params(param_convertors: Dict[str, PathTransformer[Any]]) -> None:
+def check_for_duplicate_params(param_convertors: Dict[str, Transformer[Any]]) -> None:
     duplicated_params = {
         name for name in param_convertors if list(param_convertors).count(name) > 1
     }

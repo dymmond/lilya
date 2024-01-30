@@ -59,12 +59,19 @@ class BasePath:
 
     async def dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
-        Handles the matched ASGI route.
+        Dispatches the request to the appropriate handler.
+
+        Args:
+            scope (Scope): The request scope.
+            receive (Receive): The receive channel.
+            send (Send): The send channel.
+
+        Returns:
+            None
         """
         raise NotImplementedError()  # pragma: no cover
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        breakpoint()
         match, child_scope = self.search(scope)
         if match == Match.NONE:
             if scope["type"] == ScopeType.HTTP:
@@ -161,11 +168,12 @@ class Path(BasePath):
         path_params: Dict[str, Any]
         if scope["type"] == ScopeType.HTTP:
             route_path = get_route_path(scope)
+            breakpoint()
             match = self.path_regex.match(route_path)
             if match:
                 matched_params = match.groupdict()
                 for key, value in matched_params.items():
-                    matched_params[key] = self.param_convertors[key].render(value)
+                    matched_params[key] = self.param_convertors[key].transform(value)
                 path_params = dict(scope.get("path_params", {}))
                 path_params.update(matched_params)
                 child_scope = {"handler": self.handler, "path_params": path_params}

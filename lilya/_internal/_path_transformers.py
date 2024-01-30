@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import math
 import re
-import typing
 import uuid
+from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Dict, Generic, TypeVar
+from typing import ClassVar, Dict, Generic, TypeVar
 
 T = TypeVar("T")
 
@@ -13,58 +13,69 @@ T = TypeVar("T")
 path_regex = re.compile(r"{([^:]+):([^}]+)}")
 
 
-class PathTransformer(Generic[T]):
-    regex: typing.ClassVar[str] = ""
+@dataclass
+class Transformer(Generic[T]):
+    """
+    Base for all path transformers
+    of lilya. Dataclasses are used
+    for the simplicity of the syntax
+    """
 
-    def render(self, value: str) -> T:
+    regex: ClassVar[str] = ""
+
+    def transform(self, value: str) -> T:
         raise NotImplementedError()  # pragma: no cover
 
-    def to_string(self, value: T) -> str:
+    def normalise(self, value: T) -> str:  # pragma: no cover
         raise NotImplementedError()  # pragma: no cover
 
 
-class StringConvertor(PathTransformer[str]):
+@dataclass
+class StringConvertor(Transformer[str]):
     regex = "[^/]+"
 
-    def render(self, value: str) -> str:
+    def transform(self, value: str) -> str:
         return value
 
-    def to_string(self, value: str) -> str:
+    def normalise(self, value: str) -> str:
         value = str(value)
         assert "/" not in value, "May not contain path separators"
         assert value, "Must not be empty"
         return value
 
 
-class PathConvertor(PathTransformer[str]):
+@dataclass
+class PathConvertor(Transformer[str]):
     regex = ".*"
 
-    def render(self, value: str) -> str:
+    def transform(self, value: str) -> str:
         return str(value)
 
-    def to_string(self, value: str) -> str:
+    def normalise(self, value: str) -> str:
         return str(value)
 
 
-class IntegerConvertor(PathTransformer[int]):
+@dataclass
+class IntegerConvertor(Transformer[int]):
     regex = "[0-9]+"
 
-    def render(self, value: str) -> int:
+    def transform(self, value: str) -> int:
         return int(value)
 
-    def to_string(self, value: int) -> str:
+    def normalise(self, value: int) -> str:
         value = int(value)
         assert value >= 0, "Negative integers are not supported"
         return str(value)
 
 
-class FloatConvertor(PathTransformer[float]):
+@dataclass
+class FloatConvertor(Transformer[float]):
     regex = r"[0-9]+(\.[0-9]+)?"
 
-    def render(self, value: str) -> float:
+    def transform(self, value: str) -> float:
         return float(value)
 
-    def to_string(self, value: float) -> str:
+    def normalise(self, value: float) -> str:
         value = float(value)
         assert value >= 0.0, "Negative floats are not supported"
         assert not math.isnan(value), "NaN values are not supported"
@@ -72,38 +83,41 @@ class FloatConvertor(PathTransformer[float]):
         return ("%0.20f" % value).rstrip("0").rstrip(".")
 
 
-class UUIDConvertor(PathTransformer[uuid.UUID]):
+@dataclass
+class UUIDConvertor(Transformer[uuid.UUID]):
     regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
 
-    def render(self, value: str) -> uuid.UUID:
+    def transform(self, value: str) -> uuid.UUID:
         return uuid.UUID(value)
 
-    def to_string(self, value: uuid.UUID) -> str:
+    def normalise(self, value: uuid.UUID) -> str:
         return str(value)
 
 
-class DatetimeConvertor(PathTransformer[datetime]):
+@dataclass
+class DatetimeConvertor(Transformer[datetime]):
     regex = "[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(.[0-9]+)?"
 
-    def render(self, value: str) -> str:
+    def transform(self, value: str) -> str:
         return datetime.strftime(value, "%Y-%m-%dT%H:%M:%S")
 
-    def to_string(self, value: datetime) -> str:
+    def normalise(self, value: datetime) -> str:
         return value.strftime("%Y-%m-%dT%H:%M:%S")
 
 
-class DateConvertor(PathTransformer[datetime]):
+@dataclass
+class DateConvertor(Transformer[datetime]):
     regex = "[0-9]{4}-[0-9]{2}-[0-9]{2}?"
 
-    def render(self, value: str) -> datetime:
+    def transform(self, value: str) -> datetime:
         return datetime.strftime(value, "%Y-%m-%d")
 
-    def to_string(self, value: date) -> str:
+    def normalise(self, value: date) -> str:
         return value.strftime("%Y-%m-%d")
 
 
 # Available converter types
-CONVERTOR_TYPES: Dict[str, PathTransformer] = {
+CONVERTOR_TYPES: Dict[str, Transformer] = {
     "str": StringConvertor(),
     "path": PathConvertor(),
     "int": IntegerConvertor(),

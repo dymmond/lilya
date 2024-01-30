@@ -13,7 +13,7 @@ def xtest_path():
     path = Path(path="/test/{name}", handler=home)
 
     client = TestClient(path)
-    breakpoint()
+    # breakpoint()
     response = client.get("test/tiago")
 
     assert response.status_code == 200
