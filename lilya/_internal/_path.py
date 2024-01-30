@@ -35,16 +35,35 @@ def get_route_path(scope: Scope) -> str:
 
 def replace_params(
     path: str,
-    param_convertors: dict[str, Transformer[Any]],
-    path_params: dict[str, str],
-) -> tuple[str, dict[str, str]]:
+    param_convertors: Dict[str, Transformer[Any]],
+    path_params: Dict[str, str],
+) -> Tuple[str, Dict[str, str]]:
+    """
+    Replaces placeholders in the given path with normalized values from path parameters.
+
+    Args:
+        path (str): The path string with placeholders.
+        param_convertors (Dict[str, Transformer[Any]]): Dictionary of parameter names and transformers.
+        path_params (Dict[str, str]): Dictionary of path parameters.
+
+    Returns:
+        Tuple[str, Dict[str, str]]: The updated path and any remaining path parameters.
+    """
+    updated_path = path
+    remaining_params = {}
+
     for key, value in list(path_params.items()):
-        if "{" + key + "}" in path:
-            convertor = param_convertors[key]
-            value = convertor.normalise(value)
-            path = path.replace("{" + key + "}", value)
+        placeholder = "{" + key + "}"
+
+        if placeholder in updated_path:
+            transformer = param_convertors[key]
+            normalized_value = transformer.normalise(value)
+            updated_path = updated_path.replace(placeholder, normalized_value)
             path_params.pop(key)
-    return path, path_params
+        else:
+            remaining_params[key] = value
+
+    return updated_path, remaining_params
 
 
 def compile_path(path: str) -> Tuple[Pattern[str], str, Dict[str, Transformer[Any]]]:

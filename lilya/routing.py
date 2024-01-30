@@ -3,6 +3,7 @@ from __future__ import annotations
 import inspect
 from typing import Any, Callable, Dict, List, Sequence, Set, Tuple, TypeVar, Union
 
+from lilya import status
 from lilya._internal._path import clean_path, compile_path, get_route_path, replace_params
 from lilya.core.urls import include
 from lilya.datastructures import URLPath
@@ -69,21 +70,50 @@ class BasePath:
         Returns:
             None
         """
-        raise NotImplementedError()  # pragma: no cover
-
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         match, child_scope = self.search(scope)
+
         if match == Match.NONE:
-            if scope["type"] == ScopeType.HTTP:
-                response = PlainText("Not Found", status_code=404)
-                await response(scope, receive, send)
-            elif scope["type"] == ScopeType.WEBSOCKET:
-                websocket_close = WebSocketClose()
-                await websocket_close(scope, receive, send)
+            await self.handle_not_found(scope, receive, send)
             return
 
         scope.update(child_scope)
-        await self.dispatch(scope, receive, send)
+        await self.handle_dispatch(scope, receive, send)
+
+    async def handle_not_found(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """
+        Handles the case when no match is found.
+
+        Args:
+            scope (Scope): The request scope.
+            receive (Receive): The receive channel.
+            send (Send): The send channel.
+
+        Returns:
+            None
+        """
+        if scope["type"] == ScopeType.HTTP:
+            response = PlainText("Not Found", status_code=status.HTTP_404_NOT_FOUND)
+            await response(scope, receive, send)
+        elif scope["type"] == ScopeType.WEBSOCKET:
+            websocket_close = WebSocketClose()
+            await websocket_close(scope, receive, send)
+
+    def handle_dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """
+        Handles the dispatch of the request to the appropriate handler.
+
+        Args:
+            scope (Scope): The request scope.
+            receive (Receive): The receive channel.
+            send (Send): The send channel.
+
+        Returns:
+            None
+        """
+        raise NotImplementedError()  # pragma: no cover
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        await self.dispatch(scope=scope, receive=receive, send=send)
 
 
 class Path(BasePath):
@@ -141,47 +171,91 @@ class Path(BasePath):
         )
 
     async def path_for(self, name: str, /, **path_params: Any) -> URLPath:
+        """
+        Generates a URL path for the specified route name and parameters.
+
+        Args:
+            name (str): The name of the route.
+            path_params (dict): The path parameters.
+
+        Returns:
+            URLPath: The generated URL path.
+
+        Raises:
+            NoMatchFound: If there is no match for the given name and parameters.
+        """
+        self.validate_params(name, path_params)
+
+        path, remaining_params = replace_params(
+            self.path_format, self.param_convertors, path_params
+        )
+        assert not remaining_params
+
+        return URLPath(path=path, protocol=ScopeType.HTTP)
+
+    def validate_params(self, name: str, path_params: dict) -> None:
+        """
+        Validates the route name and path parameters.
+
+        Args:
+            name (str): The name of the route.
+            path_params (dict): The path parameters.
+
+        Raises:
+            NoMatchFound: If there is a mismatch in route name or parameters.
+        """
         seen_params = set(path_params.keys())
         expected_params = set(self.param_convertors.keys())
 
         if name != self.name or seen_params != expected_params:
             raise NoMatchFound(name, path_params)
 
-        path, remaining_params = replace_params(
-            self.path_format, self.param_convertors, path_params
-        )
-        assert not remaining_params
-        return URLPath(path=path, protocol=ScopeType.HTTP)
-
-    async def dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
-        breakpoint()
-        return await super().dispatch(scope, receive, send)
-
     def search(self, scope: Scope) -> tuple[Match, Scope]:
         """
-        Searches within the route patterns and matches
-        against the regex.
+        Searches within the route patterns and matches against the regex.
 
-        If found, then dispatches the request to the handler
-        of the object.
+        If found, then dispatches the request to the handler of the object.
+
+        Args:
+            scope (Scope): The request scope.
+
+        Returns:
+            Tuple[Match, Scope]: The match result and child scope.
         """
-        path_params: Dict[str, Any]
         if scope["type"] == ScopeType.HTTP:
             route_path = get_route_path(scope)
-            breakpoint()
             match = self.path_regex.match(route_path)
+
             if match:
-                matched_params = match.groupdict()
-                for key, value in matched_params.items():
-                    matched_params[key] = self.param_convertors[key].transform(value)
-                path_params = dict(scope.get("path_params", {}))
-                path_params.update(matched_params)
-                child_scope = {"handler": self.handler, "path_params": path_params}
-                if self.methods and scope["method"] not in self.methods:
-                    return Match.PARTIAL, child_scope
-                else:
-                    return Match.FULL, child_scope
+                return self.handle_match(scope, match)
+
         return Match.NONE, {}
+
+    def handle_match(self, scope: Scope, match) -> Tuple[Match, Scope]:
+        """
+        Handles the case when a match is found in the route patterns.
+
+        Args:
+            scope (Scope): The request scope.
+            match: The match object from the regex.
+
+        Returns:
+            Tuple[Match, Scope]: The match result and child scope.
+        """
+        matched_params = {
+            key: self.param_convertors[key].transform(value)
+            for key, value in match.groupdict().items()
+        }
+        path_params = {**scope.get("path_params", {}), **matched_params}
+        child_scope = {"handler": self.handler, "path_params": path_params}
+
+        if self.methods and scope["method"] not in self.methods:
+            return Match.PARTIAL, child_scope
+        else:
+            return Match.FULL, child_scope
+
+    async def handle_dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
+        return await super().handle_dispatch(scope, receive, send)
 
 
 class WebsocketPath(BasePath):

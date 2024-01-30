@@ -1,19 +1,19 @@
-from lilya.responses import Ok
-from lilya.routing import Path
-from lilya.testclient import TestClient
+# from lilya.responses import Ok
+# from lilya.routing import Path
+# from lilya.testclient import TestClient
 
 
-def home():
-    return Ok(
-        {"detail": "welcome home"},
-    )
+# def home():
+#     return Ok(
+#         {"detail": "welcome home"},
+#     )
 
 
-def xtest_path():
-    path = Path(path="/test/{name}", handler=home)
+# def test_path():
+#     path = Path(path="/test/{name}", handler=home)
 
-    client = TestClient(path)
-    # breakpoint()
-    response = client.get("test/tiago")
+#     client = TestClient(path)
+#     breakpoint()
+#     response = client.get("test/tiago")
 
-    assert response.status_code == 200
+#     assert response.status_code == 200
