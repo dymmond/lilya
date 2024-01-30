@@ -183,23 +183,6 @@ class Path(BaseHandler, BasePath):
             self.path
         )
 
-    def validate_params(self, name: str, path_params: dict) -> None:
-        """
-        Validates the route name and path parameters.
-
-        Args:
-            name (str): The name of the route.
-            path_params (dict): The path parameters.
-
-        Raises:
-            NoMatchFound: If there is a mismatch in route name or parameters.
-        """
-        seen_params = set(path_params.keys())
-        expected_params = set(self.param_convertors.keys())
-
-        if name != self.name or seen_params != expected_params:
-            raise NoMatchFound(name, path_params)
-
     async def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         """
         Generates a URL path for the specified route name and parameters.
@@ -222,6 +205,23 @@ class Path(BaseHandler, BasePath):
         assert not remaining_params
 
         return URLPath(path=path, protocol=ScopeType.HTTP.value)
+
+    def validate_params(self, name: str, path_params: dict) -> None:
+        """
+        Validates the route name and path parameters.
+
+        Args:
+            name (str): The name of the route.
+            path_params (dict): The path parameters.
+
+        Raises:
+            NoMatchFound: If there is a mismatch in route name or parameters.
+        """
+        seen_params = set(path_params.keys())
+        expected_params = set(self.param_convertors.keys())
+
+        if name != self.name or seen_params != expected_params:
+            raise NoMatchFound(name, path_params)
 
     def search(self, scope: Scope) -> tuple[Match, Scope]:
         """
@@ -388,23 +388,6 @@ class WebsocketPath(BaseHandler, BasePath):
         """
         await self.app(scope, receive, send)
 
-    def validate_params(self, name: str, path_params: dict) -> None:
-        """
-        Validates the route name and path parameters.
-
-        Args:
-            name (str): The name of the route.
-            path_params (dict): The path parameters.
-
-        Raises:
-            NoMatchFound: If there is a mismatch in route name or parameters.
-        """
-        seen_params = set(path_params.keys())
-        expected_params = set(self.param_convertors.keys())
-
-        if name != self.name or seen_params != expected_params:
-            raise NoMatchFound(name, path_params)
-
     async def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         """
         Generates a URL path for the specified route name and parameters.
@@ -427,6 +410,23 @@ class WebsocketPath(BaseHandler, BasePath):
         )
         assert not remaining_params
         return URLPath(path=path, protocol=ScopeType.WEBSOCKET.value)
+
+    def validate_params(self, name: str, path_params: dict) -> None:
+        """
+        Validates the route name and path parameters.
+
+        Args:
+            name (str): The name of the route.
+            path_params (dict): The path parameters.
+
+        Raises:
+            NoMatchFound: If there is a mismatch in route name or parameters.
+        """
+        seen_params = set(path_params.keys())
+        expected_params = set(self.param_convertors.keys())
+
+        if name != self.name or seen_params != expected_params:
+            raise NoMatchFound(name, path_params)
 
 
 class Include(BasePath):
@@ -458,7 +458,7 @@ class Include(BasePath):
         assert (
             app is not None or routes is not None
         ), "Either 'app=...', or 'routes=' must be specified"
-        self.path = path.rstrip("/")
+        self.path = clean_path(path)
 
         assert (
             namespace is None or routes is None
@@ -477,23 +477,166 @@ class Include(BasePath):
             routes = include(namespace, pattern)
 
         if app is not None:
-            self._base_app: ASGIApp = app
+            self.__base_app__: ASGIApp = app
         else:
-            self._base_app = Router(routes=routes)  # type: ignore
-        self.app = self._base_app
+            self.__base_app__ = Router(routes=routes)  # type: ignore
+        self.app = self.__base_app__
 
-        # if middleware is not None:
-        #     for cls, options in reversed(middleware):
-        #         self.app = cls(app=self.app, **options)
+        if middleware is not None:
+            for cls, options in reversed(middleware):
+                self.app = cls(app=self.app, **options)
 
-        # if permissions is not None:
-        #     for cls, options in reversed(permissions):
-        #         self.app = cls(app=self.app, **options)
+        if permissions is not None:
+            for cls, options in reversed(permissions):
+                self.app = cls(app=self.app, **options)
 
         self.name = name
         self.include_in_schema = include_in_schema
         self.middleware = middleware if middleware is not None else list(middleware)
         self.permissions = permissions if permissions is not None else list(permissions)
+
+        self.path_regex, self.path_format, self.param_convertors, self.path_start = compile_path(
+            self.path
+        )
+
+    @property
+    def routes(self) -> List[BasePath]:
+        """
+        Returns a list of declared path objects.
+        """
+        return getattr(self.__base_app__, "routes", [])
+
+    def search(self, scope: Scope) -> tuple[Match, Scope]:
+        """
+        Searches within the route patterns and matches against the regex.
+
+        If found, then dispatches the request to the handler of the object.
+
+        Args:
+            scope (Scope): The request scope.
+
+        Returns:
+            Tuple[Match, Scope]: The match result and child scope.
+        """
+        if scope["type"] in {ScopeType.HTTP, ScopeType.WEBSOCKET}:
+            root_path = scope.get("root_path", "")
+            route_path = get_route_path(scope)
+            match = self.path_regex.match(route_path)
+
+            if match:
+                return self.handle_match(scope, match, route_path, root_path)
+
+        return Match.NONE, {}
+
+    def handle_match(
+        self, scope: Scope, match: re.Match, route_path: str, root_path: str
+    ) -> Tuple[Match, Scope]:
+        """
+        Handles the case when a match is found in the route patterns.
+
+        Args:
+            scope (Scope): The request scope.
+            match: The match object from the regex.
+
+        Returns:
+            Tuple[Match, Scope]: The match result and child scope.
+        """
+        matched_params = {
+            key: self.param_convertors[key].transform(value)
+            for key, value in match.groupdict().items()
+        }
+        remaining_path = "/" + matched_params.pop("path")
+        matched_path = route_path[: -len(remaining_path)]
+
+        path_params = {**scope.get("path_params", {}), **matched_params}
+        child_scope = {
+            "path_params": path_params,
+            "app_root_path": scope.get("app_root_path", root_path),
+            "root_path": root_path + matched_path,
+            "handler": self.app,
+        }
+        return Match.FULL, child_scope
+
+    async def handle_dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """
+        Handles the dispatch of the request to the appropriate handler.
+
+        Args:
+            scope (Scope): The request scope.
+            receive (Receive): The receive channel.
+            send (Send): The send channel.
+
+        Returns:
+            None
+        """
+        await self.app(scope, receive, send)
+
+    def path_for(self, name: str, /, **path_params: Any) -> URLPath:
+        """
+        Generates a URL path for the specified route name and parameters.
+
+        Args:
+            name (str): The name of the route.
+            path_params (dict): The path parameters.
+
+        Returns:
+            URLPath: The generated URL path.
+
+        Raises:
+            NoMatchFound: If there is no match for the given name and parameters.
+        """
+        remaining_params, remaining_name, path_prefix = self.validate_params(name, path_params)
+        path, remaining_params = replace_params(
+            self.path_format, self.param_convertors, remaining_params
+        )
+        if not remaining_params:
+            return URLPath(path=path)
+
+        for route in self.routes or []:
+            try:
+                url = route.path_for(remaining_name, **remaining_params)
+                return URLPath(path=path_prefix + str(url), protocol=url.protocol)
+            except NoMatchFound:
+                pass
+
+        raise NoMatchFound(name, path_params)
+
+    def validate_params(
+        self, name: str, path_params: Dict[str, Any]
+    ) -> Tuple[Dict[str, Any], str, str]:
+        """
+        Validates the route name and path parameters.
+
+        Args:
+            name (str): The name of the route.
+            path_params (dict): The path parameters.
+
+        Returns:
+            Dict[str, Any]: The validated path parameters.
+
+        Raises:
+            NoMatchFound: If there is a mismatch in route name or parameters.
+        """
+        remaining_params: Dict[str, str] = {}
+
+        if (self.name is not None and name == self.name and "path" in path_params) or (
+            self.name is None or name.startswith(self.name + ":")
+        ):
+            if self.name is None:
+                remaining_name = name
+            else:
+                remaining_name = name[len(self.name) + 1 :]
+
+            path_kwarg = path_params.get("path")
+            path_params["path"] = ""
+            path_prefix, remaining_params = replace_params(
+                self.path_format, self.param_convertors, path_params
+            )
+
+            if path_kwarg is not None:
+                remaining_params["path"] = path_kwarg
+
+        return remaining_params, remaining_name, path_prefix
 
 
 class Host(BasePath): ...
