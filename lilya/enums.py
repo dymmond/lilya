@@ -35,6 +35,11 @@ class ScopeType(StrEnum):
     WEBSOCKET = "websocket"
 
 
+class SignatureDefault(StrEnum):
+    REQUEST = "request"
+    WEBSOCKET = "websocket"
+
+
 class HTTPType(StrEnum):
     HTTP = "http"
     HTTPS = "https"

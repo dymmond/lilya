@@ -13,6 +13,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 This file contains some adaptations used for Lilya purposes.
 """
+
 import contextlib
 import inspect
 import io
@@ -438,9 +439,9 @@ class TestClient(httpx.Client):
         follow_redirects: typing.Optional[bool],
         allow_redirects: typing.Optional[bool],
     ) -> typing.Union[bool, httpx._client.UseClientDefault]:
-        redirect: typing.Union[
-            bool, httpx._client.UseClientDefault
-        ] = httpx._client.USE_CLIENT_DEFAULT
+        redirect: typing.Union[bool, httpx._client.UseClientDefault] = (
+            httpx._client.USE_CLIENT_DEFAULT
+        )
         if allow_redirects is not None:
             message = (
                 "The `allow_redirects` argument is deprecated. " "Use `follow_redirects` instead."

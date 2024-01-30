@@ -67,5 +67,18 @@ class ImproperlyConfigured(HTTPException, ValueError):
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
 
 
-class WebSocketRuntimeError(RuntimeError):
-    ...
+class NotAuthorized(HTTPException):
+    status_code = status.HTTP_401_UNAUTHORIZED
+    detail = "You do not have authorization to perform this action."
+
+
+class NotFound(HTTPException, ValueError):
+    detail = "The resource cannot be found."
+    status_code = status.HTTP_404_NOT_FOUND
+
+
+class MethodNotAllowed(HTTPException):
+    status_code = status.HTTP_405_METHOD_NOT_ALLOWED
+
+
+class WebSocketRuntimeError(RuntimeError): ...

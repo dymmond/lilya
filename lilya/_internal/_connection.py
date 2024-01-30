@@ -1,12 +1,14 @@
-from typing import Any, Dict, Iterator, Mapping, NoReturn, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, Iterator, Mapping, NoReturn, Union, cast
 
 from lilya._internal._message import Address
 from lilya._internal._parsers import cookie_parser
 from lilya.datastructures import URL, Header, QueryParam, State
 from lilya.enums import ScopeType
 from lilya.exceptions import ImproperlyConfigured
-from lilya.routing import Router
 from lilya.types import Message, Receive, Scope
+
+if TYPE_CHECKING:
+    from lilya.routing import Router
 
 SERVER_PUSH_HEADERS = {
     "accept",
@@ -39,8 +41,7 @@ async def empty_send(message: Message) -> NoReturn:  # pragma: no cover
     raise RuntimeError()
 
 
-class ClientDisconnect(Exception):
-    ...
+class ClientDisconnect(Exception): ...
 
 
 class Connection(Mapping[str, Any]):
@@ -179,6 +180,6 @@ class Connection(Mapping[str, Any]):
         self.scope["session"] = None
 
     def path_for(self, name: str, /, **path_params: Any) -> URL:
-        router: Router = self.scope["router"]
+        router: "Router" = self.scope["router"]
         url_path = router.path_for(name, **path_params)
         return url_path.make_absolute_url(base_url=self.base_url)
