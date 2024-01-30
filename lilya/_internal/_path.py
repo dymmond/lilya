@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, Iterable, Pattern, Tuple, TypeVar
+from typing import Any, Dict, Iterable, Pattern, Tuple, TypeVar, cast
 
 from lilya._internal._path_transformers import CONVERTOR_TYPES, Transformer
 from lilya.types import Scope
@@ -29,8 +29,14 @@ def join_paths(paths: Iterable[str]) -> str:
 
 def get_route_path(scope: Scope) -> str:
     root_path = scope.get("root_path", "")
-    route_path = re.sub(r"^" + root_path, "", scope["path"])
-    return route_path
+    return cast(
+        str,
+        (
+            scope["path"][len(root_path) :]
+            if root_path and scope["path"].startswith(root_path)
+            else scope["path"]
+        ),
+    )
 
 
 def replace_params(
