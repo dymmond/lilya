@@ -100,6 +100,8 @@ def generate_regex_and_format(path: str) -> Tuple[str, str, Dict[str, Transforme
         path_regex, path_format, param_convertors, idx, path_start = update_paths_and_convertors(
             path, path_regex, path_format, param_convertors, idx, param_name, convertor, match
         )
+    else:
+        path_start = path
 
     path_regex += re.escape(path[idx:]) + "$"
     path_format += path[idx:]

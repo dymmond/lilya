@@ -183,6 +183,23 @@ class Path(BaseHandler, BasePath):
             self.path
         )
 
+    def validate_params(self, name: str, path_params: dict) -> None:
+        """
+        Validates the route name and path parameters.
+
+        Args:
+            name (str): The name of the route.
+            path_params (dict): The path parameters.
+
+        Raises:
+            NoMatchFound: If there is a mismatch in route name or parameters.
+        """
+        seen_params = set(path_params.keys())
+        expected_params = set(self.param_convertors.keys())
+
+        if name != self.name or seen_params != expected_params:
+            raise NoMatchFound(name, path_params)
+
     async def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         """
         Generates a URL path for the specified route name and parameters.
@@ -204,24 +221,7 @@ class Path(BaseHandler, BasePath):
         )
         assert not remaining_params
 
-        return URLPath(path=path, protocol=ScopeType.HTTP)
-
-    def validate_params(self, name: str, path_params: dict) -> None:
-        """
-        Validates the route name and path parameters.
-
-        Args:
-            name (str): The name of the route.
-            path_params (dict): The path parameters.
-
-        Raises:
-            NoMatchFound: If there is a mismatch in route name or parameters.
-        """
-        seen_params = set(path_params.keys())
-        expected_params = set(self.param_convertors.keys())
-
-        if name != self.name or seen_params != expected_params:
-            raise NoMatchFound(name, path_params)
+        return URLPath(path=path, protocol=ScopeType.HTTP.value)
 
     def search(self, scope: Scope) -> tuple[Match, Scope]:
         """
@@ -241,7 +241,6 @@ class Path(BaseHandler, BasePath):
 
             if match:
                 return self.handle_match(scope, match)
-
         return Match.NONE, {}
 
     def handle_match(self, scope: Scope, match: re.Match) -> Tuple[Match, Scope]:
@@ -311,6 +310,16 @@ class WebsocketPath(BaseHandler, BasePath):
         self.methods: Union[List[str], Set[str], None] = methods
         self.signature: inspect.Signature = inspect.signature(self.handler)
 
+        # Defition of the app
+        handler_app = handler
+        while isinstance(handler_app, functools.partial):
+            handler_app = handler_app.func
+
+        if inspect.isfunction(handler_app) or inspect.ismethod(handler_app):
+            self.app = self.handle_websocket_session(handler_app)
+        else:
+            self.app = handler_app
+
         # Execute the middlewares
         if middleware is not None:
             for cls, options in reversed(middleware):
@@ -324,6 +333,100 @@ class WebsocketPath(BaseHandler, BasePath):
         self.path_regex, self.path_format, self.param_convertors, self.path_start = compile_path(
             self.path
         )
+
+    def search(self, scope: Scope) -> tuple[Match, Scope]:
+        """
+        Searches within the route patterns and matches against the regex.
+
+        If found, then dispatches the request to the handler of the object.
+
+        Args:
+            scope (Scope): The request scope.
+
+        Returns:
+            Tuple[Match, Scope]: The match result and child scope.
+        """
+        if scope["type"] == ScopeType.WEBSOCKET:
+            route_path = get_route_path(scope)
+            match = self.path_regex.match(route_path)
+
+            if match:
+                return self.handle_match(scope, match)
+
+        return Match.NONE, {}
+
+    def handle_match(self, scope: Scope, match: re.Match) -> Tuple[Match, Scope]:
+        """
+        Handles the case when a match is found in the route patterns.
+
+        Args:
+            scope (Scope): The request scope.
+            match: The match object from the regex.
+
+        Returns:
+            Tuple[Match, Scope]: The match result and child scope.
+        """
+        matched_params = {
+            key: self.param_convertors[key].transform(value)
+            for key, value in match.groupdict().items()
+        }
+        path_params = {**scope.get("path_params", {}), **matched_params}
+        child_scope = {"handler": self.handler, "path_params": path_params}
+        return Match.FULL, child_scope
+
+    async def handle_dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """
+        Handles the dispatch of the request to the appropriate handler.
+
+        Args:
+            scope (Scope): The request scope.
+            receive (Receive): The receive channel.
+            send (Send): The send channel.
+
+        Returns:
+            None
+        """
+        await self.app(scope, receive, send)
+
+    def validate_params(self, name: str, path_params: dict) -> None:
+        """
+        Validates the route name and path parameters.
+
+        Args:
+            name (str): The name of the route.
+            path_params (dict): The path parameters.
+
+        Raises:
+            NoMatchFound: If there is a mismatch in route name or parameters.
+        """
+        seen_params = set(path_params.keys())
+        expected_params = set(self.param_convertors.keys())
+
+        if name != self.name or seen_params != expected_params:
+            raise NoMatchFound(name, path_params)
+
+    async def path_for(self, name: str, /, **path_params: Any) -> URLPath:
+        """
+        Generates a URL path for the specified route name and parameters.
+
+        Args:
+            name (str): The name of the route.
+            path_params (dict): The path parameters.
+
+        Returns:
+            URLPath: The generated URL path.
+
+        Raises:
+            NoMatchFound: If there is no match for the given name and parameters.
+
+        """
+        self.validate_params(name, path_params)
+
+        path, remaining_params = replace_params(
+            self.path_format, self.param_convertors, path_params
+        )
+        assert not remaining_params
+        return URLPath(path=path, protocol=ScopeType.WEBSOCKET.value)
 
 
 class Include(BasePath):
