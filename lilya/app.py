@@ -1,6 +1,18 @@
 from __future__ import annotations
 
-from typing import Any, Awaitable, Callable, List, Mapping, Optional, Sequence, Union
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    ParamSpec,
+    Sequence,
+    Type,
+    Union,
+)
 
 from typing_extensions import Annotated, Doc
 
@@ -8,13 +20,19 @@ from lilya._utils import is_class_and_subclass
 from lilya.conf.exceptions import FieldException
 from lilya.conf.global_settings import Settings
 from lilya.datastructures import State, URLPath
-from lilya.middleware.base import Middleware
+from lilya.middleware.asyncexit import AsyncExitStackMiddleware
+from lilya.middleware.base import CreateMiddleware, Middleware
+from lilya.middleware.exceptions import ExceptionMiddleware
+from lilya.middleware.server_error import ServerErrorMiddleware
 from lilya.permissions.base import Permission
+from lilya.protocols.middleware import MiddlewareProtocol
 from lilya.requests import Request
 from lilya.responses import Response
 from lilya.routing import BasePath, Router
 from lilya.types import ApplicationType, ASGIApp, ExceptionHandler, Lifespan, Receive, Scope, Send
 from lilya.websockets import WebSocket
+
+P = ParamSpec("P")
 
 
 class Lilya:
@@ -134,8 +152,8 @@ class Lilya:
         self.state = State()
         self.exception_handlers = {} if exception_handlers is None else dict(exception_handlers)
         self.permissions = [] if permissions is None else list(permissions)
-        self.middleware_stack: Union[ASGIApp, None] = None
         self.custom_middleware = [] if middleware is None else list(middleware)
+        self.middleware_stack: Union[ASGIApp, None] = None
         self.router: Router = Router(
             routes=routes,
             redirect_slashes=redirect_slashes,
@@ -154,34 +172,50 @@ class Lilya:
     def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         return self.router.path_for(name, **path_params)
 
-    def build_middleware_stack(self) -> ASGIApp: ...
+    def build_middleware_stack(self) -> ASGIApp:
+        """
+        Build the optimized middleware stack for the Lilya application.
 
-    #     debug = self.debug
-    #     error_handler = None
-    #     exception_handlers: Dict[Any, Callable[[Request, Exception], Response]] = {}
+        Returns:
+            ASGIApp: The ASGI application with the middleware stack.
+        """
+        error_handler = self._get_error_handler()
+        exception_handlers = self._get_exception_handlers()
 
-    #     for key, value in self.exception_handlers.items():
-    #         if key in (500, Exception):
-    #             error_handler = value
-    #         else:
-    #             exception_handlers[key] = value
+        middleware = [
+            CreateMiddleware(ServerErrorMiddleware, handler=error_handler, debug=self.debug),
+            *self.custom_middleware,
+            CreateMiddleware(ExceptionMiddleware, handlers=exception_handlers, debug=self.debug),
+            CreateMiddleware(AsyncExitStackMiddleware),
+        ]
 
-    #     middleware = (
-    #         [Middleware(ServerErrorMiddleware, handler=error_handler, debug=debug)]
-    #         + self.custom_middleware
-    #         + [Middleware(ExceptionMiddleware, handlers=exception_handlers, debug=debug)]
-    #     )
+        app = self.router
+        for middleware_class, *args, options in reversed(middleware):  # type: ignore
+            app = middleware_class(app=app, *args, **options)
 
-    #     app = self.router
-    #     for cls, options in reversed(middleware):
-    #         app = cls(app=app, **options)
-    #     return app
+        return app
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        scope["app"] = self
-        if self.middleware_stack is None:
-            self.middleware_stack = self.build_middleware_stack()
-        await self.middleware_stack(scope, receive, send)
+    def _get_error_handler(self) -> Optional[Callable[[Request, Exception], Response]]:
+        """
+        Get the error handler for middleware based on the exception handlers.
+
+        Returns:
+            Optional[Callable[[Request, Exception], Response]]: The error handler function.
+        """
+        return self.exception_handlers.get(500) or self.exception_handlers.get(Exception)  # type: ignore
+
+    def _get_exception_handlers(self) -> Dict[Exception, ExceptionHandler]:
+        """
+        Get the exception handlers for middleware based on the application's exception handlers.
+
+        Returns:
+            Dict: The exception handlers.
+        """
+        return {
+            key: value
+            for key, value in self.exception_handlers.items()
+            if key not in (500, Exception)
+        }
 
     def on_event(self, event_type: str) -> Callable:
         return self.router.on_event(event_type)
@@ -255,5 +289,28 @@ class Lilya:
             path=path, handler=handler, name=name, middleware=middleware, permissions=permissions
         )
 
+    def add_middleware(
+        self, middleware: Type[MiddlewareProtocol], *args: P.args, **kwargs: P.kwargs
+    ) -> None:
+        """
+        Adds an external middleware to the stack.
+        """
+        if self.middleware_stack is not None:
+            raise RuntimeError("Middlewares cannot be added once the application has started.")
+        self.custom_middleware.insert(0, CreateMiddleware(middleware, *args, **kwargs))  # type: ignore
+
+    def add_exception_handler(
+        self,
+        exception_cls_or_status_code: Union[int, Type[Exception]],
+        handler: ExceptionHandler,
+    ) -> None:
+        self.exception_handlers[exception_cls_or_status_code] = handler
+
     def add_event_handler(self, event_type: str, func: Callable[[], Any]) -> None:
         self.router.add_event_handler(event_type, func)
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        scope["app"] = self
+        if self.middleware_stack is None:
+            self.middleware_stack = self.build_middleware_stack()
+        await self.middleware_stack(scope, receive, send)
