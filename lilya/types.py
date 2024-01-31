@@ -5,6 +5,7 @@ from typing import (
     Callable,
     Mapping,
     MutableMapping,
+    Sequence,
     TypeVar,
     Union,
 )
@@ -26,6 +27,7 @@ Lifespan = Union[StatelessLifespan[ApplicationType], StatefulLifespan[Applicatio
 # HTTPExceptionHandler = Callable[["Request", Exception], Union["Response", Awaitable["Response"]]]
 # WebSocketExceptionHandler = Callable[["WebSocket", Exception], Awaitable[None]]
 # ExceptionHandler = Union[HTTPExceptionHandler, WebSocketExceptionHandler]
+LifespanEvent = Sequence[Callable[[], Any]]
 
 HTTPExceptionHandler = Callable[[Any, Exception], Union[Any, Awaitable[Any]]]
 WebSocketExceptionHandler = Callable[[Any, Exception], Awaitable[None]]

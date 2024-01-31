@@ -3,18 +3,22 @@ from __future__ import annotations
 import functools
 import inspect
 import re
+import sys
+import traceback
 from typing import Any, Callable, Dict, List, Sequence, Set, Tuple, TypeVar, Union
 
 from lilya import status
+from lilya._internal._events import AsyncLifespan, handle_lifespan_events
 from lilya._internal._path import clean_path, compile_path, get_route_path, replace_params
 from lilya._internal._responses import BaseHandler
+from lilya.compat import is_async_callable
 from lilya.core.urls import include
-from lilya.datastructures import Header, URLPath
+from lilya.datastructures import URL, Header, URLPath
 from lilya.enums import HTTPMethod, Match, ScopeType
 from lilya.exceptions import HTTPException, ImproperlyConfigured
 from lilya.middleware.base import Middleware
 from lilya.permissions.base import Permission
-from lilya.responses import PlainText
+from lilya.responses import PlainText, RedirectResponse
 from lilya.types import ASGIApp, Lifespan, Receive, Scope, Send
 from lilya.websockets import WebSocketClose
 
@@ -201,8 +205,8 @@ class Path(BaseHandler, BasePath):
             None
         """
         if middleware is not None:
-            for cls, options in reversed(middleware):
-                self.app = cls(app=self.app, **options)
+            for cls, args, options in reversed(middleware):
+                self.app = cls(app=self.app, *args, **options)  # noqa
 
     def _apply_permissions(self, permissions: Union[Sequence[Permission], None]) -> None:
         """
@@ -215,8 +219,8 @@ class Path(BaseHandler, BasePath):
             None
         """
         if permissions is not None:
-            for cls, options in reversed(permissions):
-                self.app = cls(app=self.app, **options)
+            for cls, args, options in reversed(permissions):
+                self.app = cls(app=self.app, *args, **options)  # noqa
 
     async def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         """
@@ -380,8 +384,8 @@ class WebsocketPath(BaseHandler, BasePath):
             None
         """
         if middleware is not None:
-            for cls, options in reversed(middleware):
-                self.app = cls(app=self.app, **options)
+            for cls, args, options in reversed(middleware):
+                self.app = cls(app=self.app, *args, **options)  # noqa
 
     def _apply_permissions(self, permissions: Union[Sequence[Permission], None]) -> None:
         """
@@ -394,8 +398,8 @@ class WebsocketPath(BaseHandler, BasePath):
             None
         """
         if permissions is not None:
-            for cls, options in reversed(permissions):
-                self.app = cls(app=self.app, **options)
+            for cls, args, options in reversed(permissions):
+                self.app = cls(app=self.app, *args, **options)  # noqa
 
     def search(self, scope: Scope) -> tuple[Match, Scope]:
         """
@@ -584,8 +588,8 @@ class Include(BasePath):
             None
         """
         if middleware is not None:
-            for cls, options in reversed(middleware):
-                self.app = cls(app=self.app, **options)
+            for cls, args, options in reversed(middleware):
+                self.app = cls(app=self.app, *args, **options)  # noqa
 
     def _apply_permissions(self, permissions: Union[Sequence[Permission], None]) -> None:
         """
@@ -598,8 +602,8 @@ class Include(BasePath):
             None
         """
         if permissions is not None:
-            for cls, options in reversed(permissions):
-                self.app = cls(app=self.app, **options)
+            for cls, args, options in reversed(permissions):
+                self.app = cls(app=self.app, *args, **options)  # noqa
 
     @property
     def routes(self) -> List[BasePath]:
@@ -905,9 +909,23 @@ class Router:
         permissions: Union[Sequence[Permission], None] = None,
         include_in_schema: bool = True,
     ) -> None:
+        assert lifespan is None or (
+            on_startup is None and on_shutdown is None
+        ), "Use either 'lifespan' or 'on_startup'/'on_shutdown', not both."
+
+        if inspect.isasyncgenfunction(lifespan) or inspect.isgeneratorfunction(lifespan):
+            raise ImproperlyConfigured("async function generators are not allowed.")
+
+        self.lifespan_context = handle_lifespan_events(
+            on_startup=on_startup, on_shutdown=on_shutdown, lifespan=lifespan
+        )
+
+        if self.lifespan_context is None:
+            self.lifespan_context = AsyncLifespan(self)
+
         self.routes = [] if routes is None else list(routes)
         self.redirect_slashes = redirect_slashes
-        self.default = self.raise_404 if default is None else default
+        self.default = self.handle_not_found if default is None else default
         self.on_startup = [] if on_startup is None else list(on_startup)
         self.on_shutdown = [] if on_shutdown is None else list(on_shutdown)
         self.include_in_schema = include_in_schema
@@ -915,15 +933,38 @@ class Router:
         self.middleware = middleware if middleware is not None else list(middleware)
         self.permissions = permissions if permissions is not None else list(permissions)
 
-        # Execute the middlewares
-        if middleware is not None:
-            for cls, options in reversed(middleware):
-                self.middleware_stack = cls(app=self.app, **options)
+        self.middleware_stack = self.app
 
-        # Execute the permissions
+        self._apply_middleware(self.middleware)
+        self._apply_permissions(self.permissions)
+
+    def _apply_middleware(self, middleware: Union[Sequence[Middleware], None]) -> None:
+        """
+        Apply middleware to the app.
+
+        Args:
+            middleware (Union[Sequence[Middleware], None]): The middleware.
+
+        Returns:
+            None
+        """
+        if middleware is not None:
+            for cls, args, options in reversed(middleware):
+                self.middleware_stack = cls(app=self.middleware_stack, *args, **options)  # noqa
+
+    def _apply_permissions(self, permissions: Union[Sequence[Permission], None]) -> None:
+        """
+        Apply permissions to the app.
+
+        Args:
+            permissions (Union[Sequence[Permission], None]): The permissions.
+
+        Returns:
+            None
+        """
         if permissions is not None:
-            for cls, options in reversed(permissions):
-                self.permission_stack = cls(app=self.app, **options)
+            for cls, args, options in reversed(permissions):
+                self.middleware_stack = cls(app=self.middleware_stack, *args, **options)  # noqa
 
     def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         for route in self.routes:
@@ -933,32 +974,201 @@ class Router:
                 ...
         raise NoMatchFound(name, path_params)
 
-    def search(self, scope: Scope) -> Tuple[Match, Scope]:
+    async def startup(self) -> None:
         """
-        Searches for a matching route.
+        Runs the the events on startup.
         """
-        raise NotImplementedError()  # pragma: no cover
+        for handler in self.on_startup:
+            if is_async_callable(handler):
+                await handler()
+            else:
+                handler()
 
-    async def dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
+    async def shutdown(self) -> None:
         """
-        Dispatches the request to the appropriate handler.
+        Runs the the events on startup.
+        """
+        for handler in self.on_shutdown:
+            if is_async_callable(handler):
+                await handler()
+            else:
+                handler()
+
+    async def lifespan(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """
+        Handle ASGI lifespan messages, managing application startup and shutdown events.
 
         Args:
-            scope (Scope): The request scope.
-            receive (Receive): The receive channel.
-            send (Send): The send channel.
-
-        Returns:
-            None
+            scope (Dict[str, Any]): The ASGI scope.
+            receive (Receive): The ASGI receive channel.
+            send (Send): The ASGI send channel.
         """
-        match, child_scope = self.search(scope)
+        await receive()
+        await self.handle_lifespan_startup(scope, receive, send)
+        await self.handle_lifespan_shutdown(send)
 
-        if match == Match.NONE:
-            await self.handle_not_found(scope, receive, send)
+    async def handle_lifespan_startup(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """
+        Handle the startup phase of the ASGI lifespan.
+
+        Args:
+            scope (Dict[str, Any]): The ASGI scope.
+            send (Send): The ASGI send channel.
+        """
+        try:
+            async with self.lifespan_context(scope.get("app")) as app_state:
+                if app_state is not None:
+                    self._update_scope_with_state(scope, app_state)
+                await send({"type": "lifespan.startup.complete"})
+                await receive()
+        except BaseException:
+            await self._handle_exception(send, startup=True)
+            raise
+
+    async def handle_lifespan_shutdown(self, send: Send) -> None:
+        """
+        Handle the shutdown phase of the ASGI lifespan.
+
+        Args:
+            scope (Dict[str, Any]): The ASGI scope.
+            send (Send): The ASGI send channel.
+        """
+        try:
+            await send({"type": "lifespan.shutdown.complete"})
+        except BaseException:
+            await self._handle_exception(send, startup=False)
+            raise
+
+    def _update_scope_with_state(self, scope: Scope, state: Dict[str, Any]) -> None:
+        """
+        Update the ASGI scope with the given state.
+
+        Args:
+            scope (Dict[str, Any]): The ASGI scope.
+            state (Dict[str, Any]): The state to update the scope with.
+        """
+        if "state" not in scope:
+            raise RuntimeError('The server does not support "state" in the lifespan scope.')
+        scope["state"].update(state)
+
+    async def _handle_exception(self, send: Send, startup: bool) -> None:
+        """
+        Handle exceptions during the lifespan phase.
+
+        Args:
+            send (Send): The ASGI send channel.
+            startup (bool): Whether the exception occurred during startup.
+        """
+        exc_type, exc, tb = sys.exc_info()
+        exc_text = "".join(traceback.format_exception(exc_type, exc, tb))
+        message_type = "lifespan.startup.failed" if startup else "lifespan.shutdown.failed"
+        await send({"type": message_type, "message": exc_text})
+
+    async def handle_lifespan(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """
+        Handle ASGI lifespan messages, managing application startup and shutdown events.
+
+        Args:
+            scope (Scope): The ASGI scope.
+            receive (Receive): The ASGI receive channel.
+            send (Send): The ASGI send channel.
+        """
+        await receive()
+        await self.lifespan(scope, receive, send)
+
+    async def handle_route(
+        self, route: BasePath, child_scope: Scope, scope: Scope, receive: Receive, send: Send
+    ) -> None:
+        """
+        Handle a route match.
+
+        Args:
+            route: The matched route.
+            child_scope (Scope): The ASGI child scope.
+            scope (Scope): The ASGI scope.
+            receive (Receive): The ASGI receive channel.
+            send (Send): The ASGI send channel.
+        """
+        scope.update(child_scope)
+        await route.handle_dispatch(scope, receive, send)  # type: ignore
+
+    async def handle_partial(
+        self, route: BasePath, partial_scope: Scope, scope: Scope, receive: Receive, send: Send
+    ) -> None:
+        """
+        Handle a partial route match.
+
+        Args:
+            route: The partial matched route.
+            partial_scope: The partial route scope.
+            scope (Scope): The ASGI scope.
+            receive (Receive): The ASGI receive channel.
+            send (Send): The ASGI send channel.
+        """
+        scope.update(partial_scope)
+        await route.handle_dispatch(scope, receive, send)  # type: ignore
+
+    async def handle_default(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """
+        Handle the default behavior.
+
+        Args:
+            scope (Scope): The ASGI scope.
+            receive (Receive): The ASGI receive channel.
+            send (Send): The ASGI send channel.
+        """
+        await self.default(scope, receive, send)
+
+    async def app(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """
+        Handle ASGI messages, managing different scopes and routing.
+
+        Args:
+            scope (Scope): The ASGI scope.
+            receive (Receive): The ASGI receive channel.
+            send (Send): The ASGI send channel.
+        """
+        assert scope["type"] in (ScopeType.HTTP, ScopeType.WEBSOCKET, ScopeType.LIFESPAN)
+
+        if "router" not in scope:
+            scope["router"] = self
+
+        if scope["type"] == ScopeType.LIFESPAN:
+            await self.handle_lifespan(scope, receive, send)
             return
 
-        scope.update(child_scope)
-        await self.handle_dispatch(scope, receive, send)  # type: ignore
+        partial = None
+
+        for route in self.routes:
+            match, child_scope = route.search(scope)
+            if match == Match.FULL:
+                await self.handle_route(route, child_scope, scope, receive, send)
+                return
+            elif match == Match.PARTIAL and partial is None:
+                partial = route
+                partial_scope = child_scope
+
+        if partial is not None:
+            await self.handle_partial(partial, partial_scope, scope, receive, send)
+            return
+
+        route_path = get_route_path(scope)
+        if scope["type"] == "http" and self.redirect_slashes and route_path != "/":
+            redirect_scope = dict(scope)
+            if route_path.endswith("/"):
+                redirect_scope["path"] = redirect_scope["path"].rstrip("/")
+            else:
+                redirect_scope["path"] = redirect_scope["path"] + "/"
+
+            for route in self.routes:
+                match, child_scope = route.search(redirect_scope)
+                if match != Match.NONE:
+                    redirect_url = URL.build_from_scope(scope=redirect_scope)
+                    response = RedirectResponse(url=str(redirect_url))
+                    await response(scope, receive, send)
+                    return
+
+        await self.handle_default(scope, receive, send)
 
     async def handle_not_found(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -979,22 +1189,8 @@ class Router:
             websocket_close = WebSocketClose()
             await websocket_close(scope, receive, send)
 
-    def handle_dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
-        """
-        Handles the dispatch of the request to the appropriate handler.
-
-        Args:
-            scope (Scope): The request scope.
-            receive (Receive): The receive channel.
-            send (Send): The send channel.
-
-        Returns:
-            None
-        """
-        raise NotImplementedError()  # pragma: no cover
-
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        await self.dispatch(scope=scope, receive=receive, send=send)
+        await self.middleware_stack(scope, receive, send)
 
     def __repr__(self) -> str:
         name = self.name or ""

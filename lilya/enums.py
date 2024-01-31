@@ -33,6 +33,7 @@ class DefaultPort(IntEnum):
 class ScopeType(StrEnum):
     HTTP = "http"
     WEBSOCKET = "websocket"
+    LIFESPAN = "lifespan"
 
 
 class SignatureDefault(StrEnum):
