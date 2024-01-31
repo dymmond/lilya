@@ -82,3 +82,6 @@ class MethodNotAllowed(HTTPException):
 
 
 class WebSocketRuntimeError(RuntimeError): ...
+
+
+class AuthenticationError(Exception): ...
