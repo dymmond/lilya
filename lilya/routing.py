@@ -14,7 +14,7 @@ from lilya._internal._responses import BaseHandler
 from lilya.compat import is_async_callable
 from lilya.core.urls import include
 from lilya.datastructures import URL, Header, URLPath
-from lilya.enums import HTTPMethod, Match, ScopeType
+from lilya.enums import EventType, HTTPMethod, Match, ScopeType
 from lilya.exceptions import HTTPException, ImproperlyConfigured
 from lilya.middleware.base import Middleware
 from lilya.permissions.base import Permission
@@ -1262,6 +1262,23 @@ class Router:
             path, handler=handler, middleware=middleware, permissions=permissions, name=name
         )
         self.routes.append(route)
+
+    def add_event_handler(
+        self, event_type: str, func: Callable[[], Any]
+    ) -> None:  # pragma: no cover
+        assert event_type in (EventType.ON_STARTUP, EventType.ON_SHUTDOWN)
+
+        if event_type == EventType.ON_STARTUP:
+            self.on_startup.append(func)
+        else:
+            self.on_shutdown.append(func)
+
+    def on_event(self, event_type: str) -> Callable:
+        def wrapper(func: Callable) -> Callable:
+            self.add_event_handler(event_type, func)
+            return func
+
+        return wrapper
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         await self.middleware_stack(scope, receive, send)
