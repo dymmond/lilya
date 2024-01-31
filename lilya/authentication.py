@@ -20,7 +20,7 @@ class AuthenticationBackend(ABC, AuthenticationProtocol):
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         raise NotImplementedError("All backends must implement the `__call__()`")
 
-    async def authenticate(self, connection: Connection) -> Any:
+    async def authenticate(self, conn: Connection, *args: P.args, **kwargs: P.kwargs) -> Any:
         raise NotImplementedError("All backends must implement the `authenticate()`")
 
 
