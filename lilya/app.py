@@ -29,66 +29,102 @@ class Lilya:
     def __init__(
         self,
         debug: Annotated[bool, Doc("Enable or disable debug mode. Defaults to False.")] = False,
-        routes: Annotated[
-            Union[Sequence[Any], None],
-            Doc("A sequence of routes for the application."),
-        ] = None,
-        middleware: Annotated[
-            Union[Sequence[Any], None],
-            Doc("A sequence of middleware components for the application."),
-        ] = None,
-        exception_handlers: Annotated[
-            Union[Mapping[Any, ExceptionHandler], None],
-            Doc("A mapping of exception types to handlers for the application."),
-        ] = None,
-        permissions: Annotated[
-            Union[Sequence[Permission], None],
-            Doc("A sequence of permission components for the application."),
-        ] = None,
-        on_startup: Annotated[
-            Union[Sequence[Callable[[], Any]], None],
-            Doc("A sequence of startup functions to be called when the application starts."),
-        ] = None,
-        on_shutdown: Annotated[
-            Union[Sequence[Callable[[], Any]], None],
-            Doc("A sequence of shutdown functions to be called when the application stops."),
-        ] = None,
-        redirect_slashes: Annotated[
-            bool,
-            Doc("Enable or disable automatic trailing slash redirection for HTTP routes."),
-        ] = True,
-        lifespan: Annotated[
-            Optional[Lifespan[ApplicationType]],
-            Doc("An optional lifespan handler for managing startup and shutdown events."),
-        ] = None,
-        include_in_schema: Annotated[
-            bool,
-            Doc("Enable or disable inclusion of the application in the OpenAPI schema."),
-        ] = True,
-        settings_config: Annotated[
+        settings_module: Annotated[
             Optional[Settings],
             Doc(
                 """
                 Alternative settings parameter. This parameter is an alternative to
                 `SETTINGS_MODULE` way of loading your settings into an Esmerald application.
 
-                When the `settings_config` is provided, it will make sure it takes priority over
+                When the `settings_module` is provided, it will make sure it takes priority over
                 any other settings provided for the instance.
                 """
             ),
         ] = None,
+        routes: Annotated[
+            Union[Sequence[Any], None],
+            Doc(
+                """
+                A sequence of routes for the application.
+                """
+            ),
+        ] = None,
+        middleware: Annotated[
+            Union[Sequence[Any], None],
+            Doc(
+                """
+                A sequence of middleware components for the application.
+                """
+            ),
+        ] = None,
+        exception_handlers: Annotated[
+            Union[Mapping[Any, ExceptionHandler], None],
+            Doc(
+                """
+                A mapping of exception types to handlers for the application.
+                """
+            ),
+        ] = None,
+        permissions: Annotated[
+            Union[Sequence[Permission], None],
+            Doc(
+                """
+                A sequence of permission components for the application.
+                """
+            ),
+        ] = None,
+        on_startup: Annotated[
+            Union[Sequence[Callable[[], Any]], None],
+            Doc(
+                """
+                A sequence of startup functions to be called when the application starts.
+                """
+            ),
+        ] = None,
+        on_shutdown: Annotated[
+            Union[Sequence[Callable[[], Any]], None],
+            Doc(
+                """
+                A sequence of shutdown functions to be called when the application stops.
+                """
+            ),
+        ] = None,
+        redirect_slashes: Annotated[
+            bool,
+            Doc(
+                """
+                Enable or disable automatic trailing slash redirection for HTTP routes.
+                """
+            ),
+        ] = True,
+        lifespan: Annotated[
+            Optional[Lifespan[ApplicationType]],
+            Doc(
+                """
+                An optional lifespan handler for managing startup and shutdown events.
+                """
+            ),
+        ] = None,
+        include_in_schema: Annotated[
+            bool,
+            Doc(
+                """
+                Enable or disable inclusion of the application in the OpenAPI schema.
+                """
+            ),
+        ] = True,
     ) -> None:
-        self.settings_config = None
+        self.settings_module = None
 
-        if settings_config:
-            if not isinstance(settings_config, Settings) and not is_class_and_subclass(
-                settings_config, Settings
+        if settings_module:
+            if not isinstance(settings_module, Settings) and not is_class_and_subclass(
+                settings_module, Settings
             ):  # type: ignore
-                raise FieldException("'settings_config' must be a subclass of Settings")
-            elif isinstance(settings_config, Settings):
-                self.settings_config = settings_config
-            elif is_class_and_subclass(settings_config, Settings):  # type: ignore
-                self.settings_config = settings_config()
+                raise FieldException("'settings_module' must be a subclass of Settings")
+            elif isinstance(settings_module, Settings):
+                self.settings_module = settings_module
+            elif is_class_and_subclass(settings_module, Settings):  # type: ignore
+                self.settings_module = settings_module()
 
         self.debug = debug
         self.state = State()
