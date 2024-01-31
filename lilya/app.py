@@ -24,8 +24,9 @@ from lilya.middleware.asyncexit import AsyncExitStackMiddleware
 from lilya.middleware.base import CreateMiddleware, Middleware
 from lilya.middleware.exceptions import ExceptionMiddleware
 from lilya.middleware.server_error import ServerErrorMiddleware
-from lilya.permissions.base import Permission
+from lilya.permissions.base import CreatePermission, Permission
 from lilya.protocols.middleware import MiddlewareProtocol
+from lilya.protocols.permissions import PermissionProtocol
 from lilya.requests import Request
 from lilya.responses import Response
 from lilya.routing import BasePath, Router
@@ -153,7 +154,11 @@ class Lilya:
         self.exception_handlers = {} if exception_handlers is None else dict(exception_handlers)
         self.permissions = [] if permissions is None else list(permissions)
         self.custom_middleware = [] if middleware is None else list(middleware)
+        self.custom_permissions = [] if permissions is None else list(permissions)
+
         self.middleware_stack: Union[ASGIApp, None] = None
+        self.permission_stack: Union[ASGIApp, None] = None
+
         self.router: Router = Router(
             routes=routes,
             redirect_slashes=redirect_slashes,
@@ -193,7 +198,8 @@ class Lilya:
         for middleware_class, *args, options in reversed(middleware):  # type: ignore
             app = middleware_class(app=app, *args, **options)
 
-        return app
+        self.permission_stack = self.build_permission_stack(app)
+        return self.permission_stack
 
     def _get_error_handler(self) -> Optional[Callable[[Request, Exception], Response]]:
         """
@@ -216,6 +222,11 @@ class Lilya:
             for key, value in self.exception_handlers.items()
             if key not in (500, Exception)
         }
+
+    def build_permission_stack(self, app: ASGIApp) -> ASGIApp:
+        for cls, args, kwargs in reversed(self.custom_permissions):
+            app = cls(app=app, *args, **kwargs)
+        return app
 
     def on_event(self, event_type: str) -> Callable:
         return self.router.on_event(event_type)
@@ -298,6 +309,16 @@ class Lilya:
         if self.middleware_stack is not None:
             raise RuntimeError("Middlewares cannot be added once the application has started.")
         self.custom_middleware.insert(0, CreateMiddleware(middleware, *args, **kwargs))  # type: ignore
+
+    def add_permission(
+        self, permission: Type[PermissionProtocol], *args: P.args, **kwargs: P.kwargs
+    ) -> None:
+        """
+        Adds an external permissions to the stack.
+        """
+        if self.middleware_stack is not None:
+            raise RuntimeError("Permissions cannot be added once the application has started.")
+        self.custom_permissions.insert(0, CreatePermission(permission, *args, **kwargs))  # type: ignore
 
     def add_exception_handler(
         self,
