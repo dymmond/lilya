@@ -61,10 +61,6 @@ class Lilya:
             ),
         ] = None,
     ) -> None:
-        assert lifespan is None or (
-            on_startup is None and on_shutdown is None
-        ), "Use either 'lifespan' or 'on_startup'/'on_shutdown', not both."
-
         self.settings_config = None
 
         if settings_config:
