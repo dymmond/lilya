@@ -63,9 +63,7 @@ class SessionMiddleware:
         initial_session_was_empty = await self.load_session_data(scope, connection)
 
         async def send_wrapper(message: Message) -> None:
-            await self.process_response(
-                message, scope, initial_session_was_empty, connection, send
-            )
+            await self.process_response(message, scope, initial_session_was_empty, send)
 
         await self.app(scope, receive, send_wrapper)
 
@@ -97,7 +95,6 @@ class SessionMiddleware:
         message: Message,
         scope: Scope,
         initial_session_was_empty: bool,
-        connection: Connection,
         send: Send,
     ) -> None:
         """
@@ -112,13 +109,13 @@ class SessionMiddleware:
         """
         if message["type"] == "http.response.start":
             if scope["session"]:
-                await self.set_session_cookie(scope, connection)
+                await self.set_session_cookie(scope)
             elif not initial_session_was_empty:
                 await self.clear_session_cookie(scope)
 
         await send(message)
 
-    async def set_session_cookie(self, scope: Scope, connection: Connection) -> None:
+    async def set_session_cookie(self, scope: Scope) -> None:
         """
         Set the session cookie in the response headers.
 
