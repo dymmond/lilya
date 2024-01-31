@@ -1,5 +1,5 @@
 import sys
-from typing import Any, Callable
+from typing import Any, Callable, Iterator
 
 from lilya._internal._iterables import BaseWrapper
 from lilya.types import ASGIApp
@@ -33,5 +33,8 @@ class CreateMiddleware:
         self.args = args
         self.kwargs = kwargs
 
-    def __call__(self, app: ASGIApp) -> Any:
-        return Middleware(self.middleware, app=app, *self.args, **self.kwargs)  # noqa
+    def __call__(self, app: ASGIApp, *args: P.args, **kwargs: P.kwargs) -> Any:
+        return self.middleware(app=app, *args, **kwargs)
+
+    def __iter__(self) -> Iterator[Any]:
+        return iter((self.middleware, self.args, self.kwargs))

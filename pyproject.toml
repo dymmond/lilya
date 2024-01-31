@@ -55,10 +55,12 @@ Source = "https://github.com/dymmond/lilya"
 
 [project.optional-dependencies]
 test = [
+    "a2wsgi>=1.10.0,<2.0.0",
     "autoflake>=2.0.2,<3.0.0",
     "anyio[trio]>=3.6.2,<5.0.0",
     "asyncio[trio]>=3.4.3,<4.0.0",
     "black==24.1.1,<25.0",
+    "freezegun>=1.4.0,<2.0.0",
     "httpx>=0.25.2,<1.0.0",
     "isort>=5.12.0,<6.0.0",
     "mypy==1.7.1",
@@ -123,6 +125,7 @@ ignore = [
     "E501", # line too long, handled by black
     "B008", # do not perform function calls in argument defaults
     "C901", # too complex
+    "B026", # too complex
 ]
 
 exclude = ["docs_src/"]

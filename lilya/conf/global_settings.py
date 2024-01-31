@@ -55,7 +55,7 @@ class Settings(BaseSettings):
         ),
     ] = field(default=True)
 
-    default_pattern: Annotated[
+    default_route_pattern: Annotated[
         str,
         Doc(
             """

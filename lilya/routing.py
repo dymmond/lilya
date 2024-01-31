@@ -207,7 +207,7 @@ class Path(BaseHandler, BasePath):
         """
         if middleware is not None:
             for cls, args, options in reversed(middleware):
-                self.app = cls(app=self.app, *args, **options)  # noqa
+                self.app = cls(app=self.app, *args, **options)
 
     def _apply_permissions(self, permissions: Union[Sequence[Permission], None]) -> None:
         """
@@ -221,7 +221,7 @@ class Path(BaseHandler, BasePath):
         """
         if permissions is not None:
             for cls, args, options in reversed(permissions):
-                self.app = cls(app=self.app, *args, **options)  # noqa
+                self.app = cls(app=self.app, *args, **options)
 
     async def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         """
@@ -386,7 +386,7 @@ class WebsocketPath(BaseHandler, BasePath):
         """
         if middleware is not None:
             for cls, args, options in reversed(middleware):
-                self.app = cls(app=self.app, *args, **options)  # noqa
+                self.app = cls(app=self.app, *args, **options)
 
     def _apply_permissions(self, permissions: Union[Sequence[Permission], None]) -> None:
         """
@@ -400,7 +400,7 @@ class WebsocketPath(BaseHandler, BasePath):
         """
         if permissions is not None:
             for cls, args, options in reversed(permissions):
-                self.app = cls(app=self.app, *args, **options)  # noqa
+                self.app = cls(app=self.app, *args, **options)
 
     def search(self, scope: Scope) -> tuple[Match, Scope]:
         """
@@ -590,7 +590,7 @@ class Include(BasePath):
         """
         if middleware is not None:
             for cls, args, options in reversed(middleware):
-                self.app = cls(app=self.app, *args, **options)  # noqa
+                self.app = cls(app=self.app, *args, **options)
 
     def _apply_permissions(self, permissions: Union[Sequence[Permission], None]) -> None:
         """
@@ -604,7 +604,7 @@ class Include(BasePath):
         """
         if permissions is not None:
             for cls, args, options in reversed(permissions):
-                self.app = cls(app=self.app, *args, **options)  # noqa
+                self.app = cls(app=self.app, *args, **options)
 
     @property
     def routes(self) -> List[BasePath]:
@@ -951,7 +951,7 @@ class Router:
         """
         if middleware is not None:
             for cls, args, options in reversed(middleware):
-                self.middleware_stack = cls(app=self.middleware_stack, *args, **options)  # noqa
+                self.middleware_stack = cls(app=self.middleware_stack, *args, **options)
 
     def _apply_permissions(self, permissions: Union[Sequence[Permission], None]) -> None:
         """
@@ -965,7 +965,7 @@ class Router:
         """
         if permissions is not None:
             for cls, args, options in reversed(permissions):
-                self.middleware_stack = cls(app=self.middleware_stack, *args, **options)  # noqa
+                self.middleware_stack = cls(app=self.middleware_stack, *args, **options)
 
     def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         for route in self.routes:
@@ -1227,8 +1227,8 @@ class Router:
         self,
         path: str,
         handler: Callable[[Request], Union[Awaitable[Response], Response]],
-        methods: list[str] | None = None,
-        name: str | None = None,
+        methods: Union[List[str], None] = None,
+        name: Union[str, None] = None,
         middleware: Union[Sequence[Middleware], None] = None,
         permissions: Union[Sequence[Permission], None] = None,
         include_in_schema: bool = True,
@@ -1251,9 +1251,9 @@ class Router:
         self,
         path: str,
         handler: Callable[[WebSocket], Awaitable[None]],
+        name: Union[str, None] = None,
         middleware: Union[Sequence[Middleware], None] = None,
         permissions: Union[Sequence[Permission], None] = None,
-        name: str | None = None,
     ) -> None:
         """
         Manually creates a `WebsocketPath` from a given handler.

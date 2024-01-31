@@ -1,4 +1,4 @@
-from lilya.permissions.base import CreatePermission, Permission
+from lilya.permissions.base import CreatePermission
 from lilya.protocols.permissions import PermissionProtocol
 from lilya.responses import JSONResponse
 from lilya.types import ASGIApp, Receive, Scope, Send
@@ -23,4 +23,4 @@ def test_create_permission():
 
     permission = obj(app=app)
 
-    assert isinstance(permission, Permission)
+    assert isinstance(permission, AcceptAll)

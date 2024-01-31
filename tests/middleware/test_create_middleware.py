@@ -1,4 +1,4 @@
-from lilya.middleware.base import CreateMiddleware, Middleware
+from lilya.middleware.base import CreateMiddleware
 from lilya.protocols.middleware import MiddlewareProtocol
 from lilya.responses import JSONResponse
 from lilya.types import ASGIApp, Receive, Scope, Send
@@ -18,9 +18,9 @@ class AcceptMiddleware(MiddlewareProtocol):
         self.app(scope, receive, send)
 
 
-def test_create_middleare():
+def test_create_middleware():
     obj = CreateMiddleware(AcceptMiddleware)
 
-    middleare = obj(app=app)
+    middleware = obj(app=app)
 
-    assert isinstance(middleare, Middleware)
+    assert isinstance(middleware, AcceptMiddleware)

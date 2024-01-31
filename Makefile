@@ -29,7 +29,7 @@ build-docs: ## Runs the local docs
 
 .PHONY: test
 test: ## Runs the tests
-	SETTINGS_MODULE='tests.settings.TestSettings' pytest $(TESTONLY) --disable-pytest-warnings -s -vv && scripts/clean
+	SETTINGS_MODULE='tests.settings.TestSettings' pytest $(TESTONLY) --disable-pytest-warnings -s -vv
 
 .PHONY: requirements
 requirements: ## Install requirements for development
