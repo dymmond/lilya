@@ -1227,8 +1227,8 @@ class Router:
         self,
         path: str,
         handler: Callable[[Request], Union[Awaitable[Response], Response]],
-        methods: list[str] | None = None,
-        name: str | None = None,
+        methods: Union[List[str], None] = None,
+        name: Union[str, None] = None,
         middleware: Union[Sequence[Middleware], None] = None,
         permissions: Union[Sequence[Permission], None] = None,
         include_in_schema: bool = True,
@@ -1251,9 +1251,9 @@ class Router:
         self,
         path: str,
         handler: Callable[[WebSocket], Awaitable[None]],
+        name: Union[str, None] = None,
         middleware: Union[Sequence[Middleware], None] = None,
         permissions: Union[Sequence[Permission], None] = None,
-        name: str | None = None,
     ) -> None:
         """
         Manually creates a `WebsocketPath` from a given handler.
