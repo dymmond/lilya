@@ -55,6 +55,7 @@ Source = "https://github.com/dymmond/lilya"
 
 [project.optional-dependencies]
 test = [
+    "a2wsgi>=1.10.0,<2.0.0",
     "autoflake>=2.0.2,<3.0.0",
     "anyio[trio]>=3.6.2,<5.0.0",
     "asyncio[trio]>=3.4.3,<4.0.0",
