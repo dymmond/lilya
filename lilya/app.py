@@ -15,45 +15,62 @@ from lilya.types import ApplicationType, ASGIApp, ExceptionHandler, Lifespan
 
 class Lilya:
     """
-    Creates an application instance.
+    Initialize the Lilya ASGI framework.
 
-    * **debug** - Boolean indicating if debug tracebacks should be returned on errors.
-    * **routes** - A list of routes to serve incoming HTTP and WebSocket requests.
-    * **middleware** - A list of middleware to run for every request.
-    * **exception_handlers** - A mapping of either integer status codes,
-    * **on_startup** - A list of callables to run on application startup.
-    Startup handler callables do not take any arguments, and may be be either
-    standard functions, or async functions.
-    * **on_shutdown** - A list of callables to run on application shutdown.
-    Shutdown handler callables do not take any arguments, and may be be either
-    standard functions, or async functions.
-    * **lifespan** - A lifespan context function, which can be used to perform
-    startup and shutdown tasks. This is a newer style that replaces the
-    `on_startup` and `on_shutdown` handlers. Use one or the other, not both.
-    * **permissions** - A list of permissions to run on the top level of a
-    lilya instance.
-    * include_in_schema** - Boolean flag indicating if the routes of the instance
-    should be included in the OpenAPI schema.
+    **Example**:
+
+    ```python
+    from lilya import Lilya
+
+    app = Lilya(debug=True, routes=[...], middleware=[...], ...)
+    ```
     """
 
     def __init__(
         self,
-        debug: bool = False,
-        routes: Union[Sequence[Any], None] = None,
-        middleware: Union[Sequence[Any], None] = None,
-        exception_handlers: Union[Mapping[Any, ExceptionHandler], None] = None,
-        permissions: Union[Sequence[Permission], None] = None,
-        on_startup: Union[Sequence[Callable[[], Any]], None] = None,
-        on_shutdown: Union[Sequence[Callable[[], Any]], None] = None,
-        redirect_slashes: bool = True,
-        lifespan: Optional[Lifespan[ApplicationType]] = None,
-        include_in_schema: bool = True,
+        debug: Annotated[bool, Doc("Enable or disable debug mode. Defaults to False.")] = False,
+        routes: Annotated[
+            Union[Sequence[Any], None],
+            Doc("A sequence of routes for the application."),
+        ] = None,
+        middleware: Annotated[
+            Union[Sequence[Any], None],
+            Doc("A sequence of middleware components for the application."),
+        ] = None,
+        exception_handlers: Annotated[
+            Union[Mapping[Any, ExceptionHandler], None],
+            Doc("A mapping of exception types to handlers for the application."),
+        ] = None,
+        permissions: Annotated[
+            Union[Sequence[Permission], None],
+            Doc("A sequence of permission components for the application."),
+        ] = None,
+        on_startup: Annotated[
+            Union[Sequence[Callable[[], Any]], None],
+            Doc("A sequence of startup functions to be called when the application starts."),
+        ] = None,
+        on_shutdown: Annotated[
+            Union[Sequence[Callable[[], Any]], None],
+            Doc("A sequence of shutdown functions to be called when the application stops."),
+        ] = None,
+        redirect_slashes: Annotated[
+            bool,
+            Doc("Enable or disable automatic trailing slash redirection for HTTP routes."),
+        ] = True,
+        lifespan: Annotated[
+            Optional[Lifespan[ApplicationType]],
+            Doc("An optional lifespan handler for managing startup and shutdown events."),
+        ] = None,
+        include_in_schema: Annotated[
+            bool,
+            Doc("Enable or disable inclusion of the application in the OpenAPI schema."),
+        ] = True,
         settings_config: Annotated[
             Optional[Settings],
             Doc(
                 """
                 Alternative settings parameter. This parameter is an alternative to
-                `LILYA_SETTINGS_MODULE` way of loading your settings into an Esmerald application.
+                `SETTINGS_MODULE` way of loading your settings into an Esmerald application.
 
                 When the `settings_config` is provided, it will make sure it takes priority over
                 any other settings provided for the instance.
