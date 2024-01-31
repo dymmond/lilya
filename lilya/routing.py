@@ -5,7 +5,7 @@ import inspect
 import re
 import sys
 import traceback
-from typing import Any, Callable, Dict, List, Sequence, Set, Tuple, TypeVar, Union
+from typing import Any, Awaitable, Callable, Dict, List, Sequence, Set, Tuple, TypeVar, Union
 
 from lilya import status
 from lilya._internal._events import AsyncLifespan, handle_lifespan_events
@@ -18,9 +18,10 @@ from lilya.enums import HTTPMethod, Match, ScopeType
 from lilya.exceptions import HTTPException, ImproperlyConfigured
 from lilya.middleware.base import Middleware
 from lilya.permissions.base import Permission
-from lilya.responses import PlainText, RedirectResponse
+from lilya.requests import Request
+from lilya.responses import PlainText, RedirectResponse, Response
 from lilya.types import ASGIApp, Lifespan, Receive, Scope, Send
-from lilya.websockets import WebSocketClose
+from lilya.websockets import WebSocket, WebSocketClose
 
 T = TypeVar("T")
 
@@ -1188,6 +1189,79 @@ class Router:
         elif scope["type"] == ScopeType.WEBSOCKET:
             websocket_close = WebSocketClose()
             await websocket_close(scope, receive, send)
+
+    def include(
+        self,
+        path: str,
+        app: ASGIApp,
+        name: Union[str, None] = None,
+        middleware: Union[Sequence[Middleware], None] = None,
+        permissions: Union[Sequence[Permission], None] = None,
+        namespace: Union[str, None] = None,
+        pattern: Union[str, None] = None,
+        include_in_schema: bool = True,
+    ) -> None:
+        """
+        Adds an Include application into the routes.
+        """
+        route = Include(
+            path,
+            app=app,
+            name=name,
+            middleware=middleware,
+            permissions=permissions,
+            namespace=namespace,
+            pattern=pattern,
+            include_in_schema=include_in_schema,
+        )
+        self.routes.append(route)
+
+    def host(self, host: str, app: ASGIApp, name: Union[str, None] = None) -> None:
+        """
+        Adds a Host application into the routes.
+        """
+        route = Host(host, app=app, name=name)
+        self.routes.append(route)
+
+    def add_route(
+        self,
+        path: str,
+        handler: Callable[[Request], Union[Awaitable[Response], Response]],
+        methods: list[str] | None = None,
+        name: str | None = None,
+        middleware: Union[Sequence[Middleware], None] = None,
+        permissions: Union[Sequence[Permission], None] = None,
+        include_in_schema: bool = True,
+    ) -> None:
+        """
+        Manually creates a `Path`` from a given handler.
+        """
+        route = Path(
+            path,
+            handler=handler,
+            methods=methods,
+            middleware=middleware,
+            permissions=permissions,
+            name=name,
+            include_in_schema=include_in_schema,
+        )
+        self.routes.append(route)
+
+    def add_websocket_route(
+        self,
+        path: str,
+        handler: Callable[[WebSocket], Awaitable[None]],
+        middleware: Union[Sequence[Middleware], None] = None,
+        permissions: Union[Sequence[Permission], None] = None,
+        name: str | None = None,
+    ) -> None:
+        """
+        Manually creates a `WebsocketPath` from a given handler.
+        """
+        route = WebsocketPath(
+            path, handler=handler, middleware=middleware, permissions=permissions, name=name
+        )
+        self.routes.append(route)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         await self.middleware_stack(scope, receive, send)
