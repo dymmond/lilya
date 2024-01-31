@@ -1,18 +1,7 @@
 from __future__ import annotations
 
-from typing import (
-    Any,
-    Awaitable,
-    Callable,
-    Dict,
-    List,
-    Mapping,
-    Optional,
-    ParamSpec,
-    Sequence,
-    Type,
-    Union,
-)
+import sys
+from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional, Sequence, Type, Union
 
 from typing_extensions import Annotated, Doc
 
@@ -32,6 +21,11 @@ from lilya.responses import Response
 from lilya.routing import BasePath, Router
 from lilya.types import ApplicationType, ASGIApp, ExceptionHandler, Lifespan, Receive, Scope, Send
 from lilya.websockets import WebSocket
+
+if sys.version_info >= (3, 10):  # pragma: no cover
+    from typing import ParamSpec
+else:  # pragma: no cover
+    from typing_extensions import ParamSpec
 
 P = ParamSpec("P")
 
