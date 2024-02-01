@@ -3,13 +3,12 @@ import hmac
 import secrets
 from typing import Literal, Optional, Set, Union
 
-from starlette.types import ASGIApp, Message, Receive, Scope, Send
-
 from lilya.datastructures import Cookie, Header
 from lilya.enums import ScopeType
 from lilya.exceptions import PermissionDenied
 from lilya.protocols.middleware import MiddlewareProtocol
 from lilya.requests import Request
+from lilya.types import ASGIApp, Message, Receive, Scope, Send
 
 CSRF_SECRET_BYTES = 32
 CSRF_SECRET_LENGTH = CSRF_SECRET_BYTES * 2
