@@ -26,6 +26,9 @@ except ModuleNotFoundError:  # pragma: nocover
 class Request(Connection):
     """
     The `Request` object of Lilya.
+
+    This class represents an HTTP request in the Lilya web framework. It provides methods
+    for accessing various aspects of the request, such as headers, body, and form data.
     """
 
     _form: Union[FormData, None] = None
@@ -33,6 +36,14 @@ class Request(Connection):
     def __init__(
         self, scope: Scope, receive: Receive = empty_receive, send: Send = empty_send
     ) -> None:
+        """
+        Initialize a new instance of the Request class.
+
+        Args:
+            scope (Scope): The ASGI scope of the request.
+            receive (Receive): The receive channel for the request.
+            send (Send): The send channel for the request.
+        """
         super().__init__(scope)
         assert scope["type"] == ScopeType.HTTP
         self._receive = receive
@@ -45,19 +56,44 @@ class Request(Connection):
 
     @property
     def method(self) -> str:
+        """
+        Get the HTTP method of the request.
+
+        Returns:
+            str: The HTTP method (e.g., "GET", "POST").
+        """
         return cast(str, self.scope["method"])
 
     @property
     def receive(self) -> Receive:
+        """
+        Get the receive channel of the request.
+
+        Returns:
+            Receive: The receive channel.
+        """
         return self._receive
 
     @property
     def content_type(self) -> Tuple[str, Dict[str, str]]:
+        """
+        Get the content type of the request.
+
+        Returns:
+            Tuple[str, Dict[str, str]]: The content type as a tuple containing a string
+            and a dictionary of parameters.
+        """
         if self._content_type is Empty:
             self._content_type = self.headers.get("Content-Type", "")
         return cast(Tuple[str, Dict[str, str]], self._content_type)
 
     async def stream(self) -> AsyncGenerator[bytes, None]:
+        """
+        Stream the request body in asynchronous chunks.
+
+        Yields:
+            AsyncGenerator[bytes, None]: Bytes representing chunks of the request body.
+        """
         if self._body is Empty:
             if self._stream_consumed:
                 raise RuntimeError("Stream consumed")
@@ -80,14 +116,26 @@ class Request(Connection):
             return
 
     async def body(self) -> bytes:
+        """
+        Read the entire request body.
+
+        Returns:
+            bytes: The request body as bytes.
+        """
         if self._body is Empty:
-            chunks: "List[bytes]" = []
+            chunks: List[bytes] = []
             async for chunk in self.stream():
                 chunks.append(chunk)
             self._body = b"".join(chunks)  # type: ignore
         return cast(bytes, self._body)
 
     async def json(self) -> Any:
+        """
+        Parse the request body as JSON.
+
+        Returns:
+            Any: The parsed JSON data.
+        """
         if self._json is Empty:
             if "_body" in self.scope:
                 body = self.scope["_body"]
@@ -102,6 +150,18 @@ class Request(Connection):
         max_files: Union[int, float] = 1000,
         max_fields: Union[int, float] = 1000,
     ) -> FormData:
+        """
+        Parse and return form data from the request.
+
+        Args:
+            max_files (Union[int, float]): Maximum number of files allowed
+                in the form data.
+            max_fields (Union[int, float]): Maximum number of fields allowed
+                in the form data.
+
+        Returns:
+            FormData: The parsed form data.
+        """
         if self._form is None:
             assert (
                 parse_options_header is not None
@@ -135,15 +195,39 @@ class Request(Connection):
         max_files: Union[int, float] = 1000,
         max_fields: Union[int, float] = 1000,
     ) -> AwaitableOrContextManager[FormData]:
+        """
+        Get the form data from the request.
+
+        Args:
+            max_files (Union[int, float]): Maximum number of files allowed
+                in the form data.
+            max_fields (Union[int, float]): Maximum number of fields allowed
+                in the form data.
+
+        Returns:
+            AwaitableOrContextManager[FormData]: Awaiting or using this object will
+            return the parsed form data.
+        """
         return AwaitableOrContextManager(
             self._get_form(max_files=max_files, max_fields=max_fields)
         )
 
     async def close(self) -> None:
+        """
+        Close the request and associated resources.
+
+        This includes closing the form data, if any.
+        """
         if self._form is not None:
             await self._form.close()
 
     async def is_disconnected(self) -> bool:
+        """
+        Check if the client is disconnected.
+
+        Returns:
+            bool: True if the client is disconnected, False otherwise.
+        """
         if not self._is_disconnected:
             message: Message = {}
 
@@ -158,8 +242,14 @@ class Request(Connection):
         return self._is_disconnected
 
     async def send_push_promise(self, path: str) -> None:
+        """
+        Send a push promise for the specified path.
+
+        Args:
+            path (str): The path for which to send the push promise.
+        """
         if "http.response.push" in self.scope.get("extensions", {}):
-            raw_headers: "List[Tuple[bytes, bytes]]" = []
+            raw_headers: List[Tuple[bytes, bytes]] = []
             for name in SERVER_PUSH_HEADERS:
                 for value in self.headers.getlist(name):
                     raw_headers.append((name.encode("latin-1"), value.encode("latin-1")))

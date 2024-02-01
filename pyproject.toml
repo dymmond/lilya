@@ -54,6 +54,8 @@ Funding = "https://github.com/sponsors/tarsil"
 Source = "https://github.com/dymmond/lilya"
 
 [project.optional-dependencies]
+full = ["httpx>=0.22.0", "itsdangerous", "jinja2", "python-multipart", "pyyaml"]
+
 test = [
     "a2wsgi>=1.10.0,<2.0.0",
     "autoflake>=2.0.2,<3.0.0",

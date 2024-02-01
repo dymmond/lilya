@@ -81,6 +81,11 @@ class MethodNotAllowed(HTTPException):
     status_code = status.HTTP_405_METHOD_NOT_ALLOWED
 
 
+class PermissionDenied(HTTPException):
+    status_code = status.HTTP_403_FORBIDDEN
+    detail = "You do not have permission to perform this action."
+
+
 class WebSocketRuntimeError(RuntimeError): ...
 
 
