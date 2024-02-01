@@ -65,7 +65,7 @@ class CSRFMiddleware(MiddlewareProtocol):
             await self.app(scope, receive, send)
             return
 
-        request = Request(scope=scope)
+        request = Request(scope=scope, receive=receive, send=send)
         csrf_cookie = request.cookies.get(self.cookie_name)
         current_token = request.headers.get(self.header_name)
 
