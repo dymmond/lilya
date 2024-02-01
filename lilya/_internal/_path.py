@@ -37,7 +37,7 @@ def join_paths(paths: Iterable[str]) -> str:
 
 def get_route_path(scope: Scope) -> str:
     root_path = scope.get("root_path", "")
-    cenas = cast(
+    return cast(
         str,
         (
             scope["path"][len(root_path) :]
@@ -45,7 +45,6 @@ def get_route_path(scope: Scope) -> str:
             else scope["path"]
         ),
     )
-    return cenas
 
 
 def replace_params(
