@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from abc import ABC
 from copy import copy
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from functools import lru_cache
+from http.cookies import SimpleCookie
 from shlex import shlex
 from typing import (
     Any,
@@ -14,6 +15,7 @@ from typing import (
     Iterable,
     Iterator,
     List,
+    Literal,
     Mapping,
     Optional,
     Sequence,
@@ -573,7 +575,7 @@ class UploadFile:
         *,
         file: BinaryIO,
         size: Optional[int] = None,
-        filename: Optional[str] = None,
+        filename: Union[str, None] = None,
         headers: Optional[Header] = None,
     ) -> None:
         self.filename = filename
@@ -582,7 +584,7 @@ class UploadFile:
         self.file = file
 
     @property
-    def content_type(self) -> Optional[str]:
+    def content_type(self) -> Union[str, None]:
         return self.headers.get("content-type", None)
 
     @property
@@ -619,6 +621,31 @@ class UploadFile:
             f"size={self.size!r}, "
             f"headers={self.headers!r})"
         )
+
+
+@dataclass
+class Cookie:
+    key: str
+    value: Union[str, None] = None
+    max_age: Optional[int] = None
+    expires: Optional[int] = None
+    path: str = "/"
+    domain: Union[str, None] = None
+    secure: Optional[bool] = None
+    httponly: Optional[bool] = None
+    samesite: Literal["lax", "strict", "none"] = "lax"
+    description: Union[str, None] = None
+
+    def to_header(self, **kwargs: Any) -> str:
+        simple_cookie: SimpleCookie = SimpleCookie()
+        simple_cookie[self.key] = self.value or ""
+        if self.max_age:
+            simple_cookie[self.key]["max-age"] = self.max_age
+        cookie_dict = asdict(self)
+        for key in ["expires", "path", "domain", "secure", "httponly", "samesite"]:
+            if cookie_dict[key] is not None:
+                simple_cookie[self.key][key] = cookie_dict[key]
+        return simple_cookie.output(**kwargs).strip()
 
 
 class FormData(ImmutableMultiDict[Any]):

@@ -54,6 +54,7 @@ class CORSMiddleware(MiddlewareProtocol):
             allow_all_origins, allow_credentials, expose_headers
         )
 
+        allow_headers = sorted(HeaderEnum.to_set() | set(allow_headers))
         preflight_headers = self.get_preflight_headers(
             allow_all_origins,
             allow_methods,
@@ -268,7 +269,6 @@ class CORSMiddleware(MiddlewareProtocol):
             dict: Dictionary of preflight response headers.
         """
         preflight_headers = {}
-        allow_headers = sorted(HeaderEnum.to_set() | set(allow_headers))
 
         if allow_all_origins:
             preflight_headers["Access-Control-Allow-Origin"] = "*"
