@@ -21,7 +21,7 @@ class Permission(BaseWrapper):
     ...
 
 
-class CreatePermission:
+class DefinePermission:
     """
     Wrapper that creates a permission class.
     """

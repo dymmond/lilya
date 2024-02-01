@@ -1,6 +1,6 @@
 from lilya.requests import Request
 from lilya.responses import Ok
-from lilya.routing import Path, WebsocketPath
+from lilya.routing import Path, WebSocketPath
 from lilya.testclient import TestClient
 from lilya.websockets import WebSocket
 
@@ -42,7 +42,7 @@ def test_path_with_request(test_client_factory):
 
 
 def test_websocket_path(test_client_factory):
-    websocket = WebsocketPath("/ws", handler=websocket_endpoint)
+    websocket = WebSocketPath("/ws", handler=websocket_endpoint)
 
     client = TestClient(websocket)
 

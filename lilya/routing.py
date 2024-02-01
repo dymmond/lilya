@@ -5,7 +5,7 @@ import inspect
 import re
 import sys
 import traceback
-from typing import Any, Awaitable, Callable, Dict, List, Sequence, Set, Tuple, TypeVar, Union
+from typing import Any, Awaitable, Callable, Dict, List, Sequence, Tuple, TypeVar, Union
 
 from lilya import status
 from lilya._internal._events import AsyncLifespan, handle_lifespan_events
@@ -123,10 +123,6 @@ class BasePath:
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         await self.dispatch(scope=scope, receive=receive, send=send)
 
-    def __repr__(self) -> str:
-        name = self.name or ""
-        return f"{self.__class__.__name__}(path={self.path!r}, name={name!r}, app={self.app!r})"
-
 
 class Path(BaseHandler, BasePath):
     """
@@ -157,7 +153,7 @@ class Path(BaseHandler, BasePath):
         path: str,
         handler: Callable[..., Any],
         *,
-        methods: Union[List[str], Set[str], None] = None,
+        methods: Union[List[str], None] = None,
         name: Union[str, None] = None,
         include_in_schema: bool = True,
         middleware: Union[Sequence[Middleware], None] = None,
@@ -168,7 +164,7 @@ class Path(BaseHandler, BasePath):
         self.handler = handler
         self.name = get_name(handler) if name is None else name
         self.include_in_schema = include_in_schema
-        self.methods: Union[List[str], Set[str], None] = methods
+        self.methods: Union[List[str], None] = methods
         self.signature: inspect.Signature = inspect.signature(self.handler)
 
         # Defition of the app
@@ -178,18 +174,18 @@ class Path(BaseHandler, BasePath):
 
         if inspect.isfunction(handler_app) or inspect.ismethod(handler_app):
             self.app = self.handle_response(handler_app)
+            if methods is None:
+                self.methods = [HTTPMethod.GET.value]
         else:
             self.app = handler_app
-            if methods is None:
-                methods = {HTTPMethod.GET}
 
         self._apply_middleware(middleware)
         self._apply_permissions(permissions)
 
         if self.methods is not None:
-            self.methods = {method.upper() for method in methods}
+            self.methods = [method.upper() for method in self.methods]
             if HTTPMethod.GET in self.methods:
-                self.methods.add(HTTPMethod.HEAD)
+                self.methods.append(HTTPMethod.HEAD.value)
 
         self.path_regex, self.path_format, self.param_convertors, self.path_start = compile_path(
             self.path
@@ -223,7 +219,7 @@ class Path(BaseHandler, BasePath):
             for cls, args, options in reversed(permissions):
                 self.app = cls(app=self.app, *args, **options)
 
-    async def path_for(self, name: str, /, **path_params: Any) -> URLPath:
+    def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         """
         Generates a URL path for the specified route name and parameters.
 
@@ -278,7 +274,6 @@ class Path(BaseHandler, BasePath):
         if scope["type"] == ScopeType.HTTP:
             route_path = get_route_path(scope)
             match = self.path_regex.match(route_path)
-
             if match:
                 return self.handle_match(scope, match)
         return Match.NONE, {}
@@ -328,8 +323,12 @@ class Path(BaseHandler, BasePath):
         else:
             await self.app(scope, receive, send)
 
+    def __repr__(self) -> str:
+        methods = sorted(self.methods or [])
+        return f"{self.__class__.__name__}(path={self.path!r}, name={self.name!r}, methods={methods!r})"
 
-class WebsocketPath(BaseHandler, BasePath):
+
+class WebSocketPath(BaseHandler, BasePath):
     __slots__ = (
         "path",
         "handler",
@@ -456,7 +455,7 @@ class WebsocketPath(BaseHandler, BasePath):
         """
         await self.app(scope, receive, send)
 
-    async def path_for(self, name: str, /, **path_params: Any) -> URLPath:
+    def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         """
         Generates a URL path for the specified route name and parameters.
 
@@ -571,11 +570,11 @@ class Include(BasePath):
 
         self.name = name
         self.include_in_schema = include_in_schema
-        self.middleware = middleware if middleware is not None else list(middleware)
-        self.permissions = permissions if permissions is not None else list(permissions)
+        self.middleware = middleware if middleware is not None else []
+        self.permissions = permissions if permissions is not None else []
 
         self.path_regex, self.path_format, self.param_convertors, self.path_start = compile_path(
-            self.path
+            clean_path(self.path + "/{path:path}")
         )
 
     def _apply_middleware(self, middleware: Union[Sequence[Middleware], None]) -> None:
@@ -652,7 +651,7 @@ class Include(BasePath):
             key: self.param_convertors[key].transform(value)
             for key, value in match.groupdict().items()
         }
-        remaining_path = "/" + matched_params.pop("path")
+        remaining_path = "/" + matched_params.pop("path", "")
         matched_path = route_path[: -len(remaining_path)]
 
         path_params = {**scope.get("path_params", {}), **matched_params}
@@ -680,70 +679,67 @@ class Include(BasePath):
 
     def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         """
-        Generates a URL path for the specified route name and parameters.
+        Generate a URLPath for a given route name and path parameters.
 
         Args:
             name (str): The name of the route.
-            path_params (dict): The path parameters.
+            path_params: Path parameters for route substitution.
 
         Returns:
-            URLPath: The generated URL path.
+            URLPath: The generated URLPath.
 
         Raises:
-            NoMatchFound: If there is no match for the given name and parameters.
+            NoMatchFound: If no matching route is found for the given name and parameters.
         """
-        remaining_params, remaining_name, path_prefix = self.validate_params(name, path_params)
-        path, remaining_params = replace_params(
-            self.path_format, self.param_convertors, remaining_params
+
+        if self.name is not None and name == self.name and "path" in path_params:
+            path_params["path"] = path_params["path"].lstrip("/")
+            path, remaining_params = replace_params(
+                self.path_format, self.param_convertors, path_params
+            )
+            if not remaining_params:
+                return URLPath(path=path)
+        elif self.name is None or name.startswith(self.name + ":"):
+            return self._path_for_without_name(name, path_params)
+
+        raise NoMatchFound(name, path_params)
+
+    def _path_for_without_name(self, name: str, path_params: dict) -> URLPath:
+        """
+        Generate a URLPath for a route without a specific name and with path parameters.
+
+        Args:
+            name (str): The name of the route.
+            path_params: Path parameters for route substitution.
+
+        Returns:
+            URLPath: The generated URLPath.
+
+        Raises:
+            NoMatchFound: If no matching route is found for the given name and parameters.
+        """
+        if self.name is None:
+            remaining_name = name
+        else:
+            remaining_name = name[len(self.name) + 1 :]
+
+        path_kwarg = path_params.get("path")
+        path_params["path"] = ""
+        path_prefix, remaining_params = replace_params(
+            self.path_format, self.param_convertors, path_params
         )
-        if not remaining_params:
-            return URLPath(path=path)
+
+        if path_kwarg is not None:
+            remaining_params["path"] = path_kwarg
 
         for route in self.routes or []:
             try:
                 url = route.path_for(remaining_name, **remaining_params)
-                return URLPath(path=path_prefix + str(url), protocol=url.protocol)
+                return URLPath(path=path_prefix.rstrip("/") + str(url), protocol=url.protocol)
             except NoMatchFound:
                 pass
 
         raise NoMatchFound(name, path_params)
-
-    def validate_params(
-        self, name: str, path_params: Dict[str, Any]
-    ) -> Tuple[Dict[str, Any], str, str]:
-        """
-        Validates the route name and path parameters.
-
-        Args:
-            name (str): The name of the route.
-            path_params (dict): The path parameters.
-
-        Returns:
-            Dict[str, Any]: The validated path parameters.
-
-        Raises:
-            NoMatchFound: If there is a mismatch in route name or parameters.
-        """
-        remaining_params: Dict[str, str] = {}
-
-        if (self.name is not None and name == self.name and "path" in path_params) or (
-            self.name is None or name.startswith(self.name + ":")
-        ):
-            if self.name is None:
-                remaining_name = name
-            else:
-                remaining_name = name[len(self.name) + 1 :]
-
-            path_kwarg = path_params.get("path")
-            path_params["path"] = ""
-            path_prefix, remaining_params = replace_params(
-                self.path_format, self.param_convertors, path_params
-            )
-
-            if path_kwarg is not None:
-                remaining_params["path"] = path_kwarg
-
-        return remaining_params, remaining_name, path_prefix
 
 
 class Host(BasePath):
@@ -785,7 +781,6 @@ class Host(BasePath):
             headers = Header.from_scope(scope=scope)
             host = headers.get("host", "").split(":")[0]
             match = self.host_regex.match(host)
-
             if match:
                 return self.handle_match(scope, match)
 
@@ -829,25 +824,69 @@ class Host(BasePath):
 
     def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         """
-        Generates a URL path for the specified route name and parameters.
+        Generate a URLPath for a given route name and path parameters.
 
         Args:
             name (str): The name of the route.
-            path_params (dict): The path parameters.
+            path_params: Path parameters for route substitution.
 
         Returns:
-            URLPath: The generated URL path.
+            URLPath: The generated URLPath.
 
         Raises:
-            NoMatchFound: If there is no match for the given name and parameters.
+            NoMatchFound: If no matching route is found for the given name and parameters.
         """
-        remaining_params, remaining_name = self.validate_params(name, path_params)
-        host, remaining_params = replace_params(
-            self.host_format, self.param_convertors, remaining_params
-        )
+        if self.name is not None and name == self.name and "path" in path_params:
+            return self.path_for_with_name(path_params)
+        elif self.name is None or name.startswith(self.name + ":"):
+            return self.path_for_without_name(name, path_params)
+        else:
+            raise NoMatchFound(name, path_params)
 
+    def path_for_with_name(self, path_params: dict) -> URLPath:
+        """
+        Generate a URLPath for a route with a specific name and path parameters.
+
+        Args:
+            path_params: Path parameters for route substitution.
+
+        Returns:
+            URLPath: The generated URLPath.
+
+        Raises:
+            NoMatchFound: If no matching route is found for the given parameters.
+        """
+        path = path_params.pop("path")
+        host, remaining_params = replace_params(
+            self.host_format, self.param_convertors, path_params, is_host=True
+        )
         if not remaining_params:
-            return URLPath(path=path_params.pop("path"), host=host)
+            return URLPath(path=path, host=host)
+
+        raise NoMatchFound(self.name, path_params)
+
+    def path_for_without_name(self, name: str, path_params: dict) -> URLPath:
+        """
+        Generate a URLPath for a route without a specific name and with path parameters.
+
+        Args:
+            name (str): The name of the route.
+            path_params: Path parameters for route substitution.
+
+        Returns:
+            URLPath: The generated URLPath.
+
+        Raises:
+            NoMatchFound: If no matching route is found for the given name and parameters.
+        """
+        if self.name is None:
+            remaining_name = name
+        else:
+            remaining_name = name[len(self.name) + 1 :]
+
+        host, remaining_params = replace_params(
+            self.host_format, self.param_convertors, path_params, is_host=True
+        )
 
         for route in self.routes or []:
             try:
@@ -857,39 +896,6 @@ class Host(BasePath):
                 pass
 
         raise NoMatchFound(name, path_params)
-
-    def validate_params(
-        self, name: str, path_params: Dict[str, Any]
-    ) -> Tuple[Dict[str, Any], str]:
-        """
-        Validates the route name and path parameters.
-
-        Args:
-            name (str): The name of the route.
-            path_params (dict): The path parameters.
-
-        Returns:
-            Dict[str, Any]: The validated path parameters.
-
-        Raises:
-            NoMatchFound: If there is a mismatch in route name or parameters.
-        """
-        remaining_params = {}
-
-        if (self.name is not None and name == self.name and "path" in path_params) or (
-            self.name is None or name.startswith(self.name + ":")
-        ):
-            if self.name is None:
-                remaining_name = name
-            else:
-                remaining_name = name[len(self.name) + 1 :]
-
-            path_params.pop("path")  # Remove 'path' from path_params
-            remaining_params = self._replace_params(
-                self.host_format, self.param_convertors, path_params
-            )
-
-        return remaining_params, remaining_name
 
 
 class Router:
@@ -931,11 +937,10 @@ class Router:
         self.on_shutdown = [] if on_shutdown is None else list(on_shutdown)
         self.include_in_schema = include_in_schema
 
-        self.middleware = middleware if middleware is not None else list(middleware)
-        self.permissions = permissions if permissions is not None else list(permissions)
+        self.middleware = middleware if middleware is not None else []
+        self.permissions = permissions if permissions is not None else []
 
         self.middleware_stack = self.app
-
         self._apply_middleware(self.middleware)
         self._apply_permissions(self.permissions)
 
@@ -1004,7 +1009,6 @@ class Router:
             receive (Receive): The ASGI receive channel.
             send (Send): The ASGI send channel.
         """
-        await receive()
         await self.handle_lifespan_startup(scope, receive, send)
         await self.handle_lifespan_shutdown(send)
 
@@ -1154,7 +1158,7 @@ class Router:
             return
 
         route_path = get_route_path(scope)
-        if scope["type"] == "http" and self.redirect_slashes and route_path != "/":
+        if scope["type"] == ScopeType.HTTP and self.redirect_slashes and route_path != "/":
             redirect_scope = dict(scope)
             if route_path.endswith("/"):
                 redirect_scope["path"] = redirect_scope["path"].rstrip("/")
@@ -1256,9 +1260,9 @@ class Router:
         permissions: Union[Sequence[Permission], None] = None,
     ) -> None:
         """
-        Manually creates a `WebsocketPath` from a given handler.
+        Manually creates a `WebSocketPath` from a given handler.
         """
-        route = WebsocketPath(
+        route = WebSocketPath(
             path, handler=handler, middleware=middleware, permissions=permissions, name=name
         )
         self.routes.append(route)
@@ -1282,7 +1286,3 @@ class Router:
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         await self.middleware_stack(scope, receive, send)
-
-    def __repr__(self) -> str:
-        name = self.name or ""
-        return f"{self.__class__.__name__}(path={self.path!r}, name={name!r}, app={self.app!r})"

@@ -1,4 +1,4 @@
-from lilya.middleware.base import CreateMiddleware
+from lilya.middleware.base import DefineMiddleware
 from lilya.protocols.middleware import MiddlewareProtocol
 from lilya.responses import JSONResponse
 from lilya.types import ASGIApp, Receive, Scope, Send
@@ -19,7 +19,7 @@ class AcceptMiddleware(MiddlewareProtocol):
 
 
 def test_create_middleware():
-    obj = CreateMiddleware(AcceptMiddleware)
+    obj = DefineMiddleware(AcceptMiddleware)
 
     middleware = obj(app=app)
 

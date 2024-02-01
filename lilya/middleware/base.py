@@ -21,7 +21,7 @@ class Middleware(BaseWrapper):
     ...
 
 
-class CreateMiddleware:
+class DefineMiddleware:
     """
     Wrapper that create the middleware classes.
     """
@@ -33,8 +33,8 @@ class CreateMiddleware:
         self.args = args
         self.kwargs = kwargs
 
-    def __call__(self, app: ASGIApp, *args: P.args, **kwargs: P.kwargs) -> Any:
-        return self.middleware(app=app, *args, **kwargs)
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> Any:
+        return self.middleware(*args, **kwargs)
 
     def __iter__(self) -> Iterator[Any]:
         return iter((self.middleware, self.args, self.kwargs))

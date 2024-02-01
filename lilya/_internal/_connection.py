@@ -85,9 +85,15 @@ class Connection(Mapping[str, Any]):
     def base_url(self) -> URL:
         if self._base_url is None:
             base_url_scope = dict(self.scope)
-            base_url_scope["path"] = "/"
+            app_root_path = base_url_scope.get(
+                "app_root_path", base_url_scope.get("root_path", "")
+            )
+            path = app_root_path
+            if not path.endswith("/"):
+                path += "/"
+            base_url_scope["path"] = path
             base_url_scope["query_string"] = b""
-            base_url_scope["root_path"] = cast(URL, base_url_scope.get("root_path", ""))
+            base_url_scope["root_path"] = app_root_path
             self._base_url = URL.build_from_scope(scope=base_url_scope)
         return self._base_url
 

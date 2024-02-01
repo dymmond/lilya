@@ -23,10 +23,10 @@ from lilya.conf.exceptions import FieldException
 from lilya.conf.global_settings import Settings
 from lilya.datastructures import State, URLPath
 from lilya.middleware.asyncexit import AsyncExitStackMiddleware
-from lilya.middleware.base import CreateMiddleware, Middleware
+from lilya.middleware.base import DefineMiddleware, Middleware
 from lilya.middleware.exceptions import ExceptionMiddleware
 from lilya.middleware.server_error import ServerErrorMiddleware
-from lilya.permissions.base import CreatePermission, Permission
+from lilya.permissions.base import DefinePermission, Permission
 from lilya.protocols.middleware import MiddlewareProtocol
 from lilya.protocols.permissions import PermissionProtocol
 from lilya.requests import Request
@@ -215,14 +215,14 @@ class Lilya:
         exception_handlers = self._get_exception_handlers()
 
         middleware = [
-            CreateMiddleware(ServerErrorMiddleware, handler=error_handler, debug=self.debug),
+            DefineMiddleware(ServerErrorMiddleware, handler=error_handler, debug=self.debug),
             *self.custom_middleware,
-            CreateMiddleware(ExceptionMiddleware, handlers=exception_handlers, debug=self.debug),
-            CreateMiddleware(AsyncExitStackMiddleware),
+            DefineMiddleware(ExceptionMiddleware, handlers=exception_handlers, debug=self.debug),
+            DefineMiddleware(AsyncExitStackMiddleware),
         ]
 
         app = self.router
-        for middleware_class, *args, options in reversed(middleware):  # type: ignore
+        for middleware_class, args, options in reversed(middleware):  # type: ignore
             app = middleware_class(app=app, *args, **options)
 
         self.permission_stack = self.build_permission_stack(app)
@@ -251,8 +251,8 @@ class Lilya:
         }
 
     def build_permission_stack(self, app: ASGIApp) -> ASGIApp:
-        for cls, args, kwargs in reversed(self.custom_permissions):
-            app = cls(app=app, *args, **kwargs)
+        for cls, args, options in reversed(self.custom_permissions):
+            app = cls(app=app, *args, **options)
         return app
 
     def on_event(self, event_type: str) -> Callable:
@@ -321,7 +321,7 @@ class Lilya:
         permissions: Union[Sequence[Permission], None] = None,
     ) -> None:
         """
-        Manually creates a `WebsocketPath` from a given handler.
+        Manually creates a `WebSocketPath` from a given handler.
         """
         self.router.add_websocket_route(
             path=path, handler=handler, name=name, middleware=middleware, permissions=permissions
@@ -335,7 +335,7 @@ class Lilya:
         """
         if self.middleware_stack is not None:
             raise RuntimeError("Middlewares cannot be added once the application has started.")
-        self.custom_middleware.insert(0, CreateMiddleware(middleware, *args, **kwargs))  # type: ignore
+        self.custom_middleware.insert(0, DefineMiddleware(middleware, *args, **kwargs))  # type: ignore
 
     def add_permission(
         self, permission: Type[PermissionProtocol], *args: P.args, **kwargs: P.kwargs
@@ -345,7 +345,7 @@ class Lilya:
         """
         if self.middleware_stack is not None:
             raise RuntimeError("Permissions cannot be added once the application has started.")
-        self.custom_permissions.insert(0, CreatePermission(permission, *args, **kwargs))  # type: ignore
+        self.custom_permissions.insert(0, DefinePermission(permission, *args, **kwargs))  # type: ignore
 
     def add_exception_handler(
         self,
