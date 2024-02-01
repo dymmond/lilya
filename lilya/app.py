@@ -1,11 +1,24 @@
 from __future__ import annotations
 
 import sys
-from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional, Sequence, Type, Union
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Type,
+    Union,
+    cast,
+)
 
 from typing_extensions import Annotated, Doc
 
 from lilya._utils import is_class_and_subclass
+from lilya.conf import settings as lilya_settings
 from lilya.conf.exceptions import FieldException
 from lilya.conf.global_settings import Settings
 from lilya.datastructures import State, URLPath
@@ -51,7 +64,7 @@ class Lilya:
             Doc(
                 """
                 Alternative settings parameter. This parameter is an alternative to
-                `SETTINGS_MODULE` way of loading your settings into an Esmerald application.
+                `SETTINGS_MODULE` way of loading your settings into an Lilya application.
 
                 When the `settings_module` is provided, it will make sure it takes priority over
                 any other settings provided for the instance.
@@ -167,6 +180,26 @@ class Lilya:
     @property
     def routes(self) -> List[BasePath]:
         return self.router.routes
+
+    @property
+    def settings(self) -> Settings:
+        """
+        Returns the Lilya settings object for easy access.
+
+        This `settings` are the ones being used by the application upon
+        initialisation.
+
+        **Example**
+
+        ```python
+        from lilya.app import Lilya
+
+        app = Lilya()
+        app.settings
+        ```
+        """
+        general_settings = self.settings_module if self.settings_module else lilya_settings
+        return cast(Settings, general_settings)
 
     def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         return self.router.path_for(name, **path_params)
@@ -329,3 +362,27 @@ class Lilya:
         if self.middleware_stack is None:
             self.middleware_stack = self.build_middleware_stack()
         await self.middleware_stack(scope, receive, send)
+
+
+class ChildLilya(Lilya):
+    """
+    `ChildLilya` application object. The main entry-point for a modular application/API
+    with Lilya.
+
+    The `ChildLilya` inherits directly from the `Lilya` object which means all the same
+    parameters, attributes and functions of Lilya ara also available in the `ChildLilya`.
+
+
+    !!! Tip
+        All the parameters available in the object have defaults being loaded by the
+        [settings system](https://esmerald.dev/application/settings/) if nothing is provided.
+
+    ## Example
+
+    ```python
+    from lilya.app import Lilya, ChildLilya
+    from lilya.routing import Include
+
+    app = Lilya(routes=[Include('/child', app=ChildLilya(...))])
+    ```
+    """
