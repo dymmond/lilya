@@ -7,10 +7,11 @@ from itsdangerous.exc import BadSignature
 
 from lilya._internal._connection import Connection
 from lilya.datastructures import Header, Secret
+from lilya.protocols.middleware import MiddlewareProtocol
 from lilya.types import ASGIApp, Message, Receive, Scope, Send
 
 
-class SessionMiddleware:
+class SessionMiddleware(MiddlewareProtocol):
     def __init__(
         self,
         app: ASGIApp,

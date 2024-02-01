@@ -15,12 +15,13 @@ from lilya.middleware.styles.errors import (
     get_line,
     get_template_errors,
 )
+from lilya.protocols.middleware import MiddlewareProtocol
 from lilya.requests import Request
 from lilya.responses import HTMLResponse, PlainText, Response
 from lilya.types import ASGIApp, Message, Receive, Scope, Send
 
 
-class ServerErrorMiddleware:
+class ServerErrorMiddleware(MiddlewareProtocol):
     """
     Middleware for handling server errors and returning appropriate 500 responses.
 

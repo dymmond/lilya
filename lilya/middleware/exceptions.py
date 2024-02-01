@@ -8,13 +8,14 @@ from lilya._internal._exception_handlers import (
 )
 from lilya.enums import ScopeType
 from lilya.exceptions import HTTPException, WebSocketException
+from lilya.protocols.middleware import MiddlewareProtocol
 from lilya.requests import Request
 from lilya.responses import PlainText, Response
 from lilya.types import ASGIApp, Receive, Scope, Send
 from lilya.websockets import WebSocket
 
 
-class ExceptionMiddleware:
+class ExceptionMiddleware(MiddlewareProtocol):
     """
     Middleware for handling exceptions in an ASGI application.
 

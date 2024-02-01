@@ -1,13 +1,14 @@
 import typing
 
 from lilya.datastructures import URL, Header
+from lilya.protocols.middleware import MiddlewareProtocol
 from lilya.responses import PlainText, RedirectResponse, Response
 from lilya.types import ASGIApp, Receive, Scope, Send
 
 ENFORCE_DOMAIN_WILDCARD = "Domain wildcard patterns must be as per example '*.example.com'."
 
 
-class TrustedHostMiddleware:
+class TrustedHostMiddleware(MiddlewareProtocol):
     def __init__(
         self,
         app: ASGIApp,

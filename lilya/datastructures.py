@@ -202,6 +202,12 @@ class Header(MultiDict, CIMultiDict):  # type: ignore
         """
         return cls(scope["headers"])
 
+    def add_vary_header(self, vary: str) -> None:
+        existing = self.get("vary")
+        if existing is not None:
+            vary = ", ".join([existing, vary])
+        self["vary"] = vary
+
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
         as_dict = dict(self.items())

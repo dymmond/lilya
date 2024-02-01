@@ -1,5 +1,5 @@
 from enum import IntEnum
-from typing import Dict, List
+from typing import Dict, List, Set, Tuple
 
 from lilya.conf.enums import StrEnum
 
@@ -96,6 +96,30 @@ class HTTPMethod(StrEnum):
     HEAD = "HEAD"
     OPTIONS = "OPTIONS"
     TRACE = "TRACE"
+
+
+class HTTPCorsEnum(StrEnum):
+    GET = "GET"
+    POST = "POST"
+    PUT = "PUT"
+    PATCH = "PATCH"
+    DELETE = "DELETE"
+    HEAD = "HEAD"
+
+    @classmethod
+    def to_tuple(cls) -> Tuple[str, ...]:
+        return tuple(method.value for method in cls)
+
+
+class HeaderEnum(StrEnum):
+    ACCEPT = "Accept"
+    ACCEPT_LANGUAGE = "Accept-Language"
+    CONTENT_LANGUAGE = "Content-Language"
+    CONTENT_TYPE = "Content-Type"
+
+    @classmethod
+    def to_set(cls) -> Set[str]:
+        return {method.value for method in cls}
 
 
 class MediaType(StrEnum):
