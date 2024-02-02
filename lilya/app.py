@@ -23,10 +23,10 @@ from lilya.conf.exceptions import FieldException
 from lilya.conf.global_settings import Settings
 from lilya.datastructures import State, URLPath
 from lilya.middleware.asyncexit import AsyncExitStackMiddleware
-from lilya.middleware.base import DefineMiddleware, Middleware
+from lilya.middleware.base import DefineMiddleware
 from lilya.middleware.exceptions import ExceptionMiddleware
 from lilya.middleware.server_error import ServerErrorMiddleware
-from lilya.permissions.base import DefinePermission, Permission
+from lilya.permissions.base import DefinePermission
 from lilya.protocols.middleware import MiddlewareProtocol
 from lilya.protocols.permissions import PermissionProtocol
 from lilya.requests import Request
@@ -80,7 +80,7 @@ class Lilya:
             ),
         ] = None,
         middleware: Annotated[
-            Union[Sequence[Middleware], None],
+            Union[Sequence[DefineMiddleware], None],
             Doc(
                 """
                 A sequence of middleware components for the application.
@@ -96,7 +96,7 @@ class Lilya:
             ),
         ] = None,
         permissions: Annotated[
-            Union[Sequence[Permission], None],
+            Union[Sequence[DefinePermission], None],
             Doc(
                 """
                 A sequence of permission components for the application.
@@ -222,7 +222,7 @@ class Lilya:
         ]
 
         app = self.router
-        for middleware_class, args, options in reversed(middleware):  # type: ignore
+        for middleware_class, args, options in reversed(middleware):
             app = middleware_class(app=app, *args, **options)
 
         self.permission_stack = self.build_permission_stack(app)
@@ -263,8 +263,8 @@ class Lilya:
         path: str,
         app: ASGIApp,
         name: Union[str, None] = None,
-        middleware: Union[Sequence[Middleware], None] = None,
-        permissions: Union[Sequence[Permission], None] = None,
+        middleware: Union[Sequence[DefineMiddleware], None] = None,
+        permissions: Union[Sequence[DefinePermission], None] = None,
         namespace: Union[str, None] = None,
         pattern: Union[str, None] = None,
         include_in_schema: bool = True,
@@ -295,8 +295,8 @@ class Lilya:
         handler: Callable[[Request], Union[Awaitable[Response], Response]],
         methods: Union[List[str], None] = None,
         name: Union[str, None] = None,
-        middleware: Union[Sequence[Middleware], None] = None,
-        permissions: Union[Sequence[Permission], None] = None,
+        middleware: Union[Sequence[DefineMiddleware], None] = None,
+        permissions: Union[Sequence[DefinePermission], None] = None,
         include_in_schema: bool = True,
     ) -> None:
         """
@@ -317,8 +317,8 @@ class Lilya:
         path: str,
         handler: Callable[[WebSocket], Awaitable[None]],
         name: Union[str, None] = None,
-        middleware: Union[Sequence[Middleware], None] = None,
-        permissions: Union[Sequence[Permission], None] = None,
+        middleware: Union[Sequence[DefineMiddleware], None] = None,
+        permissions: Union[Sequence[DefinePermission], None] = None,
     ) -> None:
         """
         Manually creates a `WebSocketPath` from a given handler.
@@ -335,7 +335,7 @@ class Lilya:
         """
         if self.middleware_stack is not None:
             raise RuntimeError("Middlewares cannot be added once the application has started.")
-        self.custom_middleware.insert(0, DefineMiddleware(middleware, *args, **kwargs))  # type: ignore
+        self.custom_middleware.insert(0, DefineMiddleware(middleware, *args, **kwargs))
 
     def add_permission(
         self, permission: Type[PermissionProtocol], *args: P.args, **kwargs: P.kwargs
@@ -345,7 +345,7 @@ class Lilya:
         """
         if self.middleware_stack is not None:
             raise RuntimeError("Permissions cannot be added once the application has started.")
-        self.custom_permissions.insert(0, DefinePermission(permission, *args, **kwargs))  # type: ignore
+        self.custom_permissions.insert(0, DefinePermission(permission, *args, **kwargs))
 
     def add_exception_handler(
         self,

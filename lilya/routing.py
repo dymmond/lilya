@@ -16,8 +16,8 @@ from lilya.core.urls import include
 from lilya.datastructures import URL, Header, URLPath
 from lilya.enums import EventType, HTTPMethod, Match, ScopeType
 from lilya.exceptions import HTTPException, ImproperlyConfigured
-from lilya.middleware.base import Middleware
-from lilya.permissions.base import Permission
+from lilya.middleware.base import DefineMiddleware
+from lilya.permissions.base import DefinePermission
 from lilya.requests import Request
 from lilya.responses import PlainText, RedirectResponse, Response
 from lilya.types import ASGIApp, Lifespan, Receive, Scope, Send
@@ -159,8 +159,8 @@ class Path(BaseHandler, BasePath):
         methods: Union[List[str], None] = None,
         name: Union[str, None] = None,
         include_in_schema: bool = True,
-        middleware: Union[Sequence[Middleware], None] = None,
-        permissions: Union[Sequence[Permission], None] = None,
+        middleware: Union[Sequence[DefineMiddleware], None] = None,
+        permissions: Union[Sequence[DefinePermission], None] = None,
     ) -> None:
         assert path.startswith("/"), "Paths must start with '/'"
         self.path = clean_path(path)
@@ -168,22 +168,23 @@ class Path(BaseHandler, BasePath):
         self.name = get_name(handler) if name is None else name
         self.include_in_schema = include_in_schema
         self.methods: Union[List[str], None] = methods
-        self.signature: inspect.Signature = inspect.signature(self.handler)
-
-        # Handles the signature validation
-        self.handle_signature()
 
         # Defition of the app
         handler_app = handler
         while isinstance(handler_app, functools.partial):
             handler_app = handler_app.func
 
+        self.signature: inspect.Signature = inspect.signature(handler_app)
+
+        # Handles the signature validation
+        self.handle_signature()
+
         if inspect.isfunction(handler_app) or inspect.ismethod(handler_app):
-            self.app = self.handle_response(handler_app)
+            self.app = self.handle_response(handler)
             if methods is None:
                 self.methods = [HTTPMethod.GET.value]
         else:
-            self.app = handler_app
+            self.app = handler
 
         self._apply_middleware(middleware)
         self._apply_permissions(permissions)
@@ -211,12 +212,12 @@ class Path(BaseHandler, BasePath):
                 "If your function doesn't return a value or returns None, annotate it as returning 'NoReturn' or 'None' respectively."
             )
 
-    def _apply_middleware(self, middleware: Union[Sequence[Middleware], None]) -> None:
+    def _apply_middleware(self, middleware: Union[Sequence[DefineMiddleware], None]) -> None:
         """
         Apply middleware to the app.
 
         Args:
-            middleware (Union[Sequence[Middleware], None]): The middleware.
+            middleware (Union[Sequence[DefineMiddleware], None]): The middleware.
 
         Returns:
             None
@@ -225,12 +226,12 @@ class Path(BaseHandler, BasePath):
             for cls, args, options in reversed(middleware):
                 self.app = cls(app=self.app, *args, **options)
 
-    def _apply_permissions(self, permissions: Union[Sequence[Permission], None]) -> None:
+    def _apply_permissions(self, permissions: Union[Sequence[DefinePermission], None]) -> None:
         """
         Apply permissions to the app.
 
         Args:
-            permissions (Union[Sequence[Permission], None]): The permissions.
+            permissions (Union[Sequence[DefinePermission], None]): The permissions.
 
         Returns:
             None
@@ -365,8 +366,8 @@ class WebSocketPath(BaseHandler, BasePath):
         *,
         name: Union[str, None] = None,
         include_in_schema: bool = True,
-        middleware: Union[Sequence[Middleware], None] = None,
-        permissions: Union[Sequence[Permission], None] = None,
+        middleware: Union[Sequence[DefineMiddleware], None] = None,
+        permissions: Union[Sequence[DefinePermission], None] = None,
     ) -> None:
         assert path.startswith("/"), "Paths must start with '/'"
         self.path = clean_path(path)
@@ -374,20 +375,21 @@ class WebSocketPath(BaseHandler, BasePath):
         self.handler = handler
         self.name = get_name(handler) if name is None else name
         self.include_in_schema = include_in_schema
-        self.signature: inspect.Signature = inspect.signature(self.handler)
-
-        # Handles the signature
-        self.handle_signature()
 
         # Defition of the app
         handler_app = handler
         while isinstance(handler_app, functools.partial):
             handler_app = handler_app.func
 
+        self.signature: inspect.Signature = inspect.signature(handler_app)
+
+        # Handles the signature
+        self.handle_signature()
+
         if inspect.isfunction(handler_app) or inspect.ismethod(handler_app):
-            self.app = self.handle_websocket_session(handler_app)
+            self.app = self.handle_websocket_session(handler)
         else:
-            self.app = handler_app
+            self.app = handler
 
         self._apply_middleware(middleware)
         self._apply_permissions(permissions)
@@ -410,12 +412,12 @@ class WebSocketPath(BaseHandler, BasePath):
                 "If your function doesn't return a value or returns None, annotate it as returning 'NoReturn' or 'None' respectively."
             )
 
-    def _apply_middleware(self, middleware: Union[Sequence[Middleware], None]) -> None:
+    def _apply_middleware(self, middleware: Union[Sequence[DefineMiddleware], None]) -> None:
         """
         Apply middleware to the app.
 
         Args:
-            middleware (Union[Sequence[Middleware], None]): The middleware.
+            middleware (Union[Sequence[DefineMiddleware], None]): The middleware.
 
         Returns:
             None
@@ -424,12 +426,12 @@ class WebSocketPath(BaseHandler, BasePath):
             for cls, args, options in reversed(middleware):
                 self.app = cls(app=self.app, *args, **options)
 
-    def _apply_permissions(self, permissions: Union[Sequence[Permission], None]) -> None:
+    def _apply_permissions(self, permissions: Union[Sequence[DefinePermission], None]) -> None:
         """
         Apply permissions to the app.
 
         Args:
-            permissions (Union[Sequence[Permission], None]): The permissions.
+            permissions (Union[Sequence[DefinePermission], None]): The permissions.
 
         Returns:
             None
@@ -532,6 +534,9 @@ class WebSocketPath(BaseHandler, BasePath):
         if name != self.name or seen_params != expected_params:
             raise NoMatchFound(name, path_params)
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(path={self.path!r}, name={self.name!r})"
+
 
 class Include(BasePath):
     __slots__ = (
@@ -554,8 +559,8 @@ class Include(BasePath):
         pattern: Union[str, None] = None,
         name: Union[str, None] = None,
         *,
-        middleware: Union[Sequence[Middleware], None] = None,
-        permissions: Union[Sequence[Permission], None] = None,
+        middleware: Union[Sequence[DefineMiddleware], None] = None,
+        permissions: Union[Sequence[DefinePermission], None] = None,
         include_in_schema: bool = True,
     ) -> None:
         """
@@ -568,8 +573,8 @@ class Include(BasePath):
             namespace (Union[str, None]): The namespace.
             pattern (Union[str, None]): The pattern.
             name (Union[str, None]): The name.
-            middleware (Union[Sequence[Middleware], None]): The middleware.
-            permissions (Union[Sequence[Permission], None]): The permissions.
+            middleware (Union[Sequence[DefineMiddleware], None]): The middleware.
+            permissions (Union[Sequence[DefinePermission], None]): The permissions.
             include_in_schema (bool): Flag to include in the schema.
 
         Returns:
@@ -602,24 +607,25 @@ class Include(BasePath):
         )
         self.app = self.__base_app__
 
+        self.middleware = middleware if middleware is not None else []
+        self.permissions = permissions if permissions is not None else []
+
         self._apply_middleware(middleware)
         self._apply_permissions(permissions)
 
         self.name = name
         self.include_in_schema = include_in_schema
-        self.middleware = middleware if middleware is not None else []
-        self.permissions = permissions if permissions is not None else []
 
         self.path_regex, self.path_format, self.param_convertors, self.path_start = compile_path(
             clean_path(self.path + "/{path:path}")
         )
 
-    def _apply_middleware(self, middleware: Union[Sequence[Middleware], None]) -> None:
+    def _apply_middleware(self, middleware: Union[Sequence[DefineMiddleware], None]) -> None:
         """
         Apply middleware to the app.
 
         Args:
-            middleware (Union[Sequence[Middleware], None]): The middleware.
+            middleware (Union[Sequence[DefineMiddleware], None]): The middleware.
 
         Returns:
             None
@@ -628,12 +634,12 @@ class Include(BasePath):
             for cls, args, options in reversed(middleware):
                 self.app = cls(app=self.app, *args, **options)
 
-    def _apply_permissions(self, permissions: Union[Sequence[Permission], None]) -> None:
+    def _apply_permissions(self, permissions: Union[Sequence[DefinePermission], None]) -> None:
         """
         Apply permissions to the app.
 
         Args:
-            permissions (Union[Sequence[Permission], None]): The permissions.
+            permissions (Union[Sequence[DefinePermission], None]): The permissions.
 
         Returns:
             None
@@ -777,6 +783,10 @@ class Include(BasePath):
                 pass
 
         raise NoMatchFound(name, path_params)
+
+    def __repr__(self) -> str:
+        name = self.name or ""
+        return f"{self.__class__.__name__}(path={self.path!r}, name={name!r}, app={self.app!r})"
 
 
 class Host(BasePath):
@@ -934,6 +944,10 @@ class Host(BasePath):
 
         raise NoMatchFound(name, path_params)
 
+    def __repr__(self) -> str:
+        name = self.name or ""
+        return f"{self.__class__.__name__}(host={self.host!r}, name={name!r}, app={self.app!r})"
+
 
 class Router:
     """
@@ -949,8 +963,8 @@ class Router:
         on_shutdown: Union[Sequence[Callable[[], Any]], None] = None,
         lifespan: Union[Lifespan[Any], None] = None,
         *,
-        middleware: Union[Sequence[Middleware], None] = None,
-        permissions: Union[Sequence[Permission], None] = None,
+        middleware: Union[Sequence[DefineMiddleware], None] = None,
+        permissions: Union[Sequence[DefinePermission], None] = None,
         include_in_schema: bool = True,
     ) -> None:
         assert lifespan is None or (
@@ -979,15 +993,16 @@ class Router:
         self.permissions = permissions if permissions is not None else []
 
         self.middleware_stack = self.app
+
         self._apply_middleware(self.middleware)
         self._apply_permissions(self.permissions)
 
-    def _apply_middleware(self, middleware: Union[Sequence[Middleware], None]) -> None:
+    def _apply_middleware(self, middleware: Union[Sequence[DefineMiddleware], None]) -> None:
         """
         Apply middleware to the app.
 
         Args:
-            middleware (Union[Sequence[Middleware], None]): The middleware.
+            middleware (Union[Sequence[DefineMiddleware], None]): The middleware.
 
         Returns:
             None
@@ -996,12 +1011,12 @@ class Router:
             for cls, args, options in reversed(middleware):
                 self.middleware_stack = cls(app=self.middleware_stack, *args, **options)
 
-    def _apply_permissions(self, permissions: Union[Sequence[Permission], None]) -> None:
+    def _apply_permissions(self, permissions: Union[Sequence[DefinePermission], None]) -> None:
         """
         Apply permissions to the app.
 
         Args:
-            permissions (Union[Sequence[Permission], None]): The permissions.
+            permissions (Union[Sequence[DefinePermission], None]): The permissions.
 
         Returns:
             None
@@ -1202,8 +1217,8 @@ class Router:
         path: str,
         app: ASGIApp,
         name: Union[str, None] = None,
-        middleware: Union[Sequence[Middleware], None] = None,
-        permissions: Union[Sequence[Permission], None] = None,
+        middleware: Union[Sequence[DefineMiddleware], None] = None,
+        permissions: Union[Sequence[DefinePermission], None] = None,
         namespace: Union[str, None] = None,
         pattern: Union[str, None] = None,
         include_in_schema: bool = True,
@@ -1236,8 +1251,8 @@ class Router:
         handler: Callable[[Request], Union[Awaitable[Response], Response]],
         methods: Union[List[str], None] = None,
         name: Union[str, None] = None,
-        middleware: Union[Sequence[Middleware], None] = None,
-        permissions: Union[Sequence[Permission], None] = None,
+        middleware: Union[Sequence[DefineMiddleware], None] = None,
+        permissions: Union[Sequence[DefinePermission], None] = None,
         include_in_schema: bool = True,
     ) -> None:
         """
@@ -1259,8 +1274,8 @@ class Router:
         path: str,
         handler: Callable[[WebSocket], Awaitable[None]],
         name: Union[str, None] = None,
-        middleware: Union[Sequence[Middleware], None] = None,
-        permissions: Union[Sequence[Permission], None] = None,
+        middleware: Union[Sequence[DefineMiddleware], None] = None,
+        permissions: Union[Sequence[DefinePermission], None] = None,
     ) -> None:
         """
         Manually creates a `WebSocketPath` from a given handler.

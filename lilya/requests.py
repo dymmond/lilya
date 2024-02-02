@@ -75,6 +75,16 @@ class Request(Connection):
         return self._receive
 
     @property
+    def send(self) -> Send:
+        """
+        Get the send of the request.
+
+        Returns:
+            Receive: The send.
+        """
+        return self._send
+
+    @property
     def content_type(self) -> Tuple[str, Dict[str, str]]:
         """
         Get the content type of the request.

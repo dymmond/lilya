@@ -1,7 +1,6 @@
 import sys
 from typing import Any, Callable, Iterator
 
-from lilya._internal._iterables import BaseWrapper
 from lilya.types import ASGIApp
 
 if sys.version_info >= (3, 10):  # pragma: no cover
@@ -11,14 +10,6 @@ else:  # pragma: no cover
 
 
 P = ParamSpec("P")
-
-
-class Middleware(BaseWrapper):
-    """
-    Builds a wrapper middleware for all the classes.
-    """
-
-    ...
 
 
 class DefineMiddleware:
@@ -38,3 +29,6 @@ class DefineMiddleware:
 
     def __iter__(self) -> Iterator[Any]:
         return iter((self.middleware, self.args, self.kwargs))
+
+
+Middleware = DefineMiddleware

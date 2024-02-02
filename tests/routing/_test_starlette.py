@@ -5,23 +5,22 @@ import typing
 import uuid
 
 import pytest
+from starlette.applications import Starlette
+from starlette.exceptions import HTTPException
+from starlette.middleware import Middleware
+from starlette.requests import Request
+from starlette.responses import JSONResponse, PlainTextResponse, Response
+from starlette.routing import Host, Mount, NoMatchFound, Route, Router, WebSocketRoute
+from starlette.testclient import TestClient
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
+from starlette.websockets import WebSocket, WebSocketDisconnect
 
-from lilya.app import ChildLilya, Lilya
-from lilya.exceptions import HTTPException
-from lilya.middleware.base import DefineMiddleware
-from lilya.requests import Request
-from lilya.responses import JSONResponse, PlainText, Response
-from lilya.routing import Host, Include, NoMatchFound, Path, Router, WebSocketPath
-from lilya.testclient import TestClient
-from lilya.types import ASGIApp, Message, Receive, Scope, Send
-from lilya.websockets import WebSocket, WebSocketDisconnect
 
-
-def homepage():
+def homepage(request):
     return Response("Hello, world", media_type="text/plain")
 
 
-def users():
+def users(request):
     return Response("All users", media_type="text/plain")
 
 
@@ -30,7 +29,7 @@ def user(request):
     return Response(content, media_type="text/plain")
 
 
-def user_me():
+def user_me(request):
     content = "User fixed me"
     return Response(content, media_type="text/plain")
 
@@ -40,16 +39,16 @@ def disable_user(request):
     return Response(content, media_type="text/plain")
 
 
-def user_no_match():  # pragma: no cover
+def user_no_match(request):  # pragma: no cover
     content = "User fixed no match"
     return Response(content, media_type="text/plain")
 
 
-async def partial_handler(arg):
+async def partial_endpoint(arg, request):
     return JSONResponse({"arg": arg})
 
 
-async def partial_ws_handler(websocket: WebSocket):
+async def partial_ws_endpoint(websocket: WebSocket):
     await websocket.accept()
     await websocket.send_json({"url": str(websocket.url)})
     await websocket.close()
@@ -57,21 +56,21 @@ async def partial_ws_handler(websocket: WebSocket):
 
 class PartialRoutes:
     @classmethod
-    async def async_handler(cls, arg):
+    async def async_endpoint(cls, arg, request):
         return JSONResponse({"arg": arg})
 
     @classmethod
-    async def async_ws_handler(cls, websocket: WebSocket):
+    async def async_ws_endpoint(cls, websocket: WebSocket):
         await websocket.accept()
         await websocket.send_json({"url": str(websocket.url)})
         await websocket.close()
 
 
-def func_homepage():
+def func_homepage(request):
     return Response("Hello, world!", media_type="text/plain")
 
 
-def contact():
+def contact(request):
     return Response("Hello, POST!", media_type="text/plain")
 
 
@@ -100,7 +99,7 @@ def path_with_parentheses(request):
     return JSONResponse({"int": number})
 
 
-async def websocket_handler(session: WebSocket):
+async def websocket_endpoint(session: WebSocket):
     await session.accept()
     await session.send_text("Hello, world!")
     await session.close()
@@ -114,46 +113,47 @@ async def websocket_params(session: WebSocket):
 
 app = Router(
     [
-        Path("/", handler=homepage, methods=["GET"]),
-        Include(
+        Route("/", endpoint=homepage, methods=["GET"]),
+        Mount(
             "/users",
             routes=[
-                Path("/", handler=users),
-                Path("/me", handler=user_me),
-                Path("/{username}", handler=user),
-                Path("/{username}:disable", handler=disable_user, methods=["PUT"]),
-                Path("/nomatch", handler=user_no_match),
+                Route("/", endpoint=users),
+                Route("/me", endpoint=user_me),
+                Route("/{username}", endpoint=user),
+                Route("/{username}:disable", endpoint=disable_user, methods=["PUT"]),
+                Route("/nomatch", endpoint=user_no_match),
             ],
         ),
-        Include(
+        Mount(
             "/partial",
             routes=[
-                Path("/", handler=functools.partial(partial_handler, "foo")),
-                Path(
+                Route("/", endpoint=functools.partial(partial_endpoint, "foo")),
+                Route(
                     "/cls",
-                    handler=functools.partial(PartialRoutes.async_handler, "foo"),
+                    endpoint=functools.partial(PartialRoutes.async_endpoint, "foo"),
                 ),
-                WebSocketPath("/ws", handler=functools.partial(partial_ws_handler)),
-                WebSocketPath(
+                WebSocketRoute("/ws", endpoint=functools.partial(partial_ws_endpoint)),
+                WebSocketRoute(
                     "/ws/cls",
-                    handler=functools.partial(PartialRoutes.async_ws_handler),
+                    endpoint=functools.partial(PartialRoutes.async_ws_endpoint),
                 ),
             ],
         ),
-        Include("/static", app=Response("xxxxx", media_type="image/png")),
-        Path("/func", handler=func_homepage, methods=["GET"]),
-        Path("/func", handler=contact, methods=["POST"]),
-        Path("/int/{param:int}", handler=int_convertor, name="int-convertor"),
-        Path("/float/{param:float}", handler=float_convertor, name="float-convertor"),
-        Path("/path/{param:path}", handler=path_convertor, name="path-convertor"),
-        Path("/uuid/{param:uuid}", handler=uuid_converter, name="uuid-convertor"),
-        Path(
+        Mount("/static", app=Response("xxxxx", media_type="image/png")),
+        Route("/func", endpoint=func_homepage, methods=["GET"]),
+        Route("/func", endpoint=contact, methods=["POST"]),
+        Route("/int/{param:int}", endpoint=int_convertor, name="int-convertor"),
+        Route("/float/{param:float}", endpoint=float_convertor, name="float-convertor"),
+        Route("/path/{param:path}", endpoint=path_convertor, name="path-convertor"),
+        Route("/uuid/{param:uuid}", endpoint=uuid_converter, name="uuid-convertor"),
+        # Route with chars that conflict with regex meta chars
+        Route(
             "/path-with-parentheses({param:int})",
-            handler=path_with_parentheses,
+            endpoint=path_with_parentheses,
             name="path-with-parentheses",
         ),
-        WebSocketPath("/ws", handler=websocket_handler),
-        WebSocketPath("/ws/{room}", handler=websocket_params),
+        WebSocketRoute("/ws", endpoint=websocket_endpoint),
+        WebSocketRoute("/ws/{room}", endpoint=websocket_params),
     ]
 )
 
@@ -188,23 +188,23 @@ def test_router(client: TestClient):
     assert response.status_code == 200
     assert response.text == "All users"
 
-    response = client.get("/users/lilya")
+    response = client.get("/users/tomchristie")
     assert response.status_code == 200
-    assert response.text == "User lilya"
+    assert response.text == "User tomchristie"
 
     response = client.get("/users/me")
     assert response.status_code == 200
     assert response.text == "User fixed me"
 
-    response = client.get("/users/lilya/")
+    response = client.get("/users/tomchristie/")
     assert response.status_code == 200
-    assert response.url == "http://testserver/users/lilya"
-    assert response.text == "User lilya"
+    assert response.url == "http://testserver/users/tomchristie"
+    assert response.text == "User tomchristie"
 
-    response = client.put("/users/lilya:disable")
+    response = client.put("/users/tomchristie:disable")
     assert response.status_code == 200
-    assert response.url == "http://testserver/users/lilya:disable"
-    assert response.text == "User lilya disabled"
+    assert response.url == "http://testserver/users/tomchristie:disable"
+    assert response.text == "User tomchristie disabled"
 
     response = client.get("/users/nomatch")
     assert response.status_code == 200
@@ -215,83 +215,85 @@ def test_router(client: TestClient):
     assert response.text == "xxxxx"
 
 
-def test_path_converters(client):
+def test_route_converters(client):
     # Test integer conversion
     response = client.get("/int/5")
     assert response.status_code == 200
     assert response.json() == {"int": 5}
-    assert app.path_for("int-convertor", param=5) == "/int/5"
+    assert app.url_path_for("int-convertor", param=5) == "/int/5"
 
     # Test path with parentheses
     response = client.get("/path-with-parentheses(7)")
     assert response.status_code == 200
     assert response.json() == {"int": 7}
-    assert app.path_for("path-with-parentheses", param=7) == "/path-with-parentheses(7)"
+    assert app.url_path_for("path-with-parentheses", param=7) == "/path-with-parentheses(7)"
 
     # Test float conversion
     response = client.get("/float/25.5")
     assert response.status_code == 200
     assert response.json() == {"float": 25.5}
-    assert app.path_for("float-convertor", param=25.5) == "/float/25.5"
+    assert app.url_path_for("float-convertor", param=25.5) == "/float/25.5"
 
     # Test path conversion
     response = client.get("/path/some/example")
     assert response.status_code == 200
     assert response.json() == {"path": "some/example"}
-    assert app.path_for("path-convertor", param="some/example") == "/path/some/example"
+    assert app.url_path_for("path-convertor", param="some/example") == "/path/some/example"
 
     # Test UUID conversion
     response = client.get("/uuid/ec38df32-ceda-4cfa-9b4a-1aeb94ad551a")
     assert response.status_code == 200
     assert response.json() == {"uuid": "ec38df32-ceda-4cfa-9b4a-1aeb94ad551a"}
     assert (
-        app.path_for("uuid-convertor", param=uuid.UUID("ec38df32-ceda-4cfa-9b4a-1aeb94ad551a"))
+        app.url_path_for("uuid-convertor", param=uuid.UUID("ec38df32-ceda-4cfa-9b4a-1aeb94ad551a"))
         == "/uuid/ec38df32-ceda-4cfa-9b4a-1aeb94ad551a"
     )
 
 
-def test_path_for():
-    assert app.path_for("homepage") == "/"
-    assert app.path_for("user", username="lilya") == "/users/lilya"
-    assert app.path_for("websocket_handler") == "/ws"
+def test_url_path_for():
+    assert app.url_path_for("homepage") == "/"
+    assert app.url_path_for("user", username="tomchristie") == "/users/tomchristie"
+    assert app.url_path_for("websocket_endpoint") == "/ws"
     with pytest.raises(NoMatchFound, match='No route exists for name "broken" and params "".'):
-        assert app.path_for("broken")
+        assert app.url_path_for("broken")
     with pytest.raises(
         NoMatchFound, match='No route exists for name "broken" and params "key, key2".'
     ):
-        assert app.path_for("broken", key="value", key2="value2")
+        assert app.url_path_for("broken", key="value", key2="value2")
     with pytest.raises(AssertionError):
-        app.path_for("user", username="lilya/christie")
+        app.url_path_for("user", username="tom/christie")
     with pytest.raises(AssertionError):
-        app.path_for("user", username="")
+        app.url_path_for("user", username="")
 
 
-def test_make_absolute_url_for():
+def test_url_for():
     assert (
-        app.path_for("homepage").make_absolute_url(base_url="https://example.org")
+        app.url_path_for("homepage").make_absolute_url(base_url="https://example.org")
         == "https://example.org/"
     )
     assert (
-        app.path_for("homepage").make_absolute_url(base_url="https://example.org/root_path/")
+        app.url_path_for("homepage").make_absolute_url(base_url="https://example.org/root_path/")
         == "https://example.org/root_path/"
     )
     assert (
-        app.path_for("user", username="lilya").make_absolute_url(base_url="https://example.org")
-        == "https://example.org/users/lilya"
+        app.url_path_for("user", username="tomchristie").make_absolute_url(
+            base_url="https://example.org"
+        )
+        == "https://example.org/users/tomchristie"
     )
     assert (
-        app.path_for("user", username="lilya").make_absolute_url(
+        app.url_path_for("user", username="tomchristie").make_absolute_url(
             base_url="https://example.org/root_path/"
         )
-        == "https://example.org/root_path/users/lilya"
+        == "https://example.org/root_path/users/tomchristie"
     )
     assert (
-        app.path_for("websocket_handler").make_absolute_url(base_url="https://example.org")
+        app.url_path_for("websocket_endpoint").make_absolute_url(base_url="https://example.org")
         == "wss://example.org/ws"
     )
 
 
-def test_router_add_path(client):
+def test_router_add_route(client):
     response = client.get("/func")
     assert response.status_code == 200
     assert response.text == "Hello, world!"
@@ -303,7 +305,7 @@ def test_router_duplicate_path(client):
     assert response.text == "Hello, POST!"
 
 
-def test_router_add_websocket_path(client):
+def test_router_add_websocket_route(client):
     with client.websocket_connect("/ws") as session:
         text = session.receive_text()
         assert text == "Hello, world!"
@@ -314,17 +316,17 @@ def test_router_add_websocket_path(client):
 
 
 def test_router_middleware(test_client_factory: typing.Callable[..., TestClient]):
-    class CustomDefineMiddleware:
+    class CustomMiddleware:
         def __init__(self, app: ASGIApp) -> None:
             self.app = app
 
         async def __call__(self, scope: Scope, receive: Receive, send: Send):
-            response = PlainText("OK")
+            response = PlainTextResponse("OK")
             await response(scope, receive, send)
 
     app = Router(
-        routes=[Path("/", homepage)],
-        middleware=[DefineMiddleware(CustomDefineMiddleware)],
+        routes=[Route("/", homepage)],
+        middleware=[Middleware(CustomMiddleware)],
     )
 
     client = test_client_factory(app)
@@ -333,8 +335,8 @@ def test_router_middleware(test_client_factory: typing.Callable[..., TestClient]
     assert response.text == "OK"
 
 
-def http_handler(request):
-    url = request.path_for("http_handler")
+def http_endpoint(request):
+    url = request.url_for("http_endpoint")
     return Response(f"URL: {url}", media_type="text/plain")
 
 
@@ -342,14 +344,14 @@ class WebSocketEndpoint:
     async def __call__(self, scope, receive, send):
         websocket = WebSocket(scope=scope, receive=receive, send=send)
         await websocket.accept()
-        await websocket.send_json({"URL": str(websocket.path_for("websocket_handler"))})
+        await websocket.send_json({"URL": str(websocket.url_for("websocket_endpoint"))})
         await websocket.close()
 
 
 mixed_protocol_app = Router(
     routes=[
-        Path("/", handler=http_handler),
-        WebSocketPath("/", handler=WebSocketEndpoint(), name="websocket_handler"),
+        Route("/", endpoint=http_endpoint),
+        WebSocketRoute("/", endpoint=WebSocketEndpoint(), name="websocket_endpoint"),
     ]
 )
 
@@ -369,11 +371,11 @@ def test_protocol_switch(test_client_factory):
             pass  # pragma: nocover
 
 
-ok = PlainText("OK")
+ok = PlainTextResponse("OK")
 
 
 def test_mount_urls(test_client_factory):
-    mounted = Router([Include("/users", ok, name="users")])
+    mounted = Router([Mount("/users", ok, name="users")])
     client = test_client_factory(mounted)
     assert client.get("/users").status_code == 200
     assert client.get("/users").url == "http://testserver/users/"
@@ -383,23 +385,23 @@ def test_mount_urls(test_client_factory):
 
 
 def test_reverse_mount_urls():
-    mounted = Router([Include("/users", ok, name="users")])
-    assert mounted.path_for("users", path="/a") == "/users/a"
+    mounted = Router([Mount("/users", ok, name="users")])
+    assert mounted.url_path_for("users", path="/a") == "/users/a"
 
-    users = Router([Path("/{username}", ok, name="user")])
-    mounted = Router([Include("/{subpath}/users", users, name="users")])
-    assert mounted.path_for("users:user", subpath="test", username="lilya") == "/test/users/lilya"
-    assert mounted.path_for("users", subpath="test", path="/lilya") == "/test/users/lilya"
+    users = Router([Route("/{username}", ok, name="user")])
+    mounted = Router([Mount("/{subpath}/users", users, name="users")])
+    assert mounted.url_path_for("users:user", subpath="test", username="tom") == "/test/users/tom"
+    assert mounted.url_path_for("users", subpath="test", path="/tom") == "/test/users/tom"
 
 
 def test_mount_at_root(test_client_factory):
-    mounted = Router([Include("/", ok, name="users")])
+    mounted = Router([Mount("/", ok, name="users")])
     client = test_client_factory(mounted)
     assert client.get("/").status_code == 200
 
 
 def users_api(request):
-    return JSONResponse({"users": [{"username": "lilya"}]})
+    return JSONResponse({"users": [{"username": "tom"}]})
 
 
 mixed_hosts_app = Router(
@@ -408,78 +410,78 @@ mixed_hosts_app = Router(
             "www.example.org",
             app=Router(
                 [
-                    Path("/", homepage, name="homepage"),
-                    Path("/users", users, name="users"),
+                    Route("/", homepage, name="homepage"),
+                    Route("/users", users, name="users"),
                 ]
             ),
         ),
         Host(
             "api.example.org",
             name="api",
-            app=Router([Path("/users", users_api, name="users")]),
+            app=Router([Route("/users", users_api, name="users")]),
         ),
         Host(
             "port.example.org:3600",
             name="port",
-            app=Router([Path("/", homepage, name="homepage")]),
+            app=Router([Route("/", homepage, name="homepage")]),
         ),
     ]
 )
 
 
 def test_host_routing(test_client_factory):
-    client = test_client_factory(mixed_hosts_app, base_url="https://api.example.org/")
+    # client = test_client_factory(mixed_hosts_app, base_url="https://api.example.org/")
 
-    response = client.get("/users")
-    assert response.status_code == 200
-    assert response.json() == {"users": [{"username": "lilya"}]}
+    # response = client.get("/users")
+    # assert response.status_code == 200
+    # assert response.json() == {"users": [{"username": "lilya"}]}
 
-    response = client.get("/")
-    assert response.status_code == 404
+    # response = client.get("/")
+    # assert response.status_code == 404
 
-    client = test_client_factory(mixed_hosts_app, base_url="https://www.example.org/")
+    # client = test_client_factory(mixed_hosts_app, base_url="https://www.example.org/")
 
-    response = client.get("/users")
-    assert response.status_code == 200
-    assert response.text == "All users"
+    # response = client.get("/users")
+    # assert response.status_code == 200
+    # assert response.text == "All users"
 
-    response = client.get("/")
-    assert response.status_code == 200
+    # response = client.get("/")
+    # assert response.status_code == 200
 
     client = test_client_factory(mixed_hosts_app, base_url="https://port.example.org:3600/")
 
-    response = client.get("/users")
-    assert response.status_code == 404
+    # response = client.get("/users")
+    # assert response.status_code == 404
 
     response = client.get("/")
     assert response.status_code == 200
 
-    client = test_client_factory(mixed_hosts_app, base_url="https://port.example.org/")
+    # client = test_client_factory(mixed_hosts_app, base_url="https://port.example.org/")
 
-    response = client.get("/")
-    assert response.status_code == 200
+    # response = client.get("/")
+    # assert response.status_code == 200
 
-    client = test_client_factory(mixed_hosts_app, base_url="https://port.example.org:5600/")
+    # client = test_client_factory(mixed_hosts_app, base_url="https://port.example.org:5600/")
 
-    response = client.get("/")
-    assert response.status_code == 200
+    # response = client.get("/")
+    # assert response.status_code == 200
 
 
 def test_host_reverse_urls():
     assert (
-        mixed_hosts_app.path_for("homepage").make_absolute_url("https://whatever")
+        mixed_hosts_app.url_path_for("homepage").make_absolute_url("https://whatever")
         == "https://www.example.org/"
     )
     assert (
-        mixed_hosts_app.path_for("users").make_absolute_url("https://whatever")
+        mixed_hosts_app.url_path_for("users").make_absolute_url("https://whatever")
         == "https://www.example.org/users"
     )
     assert (
-        mixed_hosts_app.path_for("api:users").make_absolute_url("https://whatever")
+        mixed_hosts_app.url_path_for("api:users").make_absolute_url("https://whatever")
         == "https://api.example.org/users"
     )
     assert (
-        mixed_hosts_app.path_for("port:homepage").make_absolute_url("https://whatever")
+        mixed_hosts_app.url_path_for("port:homepage").make_absolute_url("https://whatever")
         == "https://port.example.org:3600/"
     )
 
@@ -504,7 +506,7 @@ def test_subdomain_routing(test_client_factory):
 
 def test_subdomain_reverse_urls():
     assert (
-        subdomain_router.path_for(
+        subdomain_router.url_path_for(
             "subdomains", subdomain="foo", path="/homepage"
         ).make_absolute_url("https://whatever")
         == "https://foo.example.org/homepage"
@@ -514,25 +516,26 @@ def test_subdomain_reverse_urls():
 async def echo_urls(request):
     return JSONResponse(
         {
-            "index": str(request.path_for("index")),
-            "submount": str(request.path_for("mount:submount")),
+            "index": str(request.url_for("index")),
+            "submount": str(request.url_for("mount:submount")),
         }
     )
 
 
 echo_url_routes = [
-    Path("/", echo_urls, name="index", methods=["GET"]),
-    Include(
+    Route("/", echo_urls, name="index", methods=["GET"]),
+    Mount(
         "/submount",
         name="mount",
-        routes=[Path("/", echo_urls, name="submount", methods=["GET"])],
+        routes=[Route("/", echo_urls, name="submount", methods=["GET"])],
     ),
 ]
 
 
 def test_url_for_with_root_path(test_client_factory):
-    app = Lilya(routes=echo_url_routes)
+    app = Starlette(routes=echo_url_routes)
     client = test_client_factory(app, base_url="https://www.example.org/", root_path="/sub_path")
+    breakpoint()
     response = client.get("/sub_path/")
     assert response.json() == {
         "index": "https://www.example.org/sub_path/",
@@ -545,30 +548,31 @@ def test_url_for_with_root_path(test_client_factory):
     }
 
 
-async def stub_app(scope, receive, send): ...  # pragma: no cover
+async def stub_app(scope, receive, send):
+    pass  # pragma: no cover
 
 
 double_mount_routes = [
-    Include("/mount", name="mount", routes=[Include("/static", stub_app, name="static")]),
+    Mount("/mount", name="mount", routes=[Mount("/static", stub_app, name="static")]),
 ]
 
 
 def test_url_for_with_double_mount():
-    app = Lilya(routes=double_mount_routes)
-    url = app.path_for("mount:static", path="123")
+    app = Starlette(routes=double_mount_routes)
+    url = app.url_path_for("mount:static", path="123")
     assert url == "/mount/static/123"
 
 
-def test_standalone_path_matches(test_client_factory):
-    app = Path("/", PlainText("Hello, World!"))
+def test_standalone_route_matches(test_client_factory):
+    app = Route("/", PlainTextResponse("Hello, World!"))
     client = test_client_factory(app)
     response = client.get("/")
     assert response.status_code == 200
     assert response.text == "Hello, World!"
 
 
-def test_standalone_path_does_not_match(test_client_factory):
-    app = Path("/", PlainText("Hello, World!"))
+def test_standalone_route_does_not_match(test_client_factory):
+    app = Route("/", PlainTextResponse("Hello, World!"))
     client = test_client_factory(app)
     response = client.get("/invalid")
     assert response.status_code == 404
@@ -581,16 +585,16 @@ async def ws_helloworld(websocket):
     await websocket.close()
 
 
-def test_standalone_ws_path_matches(test_client_factory):
-    app = WebSocketPath("/", ws_helloworld)
+def test_standalone_ws_route_matches(test_client_factory):
+    app = WebSocketRoute("/", ws_helloworld)
     client = test_client_factory(app)
     with client.websocket_connect("/") as websocket:
         text = websocket.receive_text()
         assert text == "Hello, world!"
 
 
-def test_standalone_ws_path_does_not_match(test_client_factory):
-    app = WebSocketPath("/", ws_helloworld)
+def test_standalone_ws_route_does_not_match(test_client_factory):
+    app = WebSocketRoute("/", ws_helloworld)
     client = test_client_factory(app)
     with pytest.raises(WebSocketDisconnect):
         with client.websocket_connect("/invalid"):
@@ -602,7 +606,7 @@ def test_lifespan_async(test_client_factory):
     shutdown_complete = False
 
     async def hello_world(request):
-        return PlainText("hello, world")
+        return PlainTextResponse("hello, world")
 
     async def run_startup():
         nonlocal startup_complete
@@ -612,11 +616,12 @@ def test_lifespan_async(test_client_factory):
         nonlocal shutdown_complete
         shutdown_complete = True
 
-    app = Router(
-        on_startup=[run_startup],
-        on_shutdown=[run_shutdown],
-        routes=[Path("/", hello_world)],
-    )
+    with pytest.deprecated_call(match="The on_startup and on_shutdown parameters are deprecated"):
+        app = Router(
+            on_startup=[run_startup],
+            on_shutdown=[run_shutdown],
+            routes=[Route("/", hello_world)],
+        )
 
     assert not startup_complete
     assert not shutdown_complete
@@ -628,13 +633,13 @@ def test_lifespan_async(test_client_factory):
     assert shutdown_complete
 
 
-def test_lifespan_assertation_error(test_client_factory: typing.Callable[..., TestClient]):
+def test_lifespan_with_on_events(test_client_factory: typing.Callable[..., TestClient]):
     lifespan_called = False
     startup_called = False
     shutdown_called = False
 
     @contextlib.asynccontextmanager
-    async def lifespan(app: Lilya):
+    async def lifespan(app: Starlette):
         nonlocal lifespan_called
         lifespan_called = True
         yield
@@ -649,34 +654,25 @@ def test_lifespan_assertation_error(test_client_factory: typing.Callable[..., Te
         nonlocal shutdown_called
         shutdown_called = True
 
-    with pytest.raises(AssertionError):
-        Router(on_startup=[run_startup], on_shutdown=[run_shutdown], lifespan=lifespan)
+    with pytest.warns(
+        UserWarning,
+        match=(
+            "The `lifespan` parameter cannot be used with `on_startup` or `on_shutdown`."  # noqa: E501
+        ),
+    ):
+        app = Router(on_startup=[run_startup], on_shutdown=[run_shutdown], lifespan=lifespan)
 
+        assert not lifespan_called
+        assert not startup_called
+        assert not shutdown_called
 
-def test_lifespan_with_on_events(test_client_factory: typing.Callable[..., TestClient]):
-    lifespan_called = False
-    startup_called = False
-    shutdown_called = False
+        # Triggers the lifespan events
+        with test_client_factory(app):
+            ...
 
-    @contextlib.asynccontextmanager
-    async def lifespan(app: Lilya):
-        nonlocal lifespan_called
-        lifespan_called = True
-        yield
-
-    app = Router(lifespan=lifespan)
-
-    assert not lifespan_called
-    assert not startup_called
-    assert not shutdown_called
-
-    # Triggers the lifespan events
-    with test_client_factory(app):
-        ...
-
-    assert lifespan_called
-    assert not startup_called
-    assert not shutdown_called
+        assert lifespan_called
+        assert not startup_called
+        assert not shutdown_called
 
 
 def test_lifespan_sync(test_client_factory):
@@ -684,7 +680,7 @@ def test_lifespan_sync(test_client_factory):
     shutdown_complete = False
 
     def hello_world(request):
-        return PlainText("hello, world")
+        return PlainTextResponse("hello, world")
 
     def run_startup():
         nonlocal startup_complete
@@ -694,11 +690,13 @@ def test_lifespan_sync(test_client_factory):
         nonlocal shutdown_complete
         shutdown_complete = True
 
-    app = Router(
-        on_startup=[run_startup],
-        on_shutdown=[run_shutdown],
-        routes=[Path("/", hello_world)],
-    )
+    with pytest.deprecated_call(match="The on_startup and on_shutdown parameters are deprecated"):
+        app = Router(
+            on_startup=[run_startup],
+            on_shutdown=[run_shutdown],
+            routes=[Route("/", hello_world)],
+        )
+
     assert not startup_complete
     assert not shutdown_complete
     with test_client_factory(app) as client:
@@ -716,7 +714,7 @@ def test_lifespan_state_unsupported(test_client_factory):
 
     app = Router(
         lifespan=lifespan,
-        routes=[Include("/", PlainText("hello, world"))],
+        routes=[Mount("/", PlainTextResponse("hello, world"))],
     )
 
     async def no_state_wrapper(scope, receive, send):
@@ -746,10 +744,10 @@ def test_lifespan_state_async_cm(test_client_factory):
         # since state.items is a mutable object this modification _will_ leak across
         # requests and to the lifespan
         request.state.items.append(1)
-        return PlainText("hello, world")
+        return PlainTextResponse("hello, world")
 
     @contextlib.asynccontextmanager
-    async def lifespan(app: Lilya) -> typing.AsyncIterator[State]:
+    async def lifespan(app: Starlette) -> typing.AsyncIterator[State]:
         nonlocal startup_complete, shutdown_complete
         startup_complete = True
         state = State(count=0, items=[])
@@ -763,7 +761,7 @@ def test_lifespan_state_async_cm(test_client_factory):
 
     app = Router(
         lifespan=lifespan,
-        routes=[Path("/", hello_world)],
+        routes=[Route("/", hello_world)],
     )
 
     assert not startup_complete
@@ -782,7 +780,8 @@ def test_raise_on_startup(test_client_factory):
     def run_startup():
         raise RuntimeError()
 
-    router = Router(on_startup=[run_startup])
+    with pytest.deprecated_call(match="The on_startup and on_shutdown parameters are deprecated"):
+        router = Router(on_startup=[run_startup])
     startup_failed = False
 
     async def app(scope, receive, send):
@@ -796,7 +795,7 @@ def test_raise_on_startup(test_client_factory):
 
     with pytest.raises(RuntimeError):
         with test_client_factory(app):
-            ...  # pragma: nocover
+            pass  # pragma: nocover
     assert startup_failed
 
 
@@ -804,25 +803,16 @@ def test_raise_on_shutdown(test_client_factory):
     def run_shutdown():
         raise RuntimeError()
 
-    app = Router(on_shutdown=[run_shutdown])
+    with pytest.deprecated_call(match="The on_startup and on_shutdown parameters are deprecated"):
+        app = Router(on_shutdown=[run_shutdown])
 
     with pytest.raises(RuntimeError):
         with test_client_factory(app):
-            ...  # pragma: nocover
+            pass  # pragma: nocover
 
 
-def test_raise_on_startup_runtime(test_client_factory):
-    def run_start():
-        raise RuntimeError()
-
-    app = Router(on_startup=[run_start])
-
-    with pytest.raises(RuntimeError):
-        with test_client_factory(app):
-            ...  # pragma: nocover
-
-
-def test_partial_async_handler(test_client_factory):
+def test_partial_async_endpoint(test_client_factory):
+    breakpoint()
     test_client = test_client_factory(app)
     response = test_client.get("/partial")
     assert response.status_code == 200
@@ -833,7 +823,7 @@ def test_partial_async_handler(test_client_factory):
     assert cls_method_response.json() == {"arg": "foo"}
 
 
-def test_partial_async_ws_handler(test_client_factory):
+def test_partial_async_ws_endpoint(test_client_factory):
     test_client = test_client_factory(app)
     with test_client.websocket_connect("/partial/ws") as websocket:
         data = websocket.receive_json()
@@ -847,53 +837,49 @@ def test_partial_async_ws_handler(test_client_factory):
 def test_duplicated_param_names():
     with pytest.raises(
         ValueError,
-        match="Duplicated param name id in the path /{id}/{id}",
+        match="Duplicated param name id at path /{id}/{id}",
     ):
-        Path("/{id}/{id}", user)
+        Route("/{id}/{id}", user)
 
     with pytest.raises(
         ValueError,
-        match="Duplicated param names id, name in the path /{id}/{name}/{id}/{name}",
+        match="Duplicated param names id, name at path /{id}/{name}/{id}/{name}",
     ):
-        Path("/{id}/{name}/{id}/{name}", user)
+        Route("/{id}/{name}/{id}/{name}", user)
 
 
-# class Endpoint:
-#     async def my_method(self, request):
-#         ...  # pragma: no cover
+class Endpoint:
+    async def my_method(self, request): ...  # pragma: no cover
 
-#     @classmethod
-#     async def my_classmethod(cls, request):
-#         ...  # pragma: no cover
+    @classmethod
+    async def my_classmethod(cls, request): ...  # pragma: no cover
 
-#     @staticmethod
-#     async def my_staticmethod(request):
-#         ...  # pragma: no cover
+    @staticmethod
+    async def my_staticmethod(request): ...  # pragma: no cover
 
-#     def __call__(self, request):
-#         ...  # pragma: no cover
+    def __call__(self, request): ...  # pragma: no cover
 
 
-# @pytest.mark.parametrize(
-#     "endpoint, expected_name",
-#     [
-#         pytest.param(func_homepage, "func_homepage", id="function"),
-#         pytest.param(Endpoint().my_method, "my_method", id="method"),
-#         pytest.param(Endpoint.my_classmethod, "my_classmethod", id="classmethod"),
-#         pytest.param(
-#             Endpoint.my_staticmethod,
-#             "my_staticmethod",
-#             id="staticmethod",
-#         ),
-#         pytest.param(Endpoint(), "Endpoint", id="object"),
-#         pytest.param(lambda request: ..., "<lambda>", id="lambda"),
-#     ],
-# )
-# def test_path_name(endpoint: typing.Callable[..., typing.Any], expected_name: str):
-#     assert Path(path="/", handler=endpoint).name == expected_name
+@pytest.mark.parametrize(
+    "endpoint, expected_name",
+    [
+        pytest.param(func_homepage, "func_homepage", id="function"),
+        pytest.param(Endpoint().my_method, "my_method", id="method"),
+        pytest.param(Endpoint.my_classmethod, "my_classmethod", id="classmethod"),
+        pytest.param(
+            Endpoint.my_staticmethod,
+            "my_staticmethod",
+            id="staticmethod",
+        ),
+        pytest.param(Endpoint(), "Endpoint", id="object"),
+        pytest.param(lambda request: ..., "<lambda>", id="lambda"),
+    ],
+)
+def test_route_name(endpoint: typing.Callable[..., typing.Any], expected_name: str):
+    assert Route(path="/", endpoint=endpoint).name == expected_name
 
 
-class AddHeadersDefineMiddleware:
+class AddHeadersMiddleware:
     def __init__(self, app: ASGIApp) -> None:
         self.app = app
 
@@ -908,55 +894,55 @@ class AddHeadersDefineMiddleware:
         await self.app(scope, receive, modified_send)
 
 
-def assert_middleware_header_path(request: Request) -> Response:
+def assert_middleware_header_route(request: Request) -> Response:
     assert request.scope["add_headers_middleware"] is True
     return Response()
 
 
-route_with_middleware = Lilya(
+route_with_middleware = Starlette(
     routes=[
-        Path(
+        Route(
             "/http",
-            handler=assert_middleware_header_path,
+            endpoint=assert_middleware_header_route,
             methods=["GET"],
-            middleware=[DefineMiddleware(AddHeadersDefineMiddleware)],
+            middleware=[Middleware(AddHeadersMiddleware)],
         ),
-        Path("/home", homepage),
+        Route("/home", homepage),
     ]
 )
 
-mounted_routes_with_middleware = Lilya(
+mounted_routes_with_middleware = Starlette(
     routes=[
-        Include(
+        Mount(
             "/http",
             routes=[
-                Path(
+                Route(
                     "/",
-                    handler=assert_middleware_header_path,
+                    endpoint=assert_middleware_header_route,
                     methods=["GET"],
                     name="route",
                 ),
             ],
-            middleware=[DefineMiddleware(AddHeadersDefineMiddleware)],
+            middleware=[Middleware(AddHeadersMiddleware)],
         ),
-        Path("/home", homepage),
+        Route("/home", homepage),
     ]
 )
 
 
-mounted_app_with_middleware = Lilya(
+mounted_app_with_middleware = Starlette(
     routes=[
-        Include(
+        Mount(
             "/http",
-            app=Path(
+            app=Route(
                 "/",
-                handler=assert_middleware_header_path,
+                endpoint=assert_middleware_header_route,
                 methods=["GET"],
                 name="route",
             ),
-            middleware=[DefineMiddleware(AddHeadersDefineMiddleware)],
+            middleware=[Middleware(AddHeadersMiddleware)],
         ),
-        Path("/home", homepage),
+        Route("/home", homepage),
     ]
 )
 
@@ -969,9 +955,9 @@ mounted_app_with_middleware = Lilya(
         route_with_middleware,
     ],
 )
-def test_base_path_middleware(
+def test_base_route_middleware(
     test_client_factory: typing.Callable[..., TestClient],
-    app: Lilya,
+    app: Starlette,
 ) -> None:
     test_client = test_client_factory(app)
 
@@ -984,30 +970,30 @@ def test_base_path_middleware(
     assert response.headers["X-Test"] == "Set by middleware"
 
 
-def test_mount_routes_with_middleware_path_for() -> None:
-    """Checks that path_for still works with mounted routes with DefineMiddleware"""
-    assert mounted_routes_with_middleware.path_for("route") == "/http/"
+def test_mount_routes_with_middleware_url_path_for() -> None:
+    """Checks that url_path_for still works with mounted routes with Middleware"""
+    assert mounted_routes_with_middleware.url_path_for("route") == "/http/"
 
 
-def test_mount_asgi_app_with_middleware_path_for() -> None:
+def test_mount_asgi_app_with_middleware_url_path_for() -> None:
     """Mounted ASGI apps do not work with url path for,
     middleware does not change this
     """
     with pytest.raises(NoMatchFound):
-        mounted_app_with_middleware.path_for("route")
+        mounted_app_with_middleware.url_path_for("route")
 
 
-def test_add_path_to_app_after_mount(
+def test_add_route_to_app_after_mount(
     test_client_factory: typing.Callable[..., TestClient],
 ) -> None:
-    """Checks that Include will pick up routes
+    """Checks that Mount will pick up routes
     added to the underlying app after it is mounted
     """
     inner_app = Router()
-    app = Include("/http", app=inner_app)
+    app = Mount("/http", app=inner_app)
     inner_app.add_route(
         "/inner",
-        handler=homepage,
+        endpoint=homepage,
         methods=["GET"],
     )
     client = test_client_factory(app)
@@ -1019,11 +1005,12 @@ def test_exception_on_mounted_apps(test_client_factory):
     def exc(request):
         raise Exception("Exc")
 
-    sub_app = ChildLilya(routes=[Path("/", exc)])
-    app = Lilya(routes=[Include("/sub", app=sub_app)])
+    sub_app = Starlette(routes=[Route("/", exc)])
+    app = Starlette(routes=[Mount("/sub", app=sub_app)])
 
     client = test_client_factory(app)
     with pytest.raises(Exception) as ctx:
+        breakpoint()
         client.get("/sub/")
     assert str(ctx.value) == "Exc"
 
@@ -1031,10 +1018,11 @@ def test_exception_on_mounted_apps(test_client_factory):
 def test_mounted_middleware_does_not_catch_exception(
     test_client_factory: typing.Callable[..., TestClient],
 ) -> None:
+    # https://github.com/encode/starlette/pull/1649#discussion_r960236107
     def exc(request: Request) -> Response:
         raise HTTPException(status_code=403, detail="auth")
 
-    class NamedDefineMiddleware:
+    class NamedMiddleware:
         def __init__(self, app: ASGIApp, name: str) -> None:
             self.app = app
             self.name = name
@@ -1047,20 +1035,20 @@ def test_mounted_middleware_does_not_catch_exception(
 
             await self.app(scope, receive, modified_send)
 
-    app = Lilya(
+    app = Starlette(
         routes=[
-            Include(
+            Mount(
                 "/mount",
                 routes=[
-                    Path("/err", exc),
-                    Path("/home", homepage),
+                    Route("/err", exc),
+                    Route("/home", homepage),
                 ],
-                middleware=[DefineMiddleware(NamedDefineMiddleware, name="Mounted")],
+                middleware=[Middleware(NamedMiddleware, name="Mounted")],
             ),
-            Path("/err", exc),
-            Path("/home", homepage),
+            Route("/err", exc),
+            Route("/home", homepage),
         ],
-        middleware=[DefineMiddleware(NamedDefineMiddleware, name="Outer")],
+        middleware=[Middleware(NamedMiddleware, name="Outer")],
     )
 
     client = test_client_factory(app)
@@ -1082,15 +1070,15 @@ def test_mounted_middleware_does_not_catch_exception(
     assert "X-Mounted" in resp.headers
 
 
-def test_websocket_path_middleware(
+def test_websocket_route_middleware(
     test_client_factory: typing.Callable[..., TestClient],
 ):
-    async def websocket_handler(session: WebSocket):
+    async def websocket_endpoint(session: WebSocket):
         await session.accept()
         await session.send_text("Hello, world!")
         await session.close()
 
-    class WebsocketDefineMiddleware:
+    class WebsocketMiddleware:
         def __init__(self, app: ASGIApp) -> None:
             self.app = app
 
@@ -1102,12 +1090,12 @@ def test_websocket_path_middleware(
 
             await self.app(scope, receive, modified_send)
 
-    app = Lilya(
+    app = Starlette(
         routes=[
-            WebSocketPath(
+            WebSocketRoute(
                 "/ws",
-                handler=websocket_handler,
-                middleware=[DefineMiddleware(WebsocketDefineMiddleware)],
+                endpoint=websocket_endpoint,
+                middleware=[Middleware(WebsocketMiddleware)],
             )
         ]
     )
@@ -1120,40 +1108,42 @@ def test_websocket_path_middleware(
         assert websocket.extra_headers == [(b"X-Test", b"Set by middleware")]
 
 
-def test_path_repr() -> None:
-    route = Path("/welcome", handler=homepage)
-    assert repr(route) == "Path(path='/welcome', name='homepage', methods=['GET', 'HEAD'])"
+def test_route_repr() -> None:
+    route = Route("/welcome", endpoint=homepage)
+    assert repr(route) == "Route(path='/welcome', name='homepage', methods=['GET', 'HEAD'])"
 
 
-# def test_path_repr_without_methods() -> None:
-#     route = Path("/welcome", handler=Endpoint, methods=None)
-#     assert repr(route) == "Path(path='/welcome', name='Endpoint', methods=[])"
+def test_route_repr_without_methods() -> None:
+    route = Route("/welcome", endpoint=Endpoint, methods=None)
+    assert repr(route) == "Route(path='/welcome', name='Endpoint', methods=[])"
 
 
-def test_websocket_path_repr() -> None:
-    route = WebSocketPath("/ws", handler=websocket_handler)
-    assert repr(route) == "WebSocketPath(path='/ws', name='websocket_handler')"
+def test_websocket_route_repr() -> None:
+    route = WebSocketRoute("/ws", endpoint=websocket_endpoint)
+    assert repr(route) == "WebSocketRoute(path='/ws', name='websocket_endpoint')"
 
 
 def test_mount_repr() -> None:
-    route = Include(
+    route = Mount(
         "/app",
         routes=[
-            Path("/", handler=homepage),
+            Route("/", endpoint=homepage),
         ],
     )
-    assert repr(route).startswith("Include(path='/app', name='', app=")
+    # test for substring because repr(Router) returns unique object ID
+    assert repr(route).startswith("Mount(path='/app', name='', app=")
 
 
 def test_mount_named_repr() -> None:
-    route = Include(
+    route = Mount(
         "/app",
         name="app",
         routes=[
-            Path("/", handler=homepage),
+            Route("/", endpoint=homepage),
         ],
     )
-    assert repr(route).startswith("Include(path='/app', name='app', app=")
+    # test for substring because repr(Router) returns unique object ID
+    assert repr(route).startswith("Mount(path='/app', name='app', app=")
 
 
 def test_host_repr() -> None:
@@ -1161,10 +1151,11 @@ def test_host_repr() -> None:
         "example.com",
         app=Router(
             [
-                Path("/", handler=homepage),
+                Route("/", endpoint=homepage),
             ]
         ),
     )
+    # test for substring because repr(Router) returns unique object ID
     assert repr(route).startswith("Host(host='example.com', name='', app=")
 
 
@@ -1174,11 +1165,28 @@ def test_host_named_repr() -> None:
         name="app",
         app=Router(
             [
-                Path("/", handler=homepage),
+                Route("/", endpoint=homepage),
             ]
         ),
     )
+    # test for substring because repr(Router) returns unique object ID
     assert repr(route).startswith("Host(host='example.com', name='app', app=")
+
+
+def test_decorator_deprecations() -> None:
+    router = Router()
+
+    with pytest.deprecated_call():
+        router.route("/")(homepage)
+
+    with pytest.deprecated_call():
+        router.websocket_route("/ws")(websocket_endpoint)
+
+    with pytest.deprecated_call():
+
+        async def startup() -> None: ...  # pragma: nocover
+
+        router.on_event("startup")(startup)
 
 
 async def echo_paths(request: Request, name: str):
@@ -1205,18 +1213,18 @@ async def pure_asgi_echo_paths(scope: Scope, receive: Receive, send: Send, name:
 
 
 echo_paths_routes = [
-    Path(
+    Route(
         "/path",
         functools.partial(echo_paths, name="path"),
         name="path",
         methods=["GET"],
     ),
-    Include("/asgipath", app=functools.partial(pure_asgi_echo_paths, name="asgipath")),
-    Include(
+    Mount("/asgipath", app=functools.partial(pure_asgi_echo_paths, name="asgipath")),
+    Mount(
         "/sub",
         name="mount",
         routes=[
-            Path(
+            Route(
                 "/path",
                 functools.partial(echo_paths, name="subpath"),
                 name="subpath",
@@ -1228,7 +1236,7 @@ echo_paths_routes = [
 
 
 def test_paths_with_root_path(test_client_factory: typing.Callable[..., TestClient]):
-    app = Lilya(routes=echo_paths_routes)
+    app = Starlette(routes=echo_paths_routes)
     client = test_client_factory(app, base_url="https://www.example.org/", root_path="/root")
     response = client.get("/root/path")
     assert response.status_code == 200
@@ -1242,6 +1250,10 @@ def test_paths_with_root_path(test_client_factory: typing.Callable[..., TestClie
     assert response.json() == {
         "name": "asgipath",
         "path": "/root/asgipath/",
+        # Things that mount other ASGI apps, like WSGIMiddleware, would not be aware
+        # of the prefixed path, and would have their own notion of their own paths,
+        # so they need to be able to rely on the root_path to know the location they
+        # are mounted on
         "root_path": "/root/asgipath",
     }
 

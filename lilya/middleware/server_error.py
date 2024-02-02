@@ -74,7 +74,7 @@ class ServerErrorMiddleware(MiddlewareProtocol):
         except Exception as exc:
             request = Request(scope)
             response = await self.handle_exception(request, exc, scope, receive, send)
-            await self.send_response(response, scope, receive, send)
+            await self.send_response(response, scope, receive, send, response_started)
             raise exc
 
     async def handle_exception(
@@ -117,7 +117,12 @@ class ServerErrorMiddleware(MiddlewareProtocol):
             return await run_in_threadpool(self.handler, request, exc)
 
     async def send_response(
-        self, response: Response, scope: Scope, receive: Receive, send: Send
+        self,
+        response: Response,
+        scope: Scope,
+        receive: Receive,
+        send: Send,
+        response_started: bool,
     ) -> None:
         """
         Send the generated response.
@@ -128,7 +133,7 @@ class ServerErrorMiddleware(MiddlewareProtocol):
             receive (Receive): ASGI receive function.
             send (Send): ASGI send function.
         """
-        if not response.started:
+        if not response_started:
             await response(scope, receive, send)
 
     def error_response(self, request: Request, exc: Exception) -> Response:
