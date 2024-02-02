@@ -30,5 +30,13 @@ class DefinePermission:
     def __iter__(self) -> Iterator[Any]:
         return iter((self.permission, self.args, self.kwargs))
 
+    def __repr__(self) -> str:
+        args_repr = ", ".join(
+            [self.permission.__name__]
+            + [f"{value!r}" for value in self.args]
+            + [f"{key}={value!r}" for key, value in self.kwargs.items()]
+        )
+        return f"{self.__class__.__name__}({args_repr})"
+
 
 Permission = DefinePermission
