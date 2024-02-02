@@ -3,7 +3,6 @@ from __future__ import annotations
 import functools
 import inspect
 import re
-import sys
 import traceback
 from typing import Any, Awaitable, Callable, Dict, List, Sequence, Tuple, TypeVar, Union
 
@@ -12,6 +11,7 @@ from lilya._internal._events import AsyncLifespan, handle_lifespan_events
 from lilya._internal._path import clean_path, compile_path, get_route_path, replace_params
 from lilya._internal._responses import BaseHandler
 from lilya.compat import is_async_callable
+from lilya.conf import settings
 from lilya.core.urls import include
 from lilya.datastructures import URL, Header, URLPath
 from lilya.enums import EventType, HTTPMethod, Match, ScopeType
@@ -53,6 +53,9 @@ class BasePath:
     The base of all paths (routes) for any ASGI application
     with Lilya.
     """
+
+    def handle_signature(self) -> None:
+        raise NotImplementedError()  # pragma: no cover
 
     def search(self, scope: Scope) -> Tuple[Match, Scope]:
         """
@@ -167,6 +170,9 @@ class Path(BaseHandler, BasePath):
         self.methods: Union[List[str], None] = methods
         self.signature: inspect.Signature = inspect.signature(self.handler)
 
+        # Handles the signature validation
+        self.handle_signature()
+
         # Defition of the app
         handler_app = handler
         while isinstance(handler_app, functools.partial):
@@ -190,6 +196,20 @@ class Path(BaseHandler, BasePath):
         self.path_regex, self.path_format, self.param_convertors, self.path_start = compile_path(
             self.path
         )
+
+    def handle_signature(self) -> None:
+        """
+        Validates the return annotation of a handler
+        if `enforce_return_annotation` is set to True.
+        """
+        if not settings.enforce_return_annotation:
+            return None
+
+        if self.signature is inspect._empty:
+            raise ImproperlyConfigured(
+                "A return value of a route handler function should be type annotated."
+                "If your function doesn't return a value or returns None, annotate it as returning 'NoReturn' or 'None' respectively."
+            )
 
     def _apply_middleware(self, middleware: Union[Sequence[Middleware], None]) -> None:
         """
@@ -356,6 +376,9 @@ class WebSocketPath(BaseHandler, BasePath):
         self.include_in_schema = include_in_schema
         self.signature: inspect.Signature = inspect.signature(self.handler)
 
+        # Handles the signature
+        self.handle_signature()
+
         # Defition of the app
         handler_app = handler
         while isinstance(handler_app, functools.partial):
@@ -372,6 +395,20 @@ class WebSocketPath(BaseHandler, BasePath):
         self.path_regex, self.path_format, self.param_convertors, self.path_start = compile_path(
             self.path
         )
+
+    def handle_signature(self) -> None:
+        """
+        Validates the return annotation of a handler
+        if `enforce_return_annotation` is set to True.
+        """
+        if not settings.enforce_return_annotation:
+            return None
+
+        if self.signature is inspect._empty:
+            raise ImproperlyConfigured(
+                "A return value of a route handler function should be type annotated."
+                "If your function doesn't return a value or returns None, annotate it as returning 'NoReturn' or 'None' respectively."
+            )
 
     def _apply_middleware(self, middleware: Union[Sequence[Middleware], None]) -> None:
         """
@@ -923,6 +960,9 @@ class Router:
         if inspect.isasyncgenfunction(lifespan) or inspect.isgeneratorfunction(lifespan):
             raise ImproperlyConfigured("async function generators are not allowed.")
 
+        self.on_startup = [] if on_startup is None else list(on_startup)
+        self.on_shutdown = [] if on_shutdown is None else list(on_shutdown)
+
         self.lifespan_context = handle_lifespan_events(
             on_startup=on_startup, on_shutdown=on_shutdown, lifespan=lifespan
         )
@@ -933,8 +973,6 @@ class Router:
         self.routes = [] if routes is None else list(routes)
         self.redirect_slashes = redirect_slashes
         self.default = self.handle_not_found if default is None else default
-        self.on_startup = [] if on_startup is None else list(on_startup)
-        self.on_shutdown = [] if on_shutdown is None else list(on_shutdown)
         self.include_in_schema = include_in_schema
 
         self.middleware = middleware if middleware is not None else []
@@ -1000,87 +1038,6 @@ class Router:
             else:
                 handler()
 
-    async def lifespan(self, scope: Scope, receive: Receive, send: Send) -> None:
-        """
-        Handle ASGI lifespan messages, managing application startup and shutdown events.
-
-        Args:
-            scope (Dict[str, Any]): The ASGI scope.
-            receive (Receive): The ASGI receive channel.
-            send (Send): The ASGI send channel.
-        """
-        await self.handle_lifespan_startup(scope, receive, send)
-        await self.handle_lifespan_shutdown(send)
-
-    async def handle_lifespan_startup(self, scope: Scope, receive: Receive, send: Send) -> None:
-        """
-        Handle the startup phase of the ASGI lifespan.
-
-        Args:
-            scope (Dict[str, Any]): The ASGI scope.
-            send (Send): The ASGI send channel.
-        """
-        try:
-            async with self.lifespan_context(scope.get("app")) as app_state:
-                if app_state is not None:
-                    self._update_scope_with_state(scope, app_state)
-                await send({"type": "lifespan.startup.complete"})
-                await receive()
-        except BaseException:
-            await self._handle_exception(send, startup=True)
-            raise
-
-    async def handle_lifespan_shutdown(self, send: Send) -> None:
-        """
-        Handle the shutdown phase of the ASGI lifespan.
-
-        Args:
-            scope (Dict[str, Any]): The ASGI scope.
-            send (Send): The ASGI send channel.
-        """
-        try:
-            await send({"type": "lifespan.shutdown.complete"})
-        except BaseException:
-            await self._handle_exception(send, startup=False)
-            raise
-
-    def _update_scope_with_state(self, scope: Scope, state: Dict[str, Any]) -> None:
-        """
-        Update the ASGI scope with the given state.
-
-        Args:
-            scope (Dict[str, Any]): The ASGI scope.
-            state (Dict[str, Any]): The state to update the scope with.
-        """
-        if "state" not in scope:
-            raise RuntimeError('The server does not support "state" in the lifespan scope.')
-        scope["state"].update(state)
-
-    async def _handle_exception(self, send: Send, startup: bool) -> None:
-        """
-        Handle exceptions during the lifespan phase.
-
-        Args:
-            send (Send): The ASGI send channel.
-            startup (bool): Whether the exception occurred during startup.
-        """
-        exc_type, exc, tb = sys.exc_info()
-        exc_text = "".join(traceback.format_exception(exc_type, exc, tb))
-        message_type = "lifespan.startup.failed" if startup else "lifespan.shutdown.failed"
-        await send({"type": message_type, "message": exc_text})
-
-    async def handle_lifespan(self, scope: Scope, receive: Receive, send: Send) -> None:
-        """
-        Handle ASGI lifespan messages, managing application startup and shutdown events.
-
-        Args:
-            scope (Scope): The ASGI scope.
-            receive (Receive): The ASGI receive channel.
-            send (Send): The ASGI send channel.
-        """
-        await receive()
-        await self.lifespan(scope, receive, send)
-
     async def handle_route(
         self, route: BasePath, child_scope: Scope, scope: Scope, receive: Receive, send: Send
     ) -> None:
@@ -1124,6 +1081,52 @@ class Router:
         """
         await self.default(scope, receive, send)
 
+    async def lifespan(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """
+        Handle ASGI lifespan messages, managing application startup and shutdown events.
+
+        Args:
+            scope (Scope): The ASGI scope.
+            receive (Receive): The receive channel.
+            send (Send): The send channel.
+        """
+        completed_startup = False
+
+        async def startup_complete() -> None:
+            await send({"type": "lifespan.startup.complete"})
+
+        async def shutdown_complete() -> None:
+            await send({"type": "lifespan.shutdown.complete"})
+
+        async def lifespan_error(type: str, message: str) -> None:
+            await send({"type": type, "message": message})
+
+        try:
+            app: Any = scope.get("app")
+            await receive()
+            async with self.lifespan_context(app) as state:
+                if state is not None:
+                    if "state" not in scope:
+                        raise RuntimeError(
+                            'The server does not support "state" in the lifespan scope.'
+                        )
+                    scope["state"].update(state)
+
+                await startup_complete()
+                completed_startup = True
+                await receive()
+
+        except BaseException:
+            exc_text = traceback.format_exc()
+            if completed_startup:
+                await lifespan_error("lifespan.shutdown.failed", exc_text)
+            else:
+                await lifespan_error("lifespan.startup.failed", exc_text)
+            raise
+
+        else:
+            await shutdown_complete()
+
     async def app(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
         Handle ASGI messages, managing different scopes and routing.
@@ -1139,7 +1142,7 @@ class Router:
             scope["router"] = self
 
         if scope["type"] == ScopeType.LIFESPAN:
-            await self.handle_lifespan(scope, receive, send)
+            await self.lifespan(scope, receive, send)
             return
 
         partial = None

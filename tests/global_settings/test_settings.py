@@ -18,12 +18,12 @@ def test_test_dict():
     assert settings_dict["include_in_schema"] is True
 
 
-def test_test_tuple():
+def test_tuple():
     settings = Settings()
 
     settings_dict = settings.tuple()
 
-    assert len(settings_dict) == 5
+    assert len(settings_dict) == 6
 
 
 def test_conf_settings():

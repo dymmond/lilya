@@ -73,6 +73,41 @@ class Settings(BaseSettings):
             """
         ),
     ] = field(default="route_patterns")
+    enforce_return_annotation: Annotated[
+        bool,
+        Doc(
+            """
+            Boolean flag indicating if the return signature for the handler should be enforced
+            or not.
+
+            If the flag is True and no return signature, then raises an ImproperlyConfigured.
+
+            **Example with flag as False**
+
+            ```python
+            from lilya.routing import Path
+
+            def home():
+                ...
+
+            Path(path="/", handler=home)
+            ```
+
+            **Example with flag as True**
+
+            ```python
+            from lilya.routing import Path
+            from lilya.responses import Response
+
+
+            def home() -> Response:
+                ...
+
+            Path(path="/", handler=home)
+            ```
+            """
+        ),
+    ] = False
 
     @property
     def routes(self) -> List[Any]:

@@ -1,3 +1,4 @@
+import contextlib
 import functools
 import typing
 import uuid
@@ -6,6 +7,7 @@ import pytest
 
 from lilya.app import Lilya
 from lilya.middleware.base import Middleware
+from lilya.requests import Request
 from lilya.responses import JSONResponse, PlainText, Response
 from lilya.routing import Host, Include, NoMatchFound, Path, Router, WebSocketPath
 from lilya.testclient import TestClient
@@ -541,277 +543,281 @@ def test_url_for_with_root_path(test_client_factory):
     }
 
 
-# async def stub_app(scope, receive, send):
-#     pass  # pragma: no cover
+async def stub_app(scope, receive, send): ...  # pragma: no cover
 
 
-# double_mount_routes = [
-#     Include("/mount", name="mount", routes=[Include("/static", stub_app, name="static")]),
-# ]
+double_mount_routes = [
+    Include("/mount", name="mount", routes=[Include("/static", stub_app, name="static")]),
+]
 
 
-# def test_url_for_with_double_mount():
-#     app = Lilya(routes=double_mount_routes)
-#     url = app.path_for("mount:static", path="123")
-#     assert url == "/mount/static/123"
+def test_url_for_with_double_mount():
+    app = Lilya(routes=double_mount_routes)
+    url = app.path_for("mount:static", path="123")
+    assert url == "/mount/static/123"
 
 
-# def test_standalone_route_matches(test_client_factory):
-#     app = Path("/", PlainText("Hello, World!"))
-#     client = test_client_factory(app)
-#     response = client.get("/")
-#     assert response.status_code == 200
-#     assert response.text == "Hello, World!"
+def test_standalone_route_matches(test_client_factory):
+    app = Path("/", PlainText("Hello, World!"))
+    client = test_client_factory(app)
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.text == "Hello, World!"
 
 
-# def test_standalone_route_does_not_match(test_client_factory):
-#     app = Path("/", PlainText("Hello, World!"))
-#     client = test_client_factory(app)
-#     response = client.get("/invalid")
-#     assert response.status_code == 404
-#     assert response.text == "Not Found"
+def test_standalone_route_does_not_match(test_client_factory):
+    app = Path("/", PlainText("Hello, World!"))
+    client = test_client_factory(app)
+    response = client.get("/invalid")
+    assert response.status_code == 404
+    assert response.text == "Not Found"
 
 
-# async def ws_helloworld(websocket):
-#     await websocket.accept()
-#     await websocket.send_text("Hello, world!")
-#     await websocket.close()
+async def ws_helloworld(websocket):
+    await websocket.accept()
+    await websocket.send_text("Hello, world!")
+    await websocket.close()
 
 
-# def test_standalone_ws_route_matches(test_client_factory):
-#     app = WebSocketPath("/", ws_helloworld)
-#     client = test_client_factory(app)
-#     with client.websocket_connect("/") as websocket:
-#         text = websocket.receive_text()
-#         assert text == "Hello, world!"
+def test_standalone_ws_route_matches(test_client_factory):
+    app = WebSocketPath("/", ws_helloworld)
+    client = test_client_factory(app)
+    with client.websocket_connect("/") as websocket:
+        text = websocket.receive_text()
+        assert text == "Hello, world!"
 
 
-# def test_standalone_ws_route_does_not_match(test_client_factory):
-#     app = WebSocketPath("/", ws_helloworld)
-#     client = test_client_factory(app)
-#     with pytest.raises(WebSocketDisconnect):
-#         with client.websocket_connect("/invalid"):
-#             pass  # pragma: nocover
+def test_standalone_ws_route_does_not_match(test_client_factory):
+    app = WebSocketPath("/", ws_helloworld)
+    client = test_client_factory(app)
+    with pytest.raises(WebSocketDisconnect):
+        with client.websocket_connect("/invalid"):
+            pass  # pragma: nocover
 
 
-# def test_lifespan_async(test_client_factory):
-#     startup_complete = False
-#     shutdown_complete = False
+def test_lifespan_async(test_client_factory):
+    startup_complete = False
+    shutdown_complete = False
 
-#     async def hello_world(request):
-#         return PlainText("hello, world")
+    async def hello_world(request):
+        return PlainText("hello, world")
 
-#     async def run_startup():
-#         nonlocal startup_complete
-#         startup_complete = True
+    async def run_startup():
+        nonlocal startup_complete
+        startup_complete = True
 
-#     async def run_shutdown():
-#         nonlocal shutdown_complete
-#         shutdown_complete = True
+    async def run_shutdown():
+        nonlocal shutdown_complete
+        shutdown_complete = True
 
-#     with pytest.deprecated_call(
-#         match="The on_startup and on_shutdown parameters are deprecated"
-#     ):
-#         app = Router(
-#             on_startup=[run_startup],
-#             on_shutdown=[run_shutdown],
-#             routes=[Path("/", hello_world)],
-#         )
+    app = Router(
+        on_startup=[run_startup],
+        on_shutdown=[run_shutdown],
+        routes=[Path("/", hello_world)],
+    )
 
-#     assert not startup_complete
-#     assert not shutdown_complete
-#     with test_client_factory(app) as client:
-#         assert startup_complete
-#         assert not shutdown_complete
-#         client.get("/")
-#     assert startup_complete
-#     assert shutdown_complete
+    assert not startup_complete
+    assert not shutdown_complete
+    with test_client_factory(app) as client:
+        assert startup_complete
+        assert not shutdown_complete
+        client.get("/")
+    assert startup_complete
+    assert shutdown_complete
 
 
-# def test_lifespan_with_on_events(test_client_factory: typing.Callable[..., TestClient]):
-#     lifespan_called = False
-#     startup_called = False
-#     shutdown_called = False
+def test_lifespan_assertation_error(test_client_factory: typing.Callable[..., TestClient]):
+    lifespan_called = False
+    startup_called = False
+    shutdown_called = False
 
-#     @contextlib.asynccontextmanager
-#     async def lifespan(app: Lilya):
-#         nonlocal lifespan_called
-#         lifespan_called = True
-#         yield
+    @contextlib.asynccontextmanager
+    async def lifespan(app: Lilya):
+        nonlocal lifespan_called
+        lifespan_called = True
+        yield
 
-#     # We do not expected, neither of run_startup nor run_shutdown to be called
-#     # we thus mark them as #pragma: no cover, to fulfill test coverage
-#     def run_startup():  # pragma: no cover
-#         nonlocal startup_called
-#         startup_called = True
+    # We do not expected, neither of run_startup nor run_shutdown to be called
+    # we thus mark them as #pragma: no cover, to fulfill test coverage
+    def run_startup():  # pragma: no cover
+        nonlocal startup_called
+        startup_called = True
 
-#     def run_shutdown():  # pragma: no cover
-#         nonlocal shutdown_called
-#         shutdown_called = True
+    def run_shutdown():  # pragma: no cover
+        nonlocal shutdown_called
+        shutdown_called = True
 
-#     with pytest.warns(
-#         UserWarning,
-#         match=(
-#             "The `lifespan` parameter cannot be used with `on_startup` or `on_shutdown`."  # noqa: E501
-#         ),
-#     ):
-#         app = Router(
-#             on_startup=[run_startup], on_shutdown=[run_shutdown], lifespan=lifespan
-#         )
-
-#         assert not lifespan_called
-#         assert not startup_called
-#         assert not shutdown_called
-
-#         # Triggers the lifespan events
-#         with test_client_factory(app):
-#             ...
-
-#         assert lifespan_called
-#         assert not startup_called
-#         assert not shutdown_called
+    with pytest.raises(AssertionError):
+        Router(on_startup=[run_startup], on_shutdown=[run_shutdown], lifespan=lifespan)
 
 
-# def test_lifespan_sync(test_client_factory):
-#     startup_complete = False
-#     shutdown_complete = False
+def test_lifespan_with_on_events(test_client_factory: typing.Callable[..., TestClient]):
+    lifespan_called = False
+    startup_called = False
+    shutdown_called = False
 
-#     def hello_world(request):
-#         return PlainText("hello, world")
+    @contextlib.asynccontextmanager
+    async def lifespan(app: Lilya):
+        nonlocal lifespan_called
+        lifespan_called = True
+        yield
 
-#     def run_startup():
-#         nonlocal startup_complete
-#         startup_complete = True
+    app = Router(lifespan=lifespan)
 
-#     def run_shutdown():
-#         nonlocal shutdown_complete
-#         shutdown_complete = True
+    assert not lifespan_called
+    assert not startup_called
+    assert not shutdown_called
 
-#     with pytest.deprecated_call(
-#         match="The on_startup and on_shutdown parameters are deprecated"
-#     ):
-#         app = Router(
-#             on_startup=[run_startup],
-#             on_shutdown=[run_shutdown],
-#             routes=[Path("/", hello_world)],
-#         )
+    # Triggers the lifespan events
+    with test_client_factory(app):
+        ...
 
-#     assert not startup_complete
-#     assert not shutdown_complete
-#     with test_client_factory(app) as client:
-#         assert startup_complete
-#         assert not shutdown_complete
-#         client.get("/")
-#     assert startup_complete
-#     assert shutdown_complete
+    assert lifespan_called
+    assert not startup_called
+    assert not shutdown_called
 
 
-# def test_lifespan_state_unsupported(test_client_factory):
-#     @contextlib.asynccontextmanager
-#     async def lifespan(app):
-#         yield {"foo": "bar"}
+def test_lifespan_sync(test_client_factory):
+    startup_complete = False
+    shutdown_complete = False
 
-#     app = Router(
-#         lifespan=lifespan,
-#         routes=[Include("/", PlainText("hello, world"))],
-#     )
+    def hello_world(request):
+        return PlainText("hello, world")
 
-#     async def no_state_wrapper(scope, receive, send):
-#         del scope["state"]
-#         await app(scope, receive, send)
+    def run_startup():
+        nonlocal startup_complete
+        startup_complete = True
 
-#     with pytest.raises(
-#         RuntimeError, match='The server does not support "state" in the lifespan scope'
-#     ):
-#         with test_client_factory(no_state_wrapper):
-#             raise AssertionError("Should not be called")  # pragma: no cover
+    def run_shutdown():
+        nonlocal shutdown_complete
+        shutdown_complete = True
 
-
-# def test_lifespan_state_async_cm(test_client_factory):
-#     startup_complete = False
-#     shutdown_complete = False
-
-#     class State(typing.TypedDict):
-#         count: int
-#         items: typing.List[int]
-
-#     async def hello_world(request: Request) -> Response:
-#         # modifications to the state should not leak across requests
-#         assert request.state.count == 0
-#         # modify the state, this should not leak to the lifespan or other requests
-#         request.state.count += 1
-#         # since state.items is a mutable object this modification _will_ leak across
-#         # requests and to the lifespan
-#         request.state.items.append(1)
-#         return PlainText("hello, world")
-
-#     @contextlib.asynccontextmanager
-#     async def lifespan(app: Lilya) -> typing.AsyncIterator[State]:
-#         nonlocal startup_complete, shutdown_complete
-#         startup_complete = True
-#         state = State(count=0, items=[])
-#         yield state
-#         shutdown_complete = True
-#         # modifications made to the state from a request do not leak to the lifespan
-#         assert state["count"] == 0
-#         # unless of course the request mutates a mutable object that is referenced
-#         # via state
-#         assert state["items"] == [1, 1]
-
-#     app = Router(
-#         lifespan=lifespan,
-#         routes=[Path("/", hello_world)],
-#     )
-
-#     assert not startup_complete
-#     assert not shutdown_complete
-#     with test_client_factory(app) as client:
-#         assert startup_complete
-#         assert not shutdown_complete
-#         client.get("/")
-#         # Calling it a second time to ensure that the state is preserved.
-#         client.get("/")
-#     assert startup_complete
-#     assert shutdown_complete
+    app = Router(
+        on_startup=[run_startup],
+        on_shutdown=[run_shutdown],
+        routes=[Path("/", hello_world)],
+    )
+    assert not startup_complete
+    assert not shutdown_complete
+    with test_client_factory(app) as client:
+        assert startup_complete
+        assert not shutdown_complete
+        client.get("/")
+    assert startup_complete
+    assert shutdown_complete
 
 
-# def test_raise_on_startup(test_client_factory):
-#     def run_startup():
-#         raise RuntimeError()
+def test_lifespan_state_unsupported(test_client_factory):
+    @contextlib.asynccontextmanager
+    async def lifespan(app):
+        yield {"foo": "bar"}
 
-#     with pytest.deprecated_call(
-#         match="The on_startup and on_shutdown parameters are deprecated"
-#     ):
-#         router = Router(on_startup=[run_startup])
-#     startup_failed = False
+    app = Router(
+        lifespan=lifespan,
+        routes=[Include("/", PlainText("hello, world"))],
+    )
 
-#     async def app(scope, receive, send):
-#         async def _send(message):
-#             nonlocal startup_failed
-#             if message["type"] == "lifespan.startup.failed":
-#                 startup_failed = True
-#             return await send(message)
+    async def no_state_wrapper(scope, receive, send):
+        del scope["state"]
+        await app(scope, receive, send)
 
-#         await router(scope, receive, _send)
-
-#     with pytest.raises(RuntimeError):
-#         with test_client_factory(app):
-#             pass  # pragma: nocover
-#     assert startup_failed
+    with pytest.raises(
+        RuntimeError, match='The server does not support "state" in the lifespan scope'
+    ):
+        with test_client_factory(no_state_wrapper):
+            raise AssertionError("Should not be called")  # pragma: no cover
 
 
-# def test_raise_on_shutdown(test_client_factory):
-#     def run_shutdown():
-#         raise RuntimeError()
+def test_lifespan_state_async_cm(test_client_factory):
+    startup_complete = False
+    shutdown_complete = False
 
-#     with pytest.deprecated_call(
-#         match="The on_startup and on_shutdown parameters are deprecated"
-#     ):
-#         app = Router(on_shutdown=[run_shutdown])
+    class State(typing.TypedDict):
+        count: int
+        items: typing.List[int]
 
-#     with pytest.raises(RuntimeError):
-#         with test_client_factory(app):
-#             pass  # pragma: nocover
+    async def hello_world(request: Request) -> Response:
+        # modifications to the state should not leak across requests
+        assert request.state.count == 0
+        # modify the state, this should not leak to the lifespan or other requests
+        request.state.count += 1
+        # since state.items is a mutable object this modification _will_ leak across
+        # requests and to the lifespan
+        request.state.items.append(1)
+        return PlainText("hello, world")
+
+    @contextlib.asynccontextmanager
+    async def lifespan(app: Lilya) -> typing.AsyncIterator[State]:
+        nonlocal startup_complete, shutdown_complete
+        startup_complete = True
+        state = State(count=0, items=[])
+        yield state
+        shutdown_complete = True
+        # modifications made to the state from a request do not leak to the lifespan
+        assert state["count"] == 0
+        # unless of course the request mutates a mutable object that is referenced
+        # via state
+        assert state["items"] == [1, 1]
+
+    app = Router(
+        lifespan=lifespan,
+        routes=[Path("/", hello_world)],
+    )
+
+    assert not startup_complete
+    assert not shutdown_complete
+    with test_client_factory(app) as client:
+        assert startup_complete
+        assert not shutdown_complete
+        client.get("/")
+        # Calling it a second time to ensure that the state is preserved.
+        client.get("/")
+    assert startup_complete
+    assert shutdown_complete
+
+
+def test_raise_on_startup(test_client_factory):
+    def run_startup():
+        raise RuntimeError()
+
+    router = Router(on_startup=[run_startup])
+    startup_failed = False
+
+    async def app(scope, receive, send):
+        async def _send(message):
+            nonlocal startup_failed
+            if message["type"] == "lifespan.startup.failed":
+                startup_failed = True
+            return await send(message)
+
+        await router(scope, receive, _send)
+
+    with pytest.raises(RuntimeError):
+        with test_client_factory(app):
+            ...  # pragma: nocover
+    assert startup_failed
+
+
+def test_raise_on_shutdown(test_client_factory):
+    def run_shutdown():
+        raise RuntimeError()
+
+    app = Router(on_shutdown=[run_shutdown])
+
+    with pytest.raises(RuntimeError):
+        with test_client_factory(app):
+            ...  # pragma: nocover
+
+
+def test_raise_on_startup_runtime(test_client_factory):
+    def run_start():
+        raise RuntimeError()
+
+    app = Router(on_startup=[run_start])
+
+    with pytest.raises(RuntimeError):
+        with test_client_factory(app):
+            ...  # pragma: nocover
 
 
 # def test_partial_async_endpoint(test_client_factory):

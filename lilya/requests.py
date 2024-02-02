@@ -11,7 +11,7 @@ from lilya._internal._connection import (
     empty_send,
 )
 from lilya._internal._parsers import FormParser, MultiPartException, MultiPartParser
-from lilya.compat import AwaitableOrContextManager
+from lilya.compat import AsyncResourceHandler
 from lilya.datastructures import FormData
 from lilya.enums import Event, ScopeType
 from lilya.exceptions import HTTPException
@@ -194,7 +194,7 @@ class Request(Connection):
         *,
         max_files: Union[int, float] = 1000,
         max_fields: Union[int, float] = 1000,
-    ) -> AwaitableOrContextManager[FormData]:
+    ) -> AsyncResourceHandler[FormData]:
         """
         Get the form data from the request.
 
@@ -205,12 +205,10 @@ class Request(Connection):
                 in the form data.
 
         Returns:
-            AwaitableOrContextManager[FormData]: Awaiting or using this object will
+            AsyncResourceHandler[FormData]: Awaiting or using this object will
             return the parsed form data.
         """
-        return AwaitableOrContextManager(
-            self._get_form(max_files=max_files, max_fields=max_fields)
-        )
+        return AsyncResourceHandler(self._get_form(max_files=max_files, max_fields=max_fields))
 
     async def close(self) -> None:
         """
