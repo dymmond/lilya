@@ -206,7 +206,7 @@ class Path(BaseHandler, BasePath):
         if not settings.enforce_return_annotation:
             return None
 
-        if self.signature is inspect._empty:
+        if self.signature.return_annotation is inspect._empty:
             raise ImproperlyConfigured(
                 "A return value of a route handler function should be type annotated."
                 "If your function doesn't return a value or returns None, annotate it as returning 'NoReturn' or 'None' respectively."
@@ -406,7 +406,7 @@ class WebSocketPath(BaseHandler, BasePath):
         if not settings.enforce_return_annotation:
             return None
 
-        if self.signature is inspect._empty:
+        if self.signature.return_annotation is inspect._empty:
             raise ImproperlyConfigured(
                 "A return value of a route handler function should be type annotated."
                 "If your function doesn't return a value or returns None, annotate it as returning 'NoReturn' or 'None' respectively."

@@ -144,7 +144,7 @@ class Lilya:
             ),
         ] = True,
     ) -> None:
-        self.settings_module = None
+        self.settings_module: Settings = None
 
         if settings_module:
             if not isinstance(settings_module, Settings) and not is_class_and_subclass(
@@ -156,30 +156,62 @@ class Lilya:
             elif is_class_and_subclass(settings_module, Settings):  # type: ignore
                 self.settings_module = settings_module()
 
-        self.debug = debug
-        self.state = State()
+        self.debug = self.__load_settings_value("debug", debug, is_boolean=True)
         self.exception_handlers = {} if exception_handlers is None else dict(exception_handlers)
-        self.permissions = [] if permissions is None else list(permissions)
-        self.custom_middleware = [] if middleware is None else list(middleware)
-        self.custom_permissions = [] if permissions is None else list(permissions)
+        self.custom_middleware = self.__load_settings_value("middleware", middleware)
+        self.custom_permissions = self.__load_settings_value("permissions", permissions)
 
+        self.state = State()
         self.middleware_stack: Union[ASGIApp, None] = None
         self.permission_stack: Union[ASGIApp, None] = None
 
         self.router: Router = Router(
             routes=routes,
             redirect_slashes=redirect_slashes,
-            on_startup=on_startup,
-            on_shutdown=on_shutdown,
-            lifespan=lifespan,
-            middleware=middleware,
-            permissions=permissions,
+            on_startup=self.__load_settings_value("on_startup", on_startup),
+            on_shutdown=self.__load_settings_value("on_shutdown", on_shutdown),
+            lifespan=self.__load_settings_value("lifespan", lifespan),
             include_in_schema=include_in_schema,
         )
 
     @property
     def routes(self) -> List[BasePath]:
         return self.router.routes
+
+    def __load_settings_value(
+        self, name: str, value: Optional[Any] = None, is_boolean: bool = False
+    ) -> Any:
+        """
+        Loader used to get the settings defaults and custom settings
+        of the application.
+        """
+        if not is_boolean:
+            if not value:
+                return self.__get_settings_value(
+                    self.settings_module, cast(Settings, lilya_settings), name
+                )
+            return value
+
+        if value is not None:
+            return value
+        return self.__get_settings_value(
+            self.settings_module, cast(Settings, lilya_settings), name
+        )
+
+    def __get_settings_value(
+        self,
+        local_settings: Optional[Settings],
+        global_settings: Settings,
+        value: str,
+    ) -> Any:
+        """Obtains the value from a settings module or defaults to the global settings"""
+        setting_value = None
+
+        if local_settings:
+            setting_value = getattr(local_settings, value, None)
+        if setting_value is None:
+            return getattr(global_settings, value, None)
+        return setting_value
 
     @property
     def settings(self) -> Settings:
