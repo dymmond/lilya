@@ -972,7 +972,10 @@ class Router:
         ), "Use either 'lifespan' or 'on_startup'/'on_shutdown', not both."
 
         if inspect.isasyncgenfunction(lifespan) or inspect.isgeneratorfunction(lifespan):
-            raise ImproperlyConfigured("async function generators are not allowed.")
+            raise ImproperlyConfigured(
+                "async function generators are not allowed. "
+                "Use @contextlib.asynccontextmanager instead."
+            )
 
         self.on_startup = [] if on_startup is None else list(on_startup)
         self.on_shutdown = [] if on_shutdown is None else list(on_shutdown)
@@ -1205,9 +1208,13 @@ class Router:
         Returns:
             None
         """
+        if "app" in scope:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
         if scope["type"] == ScopeType.HTTP:
             response = PlainText("Not Found", status_code=status.HTTP_404_NOT_FOUND)
             await response(scope, receive, send)
+
         elif scope["type"] == ScopeType.WEBSOCKET:
             websocket_close = WebSocketClose()
             await websocket_close(scope, receive, send)
