@@ -40,6 +40,16 @@ class StaticResponse(Response):
 
 
 class StaticFiles:
+    __slots__ = (
+        "directory",
+        "packages",
+        "html",
+        "check_dit",
+        "follow_symlink",
+        "all_directories",
+        "config_checked",
+    )
+
     def __init__(
         self,
         *,
