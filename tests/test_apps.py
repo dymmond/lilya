@@ -233,31 +233,6 @@ def test_middleware(test_client_factory):
     assert response.text == "Invalid host header"
 
 
-# def test_routes():
-#     assert app.routes == [
-#         Path("/func", handler=func_homepage, methods=["GET"]),
-#         Path("/async", handler=async_homepage, methods=["GET"]),
-#         Path("/class", handler=Homepage),
-#         Path("/500", handler=runtime_error, methods=["GET"]),
-#         WebSocketPath("/ws", handler=websocket_handler),
-#         WebSocketPath("/ws-raise-websocket", handler=websocket_raise_websocket),
-#         WebSocketPath("/ws-raise-custom", handler=websocket_raise_custom),
-#         Include(
-#             "/users",
-#             app=Router(
-#                 routes=[
-#                     Path("/", handler=all_users_page),
-#                     Path("/{username}", handler=user_page),
-#                 ]
-#             ),
-#         ),
-#         Host(
-#             "{subdomain}.example.org",
-#             app=Router(routes=[Path("/", handler=custom_subdomain)]),
-#         ),
-#     ]
-
-
 def test_app_mount(tmpdir, test_client_factory):
     path = os.path.join(tmpdir, "example.html")
     with open(path, "w") as file:

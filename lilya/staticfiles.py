@@ -3,7 +3,6 @@ from __future__ import annotations
 import importlib.util
 import os
 import stat
-import typing
 from email.utils import parsedate
 from typing import Tuple, Union
 
@@ -17,7 +16,7 @@ from lilya.exceptions import HTTPException
 from lilya.responses import FileResponse, RedirectResponse, Response
 from lilya.types import Receive, Scope, Send
 
-PathLike = typing.Union[str, "os.PathLike[str]"]
+PathLike = Union[str, "os.PathLike[str]"]
 
 
 class StaticResponse(Response):
