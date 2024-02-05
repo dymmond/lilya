@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 from typing import AsyncIterator, Callable
 
@@ -14,8 +15,7 @@ from lilya.middleware.base import Middleware
 from lilya.middleware.trustedhost import TrustedHostMiddleware
 from lilya.responses import JSONResponse, PlainText
 from lilya.routing import Host, Include, Path, Router, WebSocketPath
-
-# from lilya.staticfiles import StaticFiles
+from lilya.staticfiles import StaticFiles
 from lilya.types import ASGIApp, Receive, Scope, Send
 from lilya.websockets import WebSocket
 
@@ -258,26 +258,26 @@ def test_middleware(test_client_factory):
 #     ]
 
 
-# def test_app_mount(tmpdir, test_client_factory):
-#     path = os.path.join(tmpdir, "example.txt")
-#     with open(path, "w") as file:
-#         file.write("<file content>")
+def test_app_mount(tmpdir, test_client_factory):
+    path = os.path.join(tmpdir, "example.html")
+    with open(path, "w") as file:
+        file.write("<file content>")
 
-#     app = Lilya(
-#         routes=[
-#             Include("/static", StaticFiles(directory=tmpdir)),
-#         ]
-#     )
+    app = Lilya(
+        routes=[
+            Include("/static", StaticFiles(directory=tmpdir)),
+        ]
+    )
 
-#     client = test_client_factory(app)
+    client = test_client_factory(app)
 
-#     response = client.get("/static/example.txt")
-#     assert response.status_code == 200
-#     assert response.text == "<file content>"
+    response = client.get("/static/example.html")
+    assert response.status_code == 200
+    assert response.text == "<file content>"
 
-#     response = client.post("/static/example.txt")
-#     assert response.status_code == 405
-#     assert response.text == "Method Not Allowed"
+    response = client.post("/static/example.html")
+    assert response.status_code == 405
+    assert response.text == "Method Not Allowed"
 
 
 def test_app_debug(test_client_factory):
@@ -459,11 +459,7 @@ def test_middleware_stack_init(test_client_factory: Callable[[ASGIApp], httpx.Cl
 
 
 def test_lifespan_app_subclass():
-    # This test exists to make sure that subclasses of Lilya
-    # (like FastAPI) are compatible with the types hints for Lifespan
-
-    class App(Lilya):
-        pass
+    class App(Lilya): ...
 
     @asynccontextmanager
     async def lifespan(app: App) -> AsyncIterator[None]:  # pragma: no cover
