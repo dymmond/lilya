@@ -383,7 +383,7 @@ class FileResponse(Response):
 class TemplateResponse(HTMLResponse):
     def __init__(
         self,
-        template: str,
+        template: Any,
         status_code: int = status.HTTP_200_OK,
         context: Union[Dict[str, Any], None] = None,
         background: Task | None = None,
