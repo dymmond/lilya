@@ -553,7 +553,7 @@ class Include(BasePath):
     def __init__(
         self,
         path: str,
-        app: Union[ASGIApp, None] = None,
+        app: ASGIApp | None = None,
         routes: Union[Sequence[BasePath], None] = None,
         namespace: Union[str, None] = None,
         pattern: Union[str, None] = None,

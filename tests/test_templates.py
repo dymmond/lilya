@@ -4,11 +4,9 @@ from unittest import mock
 
 import jinja2
 import pytest
-from starlette.middleware.base import BaseHTTPMiddleware
 
 from lilya.app import Lilya
 from lilya.background import Task
-from lilya.middleware import DefineMiddleware
 from lilya.routing import Path
 from lilya.templating.jinja import Jinja2Template
 
@@ -62,30 +60,30 @@ def test_calls_context_processors(tmp_path, test_client_factory):
     assert set(response.context.keys()) == {"request", "username"}
 
 
-def xtest_template_with_middleware(tmpdir, test_client_factory):
-    path = os.path.join(tmpdir, "index.html")
-    with open(path, "w") as file:
-        file.write("<html>Hello, <a href='{{ url_for('homepage') }}'>world</a></html>")
+# def test_template_with_middleware(tmpdir, test_client_factory):
+#     path = os.path.join(tmpdir, "index.html")
+#     with open(path, "w") as file:
+#         file.write("<html>Hello, <a href='{{ url_for('homepage') }}'>world</a></html>")
 
-    async def homepage(request):
-        return templates.get_template_response(request, "index.html")
+#     async def homepage(request):
+#         return templates.get_template_response(request, "index.html")
 
-    class CustomMiddleware(BaseHTTPMiddleware):
-        async def dispatch(self, request, call_next):
-            return await call_next(request)
+#     class CustomMiddleware(BaseHTTPMiddleware):
+#         async def dispatch(self, request, call_next):
+#             return await call_next(request)
 
-    app = Lilya(
-        debug=True,
-        routes=[Path("/", handler=homepage)],
-        middleware=[DefineMiddleware(CustomMiddleware)],
-    )
-    templates = Jinja2Template(directory=str(tmpdir))
+#     app = Lilya(
+#         debug=True,
+#         routes=[Path("/", handler=homepage)],
+#         middleware=[DefineMiddleware(CustomMiddleware)],
+#     )
+#     templates = Jinja2Template(directory=str(tmpdir))
 
-    client = test_client_factory(app)
-    response = client.get("/")
-    assert response.text == "<html>Hello, <a href='http://testserver/'>world</a></html>"
-    assert response.template.name == "index.html"
-    assert set(response.context.keys()) == {"request"}
+#     client = test_client_factory(app)
+#     response = client.get("/")
+#     assert response.text == "<html>Hello, <a href='http://testserver/'>world</a></html>"
+#     assert response.template.name == "index.html"
+#     assert set(response.context.keys()) == {"request"}
 
 
 def test_templates_with_directories(tmp_path: pathlib.Path, test_client_factory):
