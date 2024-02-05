@@ -6,10 +6,10 @@ from pathlib import Path
 from typing import Any, List, Union
 
 from lilya import status
-from lilya.background import Task
 from lilya.exceptions import MissingDependency, TemplateNotFound
 from lilya.requests import Request
 from lilya.responses import TemplateResponse
+from lilya.templating.base import BaseTemplateRenderer
 
 try:
     from jinja2 import Environment, FileSystemLoader
@@ -40,34 +40,7 @@ P = ParamSpec("P")
 PathLike = Union[str, "os.PathLike[str]"]
 
 
-class TemplateRenderer:
-    def __init__(self, jinja_template: Jinja2Template) -> None:
-        self.jinja_template = jinja_template
-
-    def get_template(self, template_name: str) -> JinjaTemplate:
-        return self.jinja_template.get_template(template_name=template_name)
-
-    def prepare_response(
-        self,
-        request: Request,
-        name: str,
-        context: dict,
-        status_code: int = 200,
-        headers: dict[str, Any] = None,
-        media_type: str = None,
-        background: Task | None = None,
-    ) -> TemplateResponse:
-        context.setdefault("request", request)
-        template = self.get_template(name)
-        return TemplateResponse(
-            template=template,
-            context=context,
-            status_code=status_code,
-            headers=headers,
-            media_type=media_type,
-            background=background,
-        )
-
+class TemplateRenderer(BaseTemplateRenderer):
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> TemplateResponse:
         if args:
             (
@@ -90,8 +63,9 @@ class TemplateRenderer:
                 background,
             ) = self._parse_kwargs(**kwargs)
 
-        for context_processor in self.jinja_template.context_processors:
-            context.update(context_processor(request))
+        if hasattr(self.template, "context_processors"):
+            for context_processor in self.template.context_processors:
+                context.update(context_processor(request))
 
         template_response = self.prepare_response(
             request, name, context, status_code, headers, media_type, background
@@ -167,15 +141,15 @@ class Jinja2Template:
         env = self._add_defaults(env=env)
         return env
 
-    def get_template(self, template_name: str) -> JinjaTemplate:
+    def get_template(self, name: str) -> JinjaTemplate:
         try:
-            return self.env.get_template(template_name)
+            return self.env.get_template(name)
         except JinjaTemplateNotFound as e:
-            raise TemplateNotFound(template_name=template_name) from e
+            raise TemplateNotFound(name=name) from e
 
     def get_template_response(self, *args: P.args, **kwargs: P.kwargs) -> TemplateResponse:
         """
         Returns the Jinja2Template response format from the jinja template.
         """
-        template_renderer = TemplateRenderer(jinja_template=self)
+        template_renderer = TemplateRenderer(template=self)
         return template_renderer(*args, **kwargs)

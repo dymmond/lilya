@@ -93,10 +93,12 @@ class PermissionDenied(HTTPException):
 class MissingDependency(LilyaException, ImportError): ...
 
 
-class TemplateNotFound(InternalServerError):
-    def __init__(self, *args: Any, template_name: str):
+class TemplateNotFound(HTTPException):
+    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+
+    def __init__(self, *args: Any, name: str):
         """Template could not be found."""
-        super().__init__(*args, detail=f"Template {template_name} not found.")
+        super().__init__(*args, detail=f"Template {name} not found.")
 
 
 class WebSocketRuntimeError(RuntimeError): ...
