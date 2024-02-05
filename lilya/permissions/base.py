@@ -1,7 +1,6 @@
 import sys
 from typing import Any, Callable, Iterator
 
-from lilya._internal._iterables import BaseWrapper
 from lilya.types import ASGIApp
 
 if sys.version_info >= (3, 10):  # pragma: no cover
@@ -13,15 +12,7 @@ else:  # pragma: no cover
 P = ParamSpec("P")
 
 
-class Permission(BaseWrapper):
-    """
-    Builds a wrapper permission for all the classes.
-    """
-
-    ...
-
-
-class CreatePermission:
+class DefinePermission:
     """
     Wrapper that creates a permission class.
     """
@@ -38,3 +29,14 @@ class CreatePermission:
 
     def __iter__(self) -> Iterator[Any]:
         return iter((self.permission, self.args, self.kwargs))
+
+    def __repr__(self) -> str:
+        args_repr = ", ".join(
+            [self.permission.__name__]
+            + [f"{value!r}" for value in self.args]
+            + [f"{key}={value!r}" for key, value in self.kwargs.items()]
+        )
+        return f"{self.__class__.__name__}({args_repr})"
+
+
+Permission = DefinePermission

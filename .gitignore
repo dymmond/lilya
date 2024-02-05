@@ -21,6 +21,7 @@ target/
 **/*.so
 **/*.sqlite
 *.iml
+**/*_test*
 .DS_Store
 .coverage
 .coverage.*

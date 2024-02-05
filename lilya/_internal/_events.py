@@ -61,7 +61,7 @@ def handle_lifespan_events(
     on_startup: Union[LifespanEvent, None] = None,
     on_shutdown: Union[LifespanEvent, None] = None,
     lifespan: Optional[Lifespan[Any]] = None,
-) -> Any:  # pragma: no cover
+) -> Union[AyncLifespanContextManager, Any, None]:  # pragma: no cover
     if on_startup or on_shutdown:
         return AyncLifespanContextManager(on_startup=on_startup, on_shutdown=on_shutdown)
     elif lifespan:

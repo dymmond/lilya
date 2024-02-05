@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, Iterable, Pattern, Tuple, TypeVar, cast
+from typing import Any, Dict, Iterable, Pattern, Set, Tuple, TypeVar, Union, cast
 
 from lilya._internal._path_transformers import CONVERTOR_TYPES, Transformer
 from lilya.types import Scope
@@ -20,6 +20,14 @@ def clean_path(path: str) -> str:
     if not path.startswith("/"):
         path = "/" + path
     path = re.sub("//+", "/", path)
+    return path
+
+
+def remove_start_slashes(path: str) -> str:
+    """
+    Removes all the beginning starting with slashes
+    """
+    path = path.lstrip("/")
     return path
 
 
@@ -43,6 +51,7 @@ def replace_params(
     path: str,
     param_convertors: Dict[str, Transformer[Any]],
     path_params: Dict[str, str],
+    is_host: bool = False,
 ) -> Tuple[str, Dict[str, str]]:
     """
     Replaces placeholders in the given path with normalized values from path parameters.
@@ -57,7 +66,6 @@ def replace_params(
     """
     updated_path = path
     remaining_params = {}
-
     for key, value in list(path_params.items()):
         placeholder = "{" + key + "}"
 
@@ -69,6 +77,8 @@ def replace_params(
         else:
             remaining_params[key] = value
 
+    if not is_host:
+        return clean_path(updated_path), remaining_params
     return updated_path, remaining_params
 
 
@@ -84,34 +94,54 @@ def compile_path(path: str) -> Tuple[Pattern[str], str, Dict[str, Transformer[An
         and a dictionary of parameter names and converters.
     """
     is_host = not path.startswith("/")
-    path_regex, path_format, param_convertors, path_start = generate_regex_and_format(path)
-
-    check_for_duplicate_params(param_convertors)
-
-    if is_host:
-        hostname = extract_hostname(path)
-        path_regex += re.escape(hostname) + "$"
+    path_regex, path_format, param_convertors, path_start = generate_regex_and_format(
+        path, is_host
+    )
 
     return re.compile(path_regex), path_format, param_convertors, path_start
 
 
-def generate_regex_and_format(path: str) -> Tuple[str, str, Dict[str, Transformer[Any]], str]:
-    path_regex, path_format, param_convertors, idx = "^", "", {}, 0  # type: ignore
+def generate_regex_and_format(
+    path: str, is_host: bool
+) -> Tuple[str, str, Dict[str, Transformer[Any]], str]:
+    path_regex, path_format, param_convertors, index = "^", "", {}, 0  # type: ignore
+    duplicate_params: Set[str] = set()
 
-    for match in re.finditer(r"{([^:]+)(?::([^}]+))?}", path):
+    for match in re.finditer(r"{([a-zA-Z_]\w*)(:[a-zA-Z_]\w*)?}", path):
         param_name, convertor_type = match.groups("str")
         convertor_type = convertor_type.lstrip(":")
 
         convertor = get_convertor(convertor_type)
-        path_regex, path_format, param_convertors, idx, path_start = update_paths_and_convertors(
-            path, path_regex, path_format, param_convertors, idx, param_name, convertor, match
+        (
+            path_regex,
+            path_format,
+            param_convertors,
+            index,
+            path_start,
+            duplicate_param,
+        ) = update_paths_and_convertors(
+            path,
+            path_regex,
+            path_format,
+            param_convertors,
+            index,
+            param_name,
+            convertor,
+            match,
         )
+        if duplicate_param:
+            duplicate_params.add(duplicate_param)
     else:
         path_start = path
 
-    path_regex += re.escape(path[idx:]) + "$"
-    path_format += path[idx:]
+    if is_host:
+        hostname = extract_hostname(path, index)
+        path_regex += re.escape(hostname) + "$"
+    else:
+        path_regex += re.escape(path[index:]) + "$"
 
+    raise_for_duplicate_params(path, duplicate_params)
+    path_format += path[index:]
     return path_regex, path_format, param_convertors, path_start
 
 
@@ -125,37 +155,41 @@ def update_paths_and_convertors(
     path_regex: str,
     path_format: str,
     param_convertors: Dict[str, Transformer[Any]],
-    idx: int,
+    index: int,
     param_name: str,
     convertor: Transformer[Any],
     match: re.Match,
-) -> Tuple[str, str, Dict[str, Transformer[Any]], int, str]:
-    path_start = path[idx : match.start()]
+) -> Tuple[str, str, Dict[str, Transformer[Any]], int, str, str]:
+    path_start = path[index : match.start()]
 
     path_regex += re.escape(path_start)
     path_regex += f"(?P<{param_name}>{convertor.regex})"
 
     path_format += path_start
     path_format += f"{{{param_name}}}"
+    duplicate_param: str = None
 
     if param_name in param_convertors:
-        raise ValueError(f"Duplicated param name {param_name} at path {match.string}")
+        duplicate_param = param_name
 
     param_convertors[param_name] = convertor
-    idx = match.end()
+    index = match.end()
 
-    return path_regex, path_format, param_convertors, idx, path_start
-
-
-def check_for_duplicate_params(param_convertors: Dict[str, Transformer[Any]]) -> None:
-    duplicated_params = {
-        name for name in param_convertors if list(param_convertors).count(name) > 1
-    }
-    if duplicated_params:
-        names = ", ".join(sorted(duplicated_params))
-        ending = "s" if len(duplicated_params) > 1 else ""
-        raise ValueError(f"Duplicated param name{ending} {names} in the path")
+    return path_regex, path_format, param_convertors, index, path_start, duplicate_param
 
 
-def extract_hostname(path: str) -> str:
-    return path[len(path) :].split(":")[0]
+def raise_for_duplicate_params(path: str, duplicate_params: Union[Set[str], None] = None) -> None:
+    """
+    Builds and generates the error message for duplicate parameters
+    in the path.
+    """
+    if not duplicate_params:
+        return
+
+    names = ", ".join(sorted(duplicate_params))
+    ending = "s" if len(duplicate_params) > 1 else ""
+    raise ValueError(f"Duplicated param name{ending} {names} in the path {path}")
+
+
+def extract_hostname(path: str, index: int) -> str:
+    return path[index:].split(":")[0]

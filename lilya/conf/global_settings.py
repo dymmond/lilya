@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Sequence, Union
 
 from dymmond_settings import Settings as BaseSettings
 from dymmond_settings.enums import EnvironmentType
@@ -9,6 +9,10 @@ from typing_extensions import Annotated, Doc
 
 from lilya import __version__
 from lilya.types import ApplicationType, ExceptionHandler
+
+if TYPE_CHECKING:
+    from lilya.middleware.base import DefineMiddleware
+    from lilya.permissions.base import DefinePermission
 
 
 @dataclass
@@ -73,13 +77,52 @@ class Settings(BaseSettings):
             """
         ),
     ] = field(default="route_patterns")
+    enforce_return_annotation: Annotated[
+        bool,
+        Doc(
+            """
+            Boolean flag indicating if the return signature for the handler should be enforced
+            or not.
+
+            If the flag is True and no return signature, then raises an ImproperlyConfigured.
+
+            **Example with flag as False**
+
+            ```python
+            from lilya.routing import Path
+
+            def home():
+                ...
+
+            Path(path="/", handler=home)
+            ```
+
+            **Example with flag as True**
+
+            ```python
+            from lilya.routing import Path
+            from lilya.responses import Response
+
+
+            def home() -> Response:
+                ...
+
+            Path(path="/", handler=home)
+            ```
+            """
+        ),
+    ] = False
 
     @property
     def routes(self) -> List[Any]:
         return []
 
     @property
-    def middleware(self) -> Sequence[Any]:
+    def middleware(self) -> Sequence[DefineMiddleware]:
+        return []
+
+    @property
+    def permissions(self) -> Sequence[DefinePermission]:
         return []
 
     @property

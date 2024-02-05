@@ -218,41 +218,51 @@ class Header(MultiDict, CIMultiDict):  # type: ignore
         return class_name
 
 
-@dataclass(init=True)
 class State:
-    state: Dict[str, Any] = None
+    """
+    An object that can be used to store arbitrary state.
 
-    def __init__(self, state: Optional[Dict[str, Any]] = None):
+    Used for `request.state` and `app.state`.
+    """
+
+    _state: dict[str, Any]
+
+    def __init__(self, state: dict[str, Any] | None = None):
         if state is None:
-            self.state = {}
-        super().__setattr__("state", state)
+            state = {}
+        super().__setattr__("_state", state)
 
     def __setattr__(self, key: Any, value: Any) -> None:
-        self.state[key] = value
+        self._state[key] = value
+
+    def __getattr__(self, key: Any) -> Any:
+        try:
+            return self._state[key]
+        except KeyError:
+            message = "'{}' object has no attribute '{}'"
+            raise AttributeError(message.format(self.__class__.__name__, key)) from None
 
     def __delattr__(self, key: Any) -> None:
-        del self.state[key]
+        del self._state[key]
 
     def __copy__(self) -> State:
-        return self.__class__(copy(self.state))
+        return self.__class__(copy(self._state))
 
     def __len__(self) -> int:
-        return len(self.state)
-
-    def __getattr__(self, key: str) -> Any:
-        try:
-            return self.state[key]
-        except KeyError as e:
-            raise AttributeError(f"State has no key '{key}'") from e
+        return len(self._state)
 
     def __getitem__(self, key: str) -> Any:
-        return self.state[key]
+        return self._state[key]
 
     def copy(self) -> State:
         return copy(self)
 
 
 class URL:
+    """
+    Represents a URL and provides methods for manipulating it.
+    """
+
     url: str
     scheme: Union[str, None] = None
     netloc: Union[str, None] = None
@@ -264,19 +274,50 @@ class URL:
     port: Union[int, None] = None
     hostname: Union[str, None] = None
 
-    def __new__(cls, url: Union[str, SplitResult]) -> URL:
+    def __new__(cls, url: Union[str, SplitResult, None] = None, **kwargs: Any) -> URL:
         """
-        Overrides the new base class to create a new structure
-        for the URL.
+        Overrides the new base class to create a new structure for the URL.
+
+        Args:
+            url (Union[str, SplitResult, None]): The URL to create.
+
+        Returns:
+            URL: The created URL instance.
         """
-        instance = cls.__create__(url)
+        instance = cls.__create__(url) if url is not None else cls.__create_from_kwargs__(**kwargs)
         return instance
 
     @classmethod
     @lru_cache
-    def __create__(cls, url: Union[str, SplitResult]) -> URL:
+    def __create_from_kwargs__(cls, **kwargs: Any) -> URL:
         """
-        Creates a new url
+        Creates a new URL instance from keyword arguments.
+
+        Args:
+            **kwargs: Keyword arguments representing URL components.
+
+        Returns:
+            URL: The created URL instance.
+        """
+        instance: URL = super().__new__(cls)
+
+        for k, _ in instance.__annotations__.items():
+            if k in kwargs:
+                setattr(instance, k, kwargs[k])
+        instance.url = instance.base_url
+        return instance
+
+    @classmethod
+    @lru_cache
+    def __create__(cls, url: Union[str, SplitResult, None] = None) -> URL:
+        """
+        Creates a new URL instance.
+
+        Args:
+            url (Union[str, SplitResult, None]): The URL to create.
+
+        Returns:
+            URL: The created URL instance.
         """
         instance: URL = super().__new__(cls)
 
@@ -307,12 +348,15 @@ class URL:
         """
         Builds the URL from the Scope.
 
-        The path is built based on the `root_path` with the `path` provided
-        by the scope.
+        Args:
+            scope (Scope): The scope object.
+
+        Returns:
+            URL: The URL built from the scope.
         """
         scheme = scope.get("scheme", HTTPType.HTTP.value)
         server = scope.get("server")
-        path = scope.get("root_path", "") + scope["path"]
+        path = scope["path"]
         query_string = scope.get("query_string", b"")
 
         host_header = None
@@ -339,18 +383,42 @@ class URL:
 
     @property
     def parsed_url(self) -> SplitResult:
+        """
+        Property representing the parsed URL.
+
+        Returns:
+            SplitResult: The parsed URL.
+        """
         return cast(SplitResult, getattr(self, "_parsed_url", None))
 
     @parsed_url.setter
     def parsed_url(self, value: Any) -> None:
+        """
+        Setter for the parsed URL.
+
+        Args:
+            value: The value to set as the parsed URL.
+        """
         self._parsed_url = value
 
     @property
     def is_secure(self) -> bool:
-        return self.scheme in HTTPType.get_https_types()
+        """
+        Property indicating whether the URL uses a secure scheme.
+
+        Returns:
+            bool: True if the URL is secure, False otherwise.
+        """
+        return self.scheme in ("https", "wss")
 
     @property
     def base_url(self) -> str:
+        """
+        Property representing the base URL.
+
+        Returns:
+            str: The base URL.
+        """
         return str(
             urlunsplit(
                 SplitResult(
@@ -370,6 +438,18 @@ class URL:
         username: Union[Any, None] = None,
         password: Union[Any, None] = None,
     ) -> Any:
+        """
+        Builds the netloc part of the URL.
+
+        Args:
+            hostname (Union[Any, None]): The hostname.
+            port (Union[Any, None]): The port.
+            username (Union[Any, None]): The username.
+            password (Union[Any, None]): The password.
+
+        Returns:
+            Any: The built netloc.
+        """
         if hostname is None:
             netloc = self.netloc
             _, _, hostname = netloc.rpartition("@")
@@ -388,6 +468,15 @@ class URL:
         return netloc
 
     def replace(self, **kwargs: Any) -> URL:
+        """
+        Creates a new URL with replaced components.
+
+        Args:
+            **kwargs: Keyword arguments representing URL components.
+
+        Returns:
+            URL: The new URL instance with replaced components.
+        """
         if (
             "username" in kwargs
             or "password" in kwargs
@@ -404,12 +493,30 @@ class URL:
         return self.__class__(components.geturl())
 
     def include_query_params(self, **kwargs: Any) -> URL:
+        """
+        Adds query parameters to the URL.
+
+        Args:
+            **kwargs: Query parameters.
+
+        Returns:
+            URL: The new URL instance with added query parameters.
+        """
         params = MultiDict(parse_qsl(self.query, keep_blank_values=True))
         params.update({str(key): str(value) for key, value in kwargs.items()})
         query = urlencode(sorted(params.multi_items()))
         return self.replace(query=query)
 
     def remove_query_params(self, keys: Union[str, Sequence[str]]) -> URL:
+        """
+        Removes query parameters from the URL.
+
+        Args:
+            keys (Union[str, Sequence[str]]): Query parameters to remove.
+
+        Returns:
+            URL: The new URL instance with removed query parameters.
+        """
         if isinstance(keys, str):
             keys = [keys]
         params = MultiDict(parse_qsl(self.query, keep_blank_values=True))
@@ -419,17 +526,47 @@ class URL:
         return self.replace(query=query)
 
     def replace_query_params(self, **kwargs: Any) -> URL:
+        """
+        Replaces query parameters in the URL.
+
+        Args:
+            **kwargs: Query parameters to replace.
+
+        Returns:
+            URL: The new URL instance with replaced query parameters.
+        """
         values = [(str(key), str(value)) for key, value in kwargs.items()]
         query = urlencode(values)
         return self.replace(query=query)
 
     def __eq__(self, other: Any) -> bool:
+        """
+        Checks if two URLs are equal.
+
+        Args:
+            other: The other object to compare.
+
+        Returns:
+            bool: True if the URLs are equal, False otherwise.
+        """
         return str(self) == str(other)
 
     def __str__(self) -> str:
+        """
+        Returns the string representation of the URL.
+
+        Returns:
+            str: The string representation of the URL.
+        """
         return self.url
 
     def __repr__(self) -> str:
+        """
+        Returns the string representation of the URL for debugging purposes.
+
+        Returns:
+            str: The string representation of the URL.
+        """
         url = str(self)
         if self.password:
             url = str(self.replace(password="***********"))
@@ -462,8 +599,7 @@ class URLPath(str):
 
         netloc = self.host or base_url.netloc
         path = base_url.path.rstrip("/") + str(self)
-        url = f"{scheme}://{netloc}{path}"
-        return URL(url)
+        return URL(scheme=scheme, netloc=netloc, path=path)
 
 
 class CommaSeparatedStr:

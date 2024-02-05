@@ -1,7 +1,6 @@
 import sys
 from typing import Any, Callable, Iterator
 
-from lilya._internal._iterables import BaseWrapper
 from lilya.types import ASGIApp
 
 if sys.version_info >= (3, 10):  # pragma: no cover
@@ -13,15 +12,7 @@ else:  # pragma: no cover
 P = ParamSpec("P")
 
 
-class Middleware(BaseWrapper):
-    """
-    Builds a wrapper middleware for all the classes.
-    """
-
-    ...
-
-
-class CreateMiddleware:
+class DefineMiddleware:
     """
     Wrapper that create the middleware classes.
     """
@@ -33,8 +24,19 @@ class CreateMiddleware:
         self.args = args
         self.kwargs = kwargs
 
-    def __call__(self, app: ASGIApp, *args: P.args, **kwargs: P.kwargs) -> Any:
-        return self.middleware(app=app, *args, **kwargs)
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> Any:
+        return self.middleware(*args, **kwargs)
 
     def __iter__(self) -> Iterator[Any]:
         return iter((self.middleware, self.args, self.kwargs))
+
+    def __repr__(self) -> str:
+        args_repr = ", ".join(
+            [self.permission.__name__]
+            + [f"{value!r}" for value in self.args]
+            + [f"{key}={value!r}" for key, value in self.kwargs.items()]
+        )
+        return f"{self.__class__.__name__}({args_repr})"
+
+
+Middleware = DefineMiddleware

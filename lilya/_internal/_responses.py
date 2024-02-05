@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import inspect
 from typing import Any, Awaitable, Callable, Union
 
 from lilya._internal._exception_handlers import wrap_app_handling_exceptions
 from lilya.compat import is_async_callable
 from lilya.concurrency import run_in_threadpool
+from lilya.enums import SignatureDefault
 from lilya.requests import Request
 from lilya.responses import Response
 from lilya.types import ASGIApp, Receive, Scope, Send
@@ -59,8 +61,13 @@ class BaseHandler:
                 Returns:
                     None
                 """
-                if self.signature.parameters:
-                    response = await self._execute_function(func, request)
+                signature: inspect.Signature = self.signature
+
+                if signature.parameters:
+                    if SignatureDefault.REQUEST in signature.parameters:
+                        response = await self._execute_function(func, request)
+                    else:
+                        response = await self._execute_function(func)
                 else:
                     response = await self._execute_function(func)
                 await response(scope, receive, send)

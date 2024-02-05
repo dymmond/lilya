@@ -3,21 +3,21 @@ from __future__ import annotations
 import functools
 import inspect
 import re
-import sys
 import traceback
-from typing import Any, Awaitable, Callable, Dict, List, Sequence, Set, Tuple, TypeVar, Union
+from typing import Any, Awaitable, Callable, Dict, List, Sequence, Tuple, TypeVar, Union
 
 from lilya import status
 from lilya._internal._events import AsyncLifespan, handle_lifespan_events
 from lilya._internal._path import clean_path, compile_path, get_route_path, replace_params
 from lilya._internal._responses import BaseHandler
 from lilya.compat import is_async_callable
+from lilya.conf import settings
 from lilya.core.urls import include
 from lilya.datastructures import URL, Header, URLPath
 from lilya.enums import EventType, HTTPMethod, Match, ScopeType
 from lilya.exceptions import HTTPException, ImproperlyConfigured
-from lilya.middleware.base import Middleware
-from lilya.permissions.base import Permission
+from lilya.middleware.base import DefineMiddleware
+from lilya.permissions.base import DefinePermission
 from lilya.requests import Request
 from lilya.responses import PlainText, RedirectResponse, Response
 from lilya.types import ASGIApp, Lifespan, Receive, Scope, Send
@@ -53,6 +53,9 @@ class BasePath:
     The base of all paths (routes) for any ASGI application
     with Lilya.
     """
+
+    def handle_signature(self) -> None:
+        raise NotImplementedError()  # pragma: no cover
 
     def search(self, scope: Scope) -> Tuple[Match, Scope]:
         """
@@ -123,10 +126,6 @@ class BasePath:
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         await self.dispatch(scope=scope, receive=receive, send=send)
 
-    def __repr__(self) -> str:
-        name = self.name or ""
-        return f"{self.__class__.__name__}(path={self.path!r}, name={name!r}, app={self.app!r})"
-
 
 class Path(BaseHandler, BasePath):
     """
@@ -157,50 +156,68 @@ class Path(BaseHandler, BasePath):
         path: str,
         handler: Callable[..., Any],
         *,
-        methods: Union[List[str], Set[str], None] = None,
+        methods: Union[List[str], None] = None,
         name: Union[str, None] = None,
         include_in_schema: bool = True,
-        middleware: Union[Sequence[Middleware], None] = None,
-        permissions: Union[Sequence[Permission], None] = None,
+        middleware: Union[Sequence[DefineMiddleware], None] = None,
+        permissions: Union[Sequence[DefinePermission], None] = None,
     ) -> None:
         assert path.startswith("/"), "Paths must start with '/'"
         self.path = clean_path(path)
         self.handler = handler
         self.name = get_name(handler) if name is None else name
         self.include_in_schema = include_in_schema
-        self.methods: Union[List[str], Set[str], None] = methods
-        self.signature: inspect.Signature = inspect.signature(self.handler)
+        self.methods: Union[List[str], None] = methods
 
         # Defition of the app
         handler_app = handler
         while isinstance(handler_app, functools.partial):
             handler_app = handler_app.func
 
+        self.signature: inspect.Signature = inspect.signature(handler_app)
+
+        # Handles the signature validation
+        self.handle_signature()
+
         if inspect.isfunction(handler_app) or inspect.ismethod(handler_app):
-            self.app = self.handle_response(handler_app)
-        else:
-            self.app = handler_app
+            self.app = self.handle_response(handler)
             if methods is None:
-                methods = {HTTPMethod.GET}
+                self.methods = [HTTPMethod.GET.value]
+        else:
+            self.app = handler
 
         self._apply_middleware(middleware)
         self._apply_permissions(permissions)
 
         if self.methods is not None:
-            self.methods = {method.upper() for method in methods}
+            self.methods = [method.upper() for method in self.methods]
             if HTTPMethod.GET in self.methods:
-                self.methods.add(HTTPMethod.HEAD)
+                self.methods.append(HTTPMethod.HEAD.value)
 
         self.path_regex, self.path_format, self.param_convertors, self.path_start = compile_path(
             self.path
         )
 
-    def _apply_middleware(self, middleware: Union[Sequence[Middleware], None]) -> None:
+    def handle_signature(self) -> None:
+        """
+        Validates the return annotation of a handler
+        if `enforce_return_annotation` is set to True.
+        """
+        if not settings.enforce_return_annotation:
+            return None
+
+        if self.signature.return_annotation is inspect._empty:
+            raise ImproperlyConfigured(
+                "A return value of a route handler function should be type annotated."
+                "If your function doesn't return a value or returns None, annotate it as returning 'NoReturn' or 'None' respectively."
+            )
+
+    def _apply_middleware(self, middleware: Union[Sequence[DefineMiddleware], None]) -> None:
         """
         Apply middleware to the app.
 
         Args:
-            middleware (Union[Sequence[Middleware], None]): The middleware.
+            middleware (Union[Sequence[DefineMiddleware], None]): The middleware.
 
         Returns:
             None
@@ -209,12 +226,12 @@ class Path(BaseHandler, BasePath):
             for cls, args, options in reversed(middleware):
                 self.app = cls(app=self.app, *args, **options)
 
-    def _apply_permissions(self, permissions: Union[Sequence[Permission], None]) -> None:
+    def _apply_permissions(self, permissions: Union[Sequence[DefinePermission], None]) -> None:
         """
         Apply permissions to the app.
 
         Args:
-            permissions (Union[Sequence[Permission], None]): The permissions.
+            permissions (Union[Sequence[DefinePermission], None]): The permissions.
 
         Returns:
             None
@@ -223,7 +240,7 @@ class Path(BaseHandler, BasePath):
             for cls, args, options in reversed(permissions):
                 self.app = cls(app=self.app, *args, **options)
 
-    async def path_for(self, name: str, /, **path_params: Any) -> URLPath:
+    def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         """
         Generates a URL path for the specified route name and parameters.
 
@@ -278,7 +295,6 @@ class Path(BaseHandler, BasePath):
         if scope["type"] == ScopeType.HTTP:
             route_path = get_route_path(scope)
             match = self.path_regex.match(route_path)
-
             if match:
                 return self.handle_match(scope, match)
         return Match.NONE, {}
@@ -328,8 +344,12 @@ class Path(BaseHandler, BasePath):
         else:
             await self.app(scope, receive, send)
 
+    def __repr__(self) -> str:
+        methods = sorted(self.methods or [])
+        return f"{self.__class__.__name__}(path={self.path!r}, name={self.name!r}, methods={methods!r})"
 
-class WebsocketPath(BaseHandler, BasePath):
+
+class WebSocketPath(BaseHandler, BasePath):
     __slots__ = (
         "path",
         "handler",
@@ -346,8 +366,8 @@ class WebsocketPath(BaseHandler, BasePath):
         *,
         name: Union[str, None] = None,
         include_in_schema: bool = True,
-        middleware: Union[Sequence[Middleware], None] = None,
-        permissions: Union[Sequence[Permission], None] = None,
+        middleware: Union[Sequence[DefineMiddleware], None] = None,
+        permissions: Union[Sequence[DefinePermission], None] = None,
     ) -> None:
         assert path.startswith("/"), "Paths must start with '/'"
         self.path = clean_path(path)
@@ -355,17 +375,21 @@ class WebsocketPath(BaseHandler, BasePath):
         self.handler = handler
         self.name = get_name(handler) if name is None else name
         self.include_in_schema = include_in_schema
-        self.signature: inspect.Signature = inspect.signature(self.handler)
 
         # Defition of the app
         handler_app = handler
         while isinstance(handler_app, functools.partial):
             handler_app = handler_app.func
 
+        self.signature: inspect.Signature = inspect.signature(handler_app)
+
+        # Handles the signature
+        self.handle_signature()
+
         if inspect.isfunction(handler_app) or inspect.ismethod(handler_app):
-            self.app = self.handle_websocket_session(handler_app)
+            self.app = self.handle_websocket_session(handler)
         else:
-            self.app = handler_app
+            self.app = handler
 
         self._apply_middleware(middleware)
         self._apply_permissions(permissions)
@@ -374,12 +398,26 @@ class WebsocketPath(BaseHandler, BasePath):
             self.path
         )
 
-    def _apply_middleware(self, middleware: Union[Sequence[Middleware], None]) -> None:
+    def handle_signature(self) -> None:
+        """
+        Validates the return annotation of a handler
+        if `enforce_return_annotation` is set to True.
+        """
+        if not settings.enforce_return_annotation:
+            return None
+
+        if self.signature.return_annotation is inspect._empty:
+            raise ImproperlyConfigured(
+                "A return value of a route handler function should be type annotated."
+                "If your function doesn't return a value or returns None, annotate it as returning 'NoReturn' or 'None' respectively."
+            )
+
+    def _apply_middleware(self, middleware: Union[Sequence[DefineMiddleware], None]) -> None:
         """
         Apply middleware to the app.
 
         Args:
-            middleware (Union[Sequence[Middleware], None]): The middleware.
+            middleware (Union[Sequence[DefineMiddleware], None]): The middleware.
 
         Returns:
             None
@@ -388,12 +426,12 @@ class WebsocketPath(BaseHandler, BasePath):
             for cls, args, options in reversed(middleware):
                 self.app = cls(app=self.app, *args, **options)
 
-    def _apply_permissions(self, permissions: Union[Sequence[Permission], None]) -> None:
+    def _apply_permissions(self, permissions: Union[Sequence[DefinePermission], None]) -> None:
         """
         Apply permissions to the app.
 
         Args:
-            permissions (Union[Sequence[Permission], None]): The permissions.
+            permissions (Union[Sequence[DefinePermission], None]): The permissions.
 
         Returns:
             None
@@ -456,7 +494,7 @@ class WebsocketPath(BaseHandler, BasePath):
         """
         await self.app(scope, receive, send)
 
-    async def path_for(self, name: str, /, **path_params: Any) -> URLPath:
+    def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         """
         Generates a URL path for the specified route name and parameters.
 
@@ -496,6 +534,9 @@ class WebsocketPath(BaseHandler, BasePath):
         if name != self.name or seen_params != expected_params:
             raise NoMatchFound(name, path_params)
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(path={self.path!r}, name={self.name!r})"
+
 
 class Include(BasePath):
     __slots__ = (
@@ -512,14 +553,14 @@ class Include(BasePath):
     def __init__(
         self,
         path: str,
-        app: Union[ASGIApp, None] = None,
+        app: ASGIApp | None = None,
         routes: Union[Sequence[BasePath], None] = None,
         namespace: Union[str, None] = None,
         pattern: Union[str, None] = None,
         name: Union[str, None] = None,
         *,
-        middleware: Union[Sequence[Middleware], None] = None,
-        permissions: Union[Sequence[Permission], None] = None,
+        middleware: Union[Sequence[DefineMiddleware], None] = None,
+        permissions: Union[Sequence[DefinePermission], None] = None,
         include_in_schema: bool = True,
     ) -> None:
         """
@@ -532,8 +573,8 @@ class Include(BasePath):
             namespace (Union[str, None]): The namespace.
             pattern (Union[str, None]): The pattern.
             name (Union[str, None]): The name.
-            middleware (Union[Sequence[Middleware], None]): The middleware.
-            permissions (Union[Sequence[Permission], None]): The permissions.
+            middleware (Union[Sequence[DefineMiddleware], None]): The middleware.
+            permissions (Union[Sequence[DefinePermission], None]): The permissions.
             include_in_schema (bool): Flag to include in the schema.
 
         Returns:
@@ -566,24 +607,25 @@ class Include(BasePath):
         )
         self.app = self.__base_app__
 
+        self.middleware = middleware if middleware is not None else []
+        self.permissions = permissions if permissions is not None else []
+
         self._apply_middleware(middleware)
         self._apply_permissions(permissions)
 
         self.name = name
         self.include_in_schema = include_in_schema
-        self.middleware = middleware if middleware is not None else list(middleware)
-        self.permissions = permissions if permissions is not None else list(permissions)
 
         self.path_regex, self.path_format, self.param_convertors, self.path_start = compile_path(
-            self.path
+            clean_path(self.path + "/{path:path}")
         )
 
-    def _apply_middleware(self, middleware: Union[Sequence[Middleware], None]) -> None:
+    def _apply_middleware(self, middleware: Union[Sequence[DefineMiddleware], None]) -> None:
         """
         Apply middleware to the app.
 
         Args:
-            middleware (Union[Sequence[Middleware], None]): The middleware.
+            middleware (Union[Sequence[DefineMiddleware], None]): The middleware.
 
         Returns:
             None
@@ -592,12 +634,12 @@ class Include(BasePath):
             for cls, args, options in reversed(middleware):
                 self.app = cls(app=self.app, *args, **options)
 
-    def _apply_permissions(self, permissions: Union[Sequence[Permission], None]) -> None:
+    def _apply_permissions(self, permissions: Union[Sequence[DefinePermission], None]) -> None:
         """
         Apply permissions to the app.
 
         Args:
-            permissions (Union[Sequence[Permission], None]): The permissions.
+            permissions (Union[Sequence[DefinePermission], None]): The permissions.
 
         Returns:
             None
@@ -652,7 +694,7 @@ class Include(BasePath):
             key: self.param_convertors[key].transform(value)
             for key, value in match.groupdict().items()
         }
-        remaining_path = "/" + matched_params.pop("path")
+        remaining_path = "/" + matched_params.pop("path", "")
         matched_path = route_path[: -len(remaining_path)]
 
         path_params = {**scope.get("path_params", {}), **matched_params}
@@ -680,70 +722,71 @@ class Include(BasePath):
 
     def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         """
-        Generates a URL path for the specified route name and parameters.
+        Generate a URLPath for a given route name and path parameters.
 
         Args:
             name (str): The name of the route.
-            path_params (dict): The path parameters.
+            path_params: Path parameters for route substitution.
 
         Returns:
-            URLPath: The generated URL path.
+            URLPath: The generated URLPath.
 
         Raises:
-            NoMatchFound: If there is no match for the given name and parameters.
+            NoMatchFound: If no matching route is found for the given name and parameters.
         """
-        remaining_params, remaining_name, path_prefix = self.validate_params(name, path_params)
-        path, remaining_params = replace_params(
-            self.path_format, self.param_convertors, remaining_params
+
+        if self.name is not None and name == self.name and "path" in path_params:
+            path_params["path"] = path_params["path"].lstrip("/")
+            path, remaining_params = replace_params(
+                self.path_format, self.param_convertors, path_params
+            )
+            if not remaining_params:
+                return URLPath(path=path)
+        elif self.name is None or name.startswith(self.name + ":"):
+            return self._path_for_without_name(name, path_params)
+
+        raise NoMatchFound(name, path_params)
+
+    def _path_for_without_name(self, name: str, path_params: dict) -> URLPath:
+        """
+        Generate a URLPath for a route without a specific name and with path parameters.
+
+        Args:
+            name (str): The name of the route.
+            path_params: Path parameters for route substitution.
+
+        Returns:
+            URLPath: The generated URLPath.
+
+        Raises:
+            NoMatchFound: If no matching route is found for the given name and parameters.
+        """
+        if self.name is None:
+            remaining_name = name
+        else:
+            remaining_name = name[len(self.name) + 1 :]
+
+        path_kwarg = path_params.get("path")
+        path_params["path"] = ""
+        path_prefix, remaining_params = replace_params(
+            self.path_format, self.param_convertors, path_params
         )
-        if not remaining_params:
-            return URLPath(path=path)
+
+        if path_kwarg is not None:
+            remaining_params["path"] = path_kwarg
 
         for route in self.routes or []:
             try:
                 url = route.path_for(remaining_name, **remaining_params)
-                return URLPath(path=path_prefix + str(url), protocol=url.protocol)
+                return URLPath(path=path_prefix.rstrip("/") + str(url), protocol=url.protocol)
             except NoMatchFound:
                 pass
 
         raise NoMatchFound(name, path_params)
 
-    def validate_params(
-        self, name: str, path_params: Dict[str, Any]
-    ) -> Tuple[Dict[str, Any], str, str]:
-        """
-        Validates the route name and path parameters.
-
-        Args:
-            name (str): The name of the route.
-            path_params (dict): The path parameters.
-
-        Returns:
-            Dict[str, Any]: The validated path parameters.
-
-        Raises:
-            NoMatchFound: If there is a mismatch in route name or parameters.
-        """
-        remaining_params: Dict[str, str] = {}
-
-        if (self.name is not None and name == self.name and "path" in path_params) or (
-            self.name is None or name.startswith(self.name + ":")
-        ):
-            if self.name is None:
-                remaining_name = name
-            else:
-                remaining_name = name[len(self.name) + 1 :]
-
-            path_kwarg = path_params.get("path")
-            path_params["path"] = ""
-            path_prefix, remaining_params = replace_params(
-                self.path_format, self.param_convertors, path_params
-            )
-
-            if path_kwarg is not None:
-                remaining_params["path"] = path_kwarg
-
-        return remaining_params, remaining_name, path_prefix
+    def __repr__(self) -> str:
+        name = self.name or ""
+        return f"{self.__class__.__name__}(path={self.path!r}, name={name!r}, app={self.app!r})"
 
 
 class Host(BasePath):
@@ -785,7 +828,6 @@ class Host(BasePath):
             headers = Header.from_scope(scope=scope)
             host = headers.get("host", "").split(":")[0]
             match = self.host_regex.match(host)
-
             if match:
                 return self.handle_match(scope, match)
 
@@ -829,25 +871,69 @@ class Host(BasePath):
 
     def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         """
-        Generates a URL path for the specified route name and parameters.
+        Generate a URLPath for a given route name and path parameters.
 
         Args:
             name (str): The name of the route.
-            path_params (dict): The path parameters.
+            path_params: Path parameters for route substitution.
 
         Returns:
-            URLPath: The generated URL path.
+            URLPath: The generated URLPath.
 
         Raises:
-            NoMatchFound: If there is no match for the given name and parameters.
+            NoMatchFound: If no matching route is found for the given name and parameters.
         """
-        remaining_params, remaining_name = self.validate_params(name, path_params)
-        host, remaining_params = replace_params(
-            self.host_format, self.param_convertors, remaining_params
-        )
+        if self.name is not None and name == self.name and "path" in path_params:
+            return self.path_for_with_name(path_params)
+        elif self.name is None or name.startswith(self.name + ":"):
+            return self.path_for_without_name(name, path_params)
+        else:
+            raise NoMatchFound(name, path_params)
 
+    def path_for_with_name(self, path_params: dict) -> URLPath:
+        """
+        Generate a URLPath for a route with a specific name and path parameters.
+
+        Args:
+            path_params: Path parameters for route substitution.
+
+        Returns:
+            URLPath: The generated URLPath.
+
+        Raises:
+            NoMatchFound: If no matching route is found for the given parameters.
+        """
+        path = path_params.pop("path")
+        host, remaining_params = replace_params(
+            self.host_format, self.param_convertors, path_params, is_host=True
+        )
         if not remaining_params:
-            return URLPath(path=path_params.pop("path"), host=host)
+            return URLPath(path=path, host=host)
+
+        raise NoMatchFound(self.name, path_params)
+
+    def path_for_without_name(self, name: str, path_params: dict) -> URLPath:
+        """
+        Generate a URLPath for a route without a specific name and with path parameters.
+
+        Args:
+            name (str): The name of the route.
+            path_params: Path parameters for route substitution.
+
+        Returns:
+            URLPath: The generated URLPath.
+
+        Raises:
+            NoMatchFound: If no matching route is found for the given name and parameters.
+        """
+        if self.name is None:
+            remaining_name = name
+        else:
+            remaining_name = name[len(self.name) + 1 :]
+
+        host, remaining_params = replace_params(
+            self.host_format, self.param_convertors, path_params, is_host=True
+        )
 
         for route in self.routes or []:
             try:
@@ -858,38 +944,9 @@ class Host(BasePath):
 
         raise NoMatchFound(name, path_params)
 
-    def validate_params(
-        self, name: str, path_params: Dict[str, Any]
-    ) -> Tuple[Dict[str, Any], str]:
-        """
-        Validates the route name and path parameters.
-
-        Args:
-            name (str): The name of the route.
-            path_params (dict): The path parameters.
-
-        Returns:
-            Dict[str, Any]: The validated path parameters.
-
-        Raises:
-            NoMatchFound: If there is a mismatch in route name or parameters.
-        """
-        remaining_params = {}
-
-        if (self.name is not None and name == self.name and "path" in path_params) or (
-            self.name is None or name.startswith(self.name + ":")
-        ):
-            if self.name is None:
-                remaining_name = name
-            else:
-                remaining_name = name[len(self.name) + 1 :]
-
-            path_params.pop("path")  # Remove 'path' from path_params
-            remaining_params = self._replace_params(
-                self.host_format, self.param_convertors, path_params
-            )
-
-        return remaining_params, remaining_name
+    def __repr__(self) -> str:
+        name = self.name or ""
+        return f"{self.__class__.__name__}(host={self.host!r}, name={name!r}, app={self.app!r})"
 
 
 class Router:
@@ -906,8 +963,8 @@ class Router:
         on_shutdown: Union[Sequence[Callable[[], Any]], None] = None,
         lifespan: Union[Lifespan[Any], None] = None,
         *,
-        middleware: Union[Sequence[Middleware], None] = None,
-        permissions: Union[Sequence[Permission], None] = None,
+        middleware: Union[Sequence[DefineMiddleware], None] = None,
+        permissions: Union[Sequence[DefinePermission], None] = None,
         include_in_schema: bool = True,
     ) -> None:
         assert lifespan is None or (
@@ -915,7 +972,13 @@ class Router:
         ), "Use either 'lifespan' or 'on_startup'/'on_shutdown', not both."
 
         if inspect.isasyncgenfunction(lifespan) or inspect.isgeneratorfunction(lifespan):
-            raise ImproperlyConfigured("async function generators are not allowed.")
+            raise ImproperlyConfigured(
+                "async function generators are not allowed. "
+                "Use @contextlib.asynccontextmanager instead."
+            )
+
+        self.on_startup = [] if on_startup is None else list(on_startup)
+        self.on_shutdown = [] if on_shutdown is None else list(on_shutdown)
 
         self.lifespan_context = handle_lifespan_events(
             on_startup=on_startup, on_shutdown=on_shutdown, lifespan=lifespan
@@ -927,24 +990,22 @@ class Router:
         self.routes = [] if routes is None else list(routes)
         self.redirect_slashes = redirect_slashes
         self.default = self.handle_not_found if default is None else default
-        self.on_startup = [] if on_startup is None else list(on_startup)
-        self.on_shutdown = [] if on_shutdown is None else list(on_shutdown)
         self.include_in_schema = include_in_schema
 
-        self.middleware = middleware if middleware is not None else list(middleware)
-        self.permissions = permissions if permissions is not None else list(permissions)
+        self.middleware = middleware if middleware is not None else []
+        self.permissions = permissions if permissions is not None else []
 
         self.middleware_stack = self.app
 
         self._apply_middleware(self.middleware)
         self._apply_permissions(self.permissions)
 
-    def _apply_middleware(self, middleware: Union[Sequence[Middleware], None]) -> None:
+    def _apply_middleware(self, middleware: Union[Sequence[DefineMiddleware], None]) -> None:
         """
         Apply middleware to the app.
 
         Args:
-            middleware (Union[Sequence[Middleware], None]): The middleware.
+            middleware (Union[Sequence[DefineMiddleware], None]): The middleware.
 
         Returns:
             None
@@ -953,12 +1014,12 @@ class Router:
             for cls, args, options in reversed(middleware):
                 self.middleware_stack = cls(app=self.middleware_stack, *args, **options)
 
-    def _apply_permissions(self, permissions: Union[Sequence[Permission], None]) -> None:
+    def _apply_permissions(self, permissions: Union[Sequence[DefinePermission], None]) -> None:
         """
         Apply permissions to the app.
 
         Args:
-            permissions (Union[Sequence[Permission], None]): The permissions.
+            permissions (Union[Sequence[DefinePermission], None]): The permissions.
 
         Returns:
             None
@@ -994,88 +1055,6 @@ class Router:
                 await handler()
             else:
                 handler()
-
-    async def lifespan(self, scope: Scope, receive: Receive, send: Send) -> None:
-        """
-        Handle ASGI lifespan messages, managing application startup and shutdown events.
-
-        Args:
-            scope (Dict[str, Any]): The ASGI scope.
-            receive (Receive): The ASGI receive channel.
-            send (Send): The ASGI send channel.
-        """
-        await receive()
-        await self.handle_lifespan_startup(scope, receive, send)
-        await self.handle_lifespan_shutdown(send)
-
-    async def handle_lifespan_startup(self, scope: Scope, receive: Receive, send: Send) -> None:
-        """
-        Handle the startup phase of the ASGI lifespan.
-
-        Args:
-            scope (Dict[str, Any]): The ASGI scope.
-            send (Send): The ASGI send channel.
-        """
-        try:
-            async with self.lifespan_context(scope.get("app")) as app_state:
-                if app_state is not None:
-                    self._update_scope_with_state(scope, app_state)
-                await send({"type": "lifespan.startup.complete"})
-                await receive()
-        except BaseException:
-            await self._handle_exception(send, startup=True)
-            raise
-
-    async def handle_lifespan_shutdown(self, send: Send) -> None:
-        """
-        Handle the shutdown phase of the ASGI lifespan.
-
-        Args:
-            scope (Dict[str, Any]): The ASGI scope.
-            send (Send): The ASGI send channel.
-        """
-        try:
-            await send({"type": "lifespan.shutdown.complete"})
-        except BaseException:
-            await self._handle_exception(send, startup=False)
-            raise
-
-    def _update_scope_with_state(self, scope: Scope, state: Dict[str, Any]) -> None:
-        """
-        Update the ASGI scope with the given state.
-
-        Args:
-            scope (Dict[str, Any]): The ASGI scope.
-            state (Dict[str, Any]): The state to update the scope with.
-        """
-        if "state" not in scope:
-            raise RuntimeError('The server does not support "state" in the lifespan scope.')
-        scope["state"].update(state)
-
-    async def _handle_exception(self, send: Send, startup: bool) -> None:
-        """
-        Handle exceptions during the lifespan phase.
-
-        Args:
-            send (Send): The ASGI send channel.
-            startup (bool): Whether the exception occurred during startup.
-        """
-        exc_type, exc, tb = sys.exc_info()
-        exc_text = "".join(traceback.format_exception(exc_type, exc, tb))
-        message_type = "lifespan.startup.failed" if startup else "lifespan.shutdown.failed"
-        await send({"type": message_type, "message": exc_text})
-
-    async def handle_lifespan(self, scope: Scope, receive: Receive, send: Send) -> None:
-        """
-        Handle ASGI lifespan messages, managing application startup and shutdown events.
-
-        Args:
-            scope (Scope): The ASGI scope.
-            receive (Receive): The ASGI receive channel.
-            send (Send): The ASGI send channel.
-        """
-        await receive()
-        await self.lifespan(scope, receive, send)
 
     async def handle_route(
         self, route: BasePath, child_scope: Scope, scope: Scope, receive: Receive, send: Send
@@ -1120,6 +1099,52 @@ class Router:
         """
         await self.default(scope, receive, send)
 
+    async def lifespan(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """
+        Handle ASGI lifespan messages, managing application startup and shutdown events.
+
+        Args:
+            scope (Scope): The ASGI scope.
+            receive (Receive): The receive channel.
+            send (Send): The send channel.
+        """
+        completed_startup = False
+
+        async def startup_complete() -> None:
+            await send({"type": "lifespan.startup.complete"})
+
+        async def shutdown_complete() -> None:
+            await send({"type": "lifespan.shutdown.complete"})
+
+        async def lifespan_error(type: str, message: str) -> None:
+            await send({"type": type, "message": message})
+
+        try:
+            app: Any = scope.get("app")
+            await receive()
+            async with self.lifespan_context(app) as state:
+                if state is not None:
+                    if "state" not in scope:
+                        raise RuntimeError(
+                            'The server does not support "state" in the lifespan scope.'
+                        )
+                    scope["state"].update(state)
+
+                await startup_complete()
+                completed_startup = True
+                await receive()
+
+        except BaseException:
+            exc_text = traceback.format_exc()
+            if completed_startup:
+                await lifespan_error("lifespan.shutdown.failed", exc_text)
+            else:
+                await lifespan_error("lifespan.startup.failed", exc_text)
+            raise
+
+        else:
+            await shutdown_complete()
+
     async def app(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
         Handle ASGI messages, managing different scopes and routing.
@@ -1135,7 +1160,7 @@ class Router:
             scope["router"] = self
 
         if scope["type"] == ScopeType.LIFESPAN:
-            await self.handle_lifespan(scope, receive, send)
+            await self.lifespan(scope, receive, send)
             return
 
         partial = None
@@ -1154,7 +1179,7 @@ class Router:
             return
 
         route_path = get_route_path(scope)
-        if scope["type"] == "http" and self.redirect_slashes and route_path != "/":
+        if scope["type"] == ScopeType.HTTP and self.redirect_slashes and route_path != "/":
             redirect_scope = dict(scope)
             if route_path.endswith("/"):
                 redirect_scope["path"] = redirect_scope["path"].rstrip("/")
@@ -1183,9 +1208,13 @@ class Router:
         Returns:
             None
         """
+        if "app" in scope:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
         if scope["type"] == ScopeType.HTTP:
             response = PlainText("Not Found", status_code=status.HTTP_404_NOT_FOUND)
             await response(scope, receive, send)
+
         elif scope["type"] == ScopeType.WEBSOCKET:
             websocket_close = WebSocketClose()
             await websocket_close(scope, receive, send)
@@ -1195,8 +1224,8 @@ class Router:
         path: str,
         app: ASGIApp,
         name: Union[str, None] = None,
-        middleware: Union[Sequence[Middleware], None] = None,
-        permissions: Union[Sequence[Permission], None] = None,
+        middleware: Union[Sequence[DefineMiddleware], None] = None,
+        permissions: Union[Sequence[DefinePermission], None] = None,
         namespace: Union[str, None] = None,
         pattern: Union[str, None] = None,
         include_in_schema: bool = True,
@@ -1229,8 +1258,8 @@ class Router:
         handler: Callable[[Request], Union[Awaitable[Response], Response]],
         methods: Union[List[str], None] = None,
         name: Union[str, None] = None,
-        middleware: Union[Sequence[Middleware], None] = None,
-        permissions: Union[Sequence[Permission], None] = None,
+        middleware: Union[Sequence[DefineMiddleware], None] = None,
+        permissions: Union[Sequence[DefinePermission], None] = None,
         include_in_schema: bool = True,
     ) -> None:
         """
@@ -1252,13 +1281,13 @@ class Router:
         path: str,
         handler: Callable[[WebSocket], Awaitable[None]],
         name: Union[str, None] = None,
-        middleware: Union[Sequence[Middleware], None] = None,
-        permissions: Union[Sequence[Permission], None] = None,
+        middleware: Union[Sequence[DefineMiddleware], None] = None,
+        permissions: Union[Sequence[DefinePermission], None] = None,
     ) -> None:
         """
-        Manually creates a `WebsocketPath` from a given handler.
+        Manually creates a `WebSocketPath` from a given handler.
         """
-        route = WebsocketPath(
+        route = WebSocketPath(
             path, handler=handler, middleware=middleware, permissions=permissions, name=name
         )
         self.routes.append(route)
@@ -1282,7 +1311,3 @@ class Router:
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         await self.middleware_stack(scope, receive, send)
-
-    def __repr__(self) -> str:
-        name = self.name or ""
-        return f"{self.__class__.__name__}(path={self.path!r}, name={name!r}, app={self.app!r})"

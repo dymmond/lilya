@@ -380,6 +380,40 @@ class FileResponse(Response):
             await self.background()
 
 
+class TemplateResponse(HTMLResponse):
+    def __init__(
+        self,
+        template: Any,
+        status_code: int = status.HTTP_200_OK,
+        context: Union[Dict[str, Any], None] = None,
+        background: Task | None = None,
+        headers: Dict[str, Any] | None = None,
+        media_type: MediaType | str = MediaType.HTML,
+    ):
+        self.template = template
+        self.context = context or {}
+        content = self.template.render(context)
+        super().__init__(
+            content=content,
+            status_code=status_code,
+            headers=headers,
+            media_type=media_type,
+            background=background,
+        )
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        request = self.context.get("request", {})
+        extensions = request.get("extensions", {})
+        if "http.response.debug" in extensions:
+            await send(
+                {
+                    "type": "http.response.debug",
+                    "info": {"template": self.template, "context": self.context},
+                }
+            )
+        await super().__call__(scope, receive, send)
+
+
 def make_response(
     content: Any,
     status_code: int = status.HTTP_200_OK,

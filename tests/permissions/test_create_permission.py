@@ -1,4 +1,4 @@
-from lilya.permissions.base import CreatePermission
+from lilya.permissions.base import DefinePermission
 from lilya.protocols.permissions import PermissionProtocol
 from lilya.responses import JSONResponse
 from lilya.types import ASGIApp, Receive, Scope, Send
@@ -19,7 +19,7 @@ class AcceptAll(PermissionProtocol):
 
 
 def test_create_permission():
-    obj = CreatePermission(AcceptAll)
+    obj = DefinePermission(AcceptAll)
 
     permission = obj(app=app)
 
