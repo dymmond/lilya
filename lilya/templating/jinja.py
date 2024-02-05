@@ -41,27 +41,27 @@ PathLike = Union[str, "os.PathLike[str]"]
 
 
 class TemplateRenderer(BaseTemplateRenderer):
-    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> TemplateResponse:
-        if args:
-            (
-                request,
-                name,
-                context,
-                status_code,
-                headers,
-                media_type,
-                background,
-            ) = self._parse_args(*args, **kwargs)
-        else:
-            (
-                request,
-                name,
-                context,
-                status_code,
-                headers,
-                media_type,
-                background,
-            ) = self._parse_kwargs(**kwargs)
+    """
+    Custom Template Renderer for Starlette.
+
+    This class provides a simplified interface for rendering templates with
+    context processing and response preparation.
+    """
+
+    def __call__(self, *args: Any, **kwargs: Any) -> TemplateResponse:
+        """
+        Render a template based on the provided arguments.
+
+        Args:
+            *args: Positional arguments.
+            **kwargs: Keyword arguments.
+
+        Returns:
+            TemplateResponse: The rendered template response.
+        """
+        request, name, context, status_code, headers, media_type, background = self._parse_args(
+            *args, **kwargs
+        )
 
         if hasattr(self.template, "context_processors"):
             for context_processor in self.template.context_processors:
@@ -73,44 +73,66 @@ class TemplateRenderer(BaseTemplateRenderer):
         return template_response
 
     def _parse_args(self, *args: P.args, **kwargs: P.kwargs) -> tuple:
-        request = args[0]
-        assert isinstance(
-            request, Request
-        ), "first argument should always be a 'request' instance."
+        """
+        Parse arguments and keyword arguments for template rendering.
 
+        Args:
+            *args: Positional arguments.
+            **kwargs: Keyword arguments.
+
+        Returns:
+            tuple: Parsed arguments.
+        """
+        request = self._get_request(*args, **kwargs)
         name = args[1] if len(args) > 1 else kwargs["name"]
         context = args[2] if len(args) > 2 else kwargs.get("context", {})
-        status_code = args[3] if len(args) > 3 else kwargs.get("status_code", 200)
+        status_code = args[3] if len(args) > 3 else kwargs.get("status_code", status.HTTP_200_OK)
         headers = args[4] if len(args) > 4 else kwargs.get("headers")
         media_type = args[5] if len(args) > 5 else kwargs.get("media_type")
         background = args[6] if len(args) > 6 else kwargs.get("background")
 
         return request, name, context, status_code, headers, media_type, background
 
-    def _parse_kwargs(self, **kwargs: Any) -> tuple:
-        assert (
-            "request" in kwargs.get("context", {}) or "request" in kwargs
-        ), "`request` is missing from the parameters."
+    def _get_request(self, *args: P.args, **kwargs: P.kwargs) -> Request | None:
+        """
+        Extract and validate the 'request' instance from the arguments.
 
-        context: dict[str, Any] = kwargs.get("context", {})
-        request = kwargs.get("context", context.get("request"))
-        name = kwargs.pop("name")
-        status_code = kwargs.pop("status_code", status.HTTP_200_OK)
-        headers = kwargs.pop("headers", None)
-        media_type = kwargs.pop("media_type", None)
-        background = kwargs.pop("background", None)
+        Args:
+            args: Positional arguments.
 
-        return request, name, context, status_code, headers, media_type, background
+        Returns:
+            Request: The 'request' instance.
+
+        Raises:
+            AssertionError: If the 'request' instance is not present or is invalid.
+        """
+        request = args[0] if len(args) > 0 else kwargs.get("request")
+        assert isinstance(
+            request, Request
+        ), "The first argument should always be a 'Request' instance."
+        return request
 
 
 class Jinja2Template:
+    """
+    Wrapper class for Jinja2 templating engine in the context of Starlette.
+    """
+
     def __init__(
         self,
-        directory: str | PathLike | list[Path] | None = None,
+        directory: Union[str, Path, List[Path]] | None = None,
         *,
         env: Environment | None = None,
         **options: Any,
     ) -> None:
+        """
+        Initialize the Jinja2Template instance.
+
+        Args:
+            directory (Union[str, Path, List[Path]], optional): Path or list of paths to the template directories.
+            env (Environment, optional): Pre-existing Jinja2 Environment instance.
+            **options (Any): Additional options to configure the Jinja2 environment.
+        """
         self.context_processors: Any = options.pop("context_processors", {})
         assert (
             env or directory
@@ -122,17 +144,48 @@ class Jinja2Template:
             self.env = self._add_defaults(env=env)
 
     def _add_defaults(self, env: Environment) -> Environment:
+        """
+        Add default Jinja2 environment settings.
+
+        Args:
+            env (Environment): Existing Jinja2 environment.
+
+        Returns:
+            Environment: Modified Jinja2 environment.
+        """
+
         @pass_context
-        def url_for(context: dict, name: str, **path_params: Any) -> Any:
+        def path_for(context: dict, name: str, **path_params: Any) -> Any:
+            """
+            Custom Jinja2 global function to generate URLs using Starlette's Request instance.
+
+            Args:
+                context (dict): Jinja2 context, including 'request'.
+                name (str): Name of the Starlette route.
+                **path_params (Any): Additional path parameters.
+
+            Returns:
+                Any: The generated URL.
+            """
             request: Request = context["request"]
             return request.path_for(name, **path_params)
 
-        env.globals.setdefault("url_for", url_for)
+        env.globals.setdefault("url_for", path_for)
         return env
 
     def _create_environment(
-        self, directory: Union[str, PathLike, List[Path]], **env_options: Any
+        self, directory: Union[str, Path, List[Path]], **env_options: Any
     ) -> Environment:
+        """
+        Create a new Jinja2 environment with the specified options.
+
+        Args:
+            directory (Union[str, Path, List[Path]]): Path or list of paths to the template directories.
+            **env_options (Any): Additional options to configure the Jinja2 environment.
+
+        Returns:
+            Environment: Newly created Jinja2 environment.
+        """
         loader = FileSystemLoader(directory)
         env_options.setdefault("loader", loader)
         autoescape = env_options.pop("autoescape", True)
@@ -142,14 +195,33 @@ class Jinja2Template:
         return env
 
     def get_template(self, name: str) -> JinjaTemplate:
+        """
+        Get a Jinja template by name.
+
+        Args:
+            name (str): Name of the Jinja template.
+
+        Returns:
+            JinjaTemplate: Jinja template instance.
+
+        Raises:
+            TemplateNotFound: If the template is not found in the Jinja2 environment.
+        """
         try:
             return self.env.get_template(name)
         except JinjaTemplateNotFound as e:
             raise TemplateNotFound(name=name) from e
 
-    def get_template_response(self, *args: P.args, **kwargs: P.kwargs) -> TemplateResponse:
+    def get_template_response(self, *args: Any, **kwargs: Any) -> TemplateResponse:
         """
-        Returns the Jinja2Template response format from the jinja template.
+        Get a TemplateResponse using the provided arguments.
+
+        Args:
+            *args (Any): Positional arguments.
+            **kwargs (Any): Keyword arguments.
+
+        Returns:
+            TemplateResponse: The rendered template response.
         """
         template_renderer = TemplateRenderer(template=self)
         return template_renderer(*args, **kwargs)
