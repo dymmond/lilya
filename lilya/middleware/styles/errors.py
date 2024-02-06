@@ -35,11 +35,13 @@ def get_css_style() -> str:
         .lineno {
             margin-right: 5px;
         }
+        .frame-container {
+            background-color: #f9f6f6;
+        }
         .frame-title {
             font-weight: unset;
             padding: 10px 10px 10px 10px;
-            background-color: #E4F4FD;
-            margin-right: 10px;
+            background-color: #ffe4e4;
             color: #191f21;
             font-size: 17px;
             border: 1px solid #c7dce8;
@@ -51,13 +53,14 @@ def get_css_style() -> str:
             cursor: pointer;
         }
         .collapsed {
-        display: none;
+            display: none;
         }
         .source-code {
-        font-family: courier;
-        font-size: small;
-        padding-bottom: 10px;
+            font-family: courier;
+            font-size: small;
+            padding-bottom: 10px;
         }
+
     </style>
     """
     return style
@@ -67,24 +70,25 @@ def get_js() -> str:
     js = """
     <script type="text/javascript">
         function collapse(element){
-        const frameId = element.getAttribute("data-frame-id");
-        const frame = document.getElementById(frameId);
+            const frameId = element.getAttribute("data-frame-id");
+            const frame = document.getElementById(frameId);
 
-        if (frame.classList.contains("collapsed")){
-            element.innerHTML = "&#8210;";
-            frame.classList.remove("collapsed");
-        } else {
-            element.innerHTML = "+";
-            frame.classList.add("collapsed");
+            if (frame.classList.contains("collapsed")){
+                element.innerHTML = "&#8210;";
+                frame.classList.remove("collapsed");
+            } else {
+                element.innerHTML = "+";
+                frame.classList.add("collapsed");
+            }
         }
-    }
+    </script>
     """
     return js
 
 
 def get_frame() -> str:
     frame = """
-    <div>
+    <div class="frame-container">
     <p class="frame-title">File <span class="frame-filename">{frame_filename}</span>,
         line <i>{frame_lineno}</i>,
         in <b>{frame_name}</b>
@@ -128,8 +132,8 @@ def get_template_errors() -> str:
         <body>
             <h1>HTTP 500 Server Error</h1>
             <h2>{error}</h2>
-            <div class="traceback-container">
-                <p class="traceback-title">Traceback</p>
+            <div class="container">
+                <p class="title margin-top-none">Traceback</p>
                 <div>{exc_html}</div>
             </div>
             {js}

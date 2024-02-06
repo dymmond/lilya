@@ -15,7 +15,7 @@ async def run_in_threadpool(func: Callable[..., T], *args: Any, **kwargs: Any) -
     Make sure the callable is always async.
     """
     def_func = AsyncCallable(func)
-    return await def_func(*args, *kwargs)
+    return await def_func(*args, **kwargs)
 
 
 def enforce_async_callable(func: Callable[..., Any]) -> Callable[..., Awaitable[T]]:
@@ -39,7 +39,7 @@ class AsyncCallable:
     def __call__(self, *args: Any, **kwargs: Any) -> Awaitable[T]:
         combined_kwargs = {**self.default_kwargs, **kwargs}
         return anyio.to_thread.run_sync(
-            functools.partial(self._callable, **combined_kwargs), *args
+            functools.partial(self._callable, *args, **combined_kwargs)
         )
 
     async def run_in_threadpool(self, *args: Any, **kwargs: Any) -> T:

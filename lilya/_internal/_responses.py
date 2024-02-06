@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import inspect
-from typing import Any, Awaitable, Callable, Union
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Union
 
 from lilya._internal._exception_handlers import wrap_app_handling_exceptions
 from lilya.compat import is_async_callable
@@ -11,6 +11,9 @@ from lilya.requests import Request
 from lilya.responses import Response
 from lilya.types import ASGIApp, Receive, Scope, Send
 from lilya.websockets import WebSocket
+
+if TYPE_CHECKING:
+    pass
 
 
 class BaseHandler:
@@ -61,20 +64,42 @@ class BaseHandler:
                 Returns:
                     None
                 """
-                signature: inspect.Signature = self.signature
 
+                signature: inspect.Signature = self.signature
+                func_params: dict[str, Any] = self._extract_params_from_request(
+                    request=request, signature=signature
+                )
                 if signature.parameters:
                     if SignatureDefault.REQUEST in signature.parameters:
-                        response = await self._execute_function(func, request)
+                        response = await self._execute_function(func, request, **func_params)
                     else:
-                        response = await self._execute_function(func)
+                        response = await self._execute_function(func, **func_params)
                 else:
-                    response = await self._execute_function(func)
+                    response = await self._execute_function(func, **func_params)
                 await response(scope, receive, send)
 
             await wrap_app_handling_exceptions(inner_app, request)(scope, receive, send)
 
         return app
+
+    def _extract_params_from_request(
+        self, request: Request, signature: inspect.Signature
+    ) -> dict[str, Any]:
+        """
+        Extracts parameters from the request and injects them into the function if needed.
+
+        Args:
+            request (Request): The incoming request.
+            signature (inspect.Signature): The signature of the target function.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing parameters extracted from the request.
+        """
+        return {
+            param: value
+            for param, value in request.path_params.items()
+            if param in signature.parameters
+        }
 
     def handle_websocket_session(self, func: Callable[[WebSocket], Awaitable[None]]) -> ASGIApp:
         """
