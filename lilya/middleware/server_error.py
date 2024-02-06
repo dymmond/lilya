@@ -197,7 +197,8 @@ class ServerErrorMiddleware(MiddlewareProtocol):
             f"{html.escape(str(traceback_obj))}"
         )
 
-        return f"{get_css_style()}{get_js()}{get_template_errors().format(error=error, exc_html=exc_html)}"
+        template = get_template_errors()
+        return template.format(styles=get_css_style(), js=get_js(), error=error, exc_html=exc_html)
 
     async def generate_plain_text(self, exc: Exception) -> str:
         """

@@ -5,8 +5,7 @@ import json
 from typing import Any, Callable, Coroutine, Generator, cast
 
 from lilya import status
-from lilya.compat import is_async_callable
-from lilya.concurrency import run_in_threadpool
+from lilya._internal._responses import BaseHandler
 from lilya.enums import Event, HTTPMethod, ScopeType, SignatureDefault
 from lilya.exceptions import HTTPException
 from lilya.requests import Request
@@ -15,7 +14,7 @@ from lilya.types import Message, Receive, Scope, Send
 from lilya.websockets import WebSocket
 
 
-class BaseController:
+class BaseController(BaseHandler):
     __is_controller__: bool = True
 
 
@@ -54,31 +53,17 @@ class Controller(BaseController):
         self.signature = inspect.signature(handler)
         self.__scope__ = scope
 
+        func_params: dict[str, Any] = self._extract_params_from_request(
+            request=request, signature=self.signature
+        )
         if self.signature.parameters:
             if SignatureDefault.REQUEST in self.signature.parameters:
-                response = await self._execute_function(handler, request)
+                response = await self._execute_function(handler, request, **func_params)
             else:
-                response = await self._execute_function(handler)
+                response = await self._execute_function(handler, **func_params)
         else:
-            response = await self._execute_function(handler)
+            response = await self._execute_function(handler, **func_params)
         await response(scope, receive, send)
-
-    async def _execute_function(self, func: Callable, *args: Any, **kwargs: Any) -> Any:
-        """
-        Executes the given function, handling both synchronous and asynchronous functions.
-
-        Args:
-            func (Callable): The function to execute.
-            args (Any): Positional arguments for the function.
-            kwargs (Any): Keyword arguments for the function.
-
-        Returns:
-            Any: The result of the function execution.
-        """
-        if is_async_callable(func):
-            return await func(*args, **kwargs)
-        else:
-            return await run_in_threadpool(func, *args, **kwargs)
 
     async def handle_not_allowed(self) -> Response:
         headers = {"Allow": ", ".join(self.__allowed_methods__)}
