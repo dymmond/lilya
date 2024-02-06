@@ -111,6 +111,7 @@ class HTTPCorsEnum(StrEnum):
     PATCH = "PATCH"
     DELETE = "DELETE"
     HEAD = "HEAD"
+    OPTIONS = "OPTIONS"
 
     @classmethod
     def to_tuple(cls) -> Tuple[str, ...]:

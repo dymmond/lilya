@@ -200,6 +200,7 @@ class CORSMiddleware(MiddlewareProtocol):
         elif not self.allow_all_origins and self.validate_origin(origin=origin):
             self.set_explicit_origin(headers, origin)
 
+        message["headers"] = headers.get_multi_items()
         await send(message)
 
     @staticmethod
@@ -213,7 +214,6 @@ class CORSMiddleware(MiddlewareProtocol):
         """
         headers["Access-Control-Allow-Origin"] = origin
         headers.add_vary_header("Origin")
-        headers["Access-Control-Allow-Credentials"] = "true"
 
         expose_headers = headers.get("Access-Control-Expose-Headers")
         if expose_headers:
@@ -269,6 +269,7 @@ class CORSMiddleware(MiddlewareProtocol):
             dict: Dictionary of preflight response headers.
         """
         preflight_headers = {}
+        explicit_allow_origin = not allow_all_origins or allow_credentials
 
         if allow_all_origins:
             preflight_headers["Access-Control-Allow-Origin"] = "*"
@@ -278,6 +279,9 @@ class CORSMiddleware(MiddlewareProtocol):
             preflight_headers["Access-Control-Allow-Headers"] = "*"
         elif allow_headers:
             preflight_headers["Access-Control-Allow-Headers"] = ", ".join(allow_headers)
+
+        if explicit_allow_origin:
+            preflight_headers["Vary"] = "Origin"
 
         preflight_headers.update(
             {
