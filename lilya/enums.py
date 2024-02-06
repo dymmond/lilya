@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from enum import IntEnum
-from typing import Dict, List, Set, Tuple
+from typing import Dict, Set, Tuple
 
 from lilya.conf.enums import StrEnum
 
@@ -51,7 +53,7 @@ class HTTPType(StrEnum):
     HTTPS = "https"
 
     @classmethod
-    def get_https_types(cls) -> List[str]:
+    def get_https_types(cls) -> list[str]:
         return [str(value) for value in cls]
 
 
@@ -60,7 +62,7 @@ class WebsocketType(StrEnum):
     WSS = "wss"
 
     @classmethod
-    def get_https_types(cls) -> List[str]:
+    def get_https_types(cls) -> list[str]:
         return [str(value) for value in cls]
 
 
@@ -96,6 +98,10 @@ class HTTPMethod(StrEnum):
     HEAD = "HEAD"
     OPTIONS = "OPTIONS"
     TRACE = "TRACE"
+
+    @classmethod
+    def to_list(cls) -> list[str]:
+        return [method.value for method in cls]
 
 
 class HTTPCorsEnum(StrEnum):

@@ -322,6 +322,14 @@ class Path(BaseHandler, BasePath):
         else:
             return Match.FULL, child_scope
 
+    async def handle_controller(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """
+        Instantiates the Controller object and executes
+        the call.
+        """
+        app = self.app()  # type: ignore[call-arg]
+        await app(scope, receive, send)  # type: ignore
+
     async def handle_dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
         Handles the dispatch of the request to the appropriate handler.
@@ -342,7 +350,10 @@ class Path(BaseHandler, BasePath):
                 response = PlainText("Method Not Allowed", status_code=405, headers=headers)
             await response(scope, receive, send)
         else:
-            await self.app(scope, receive, send)
+            if not hasattr(self.app, "__is_controller__"):
+                await self.app(scope, receive, send)
+            else:
+                await self.handle_controller(scope, receive, send)
 
     def __repr__(self) -> str:
         methods = sorted(self.methods or [])
