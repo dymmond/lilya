@@ -385,6 +385,7 @@ class Lilya:
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         scope["app"] = self
+
         if self.middleware_stack is None:
             self.middleware_stack = self.build_middleware_stack()
         await self.middleware_stack(scope, receive, send)

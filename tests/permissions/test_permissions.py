@@ -22,10 +22,6 @@ class DenyAccess(PermissionProtocol):
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] == "lifespan":
-            await self.app(scope, receive, send)
-            return
-
         raise PermissionDenied()
 
 
@@ -35,10 +31,6 @@ class AllowAccess(PermissionProtocol):
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] == "lifespan":
-            await self.app(scope, receive, send)
-            return
-
         request = Request(scope=scope, receive=receive, send=send)
 
         if "allow-admin" in request.headers:

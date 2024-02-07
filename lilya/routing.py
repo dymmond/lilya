@@ -1171,10 +1171,6 @@ class Router:
         if "router" not in scope:
             scope["router"] = self
 
-        if scope["type"] == ScopeType.LIFESPAN:
-            await self.lifespan(scope, receive, send)
-            return
-
         partial = None
 
         for route in self.routes:
@@ -1322,4 +1318,7 @@ class Router:
         return wrapper
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] == ScopeType.LIFESPAN:
+            await self.lifespan(scope, receive, send)
+            return
         await self.middleware_stack(scope, receive, send)
