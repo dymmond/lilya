@@ -820,7 +820,7 @@ class TestClient(httpx.Client):
 def create_client(
     routes: Union[Sequence[Any], None] = None,
     *,
-    settings_config: Optional[Settings] = None,
+    settings_module: Optional[Settings] = None,
     base_url: str = "http://testserver",
     backend: "Literal['asyncio', 'trio']" = "asyncio",
     backend_options: Optional[Dict[str, Any]] = None,
@@ -852,8 +852,8 @@ def create_client(
     ```
     """
     return TestClient(
-        app=Lilya(  # type: ignore
-            settings_config=settings_config,
+        app=Lilya(
+            settings_module=settings_module,
             debug=debug,
             routes=cast("Any", routes if isinstance(routes, list) else [routes]),
             permissions=permissions,
