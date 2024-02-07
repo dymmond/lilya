@@ -1007,6 +1007,7 @@ class Router:
         self.permissions = permissions if permissions is not None else []
 
         self.middleware_stack = self.app
+        self.permission_started = False
 
         self._apply_middleware(self.middleware)
         self._apply_permissions(self.permissions)
@@ -1036,7 +1037,7 @@ class Router:
             None
         """
         if permissions is not None:
-            for cls, args, options in reversed(permissions):
+            for cls, args, options in reversed(self.permissions):
                 self.middleware_stack = cls(app=self.middleware_stack, *args, **options)
 
     def path_for(self, name: str, /, **path_params: Any) -> URLPath:
@@ -1169,10 +1170,6 @@ class Router:
 
         if "router" not in scope:
             scope["router"] = self
-
-        if scope["type"] == ScopeType.LIFESPAN:
-            await self.lifespan(scope, receive, send)
-            return
 
         partial = None
 
@@ -1321,4 +1318,7 @@ class Router:
         return wrapper
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] == ScopeType.LIFESPAN:
+            await self.lifespan(scope, receive, send)
+            return
         await self.middleware_stack(scope, receive, send)

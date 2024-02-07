@@ -32,7 +32,7 @@ class DefineMiddleware:
 
     def __repr__(self) -> str:
         args_repr = ", ".join(
-            [self.permission.__name__]
+            [self.middleware.__name__]
             + [f"{value!r}" for value in self.args]
             + [f"{key}={value!r}" for key, value in self.kwargs.items()]
         )

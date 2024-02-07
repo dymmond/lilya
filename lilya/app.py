@@ -163,11 +163,11 @@ class Lilya:
 
         self.state = State()
         self.middleware_stack: Union[ASGIApp, None] = None
-        self.permission_stack: Union[ASGIApp, None] = None
 
         self.router: Router = Router(
             routes=routes,
             redirect_slashes=redirect_slashes,
+            permissions=self.custom_permissions,
             on_startup=self.__load_settings_value("on_startup", on_startup),
             on_shutdown=self.__load_settings_value("on_shutdown", on_shutdown),
             lifespan=self.__load_settings_value("lifespan", lifespan),
@@ -257,8 +257,7 @@ class Lilya:
         for middleware_class, args, options in reversed(middleware):
             app = middleware_class(app=app, *args, **options)
 
-        self.permission_stack = self.build_permission_stack(app)
-        return self.permission_stack
+        return app
 
     def _get_error_handler(self) -> Optional[Callable[[Request, Exception], Response]]:
         """
@@ -281,11 +280,6 @@ class Lilya:
             for key, value in self.exception_handlers.items()
             if key not in (500, Exception)
         }
-
-    def build_permission_stack(self, app: ASGIApp) -> ASGIApp:
-        for cls, args, options in reversed(self.custom_permissions):
-            app = cls(app=app, *args, **options)
-        return app
 
     def on_event(self, event_type: str) -> Callable:
         return self.router.on_event(event_type)
@@ -375,9 +369,9 @@ class Lilya:
         """
         Adds an external permissions to the stack.
         """
-        if self.middleware_stack is not None:
+        if self.router.permission_started:
             raise RuntimeError("Permissions cannot be added once the application has started.")
-        self.custom_permissions.insert(0, DefinePermission(permission, *args, **kwargs))
+        self.router.permissions.insert(0, DefinePermission(permission, *args, **kwargs))
 
     def add_exception_handler(
         self,
@@ -391,6 +385,7 @@ class Lilya:
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         scope["app"] = self
+
         if self.middleware_stack is None:
             self.middleware_stack = self.build_middleware_stack()
         await self.middleware_stack(scope, receive, send)

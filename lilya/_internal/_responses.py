@@ -1,19 +1,16 @@
 from __future__ import annotations
 
 import inspect
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Union
+from typing import Any, Awaitable, Callable, Union
 
 from lilya._internal._exception_handlers import wrap_app_handling_exceptions
 from lilya.compat import is_async_callable
 from lilya.concurrency import run_in_threadpool
 from lilya.enums import SignatureDefault
 from lilya.requests import Request
-from lilya.responses import Response
+from lilya.responses import Ok, Response
 from lilya.types import ASGIApp, Receive, Scope, Send
 from lilya.websockets import WebSocket
-
-if TYPE_CHECKING:
-    pass
 
 
 class BaseHandler:
@@ -76,11 +73,32 @@ class BaseHandler:
                         response = await self._execute_function(func, **func_params)
                 else:
                     response = await self._execute_function(func, **func_params)
-                await response(scope, receive, send)
+
+                await self._handle_response_content(response, scope, receive, send)
 
             await wrap_app_handling_exceptions(inner_app, request)(scope, receive, send)
 
         return app
+
+    async def _handle_response_content(
+        self, app: ASGIApp | Any, scope: Scope, receive: Receive, send: Send
+    ) -> None:
+        """
+        Handles the app content, ensuring it is in the form of an ASGI application.
+
+        Args:
+            app (Union[ASGIApp, Any]): The response content.
+            scope (Scope): The ASGI scope.
+            receive (Receive): The receive channel.
+            send (Send): The send channel.
+        """
+        if is_async_callable(app) or isinstance(app, Response):
+            # If response is an ASGI application or an async callable, directly await it.
+            await app(scope, receive, send)
+        else:
+            # If response is not an async callable, wrap it in an ASGI application and then await.
+            response = Ok(app)
+            await response(scope, receive, send)
 
     def _extract_params_from_request(
         self, request: Request, signature: inspect.Signature
