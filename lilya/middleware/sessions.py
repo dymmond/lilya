@@ -110,13 +110,13 @@ class SessionMiddleware(MiddlewareProtocol):
         """
         if message["type"] == "http.response.start":
             if scope["session"]:
-                await self.set_session_cookie(scope)
+                message = await self.set_session_cookie(scope, message)
             elif not initial_session_was_empty:
-                await self.clear_session_cookie(scope)
+                message = await self.clear_session_cookie(scope, message)
 
         await send(message)
 
-    async def set_session_cookie(self, scope: Scope) -> None:
+    async def set_session_cookie(self, scope: Scope, message: Message) -> Message:
         """
         Set the session cookie in the response headers.
 
@@ -135,8 +135,10 @@ class SessionMiddleware(MiddlewareProtocol):
             security_flags=self.security_flags,
         )
         headers.add("Set-Cookie", header_value)
+        message["headers"] = headers.get_multi_items()
+        return message
 
-    async def clear_session_cookie(self, scope: Scope) -> None:
+    async def clear_session_cookie(self, scope: Scope, message: Message) -> Message:
         """
         Clear the session cookie in the response headers.
 
@@ -152,3 +154,5 @@ class SessionMiddleware(MiddlewareProtocol):
             security_flags=self.security_flags,
         )
         headers.add("Set-Cookie", header_value)
+        message["headers"] = headers.get_multi_items()
+        return message
