@@ -79,8 +79,10 @@ class Response:
         self, content_headers: Union[Mapping[str, str], Dict[str, str], None] = None
     ) -> None:
         """
-        Initialises the headers by builing the proper conditions and
-        restrictions based on RFC specification.
+        Initializes the headers based on RFC specifications by setting appropriate conditions and restrictions.
+
+        Args:
+            content_headers (Union[Mapping[str, str], Dict[str, str], None], optional): Additional headers to include (default is None).
         """
         headers: Dict[str, str] = {} if content_headers is None else content_headers  # type: ignore
 
@@ -122,6 +124,23 @@ class Response:
         httponly: bool = False,
         samesite: Literal["lax", "strict", "none"] = "lax",
     ) -> None:
+        """
+        Sets a cookie in the response headers.
+
+        Args:
+            key (str): The name of the cookie.
+            value (str, optional): The value of the cookie.
+            path (str, optional): The path for which the cookie is valid (default is '/').
+            domain (Union[str, None], optional): The domain to which the cookie belongs.
+            secure (bool, optional): If True, the cookie should only be sent over HTTPS.
+            max_age (Union[int, None], optional): The maximum age of the cookie in seconds.
+            expires (Union[Union[datetime, str, int], None], optional): The expiration date of the cookie.
+            httponly (bool, optional): If True, the cookie should only be accessible through HTTP.
+            samesite (Literal["lax", "strict", "none"], optional): SameSite attribute of the cookie.
+
+        Raises:
+            AssertionError: If samesite is not one of 'strict', 'lax', or 'none'.
+        """
         cookie: http.cookies.BaseCookie[str] = http.cookies.SimpleCookie()
         cookie[key] = value
         if max_age is not None:
@@ -158,6 +177,17 @@ class Response:
         httponly: bool = False,
         samesite: Literal["lax", "strict", "none"] = "lax",
     ) -> None:
+        """
+        Deletes a cookie in the response headers by setting its max age and expiration to 0.
+
+        Args:
+            key (str): The name of the cookie to delete.
+            path (str, optional): The path for which the cookie is valid (default is '/').
+            domain (Union[str, None], optional): The domain to which the cookie belongs.
+            secure (bool, optional): If True, the cookie should only be sent over HTTPS.
+            httponly (bool, optional): If True, the cookie should only be accessible through HTTP.
+            samesite (Literal["lax", "strict", "none"], optional): SameSite attribute of the cookie.
+        """
         self.set_cookie(
             key,
             max_age=0,
