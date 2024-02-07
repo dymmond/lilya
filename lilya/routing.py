@@ -194,7 +194,6 @@ class Path(BaseHandler, BasePath):
             if HTTPMethod.GET in self.methods:
                 self.methods.append(HTTPMethod.HEAD.value)
 
-        self.methods = [method.upper() for method in self.methods]
         self.path_regex, self.path_format, self.param_convertors, self.path_start = compile_path(
             self.path
         )
@@ -1008,6 +1007,7 @@ class Router:
         self.permissions = permissions if permissions is not None else []
 
         self.middleware_stack = self.app
+        self.permission_started = False
 
         self._apply_middleware(self.middleware)
         self._apply_permissions(self.permissions)
@@ -1037,7 +1037,7 @@ class Router:
             None
         """
         if permissions is not None:
-            for cls, args, options in reversed(permissions):
+            for cls, args, options in reversed(self.permissions):
                 self.middleware_stack = cls(app=self.middleware_stack, *args, **options)
 
     def path_for(self, name: str, /, **path_params: Any) -> URLPath:
