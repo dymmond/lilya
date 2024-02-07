@@ -194,6 +194,7 @@ class Path(BaseHandler, BasePath):
             if HTTPMethod.GET in self.methods:
                 self.methods.append(HTTPMethod.HEAD.value)
 
+        self.methods = [method.upper() for method in self.methods]
         self.path_regex, self.path_format, self.param_convertors, self.path_start = compile_path(
             self.path
         )

@@ -99,12 +99,12 @@ class CSRFMiddleware(MiddlewareProtocol):
             """
             if csrf_cookie is None and message["type"] == "http.response.start":
                 message.setdefault("headers", [])
-                self._set_cookie_if_needed(message)
+                message = self._set_cookie_if_needed(message)
             await send(message)
 
         return send_wrapper
 
-    def _set_cookie_if_needed(self, message: Message) -> None:
+    def _set_cookie_if_needed(self, message: Message) -> Message:
         """
         Sets CSRF cookie in the response headers if not present.
 
@@ -123,6 +123,8 @@ class CSRFMiddleware(MiddlewareProtocol):
                 domain=self.cookie_domain,
             )
             headers.add("set-cookie", cookie.to_header(header=""))
+            message["headers"] = headers.get_multi_items()
+        return message
 
     def _generate_csrf_hash(self, token: str) -> str:
         """
