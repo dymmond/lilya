@@ -1,3 +1,4 @@
+from lilya.app import ChildLilya
 from lilya.exceptions import PermissionDenied
 from lilya.permissions import DefinePermission
 from lilya.protocols.permissions import PermissionProtocol
@@ -175,5 +176,36 @@ def test_add_permission_on_include_raw_permission(test_client_factory):
         assert response.json() == {"message": "Welcome home"}
 
         response = client.get("/include/lilya")
+        assert response.status_code == 403
+        assert response.text == "You do not have permission to perform this action."
+
+
+def test_nested_apps_permissions(test_client_factory):
+    with create_client(
+        routes=[
+            Include(
+                "/include",
+                routes=[
+                    Path("/", home),
+                    Include(
+                        "/child",
+                        app=ChildLilya(
+                            routes=[
+                                Path("/{user}", user, permissions=[DefinePermission(DenyAccess)]),
+                            ]
+                        ),
+                    ),
+                ],
+                permissions=[DefinePermission(AllowRawAccess)],
+            ),
+        ]
+    ) as client:
+
+        headers = {"allow-admin": "true"}
+        response = client.get("/include", headers=headers)
+        assert response.status_code == 200
+        assert response.json() == {"message": "Welcome home"}
+
+        response = client.get("/include/child/lilya")
         assert response.status_code == 403
         assert response.text == "You do not have permission to perform this action."
