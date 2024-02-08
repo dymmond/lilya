@@ -2,8 +2,6 @@
 HTTP codes
 See HTTP Status Code Registry:
 https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
-
-And RFC 2324 - https://tools.ietf.org/html/rfc2324
 """
 
 import warnings
@@ -175,25 +173,5 @@ WS_1013_TRY_AGAIN_LATER = 1013
 WS_1014_BAD_GATEWAY = 1014
 WS_1015_TLS_HANDSHAKE = 1015
 
-
-__deprecated__ = {"WS_1004_NO_STATUS_RCVD": 1004, "WS_1005_ABNORMAL_CLOSURE": 1005}
-
-
-def __getattr__(name: str) -> int:
-    deprecation_changes = {
-        "WS_1004_NO_STATUS_RCVD": "WS_1005_NO_STATUS_RCVD",
-        "WS_1005_ABNORMAL_CLOSURE": "WS_1006_ABNORMAL_CLOSURE",
-    }
-    deprecated = __deprecated__.get(name)
-    if deprecated:
-        warnings.warn(
-            f"'{name}' is deprecated. Use '{deprecation_changes[name]}' instead.",
-            category=DeprecationWarning,
-            stacklevel=3,
-        )
-        return deprecated
-    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
-
-
 def __dir__() -> List[str]:
-    return sorted(list(__all__) + list(__deprecated__.keys()))  # pragma: no cover
+    return sorted(list(__all__)  # pragma: no cover
