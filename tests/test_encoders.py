@@ -103,6 +103,7 @@ def test_msgspec_custom_response():
         assert response.status_code == 200
         assert response.json() == {"name": "lilya", "age": 24}
 
+
 def base_struct_list() -> Item:
     return [Item(name="lilya", age=24)]
 
