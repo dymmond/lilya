@@ -73,6 +73,18 @@ def test_pydantic_custom_response():
         assert response.status_code == 200
         assert response.json() == {"name": "lilya", "age": 24}
 
+def base_model_list() -> User:
+    return [User(name="lilya", age=24)]
+
+
+@pytest.mark.skipif(dont_run, reason="Python 3.8 internals")
+def test_pydantic_custom_response_list():
+    with create_client(routes=[Path("/", base_model_list)]) as client:
+        response = client.get("/")
+
+        assert response.status_code == 200
+        assert response.json() == [{"name": "lilya", "age": 24}]
+
 
 class Item(Struct):
     name: str
@@ -89,6 +101,17 @@ def test_msgspec_custom_response():
 
         assert response.status_code == 200
         assert response.json() == {"name": "lilya", "age": 24}
+
+def base_struct_list() -> Item:
+    return [Item(name="lilya", age=24)]
+
+
+def test_msgspec_custom_response_list():
+    with create_client(routes=[Path("/", base_struct_list)]) as client:
+        response = client.get("/")
+
+        assert response.status_code == 200
+        assert response.json() == [{"name": "lilya", "age": 24}]
 
 
 @pytest.mark.parametrize("value", ["1", 2, 2.2, None], ids=["str", "int", "float", "none"])
