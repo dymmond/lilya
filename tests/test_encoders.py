@@ -73,6 +73,7 @@ def test_pydantic_custom_response():
         assert response.status_code == 200
         assert response.json() == {"name": "lilya", "age": 24}
 
+
 def base_model_list() -> User:
     return [User(name="lilya", age=24)]
 
