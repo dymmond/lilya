@@ -4,7 +4,6 @@ See HTTP Status Code Registry:
 https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
 """
 
-import warnings
 from typing import List
 
 __all__ = (
@@ -173,5 +172,6 @@ WS_1013_TRY_AGAIN_LATER = 1013
 WS_1014_BAD_GATEWAY = 1014
 WS_1015_TLS_HANDSHAKE = 1015
 
+
 def __dir__() -> List[str]:
-    return sorted(list(__all__)  # pragma: no cover
+    return sorted(__all__)  # pragma: no cover
