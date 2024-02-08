@@ -13,9 +13,9 @@ from lilya.routing import Path
 from lilya.testclient import create_client
 
 if sys.version_info <= (3, 9):  # pragma: no cover
-    don_run = True
+    dont_run = True
 else:  # pragma: no cover
-    don_run = False
+    dont_run = False
 
     class PydanticEncoder(Encoder):
 
@@ -65,7 +65,7 @@ def base_model() -> User:
     return User(name="lilya", age=24)
 
 
-@pytest.mark.skipif(don_run, reason="Python 3.8 internals")
+@pytest.mark.skipif(dont_run, reason="Python 3.8 internals")
 def test_pydantic_custom_response():
     with create_client(routes=[Path("/", base_model)]) as client:
         response = client.get("/")
