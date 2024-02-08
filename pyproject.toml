@@ -40,7 +40,6 @@ classifiers = [
 ]
 dependencies = [
     "anyio>=3.4.0,<5",
-    "click>=8.1.7,<9.0.0",
     "dymmond-settings>=1.0.1",
     "multidict>=6.0.4,<7.0.0",
     "typing_extensions>=3.10.0; python_version < '3.10'",
@@ -55,7 +54,16 @@ Funding = "https://github.com/sponsors/tarsil"
 Source = "https://github.com/dymmond/lilya"
 
 [project.optional-dependencies]
-full = ["httpx>=0.22.0", "itsdangerous", "jinja2", "python-multipart", "pyyaml"]
+full = [
+    "click>=8.1.7,<9.0.0",
+    "httpx>=0.22.0",
+    "itsdangerous",
+    "jinja2",
+    "python-multipart",
+    "pyyaml",
+]
+
+cli = ["click>=8.1.7,<9.0.0"]
 
 test = [
     "a2wsgi>=1.10.0,<2.0.0",
