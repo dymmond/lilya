@@ -3,6 +3,7 @@ from __future__ import annotations
 import inspect
 from typing import Any, Awaitable, Callable, Union
 
+from lilya._internal._encoders import json_encoder
 from lilya._internal._exception_handlers import wrap_app_handling_exceptions
 from lilya.compat import is_async_callable
 from lilya.concurrency import run_in_threadpool
@@ -81,10 +82,10 @@ class BaseHandler:
         return app
 
     async def _handle_response_content(
-        self, app: ASGIApp | Any, scope: Scope, receive: Receive, send: Send
+        self, app: ASGIApp, scope: Scope, receive: Receive, send: Send
     ) -> None:
         """
-        Handles the app content, ensuring it is in the form of an ASGI application.
+        Generates the app response, ensuring it is in the form of an ASGI application.
 
         Args:
             app (Union[ASGIApp, Any]): The response content.
@@ -97,6 +98,9 @@ class BaseHandler:
             await app(scope, receive, send)
         else:
             # If response is not an async callable, wrap it in an ASGI application and then await.
+            if app is not None:
+                app = json_encoder(app)
+
             response = Ok(app)
             await response(scope, receive, send)
 

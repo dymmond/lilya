@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, Iterable, Pattern, Set, Tuple, TypeVar, Union, cast
 
-from lilya._internal._path_transformers import CONVERTOR_TYPES, Transformer
+from lilya._internal._path_transformers import TRANSFORMER_TYPES, Transformer
 from lilya.types import Scope
 
 T = TypeVar("T")
@@ -146,8 +146,8 @@ def generate_regex_and_format(
 
 
 def get_convertor(convertor_type: str) -> Transformer[Any]:
-    assert convertor_type in CONVERTOR_TYPES, f"Unknown path convertor '{convertor_type}'"
-    return CONVERTOR_TYPES[convertor_type]
+    assert convertor_type in TRANSFORMER_TYPES, f"Unknown path convertor '{convertor_type}'"
+    return TRANSFORMER_TYPES[convertor_type]
 
 
 def update_paths_and_convertors(
