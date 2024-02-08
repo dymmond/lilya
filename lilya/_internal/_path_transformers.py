@@ -5,7 +5,7 @@ import re
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
-from typing import ClassVar, Dict, Generic, TypeVar
+from typing import Any, ClassVar, Dict, Generic, TypeVar
 
 T = TypeVar("T")
 
@@ -106,7 +106,7 @@ class DatetimeConvertor(Transformer[datetime]):
 
 
 # Available converter types
-CONVERTOR_TYPES: Dict[str, Transformer] = {
+TRANSFORMER_TYPES: Dict[str, Transformer] = {
     "str": StringConvertor(),
     "path": PathConvertor(),
     "int": IntegerConvertor(),
@@ -114,3 +114,11 @@ CONVERTOR_TYPES: Dict[str, Transformer] = {
     "uuid": UUIDConvertor(),
     "datetime": DatetimeConvertor(),
 }
+
+
+def register_path_transformer(key: str, convertor: Transformer[Any]) -> None:
+    """
+    Adds custom transformers to the already known dictionary of path
+    transformers.
+    """
+    TRANSFORMER_TYPES[key] = convertor
