@@ -1,3 +1,4 @@
+import sys
 from collections import deque
 from dataclasses import dataclass
 from typing import Any
@@ -11,12 +12,20 @@ from lilya.encoders import Encoder, register_encoder
 from lilya.routing import Path
 from lilya.testclient import create_client
 
+if sys.version_info <= (3, 9):  # pragma: no cover
+    don_run = True
+else:  # pragma: no cover
+    don_run = False
 
-class PydanticEncoder(Encoder):
-    __type__ = BaseModel
+    class PydanticEncoder(Encoder):
 
-    def serialize(self, obj: BaseModel) -> dict[str, Any]:
-        return obj.model_dump()
+        def is_type(self, value: Any) -> bool:
+            return isinstance(value, BaseModel)
+
+        def serialize(self, obj: BaseModel) -> dict[str, Any]:
+            return obj.model_dump()
+
+    register_encoder(PydanticEncoder())
 
 
 class MsgSpecEncoder(Encoder):
@@ -26,7 +35,6 @@ class MsgSpecEncoder(Encoder):
         return msgspec.json.decode(msgspec.json.encode(obj))
 
 
-register_encoder(PydanticEncoder())
 register_encoder(MsgSpecEncoder())
 
 
@@ -57,6 +65,7 @@ def base_model() -> User:
     return User(name="lilya", age=24)
 
 
+@pytest.mark.skipif(don_run, reason="Python 3.8 internals")
 def test_pydantic_custom_response():
     with create_client(routes=[Path("/", base_model)]) as client:
         response = client.get("/")
