@@ -10,9 +10,9 @@ from lilya import status
 from lilya._internal._events import AsyncLifespan, handle_lifespan_events
 from lilya._internal._path import clean_path, compile_path, get_route_path, replace_params
 from lilya._internal._responses import BaseHandler
+from lilya._internal._urls import include
 from lilya.compat import is_async_callable
 from lilya.conf import settings
-from lilya.core.urls import include
 from lilya.datastructures import URL, Header, URLPath
 from lilya.enums import EventType, HTTPMethod, Match, ScopeType
 from lilya.exceptions import HTTPException, ImproperlyConfigured
