@@ -5,6 +5,7 @@ from typing import Any
 
 import msgspec
 import pytest
+from attrs import asdict, define, has
 from msgspec import Struct
 from pydantic import BaseModel
 
@@ -36,6 +37,18 @@ class MsgSpecEncoder(Encoder):
 
 
 register_encoder(MsgSpecEncoder())
+
+
+class AttrsEncoder(Encoder):
+
+    def is_type(self, value: Any) -> bool:
+        return has(value)
+
+    def serialize(self, obj: Any) -> Any:
+        return asdict(obj)
+
+
+register_encoder(AttrsEncoder())
 
 
 @dataclass
@@ -92,7 +105,7 @@ class Item(Struct):
     age: int
 
 
-def base_struct() -> Item:
+def base_struct():
     return Item(name="lilya", age=24)
 
 
@@ -104,12 +117,42 @@ def test_msgspec_custom_response():
         assert response.json() == {"name": "lilya", "age": 24}
 
 
-def base_struct_list() -> Item:
+def base_struct_list():
     return [Item(name="lilya", age=24)]
 
 
 def test_msgspec_custom_response_list():
     with create_client(routes=[Path("/", base_struct_list)]) as client:
+        response = client.get("/")
+
+        assert response.status_code == 200
+        assert response.json() == [{"name": "lilya", "age": 24}]
+
+
+@define
+class AttrItem:
+    name: str
+    age: int
+
+
+def base_attrs():
+    return AttrItem(name="lilya", age=24)
+
+
+def test_attrs_custom_response():
+    with create_client(routes=[Path("/", base_attrs)]) as client:
+        response = client.get("/")
+
+        assert response.status_code == 200
+        assert response.json() == {"name": "lilya", "age": 24}
+
+
+def base_attrs_list():
+    return [AttrItem(name="lilya", age=24)]
+
+
+def xtest_msgspec_custom_response_list():
+    with create_client(routes=[Path("/", base_attrs_list)]) as client:
         response = client.get("/")
 
         assert response.status_code == 200

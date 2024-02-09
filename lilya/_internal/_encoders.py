@@ -90,9 +90,6 @@ def register_encoder(encoder: Encoder[Any]) -> None:
 
 
 def json_encoder(value: Any) -> Any:
-    """
-    Encodes all the values into json.
-    """
     result: Any = None
 
     for encoder in ENCODER_TYPES:
