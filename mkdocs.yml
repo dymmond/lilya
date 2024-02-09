@@ -8,7 +8,7 @@ theme:
   language: en
   palette:
     - scheme: "default"
-      primary: "purple"
+      primary: "light blue"
       accent: "amber"
       media: "(prefers-color-scheme: light)"
       toggle:
@@ -16,13 +16,13 @@ theme:
         name: "Switch to dark mode"
     - scheme: "slate"
       media: "(prefers-color-scheme: dark)"
-      primary: "purple"
+      primary: "light blue"
       accent: "amber"
       toggle:
         icon: "material/lightbulb-outline"
         name: "Switch to light mode"
   favicon: statics/images/favicon.ico
-  logo: statics/images/logo-white.svg
+  logo: statics/images/white.png
   features:
     - search.suggest
     - search.highlight

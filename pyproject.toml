@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "lilya"
-description = "The ASGI toolkit that delivers"
-long_description = "The ASGI toolkit that delivers"
+description = "Yet another ASGI toolkit that delivers"
+long_description = "Yet another ASGI toolkit that delivers"
 readme = "README.md"
 requires-python = ">=3.8"
 dynamic = ['version']
