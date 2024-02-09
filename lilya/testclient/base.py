@@ -32,6 +32,8 @@ The nature of the test client is exactly the same as the one
 provided by Starlette, therefore, Lilya reuses it.
 """
 
+from __future__ import annotations
+
 import contextlib
 import inspect
 import io
@@ -106,7 +108,7 @@ class _AsyncBackend(typing.TypedDict):
 
 
 class _Upgrade(Exception):
-    def __init__(self, session: "WebSocketTestSession") -> None:
+    def __init__(self, session: WebSocketTestSession) -> None:
         self.session = session
 
 
@@ -137,7 +139,7 @@ class WebSocketTestSession:
         self._send_queue: queue.Queue[Message | BaseException] = queue.Queue()
         self.extra_headers = None
 
-    def __enter__(self) -> "WebSocketTestSession":
+    def __enter__(self) -> WebSocketTestSession:
         self.exit_stack = contextlib.ExitStack()
         self.portal = self.exit_stack.enter_context(self.portal_factory())
 
@@ -799,7 +801,7 @@ class TestClient(httpx.Client):
 
         return session
 
-    def __enter__(self) -> "TestClient":
+    def __enter__(self) -> TestClient:
         with contextlib.ExitStack() as stack:
             self.portal = portal = stack.enter_context(
                 anyio.from_thread.start_blocking_portal(**self.async_backend)
