@@ -31,7 +31,7 @@ class Transformer(Generic[T]):
 
 
 @dataclass
-class StringConvertor(Transformer[str]):
+class StringTransformer(Transformer[str]):
     regex = "[^/]+"
 
     def transform(self, value: str) -> str:
@@ -45,7 +45,7 @@ class StringConvertor(Transformer[str]):
 
 
 @dataclass
-class PathConvertor(Transformer[str]):
+class PathTransformer(Transformer[str]):
     regex = ".*"
 
     def transform(self, value: str) -> str:
@@ -56,7 +56,7 @@ class PathConvertor(Transformer[str]):
 
 
 @dataclass
-class IntegerConvertor(Transformer[int]):
+class IntegerTransformer(Transformer[int]):
     regex = "[0-9]+"
 
     def transform(self, value: str) -> int:
@@ -69,7 +69,7 @@ class IntegerConvertor(Transformer[int]):
 
 
 @dataclass
-class FloatConvertor(Transformer[float]):
+class FloatTransformer(Transformer[float]):
     regex = r"[0-9]+(\.[0-9]+)?"
 
     def transform(self, value: str) -> float:
@@ -84,7 +84,7 @@ class FloatConvertor(Transformer[float]):
 
 
 @dataclass
-class UUIDConvertor(Transformer[uuid.UUID]):
+class UUIDTransformer(Transformer[uuid.UUID]):
     regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
 
     def transform(self, value: str) -> uuid.UUID:
@@ -95,7 +95,7 @@ class UUIDConvertor(Transformer[uuid.UUID]):
 
 
 @dataclass
-class DatetimeConvertor(Transformer[datetime]):
+class DatetimeTransformer(Transformer[datetime]):
     regex = "[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(.[0-9]+)?"
 
     def transform(self, value: str) -> datetime:
@@ -107,12 +107,12 @@ class DatetimeConvertor(Transformer[datetime]):
 
 # Available converter types
 TRANSFORMER_TYPES: Dict[str, Transformer] = {
-    "str": StringConvertor(),
-    "path": PathConvertor(),
-    "int": IntegerConvertor(),
-    "float": FloatConvertor(),
-    "uuid": UUIDConvertor(),
-    "datetime": DatetimeConvertor(),
+    "str": StringTransformer(),
+    "path": PathTransformer(),
+    "int": IntegerTransformer(),
+    "float": FloatTransformer(),
+    "uuid": UUIDTransformer(),
+    "datetime": DatetimeTransformer(),
 }
 
 

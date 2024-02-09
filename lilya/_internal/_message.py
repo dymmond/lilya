@@ -1,6 +1,7 @@
-from typing import NamedTuple
+from dataclasses import dataclass
 
 
-class Address(NamedTuple):
+@dataclass
+class Address:
     host: str
     port: int

@@ -131,7 +131,7 @@ def test_session_cookie_subpath(test_client_factory: TestClientFactory) -> None:
     )
 
     app = Lilya(routes=[Include("/second_app", app=second_app)])
-    client = test_client_factory(app, base_url="http://testserver/second_app")
+    client = test_client_factory(app, base_url="http://testserver")
 
     response = client.post("/second_app/update_session", json={"some": "data"})
     assert response.status_code == 200
