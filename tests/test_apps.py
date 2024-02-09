@@ -164,9 +164,9 @@ def test_mounted_route(client):
 
 
 def test_mounted_route_path_params(client):
-    response = client.get("/users/tomchristie")
+    response = client.get("/users/lilya")
     assert response.status_code == 200
-    assert response.text == "Hello, tomchristie!"
+    assert response.text == "Hello, lilya!"
 
 
 def test_subdomain_route(test_client_factory):

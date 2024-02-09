@@ -143,3 +143,11 @@ class WebSocketState(IntEnum):
     CONNECTING = 0
     CONNECTED = 1
     DISCONNECTED = 2
+
+
+class FormMessage(IntEnum):
+    FIELD_START = 1
+    FIELD_NAME = 2
+    FIELD_DATA = 3
+    FIELD_END = 4
+    END = 5
