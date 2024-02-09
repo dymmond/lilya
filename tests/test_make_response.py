@@ -7,6 +7,7 @@ from msgspec import Struct
 from pydantic import BaseModel
 from tests.conftest import dont_run
 
+from lilya.responses import make_response
 from lilya.routing import Path
 from lilya.testclient import create_client
 
@@ -18,14 +19,15 @@ class ResponseData:
 
 
 def home() -> ResponseData:
-    return ResponseData(name="lilya", age=24)
+    data = ResponseData(name="lilya", age=24)
+    return make_response(data, status_code=201)
 
 
 def test_response_dataclass():
     with create_client(routes=[Path("/", home)]) as client:
         response = client.get("/")
 
-        assert response.status_code == 200
+        assert response.status_code == 201
         assert response.json() == {"name": "lilya", "age": 24}
 
 
@@ -35,24 +37,26 @@ class User(BaseModel):
 
 
 def base_model() -> User:
-    return User(name="lilya", age=24)
+    data = User(name="lilya", age=24)
+    return make_response(data, status_code=208)
 
 
 @pytest.mark.skipif(dont_run, reason="Python 3.8 internals")
-def test_pydantic_custom_response():
+def test_pydantic_custom_make_response():
     with create_client(routes=[Path("/", base_model)]) as client:
         response = client.get("/")
 
-        assert response.status_code == 200
+        assert response.status_code == 208
         assert response.json() == {"name": "lilya", "age": 24}
 
 
 def base_model_list() -> User:
-    return [User(name="lilya", age=24)]
+    data = [User(name="lilya", age=24)]
+    return make_response(data)
 
 
 @pytest.mark.skipif(dont_run, reason="Python 3.8 internals")
-def test_pydantic_custom_response_list():
+def test_pydantic_custom_make_response_list():
     with create_client(routes=[Path("/", base_model_list)]) as client:
         response = client.get("/")
 
@@ -66,26 +70,28 @@ class Item(Struct):
 
 
 def base_struct():
-    return Item(name="lilya", age=24)
+    data = Item(name="lilya", age=24)
+    return make_response(data, status_code=201)
 
 
-def test_msgspec_custom_response():
+def test_msgspec_custom_make_response():
     with create_client(routes=[Path("/", base_struct)]) as client:
         response = client.get("/")
 
-        assert response.status_code == 200
+        assert response.status_code == 201
         assert response.json() == {"name": "lilya", "age": 24}
 
 
 def base_struct_list():
-    return [Item(name="lilya", age=24)]
+    data = [Item(name="lilya", age=24)]
+    return make_response(data, status_code=208)
 
 
-def test_msgspec_custom_response_list():
+def test_msgspec_custom_make_response_list():
     with create_client(routes=[Path("/", base_struct_list)]) as client:
         response = client.get("/")
 
-        assert response.status_code == 200
+        assert response.status_code == 208
         assert response.json() == [{"name": "lilya", "age": 24}]
 
 
@@ -96,10 +102,11 @@ class AttrItem:
 
 
 def base_attrs():
-    return AttrItem(name="lilya", age=24)
+    data = AttrItem(name="lilya", age=24)
+    return make_response(data)
 
 
-def test_attrs_custom_response():
+def test_attrs_custom_make_response():
     with create_client(routes=[Path("/", base_attrs)]) as client:
         response = client.get("/")
 
@@ -108,10 +115,11 @@ def test_attrs_custom_response():
 
 
 def base_attrs_list():
-    return [AttrItem(name="lilya", age=24)]
+    data = [AttrItem(name="lilya", age=24)]
+    return make_response(data)
 
 
-def test_attrs_custom_response_list():
+def test_attrs_custom_make_response_list():
     with create_client(routes=[Path("/", base_attrs_list)]) as client:
         response = client.get("/")
 
@@ -122,23 +130,23 @@ def test_attrs_custom_response_list():
 @pytest.mark.parametrize("value", ["1", 2, 2.2, None], ids=["str", "int", "float", "none"])
 def test_primitive_responses(value):
     def home():
-        return value
+        return make_response(value, status_code=201)
 
     with create_client(routes=[Path("/", home)]) as client:
         response = client.get("/")
 
-        assert response.status_code == 200
+        assert response.status_code == 201
         assert response.json() == value
 
 
 def test_dict_response():
     def home():
-        return {"message": "works"}
+        return make_response({"message": "works"}, status_code=201)
 
     with create_client(routes=[Path("/", home)]) as client:
         response = client.get("/")
 
-        assert response.status_code == 200
+        assert response.status_code == 201
         assert response.json() == {"message": "works"}
 
 
@@ -156,10 +164,10 @@ def test_dict_response():
 def test_structure_responses(value):
 
     def home():
-        return value
+        return make_response(value, status_code=201)
 
     with create_client(routes=[Path("/", home)]) as client:
         response = client.get("/")
 
-        assert response.status_code == 200
+        assert response.status_code == 201
         assert response.json() == [1, 2, 3, 4]

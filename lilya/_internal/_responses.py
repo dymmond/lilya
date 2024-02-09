@@ -86,6 +86,8 @@ class BaseHandler:
     ) -> None:
         """
         Generates the app response, ensuring it is in the form of an ASGI application.
+        When a special type is passed, it tries to convert to a json format and generate
+        the response.
 
         Args:
             app (Union[ASGIApp, Any]): The response content.
