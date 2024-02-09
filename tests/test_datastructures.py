@@ -7,7 +7,6 @@ from pytest_mock import MockerFixture
 
 from lilya.datastructures import (
     URL,
-    CommaSeparatedStr,
     FormData,
     FormMultiDict,
     Header,
@@ -95,30 +94,6 @@ def test_secret():
 
     assert repr(value) == "Secret('***********')"
     assert str(value) == "a-value-being-passed"
-
-
-def test_comma_separated():
-    csv = CommaSeparatedStr('"localhost", "127.0.0.1", 0.0.0.0')
-    assert list(csv) == ["localhost", "127.0.0.1", "0.0.0.0"]
-    assert repr(csv) == "CommaSeparatedStr(['localhost', '127.0.0.1', '0.0.0.0'])"
-    assert str(csv) == "'localhost', '127.0.0.1', '0.0.0.0'"
-    assert csv[0] == "localhost"
-    assert len(csv) == 3
-
-    csv = CommaSeparatedStr("'localhost', '127.0.0.1', 0.0.0.0")
-    assert list(csv) == ["localhost", "127.0.0.1", "0.0.0.0"]
-    assert repr(csv) == "CommaSeparatedStr(['localhost', '127.0.0.1', '0.0.0.0'])"
-    assert str(csv) == "'localhost', '127.0.0.1', '0.0.0.0'"
-
-    csv = CommaSeparatedStr("localhost, 127.0.0.1, 0.0.0.0")
-    assert list(csv) == ["localhost", "127.0.0.1", "0.0.0.0"]
-    assert repr(csv) == "CommaSeparatedStr(['localhost', '127.0.0.1', '0.0.0.0'])"
-    assert str(csv) == "'localhost', '127.0.0.1', '0.0.0.0'"
-
-    csv = CommaSeparatedStr(["localhost", "127.0.0.1", "0.0.0.0"])
-    assert list(csv) == ["localhost", "127.0.0.1", "0.0.0.0"]
-    assert repr(csv) == "CommaSeparatedStr(['localhost', '127.0.0.1', '0.0.0.0'])"
-    assert str(csv) == "'localhost', '127.0.0.1', '0.0.0.0'"
 
 
 def test_multidict():

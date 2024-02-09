@@ -5,7 +5,6 @@ from copy import copy
 from dataclasses import asdict, dataclass
 from functools import lru_cache
 from http.cookies import SimpleCookie
-from shlex import shlex
 from typing import (
     Any,
     BinaryIO,
@@ -13,7 +12,6 @@ from typing import (
     Generator,
     Generic,
     Iterable,
-    Iterator,
     List,
     Literal,
     Mapping,
@@ -600,55 +598,6 @@ class URLPath(str):
         netloc = self.host or base_url.netloc
         path = base_url.path.rstrip("/") + str(self)
         return URL(scheme=scheme, netloc=netloc, path=path)
-
-
-class CommaSeparatedStr:
-    value: Union[str, Sequence[str]]
-
-    def __new__(cls, value: Union[str, Sequence[str]]) -> CommaSeparatedStr:
-        instance = cls.__create__(value=value)
-        return instance
-
-    @classmethod
-    def __create__(
-        cls,
-        value: Union[str, Sequence[str]],
-        whitespace: str = ",",
-        whitespace_split: bool = True,
-    ) -> CommaSeparatedStr:
-        instance: CommaSeparatedStr = super().__new__(cls)
-        if not isinstance(value, str):
-            instance.items = list(value)
-            return instance
-        split = shlex(value, posix=True)
-        split.whitespace = whitespace
-        split.whitespace_split = whitespace_split
-        instance.items = [item.strip() for item in split]
-        return instance
-
-    @property
-    def items(self) -> List[str]:
-        return getattr(self, "_items", [])
-
-    @items.setter
-    def items(self, value: Union[str, Sequence[str]]) -> None:
-        self._items = value
-
-    def __len__(self) -> int:
-        return len(self.items)
-
-    def __getitem__(self, index: Union[int, slice]) -> Any:
-        return self.items[index]
-
-    def __iter__(self) -> Iterator[str]:
-        return iter(self.items)
-
-    def __str__(self) -> str:
-        return ", ".join(repr(item) for item in self)
-
-    def __repr__(self) -> str:
-        items = list(self)
-        return f"{self.__class__.__name__}({items!r})"
 
 
 @dataclass
