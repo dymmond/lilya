@@ -27,6 +27,7 @@ from urllib.parse import quote
 import anyio
 
 from lilya import status
+from lilya._internal._encoders import json_encoder
 from lilya._internal._helpers import HeaderHelper
 from lilya.background import Task
 from lilya.compat import md5_hexdigest
@@ -446,15 +447,19 @@ class TemplateResponse(HTMLResponse):
 
 def make_response(
     content: Any,
+    response_class: type[Response] = JSONResponse,
     status_code: int = status.HTTP_200_OK,
     headers: Union[Mapping[str, str], None] = None,
     background: Union[Task, None] = None,
-) -> JSONResponse:
+) -> Response:
     """
-    Helper for building JSON responses.
+    Build JSON responses from a given content and
+    providing extra parameters.
     """
-    return JSONResponse(
-        content=content,
+    app = json_encoder(content) if content is not None else None
+
+    return response_class(
+        content=app,
         status_code=status_code,
         headers=headers,
         media_type=MediaType.JSON,

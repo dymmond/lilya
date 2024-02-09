@@ -1,6 +1,6 @@
 import pytest
 
-from lilya.core.urls import include
+from lilya._internal._urls import include
 from lilya.exceptions import ImproperlyConfigured
 from lilya.routing import Path
 
