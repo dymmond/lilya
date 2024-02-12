@@ -1,8 +1,3 @@
----
-hide:
-  - navigation
----
-
 # Lilya
 
 <p align="center">
