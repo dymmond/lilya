@@ -186,8 +186,11 @@ class Path(BaseHandler, BasePath):
         else:
             self.app = handler
 
-        self._apply_middleware(middleware)
-        self._apply_permissions(permissions)
+        self.middleware = middleware
+        self.permissions = permissions
+
+        self._apply_middleware(self.middleware)
+        self._apply_permissions(self.permissions)
 
         if self.methods is not None:
             self.methods = [method.upper() for method in self.methods]
@@ -402,8 +405,11 @@ class WebSocketPath(BaseHandler, BasePath):
         else:
             self.app = handler
 
-        self._apply_middleware(middleware)
-        self._apply_permissions(permissions)
+        self.middleware = middleware
+        self.permissions = permissions
+
+        self._apply_middleware(self.middleware)
+        self._apply_permissions(self.permissions)
 
         self.path_regex, self.path_format, self.param_convertors, self.path_start = compile_path(
             self.path

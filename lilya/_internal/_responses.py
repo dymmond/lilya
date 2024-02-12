@@ -1,17 +1,21 @@
 from __future__ import annotations
 
 import inspect
-from typing import Any, Awaitable, Callable, Union
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Union, cast
 
 from lilya._internal._encoders import json_encoder
 from lilya._internal._exception_handlers import wrap_app_handling_exceptions
 from lilya.compat import is_async_callable
 from lilya.concurrency import run_in_threadpool
+from lilya.context import Context
 from lilya.enums import SignatureDefault
 from lilya.requests import Request
 from lilya.responses import Ok, Response
 from lilya.types import ASGIApp, Receive, Scope, Send
 from lilya.websockets import WebSocket
+
+if TYPE_CHECKING:
+    from lilya.routing import BasePath
 
 
 class BaseHandler:
@@ -64,9 +68,10 @@ class BaseHandler:
                 """
 
                 signature: inspect.Signature = self.signature
-                func_params: dict[str, Any] = self._extract_params_from_request(
-                    request=request, signature=signature
-                )
+                func_params: dict[str, Any] = {
+                    **self._extract_params_from_request(request=request, signature=signature),
+                    **self._extract_context(request=request, signature=signature),
+                }
                 if signature.parameters:
                     if SignatureDefault.REQUEST in signature.parameters:
                         response = await self._execute_function(func, request, **func_params)
@@ -124,6 +129,25 @@ class BaseHandler:
             for param, value in request.path_params.items()
             if param in signature.parameters
         }
+
+    def _extract_context(self, request: Request, signature: inspect.Signature) -> dict[str, Any]:
+        """
+        Extracts the context from the signature and injects them into the function if needed.
+
+        Args:
+            request (Request): The incoming request.
+            signature (inspect.Signature): The signature of the target function.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing parameters extracted from the signature.
+        """
+        params: dict[str, Any] = {}
+        for param, _ in signature.parameters.items():
+            if param in ("context",):
+                value = Context(__handler__=cast("BasePath", self), __request__=request)
+                params[param] = value
+                break
+        return params
 
     def handle_websocket_session(self, func: Callable[[WebSocket], Awaitable[None]]) -> ASGIApp:
         """
