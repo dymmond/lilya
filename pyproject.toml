@@ -165,7 +165,7 @@ source = ["tests", "lilya"]
 # omit = []
 
 [[tool.mypy.overrides]]
-module = ["multipart.*", "mako.*", "nest_asyncio.*"]
+module = ["multipart.*", "mako.*", "nest_asyncio.*", "uvicorn.*"]
 ignore_missing_imports = true
 ignore_errors = true
 
