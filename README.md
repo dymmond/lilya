@@ -1,3 +1,8 @@
+---
+hide:
+  - navigation
+---
+
 # Lilya
 
 <p align="center">
@@ -45,3 +50,20 @@ production ready, fast, elegant, maintainable and modular applications.
 This is where Lilya places itself.
 
 Almost no hard dependencies, 100% pythonic and ready for production.
+
+## What does it bring?
+
+Lilya comes bearing fruits.
+
+* A lightweight ASGI toolkit/framework.
+* Support for HTTP/WebSocket.
+* Tasks (in ASGI known as background tasks).
+* Lifespan events (on_startup/on_shutdown and lifespan).
+* Native permission system.
+* Middlewares (Compressor, CSRF, Session, CORS...).
+* A native and **optional** cli.
+* `Directive management control system` for any custom scripts to run inside the application.
+* Very little hard dependencies.
+* Compatibility with `trio` and `asyncio`.
+* Dynamic routing system with the help of the native **Include** and minimum boilerplate.
+* Native setting system. No more bloated instances.

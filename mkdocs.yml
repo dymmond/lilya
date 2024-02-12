@@ -28,6 +28,12 @@ theme:
     - search.highlight
     - content.tabs.link
     - content.code.copy
+    - content.code.annotate
+    - content.tooltips
+    - content.code.select
+    - navigation.indexes
+    - navigation.path
+    - navigation.tabs
 
 repo_name: dymmond/lilya
 repo_url: https://github.com/dymmond/lilya
@@ -43,9 +49,58 @@ plugins:
       trim: false
   - markdownextradata:
       data: data
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            extensions:
+              - griffe_typingdoc
+            show_root_heading: true
+            show_if_no_docstring: true
+            preload_modules: [httpx, starlette, a2wsgi]
+            inherited_members: true
+            members_order: source
+            separate_signature: true
+            unwrap_annotated: true
+            filters: ["!^_"]
+            merge_init_into_class: true
+            docstring_section_style: spacy
+            signature_crossrefs: true
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
 
 nav:
   - Introduction: "index.md"
+  - Lilya:
+      - Applications: "applications.md"
+      - Requests: "requests.md"
+      - Context: "context.md"
+      - Responses: "context.md"
+      - WebSockets: "websockets.md"
+      - Controllers: "controllers.md"
+      - Routing: "routing.md"
+      - Settings: "settings.md"
+  - Features:
+      - Tasks: "tasks.md"
+      - Lifespan: "lifespan.md"
+      - Middleware: "middleware.md"
+      - Permissions: "permissions.md"
+      - Static Files: "static-files.md"
+      - Templates: "templates.md"
+      - Integrations: "integrations.md"
+      - Server Push: "server-push.md"
+      - Exceptions & Exception Handlers: "exceptions.md"
+      - WSGI Frameworks: "wsgi.md"
+  - Clients:
+      - Lilya Client:
+          - Directives: "directives/directives.md"
+          - Application Discovery: "directives/discovery.md"
+          - Custom Directives: "directives/custom-directives.md"
+          - Shell: "directives/shell.md"
+      - Test Client: "test-client.md"
+  - Deployment:
+      - Intro: "deployment/intro.md"
+      - Using docker: "deployment/docker.md"
   - Contributing: "contributing.md"
   - Sponsorship: "sponsorship.md"
   - Release Notes: "release-notes.md"

@@ -17,7 +17,7 @@ clean_pycache: ## Removes the __pycaches__
 
 .PHONY: run
 run: ## Starts the local server with production settings
-	python .{{ project_name }}/app.py
+	python ./{{ project_name }}/app.py
 
 .PHONY: requirements
 requirements: ## Installs the development requirements
