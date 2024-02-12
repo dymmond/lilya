@@ -117,10 +117,10 @@ class Context:
 
         ```python
         from typing import Any
-        from lilya import Esmerald, Context, get
+        from lilya.context import Context
 
         async def get_data(context: Context) -> Any:
-            context.update{"name": "Esmerald"}
+            context.update{"name": "Lilya"}
             return context.get_context_data()
         ```
         """
@@ -153,7 +153,7 @@ class Context:
                 **Example**
 
                 ```python
-                from lilya import Esmerald, Gateway
+                from lilya import Lilya, Gateway
 
                 Gateway(handler=..., name="view-users")
                 ```

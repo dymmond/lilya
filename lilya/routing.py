@@ -8,7 +8,13 @@ from typing import Any, Awaitable, Callable, Dict, List, Sequence, Tuple, TypeVa
 
 from lilya import status
 from lilya._internal._events import AsyncLifespan, handle_lifespan_events
-from lilya._internal._path import clean_path, compile_path, get_route_path, replace_params
+from lilya._internal._path import (
+    clean_path,
+    compile_path,
+    get_route_path,
+    parse_path,
+    replace_params,
+)
 from lilya._internal._responses import BaseHandler
 from lilya._internal._urls import include
 from lilya.compat import is_async_callable
@@ -125,6 +131,17 @@ class BasePath:
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         await self.dispatch(scope=scope, receive=receive, send=send)
+
+    @property
+    def stringify_parameters(self) -> List[str]:  # pragma: no cover
+        """
+        Gets the param:type in string like list.
+        Used for the directive `lilya show_urls`.
+        """
+        path_components = parse_path(self.path)
+        parameters = [component for component in path_components if isinstance(component, tuple)]
+        stringified_parameters = [f"{param.name}:{param.type}" for param in parameters]
+        return stringified_parameters
 
 
 class Path(BaseHandler, BasePath):
