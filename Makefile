@@ -33,7 +33,7 @@ test: ## Runs the tests
 
 .PHONY: requirements
 requirements: ## Install requirements for development
-	pip install -e .[full,dev,test,doc]
+	pip install -e .[full,dev,test,doc,cli,ipython,ptpython]
 
 ifndef VERBOSE
 .SILENT:

@@ -115,10 +115,13 @@ TRANSFORMER_TYPES: Dict[str, Transformer] = {
     "datetime": DatetimeTransformer(),
 }
 
+TRANSFORMER_PYTHON_TYPES = {v.__class__.__name__: k for k, v in TRANSFORMER_TYPES.items()}
 
-def register_path_transformer(key: str, convertor: Transformer[Any]) -> None:
+
+def register_path_transformer(key: str, transformer: Transformer[Any]) -> None:
     """
     Adds custom transformers to the already known dictionary of path
     transformers.
     """
-    TRANSFORMER_TYPES[key] = convertor
+    TRANSFORMER_TYPES[key] = transformer
+    TRANSFORMER_PYTHON_TYPES[transformer.__class__.__name__] = key

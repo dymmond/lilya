@@ -402,7 +402,7 @@ class ChildLilya(Lilya):
 
     !!! Tip
         All the parameters available in the object have defaults being loaded by the
-        [settings system](https://esmerald.dev/application/settings/) if nothing is provided.
+        [settings system](https://lilya.dev/application/settings/) if nothing is provided.
 
     ## Example
 

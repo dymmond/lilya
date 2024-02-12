@@ -24,9 +24,6 @@ StatelessLifespan = Callable[[ApplicationType], AsyncContextManager[None]]
 StatefulLifespan = Callable[[ApplicationType], AsyncContextManager[Mapping[str, Any]]]
 Lifespan = Union[StatelessLifespan[ApplicationType], StatefulLifespan[ApplicationType]]
 
-# HTTPExceptionHandler = Callable[["Request", Exception], Union["Response", Awaitable["Response"]]]
-# WebSocketExceptionHandler = Callable[["WebSocket", Exception], Awaitable[None]]
-# ExceptionHandler = Union[HTTPExceptionHandler, WebSocketExceptionHandler]
 LifespanEvent = Sequence[Callable[[], Any]]
 
 HTTPExceptionHandler = Callable[[Any, Exception], Union[Any, Awaitable[Any]]]

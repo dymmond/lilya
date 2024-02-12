@@ -1,14 +1,21 @@
 from __future__ import annotations
 
 import re
+from collections import namedtuple
 from typing import Any, Dict, Iterable, Pattern, Set, Tuple, TypeVar, Union, cast
 
-from lilya._internal._path_transformers import TRANSFORMER_TYPES, Transformer
+from lilya._internal._path_transformers import (
+    TRANSFORMER_PYTHON_TYPES,
+    TRANSFORMER_TYPES,
+    Transformer,
+)
 from lilya.types import Scope
 
 T = TypeVar("T")
 
 PATH_REGEX = re.compile("{([a-zA-Z_][a-zA-Z0-9_]*)(:[a-zA-Z_][a-zA-Z0-9_]*)?}")
+
+PathParameter = namedtuple("PathParameter", ["name", "type"])
 
 
 def clean_path(path: str) -> str:
@@ -111,7 +118,7 @@ def generate_regex_and_format(
         param_name, convertor_type = match.groups("str")
         convertor_type = convertor_type.lstrip(":")
 
-        convertor = get_convertor(convertor_type)
+        convertor = get_transformer(convertor_type)
         (
             path_regex,
             path_format,
@@ -145,9 +152,9 @@ def generate_regex_and_format(
     return path_regex, path_format, param_convertors, path_start
 
 
-def get_convertor(convertor_type: str) -> Transformer[Any]:
-    assert convertor_type in TRANSFORMER_TYPES, f"Unknown path convertor '{convertor_type}'"
-    return TRANSFORMER_TYPES[convertor_type]
+def get_transformer(transformer_type: str) -> Transformer[Any]:
+    assert transformer_type in TRANSFORMER_TYPES, f"Unknown path transformer '{transformer_type}'"
+    return TRANSFORMER_TYPES[transformer_type]
 
 
 def update_paths_and_convertors(
@@ -193,3 +200,18 @@ def raise_for_duplicate_params(path: str, duplicate_params: Union[Set[str], None
 
 def extract_hostname(path: str, index: int) -> str:
     return path[index:].split(":")[0]
+
+
+def parse_path(path: str) -> list[str | Any]:
+    """
+    Using the TRANSFORMERS and the application registered convertors,
+    transforms the path into definition.
+    """
+    _, path, variables, _ = compile_path(path)
+
+    parsed_components: list[str | Any] = []
+
+    for name, transformer in variables.items():
+        _type = TRANSFORMER_PYTHON_TYPES[transformer.__class__.__name__]
+        parsed_components.append(PathParameter(name=name, type=_type))
+    return parsed_components
