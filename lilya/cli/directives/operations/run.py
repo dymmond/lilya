@@ -4,7 +4,6 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
 import click
-from starlette.types import Lifespan
 
 from lilya._internal._events import generate_lifespan_events
 from lilya.cli.constants import APP_PARAMETER, LILYA_DISCOVER_APP
@@ -12,6 +11,7 @@ from lilya.cli.env import DirectiveEnv
 from lilya.cli.terminal.print import Print
 from lilya.cli.utils import fetch_directive
 from lilya.compat import run_sync
+from lilya.types import Lifespan
 
 if TYPE_CHECKING:
     from lilya.app import ChildLilya, Lilya

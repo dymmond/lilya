@@ -1,5 +1,5 @@
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 import click
 
@@ -110,6 +110,6 @@ def runserver(
         port=port,
         host=host,
         reload=reload,
-        lifespan=lifespan,  # type: ignore
+        lifespan=cast(Any, lifespan),
         log_level=log_level,
     )

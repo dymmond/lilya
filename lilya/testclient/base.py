@@ -374,8 +374,8 @@ class _TestClientTransport(httpx.BaseTransport):
                 body_bytes: bytes = body.encode("utf-8")  # type: ignore
             elif body is None:
                 body_bytes = b""  # pragma: no cover
-            elif isinstance(body, GeneratorType):
-                try:  # pragma: no cover
+            elif isinstance(body, GeneratorType):  # type: ignore
+                try:  # type: ignore
                     chunk = body.send(None)
                     if isinstance(chunk, str):
                         chunk = chunk.encode("utf-8")
