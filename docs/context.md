@@ -32,10 +32,11 @@ directly as the request is already available inside but you can still pass both 
 **Example**
 
 ```python
-from esmerald import Context, Lilya, Gateway, get
+from lilya.app import Lilya
+from lilya.context import Context
+from lilya.routing import Path
 
 
-@get("/users/{id}")
 def read_context(context: Context, id: str):
     host = context.request.client.host
 
@@ -51,12 +52,171 @@ def read_context(context: Context, id: str):
 
 app = Lilya(
     routes=[
-        Gateway(handler=read_request)
+        Path("/users/{id}", read_request)
     ]
 )
 ```
 
-The `context` can be particularly useful if you want to access `handler` information that is not
-available after the handler is instantiated, for example and can be very useful if you also want
-to access the `context.settings` where the application settings are available, another versatile way
-of accessing them.
+The `context` becomes especially valuable when you need to retrieve `handler` information that is
+unavailable after the handler's instantiation. For instance, it proves useful when accessing
+`context.settings` to retrieve application settings, offering a versatile approach to accessing them.
+
+## Attributes
+
+### Handler
+
+The function handler that is responsible for the request.
+
+```python
+from lilya.context import Context
+from lilya.responses import Response
+
+
+def home(context: Context):
+    handler = context.handler
+
+    return Response("Ok")
+```
+
+### Request
+
+The request being used for the scope of the handler.
+
+```python
+from lilya.context import Context
+from lilya.responses import Response
+
+
+def home(context: Context):
+    request = context.request
+
+    return Response("Ok")
+```
+
+### User
+
+The user allocated in the request.
+
+```python
+from lilya.context import Context
+from lilya.responses import Response
+
+
+def home(context: Context):
+    user = context.user
+
+    return Response("Ok")
+```
+
+### User
+
+The user allocated to the request.
+
+```python
+from lilya.context import Context
+from lilya.responses import Response
+
+
+def home(context: Context):
+    user = context.user
+
+    return Response("Ok")
+```
+
+### Settings
+
+The [settings](./settings.md) being used by the Lilya application.
+
+This can be the global settings or if a `settings_module` was provided, returns that
+same settings.
+
+```python
+from lilya.context import Context
+from lilya.responses import Response
+
+
+def home(context: Context):
+    settings = context.settings
+
+    return Response("Ok")
+```
+
+### Scope
+
+The scope of the application handler.
+
+```python
+from lilya.context import Context
+from lilya.responses import Response
+
+
+def home(context: Context):
+    scope = context.scope
+
+    return Response("Ok")
+```
+
+### Application
+
+The Lilya application.
+
+```python
+from lilya.context import Context
+from lilya.responses import Response
+
+
+def home(context: Context):
+    app = context.app
+
+    return Response("Ok")
+```
+
+## Methods
+
+The `context` provides also different functions to manipulate the object.
+
+### get_context_data
+
+The context of the application. This can be particularly useful when
+working with templates.
+
+```python
+from lilya.context import Context
+from lilya.responses import Response
+
+
+def home(context: Context):
+    context = context.get_context_data()
+
+    return Response("Ok")
+```
+
+### add_to_context
+
+Adding values into the current context.
+
+```python
+from lilya.context import Context
+from lilya.responses import Response
+
+
+def home(context: Context):
+    context.add_to_context("call", "ok")
+
+    return Response("Ok")
+```
+
+### path_for
+
+Retrives the path of a specific handler.
+
+```python
+from lilya.context import Context
+from lilya.responses import Response
+
+
+def home(context: Context):
+    url = context.path_for("/home")
+
+    return Response(url)
+```

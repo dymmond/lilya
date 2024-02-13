@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 class BaseHandler:
     """
-    Utils class that
+    Utils to manage the responses of the handlers.
     """
 
     def handle_response(
