@@ -16,24 +16,9 @@ Currently Lilya supports **on_startup**, **on_shutdown** and **lifespan**.
 
 ### Lilya on_startup and on_shutdown
 
-Since the annoucement of Starlette that `on_startup` and `on_shutdown` would be removed after the
-the release 1.0 in favour of `lifespan`, Lilya decided to follow through since it is 100%
-compatible with it.
-
-Despite the deprecation of those fields, Lilya has an underlying implementation that
-**will allow** the `on_startup` and `on_shutdown` to still exist even after this deprecation from
-Starlette.
-
-**Does this mean that Lilya will have to maintain its own events?** No, despite allowing
-`on_startup` and `on_shutdown` to exist in the same way it does now, the underlying implementation
-changed.
-
 If you pass an `on_startup` and an `on_shutdown` parameters intead of the `lifespan`, Lilya
 will **automatically generate the async context manager** for you and pass it to the `lifespan`
 internally for you.
-
-This way Lilya assures 100% compatibility with Starlette and still maintains the same
-"look and feel" as before.
 
 **You can use on_startup/on_shutdown and lifespan but not both at the same time**.
 

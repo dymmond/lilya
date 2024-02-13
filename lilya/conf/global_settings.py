@@ -24,8 +24,6 @@ class Settings(BaseSettings):
             Boolean indicating if the application should return the debug tracebacks on
             server errors, in other words, if you want to have debug errors being displayed.
 
-            Read more about this in the official [Starlette documentation](https://www.lilya.dev/applications/#instantiating-the-application).
-
             !!! Tip
                 Do not use this in production as `True`.
             """

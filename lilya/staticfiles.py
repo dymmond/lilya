@@ -38,10 +38,6 @@ class StaticResponse(Response):
 
 
 class StaticFiles:
-    """
-    Starlette ASGI middleware for serving static files.
-    """
-
     def __init__(
         self,
         *,
