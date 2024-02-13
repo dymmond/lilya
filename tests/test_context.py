@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from lilya.context import Context
+from lilya.requests import Request
 from lilya.routing import Path
 from lilya.testclient import create_client
 
@@ -49,3 +50,41 @@ def test_add_to_context(test_client_factory):
         response = client.get("/")
 
         assert response.json()["call"] == "ok"
+
+
+async def context_with_request(
+    context: Context,
+    request: Request,
+):
+    data = {
+        "is_request": isinstance(request, Request),
+        "is_context": isinstance(context, Context),
+    }
+    return data
+
+
+def test_context_and_request(test_client_factory):
+    with create_client(routes=[Path(path="/", handler=context_with_request)]) as client:
+        response = client.get("/")
+
+        assert response.json()["is_request"] is True
+        assert response.json()["is_context"] is True
+
+
+async def request_with_context(
+    request: Request,
+    context: Context,
+):
+    data = {
+        "is_request": isinstance(request, Request),
+        "is_context": isinstance(context, Context),
+    }
+    return data
+
+
+def test_request_and_context(test_client_factory):
+    with create_client(routes=[Path(path="/", handler=request_with_context)]) as client:
+        response = client.get("/")
+
+        assert response.json()["is_request"] is True
+        assert response.json()["is_context"] is True

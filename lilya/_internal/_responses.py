@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 class BaseHandler:
     """
-    Utils class that
+    Utils to manage the responses of the handlers.
     """
 
     def handle_response(
@@ -74,7 +74,8 @@ class BaseHandler:
                 }
                 if signature.parameters:
                     if SignatureDefault.REQUEST in signature.parameters:
-                        response = await self._execute_function(func, request, **func_params)
+                        func_params.update({"request": request})
+                        response = await self._execute_function(func, **func_params)
                     else:
                         response = await self._execute_function(func, **func_params)
                 else:

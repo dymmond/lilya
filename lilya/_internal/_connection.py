@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any, Dict, Iterator, Mapping, NoReturn, Union, cast
 
 from lilya._internal._message import Address
@@ -52,12 +54,12 @@ class Connection(Mapping[str, Any]):
     def __init__(self, scope: Scope, receive: Union[Receive, None] = None) -> None:
         assert scope["type"] in (ScopeType.HTTP, ScopeType.WEBSOCKET)
         self.scope = scope
-        self._url: Union[URL, None] = None
-        self._base_url: Union[URL, None] = None
-        self._headers: Union[Header, None] = None
-        self._state: Union[State, None] = None
-        self._query_params: Union[QueryParam, None] = None
-        self._cookies: Union[Dict[str, str], None] = None
+        self._url: URL | None = None
+        self._base_url: URL | None = None
+        self._headers: Header | None = None
+        self._state: State | None = None
+        self._query_params: QueryParam | None = None
+        self._cookies: dict[str, str] | None = None
 
     def __getitem__(self, __key: str) -> Any:
         return self.scope[__key]
@@ -117,12 +119,12 @@ class Connection(Mapping[str, Any]):
         return self._query_params
 
     @property
-    def path_params(self) -> Dict[str, Any]:
+    def path_params(self) -> dict[str, Any]:
         return self.scope.get("path_params", {})
 
     @property
-    def cookies(self) -> Dict[str, str]:
-        cookies: Dict[str, str] = {}
+    def cookies(self) -> dict[str, str]:
+        cookies: dict[str, str] = {}
         if self._cookies is None:
             cookie_header = self.headers.get("cookie", None)
             if cookie_header:
@@ -158,7 +160,7 @@ class Connection(Mapping[str, Any]):
         return self.scope["user"]
 
     @property
-    def session(self) -> Dict[str, Any]:
+    def session(self) -> dict[str, Any]:
         if "session" not in self.scope:
             raise ImproperlyConfigured(
                 "SessionMiddleware must be installed to access request.session"
@@ -186,6 +188,6 @@ class Connection(Mapping[str, Any]):
         self.scope["session"] = None
 
     def path_for(self, name: str, /, **path_params: Any) -> URL:
-        router: "Router" = self.scope["router"]
+        router: Router = self.scope["router"]
         url_path = router.path_for(name, **path_params)
         return url_path.make_absolute_url(base_url=self.base_url)

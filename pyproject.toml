@@ -54,13 +54,17 @@ Funding = "https://github.com/sponsors/tarsil"
 Source = "https://github.com/dymmond/lilya"
 
 [project.optional-dependencies]
-full = [
+all = [
     "click>=8.1.7,<9.0.0",
     "httpx>=0.22.0",
     "itsdangerous",
+    "ipython",
     "jinja2",
     "python-multipart",
     "pyyaml",
+    "nest_asyncio",
+    "ptpython",
+    "rich>=13.7.0,<15.0.0",
 ]
 
 cli = [
