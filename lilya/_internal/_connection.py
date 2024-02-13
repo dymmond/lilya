@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Iterator, Mapping, NoReturn, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, Iterator, Mapping, NoReturn, Union, cast
 
 from lilya._internal._message import Address
 from lilya._internal._parsers import cookie_parser
@@ -165,7 +165,7 @@ class Connection(Mapping[str, Any]):
             raise ImproperlyConfigured(
                 "SessionMiddleware must be installed to access request.session"
             )
-        return cast(dict[str, Any], self.scope["session"])
+        return cast(Dict[str, Any], self.scope["session"])
 
     @property
     def is_server_push(self) -> bool:
