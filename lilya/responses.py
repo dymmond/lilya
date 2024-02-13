@@ -222,8 +222,7 @@ class HTMLResponse(Response):
     media_type = MediaType.HTML
 
 
-class Error(Response):
-    media_type = MediaType.HTML
+class Error(HTMLResponse):
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
 
 
