@@ -7,7 +7,7 @@ import pytest
 
 from lilya._internal._parsers import MultiPartException, _user_safe_decode
 from lilya.app import Lilya
-from lilya.datastructures import UploadFile
+from lilya.datastructures import DataUpload
 from lilya.requests import Request
 from lilya.responses import JSONResponse
 from lilya.routing import Include
@@ -31,7 +31,7 @@ async def app(scope: Scope, receive: Receive, send: Send) -> None:
     data = await request.form()
     output: typing.Dict[str, typing.Any] = {}
     for key, value in data.items():
-        if isinstance(value, UploadFile):
+        if isinstance(value, DataUpload):
             content = await value.read()
             output[key] = {
                 "filename": value.filename,
@@ -53,7 +53,7 @@ async def multi_items_app(scope: Scope, receive: Receive, send: Send) -> None:
     for key, value in data.multi_items():
         if key not in output:
             output[key] = []
-        if isinstance(value, UploadFile):
+        if isinstance(value, DataUpload):
             content = await value.read()
             output[key].append(
                 {
@@ -75,7 +75,7 @@ async def app_with_headers(scope: Scope, receive: Receive, send: Send) -> None:
     data = await request.form()
     output: typing.Dict[str, typing.Any] = {}
     for key, value in data.items():
-        if isinstance(value, UploadFile):
+        if isinstance(value, DataUpload):
             content = await value.read()
             output[key] = {
                 "filename": value.filename,
@@ -110,7 +110,7 @@ def make_app_max_parts(max_files: int = 1000, max_fields: int = 1000) -> ASGIApp
         data = await request.form(max_files=max_files, max_fields=max_fields)
         output: typing.Dict[str, typing.Any] = {}
         for key, value in data.items():
-            if isinstance(value, UploadFile):
+            if isinstance(value, DataUpload):
                 content = await value.read()
                 output[key] = {
                     "filename": value.filename,

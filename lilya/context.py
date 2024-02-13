@@ -88,6 +88,10 @@ class Context:
     def scope(self) -> Scope:
         return self.request.scope
 
+    @property
+    def app(self) -> Any:
+        return self.scope["app"]
+
     def add_to_context(
         self,
         key: Annotated[

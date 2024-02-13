@@ -18,7 +18,7 @@ from typing import (
 )
 from urllib.parse import unquote, unquote_plus
 
-from lilya.datastructures import FormData, Header, UploadFile
+from lilya.datastructures import DataUpload, FormData, Header
 from lilya.enums import FormMessage
 
 try:
@@ -55,7 +55,7 @@ class MultipartPart:
     content_disposition: Optional[bytes] = None
     field_name: str = ""
     data: bytes = b""
-    file: Optional[UploadFile] = None
+    file: Optional[DataUpload] = None
     item_headers: List[Tuple[bytes, bytes]] = field(default_factory=list)
 
 
@@ -165,7 +165,7 @@ class FormParser:
         parser = multipart.QuerystringParser(callbacks)
         field_name = b""
         field_value = b""
-        items: List[Tuple[str, Union[str, UploadFile]]] = []
+        items: List[Tuple[str, Union[str, DataUpload]]] = []
 
         async def process_messages(messages: List[Tuple[FormMessage, bytes]]) -> None:
             nonlocal field_name, field_value
@@ -239,7 +239,7 @@ class MultiPartParser:
         self.stream = stream
         self.max_files = max_files
         self.max_fields = max_fields
-        self.items: List[Tuple[str, Union[str, UploadFile]]] = []
+        self.items: List[Tuple[str, Union[str, DataUpload]]] = []
         self._current_files = 0
         self._current_fields = 0
         self._current_partial_header_name: bytes = b""
@@ -391,18 +391,18 @@ class MultiPartParser:
 
     def _create_upload_file(
         self, filename: str, tempfile: SpooledTemporaryFile[bytes]
-    ) -> UploadFile:
+    ) -> DataUpload:
         """
-        Create an UploadFile instance for a file part.
+        Create an DataUpload instance for a file part.
 
         Args:
             filename (str): Name of the file.
             tempfile (SpooledTemporaryFile[bytes]): Temporary file.
 
         Returns:
-            UploadFile: Created UploadFile instance.
+            DataUpload: Created DataUpload instance.
         """
-        return UploadFile(
+        return DataUpload(
             file=cast(BinaryIO, tempfile),
             size=0,
             filename=filename,
@@ -509,7 +509,7 @@ class MultiPartParser:
 
     async def _write_file_data(self) -> None:
         """
-        Write file data asynchronously using UploadFile methods.
+        Write file data asynchronously using DataUpload methods.
         """
         for part, data in self._file_parts_to_write:
             assert part.file

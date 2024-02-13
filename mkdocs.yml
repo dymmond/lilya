@@ -73,13 +73,13 @@ nav:
   - Introduction: "index.md"
   - Lilya:
       - Applications: "applications.md"
+      - Settings: "settings.md"
       - Requests: "requests.md"
       - Context: "context.md"
       - Responses: "context.md"
       - WebSockets: "websockets.md"
       - Controllers: "controllers.md"
       - Routing: "routing.md"
-      - Settings: "settings.md"
   - Features:
       - Tasks: "tasks.md"
       - Lifespan: "lifespan.md"

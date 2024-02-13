@@ -8,18 +8,15 @@ from http.cookies import SimpleCookie
 from typing import (
     Any,
     BinaryIO,
-    Dict,
     Generator,
     Generic,
     Iterable,
-    List,
     Literal,
     Mapping,
     Optional,
     Sequence,
     Tuple,
     TypeVar,
-    Union,
     cast,
 )
 from urllib.parse import SplitResult, parse_qsl, urlencode, urlsplit, urlunsplit
@@ -38,19 +35,19 @@ T = TypeVar("T")
 class MultiMixin(Generic[T], MultiMapping[T], ABC):
     """Mixin providing common methods for multi dicts"""
 
-    def dump(self) -> Dict[str, Any]:
+    def dump(self) -> dict[str, Any]:
         """
         Returns the dictionary without duplicates.
         """
         return dict(self.items())
 
-    def dump_list(self) -> List[Any]:
+    def dump_list(self) -> list[Any]:
         """
         Returns the dictionary without duplicates.
         """
         return list(self.dump().items())
 
-    def dict(self) -> Dict[str, List[Any]]:
+    def dict(self) -> dict[str, list[Any]]:
         """Return the multi-dict as a dict of lists."""
         return {k: self.getall(k) for k in set(self.keys())}
 
@@ -60,7 +57,7 @@ class MultiMixin(Generic[T], MultiMapping[T], ABC):
             for value in self.getall(key):
                 yield key, value
 
-    def get_multi_items(self) -> List[Any]:
+    def get_multi_items(self) -> list[Any]:
         """
         Returns a list of values from the multi items
         """
@@ -70,7 +67,7 @@ class MultiMixin(Generic[T], MultiMapping[T], ABC):
 class MultiDict(BaseMultiDict, MultiMixin[T], Generic[T]):
     def __init__(
         self,
-        args: Union[MultiMapping, Mapping[str, T], Iterable[tuple[str, T]], None] = None,
+        args: MultiMapping | Mapping[str, T] | Iterable[tuple[str, T]] | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(args or {})
@@ -79,10 +76,10 @@ class MultiDict(BaseMultiDict, MultiMixin[T], Generic[T]):
         """Create an immutable dictionary view."""
         return ImmutableMultiDict[T](self)
 
-    def getlist(self, key: Any) -> List[Any]:
+    def getlist(self, key: Any) -> list[Any]:
         return [item_value for item_key, item_value in list(self.multi_items()) if item_key == key]
 
-    def poplist(self, key: Any) -> List[Any]:
+    def poplist(self, key: Any) -> list[Any]:
         values = [v for k, v in list(self.multi_items()) if k == key]
         self.pop(key)
         return values
@@ -103,7 +100,7 @@ class MultiDict(BaseMultiDict, MultiMixin[T], Generic[T]):
 class ImmutableMultiDict(MultiDictProxy[T], MultiMixin[T], Generic[T]):
     def __init__(
         self,
-        args: Union[MultiMapping, Mapping[str, Any], Iterable[tuple[str, Any]], Any, None] = None,
+        args: MultiMapping | Mapping[str, Any] | Iterable[tuple[str, Any]] | Any | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(BaseMultiDict(args or {}))
@@ -135,7 +132,7 @@ class FormMultiDict(ImmutableMultiDict[Any]):
     async def close(self) -> None:
         """Close all files in the FormMultiDict."""
         for _, value in self.multi_items():
-            if isinstance(value, UploadFile):
+            if isinstance(value, DataUpload):
                 await value.close()
 
 
@@ -148,13 +145,11 @@ class Header(MultiDict, CIMultiDict):  # type: ignore
 
     def __init__(
         self,
-        *args: Union[
-            MultiMapping,
-            Mapping[str, Any],
-            Iterable[tuple[str, Any]],
-            List[Tuple[bytes, bytes]],
-            None,
-        ],
+        *args: MultiMapping
+        | Mapping[str, Any]
+        | Iterable[tuple[str, Any]]
+        | list[Tuple[bytes, bytes]]
+        | None,
     ) -> None:
         assert len(args) < 2, "Too many arguments."
         value = args[0] if args else []
@@ -163,14 +158,14 @@ class Header(MultiDict, CIMultiDict):  # type: ignore
             value, (dict, list)
         ), "The headers must be in the format of a list of tuples or dicttionary."
 
-        headers: List[Tuple[str, Any]] = self.parse_headers(value)
+        headers: list[Tuple[str, Any]] = self.parse_headers(value)
         super().__init__(headers)
 
-    def parse_headers(self, value: Any) -> List[Tuple[str, Any]]:
+    def parse_headers(self, value: Any) -> list[Tuple[str, Any]]:
         """
         Parses the headers and validates if its bytes or str.
         """
-        headers: List[Tuple[str, Any]] = []
+        headers: list[Tuple[str, Any]] = []
 
         if isinstance(value, dict):
             for k, v in value.items():
@@ -191,7 +186,7 @@ class Header(MultiDict, CIMultiDict):  # type: ignore
         key = key.rstrip("_").replace("_", "-")
         return ",".join(self.getall(key, default=[]))
 
-    def get_all(self, key: str) -> List[Any]:
+    def get_all(self, key: str) -> list[Any]:
         """Convenience method mapped to getall()."""
         return self.getall(key, default=[])
 
@@ -262,22 +257,22 @@ class URL:
     """
 
     url: str
-    scheme: Union[str, None] = None
-    netloc: Union[str, None] = None
-    path: Union[str, None] = None
-    fragment: Union[str, None] = None
-    query: Union[str, None] = None
-    username: Union[str, None] = None
-    password: Union[str, None] = None
-    port: Union[int, None] = None
-    hostname: Union[str, None] = None
+    scheme: str | None = None
+    netloc: str | None = None
+    path: str | None = None
+    fragment: str | None = None
+    query: str | None = None
+    username: str | None = None
+    password: str | None = None
+    port: int | None = None
+    hostname: str | None = None
 
-    def __new__(cls, url: Union[str, SplitResult, None] = None, **kwargs: Any) -> URL:
+    def __new__(cls, url: str | SplitResult | None = None, **kwargs: Any) -> URL:
         """
         Overrides the new base class to create a new structure for the URL.
 
         Args:
-            url (Union[str, SplitResult, None]): The URL to create.
+            url (str | SplitResult | None): The URL to create.
 
         Returns:
             URL: The created URL instance.
@@ -307,12 +302,12 @@ class URL:
 
     @classmethod
     @lru_cache
-    def __create__(cls, url: Union[str, SplitResult, None] = None) -> URL:
+    def __create__(cls, url: str | SplitResult | None = None) -> URL:
         """
         Creates a new URL instance.
 
         Args:
-            url (Union[str, SplitResult, None]): The URL to create.
+            url (str | SplitResult | None): The URL to create.
 
         Returns:
             URL: The created URL instance.
@@ -431,19 +426,19 @@ class URL:
 
     def _build_netloc(
         self,
-        hostname: Union[Any, None] = None,
-        port: Union[Any, None] = None,
-        username: Union[Any, None] = None,
-        password: Union[Any, None] = None,
+        hostname: Any | None = None,
+        port: Any | None = None,
+        username: Any | None = None,
+        password: Any | None = None,
     ) -> Any:
         """
         Builds the netloc part of the URL.
 
         Args:
-            hostname (Union[Any, None]): The hostname.
-            port (Union[Any, None]): The port.
-            username (Union[Any, None]): The username.
-            password (Union[Any, None]): The password.
+            hostname (Any | None): The hostname.
+            port (Any | None): The port.
+            username (Any | None): The username.
+            password (Any | None): The password.
 
         Returns:
             Any: The built netloc.
@@ -505,12 +500,12 @@ class URL:
         query = urlencode(sorted(params.multi_items()))
         return self.replace(query=query)
 
-    def remove_query_params(self, keys: Union[str, Sequence[str]]) -> URL:
+    def remove_query_params(self, keys: str | Sequence[str]) -> URL:
         """
         Removes query parameters from the URL.
 
         Args:
-            keys (Union[str, Sequence[str]]): Query parameters to remove.
+            keys (str | Sequence[str]): Query parameters to remove.
 
         Returns:
             URL: The new URL instance with removed query parameters.
@@ -581,7 +576,7 @@ class URLPath(str):
         self.host = host
         self.path = path
 
-    def make_absolute_url(self, base_url: Union[str, URL]) -> URL:
+    def make_absolute_url(self, base_url: str | URL) -> URL:
         if isinstance(base_url, str):
             base_url = URL(base_url)
         if self.protocol:
@@ -627,7 +622,7 @@ class QueryParam(ImmutableMultiDict[Any]):
 
     def __init__(
         self,
-        *args: Union[MultiMapping, Mapping[str, Any], Iterable[tuple[str, Any]], None],
+        *args: MultiMapping | Mapping[str, Any] | Iterable[tuple[str, Any]] | None,
     ) -> None:
         assert len(args) < 2, "Too many arguments."
         value = args[0] if args else []
@@ -648,11 +643,7 @@ class QueryParam(ImmutableMultiDict[Any]):
         return f"{class_name}({query_string!r})"
 
 
-class UploadFile:
-    """
-    An uploaded file included as part of the request data.
-    """
-
+class DataUpload:
     __slots__ = ("file", "size", "filename", "headers")
 
     def __init__(
@@ -660,7 +651,7 @@ class UploadFile:
         *,
         file: BinaryIO,
         size: Optional[int] = None,
-        filename: Union[str, None] = None,
+        filename: str | None = None,
         headers: Optional[Header] = None,
     ) -> None:
         self.filename = filename
@@ -669,7 +660,7 @@ class UploadFile:
         self.file = file
 
     @property
-    def content_type(self) -> Union[str, None]:
+    def content_type(self) -> str | None:
         return self.headers.get("content-type", None)
 
     @property
@@ -711,15 +702,15 @@ class UploadFile:
 @dataclass
 class Cookie:
     key: str
-    value: Union[str, None] = None
+    value: str | None = None
     max_age: Optional[int] = None
     expires: Optional[int] = None
     path: str = "/"
-    domain: Union[str, None] = None
+    domain: str | None = None
     secure: Optional[bool] = None
     httponly: Optional[bool] = None
     samesite: Literal["lax", "strict", "none"] = "lax"
-    description: Union[str, None] = None
+    description: str | None = None
 
     def to_header(self, **kwargs: Any) -> str:
         simple_cookie: SimpleCookie = SimpleCookie()
@@ -740,16 +731,12 @@ class FormData(ImmutableMultiDict[Any]):
 
     def __init__(
         self,
-        *args: Union[
-            FormData,
-            Mapping[str, Union[str, UploadFile]],
-            List[Tuple[str, Union[str, UploadFile]]],
-        ],
-        **kwargs: Union[str, UploadFile],
+        *args: FormData | Mapping[str, str | DataUpload] | list[Tuple[str, str | DataUpload]],
+        **kwargs: str | DataUpload,
     ) -> None:
         super().__init__(*args, **kwargs)
 
     async def close(self) -> None:
         for _, value in self.multi_items():
-            if isinstance(value, UploadFile):
+            if isinstance(value, DataUpload):
                 await value.close()

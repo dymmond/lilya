@@ -7,6 +7,7 @@ from pytest_mock import MockerFixture
 
 from lilya.datastructures import (
     URL,
+    DataUpload,
     FormData,
     FormMultiDict,
     Header,
@@ -14,7 +15,6 @@ from lilya.datastructures import (
     MultiDict,
     QueryParam,
     Secret,
-    UploadFile,
 )
 
 
@@ -221,9 +221,9 @@ def test_queryparams():
 
 @pytest.mark.anyio
 async def test_upload_file_file_input():
-    """Test passing file/stream into the UploadFile constructor"""
+    """Test passing file/stream into the DataUpload constructor"""
     stream = io.BytesIO(b"data")
-    file = UploadFile(filename="file", file=stream, size=4)
+    file = DataUpload(filename="file", file=stream, size=4)
     assert await file.read() == b"data"
     assert file.size == 4
     await file.write(b" and more data!")
@@ -235,9 +235,9 @@ async def test_upload_file_file_input():
 
 @pytest.mark.anyio
 async def test_upload_file_without_size():
-    """Test passing file/stream into the UploadFile constructor without size"""
+    """Test passing file/stream into the DataUpload constructor without size"""
     stream = io.BytesIO(b"data")
-    file = UploadFile(filename="file", file=stream)
+    file = DataUpload(filename="file", file=stream)
     assert await file.read() == b"data"
     assert file.size is None
     await file.write(b" and more data!")
@@ -251,10 +251,10 @@ async def test_upload_file_without_size():
 @pytest.mark.parametrize("max_size", [1, 1024], ids=["rolled", "unrolled"])
 async def test_uploadfile_rolling(max_size: int) -> None:
     """Test that we can r/w to a SpooledTemporaryFile
-    managed by UploadFile before and after it rolls to disk
+    managed by DataUpload before and after it rolls to disk
     """
     stream: BinaryIO = SpooledTemporaryFile(max_size=max_size)  # type: ignore[assignment]
-    file = UploadFile(filename="file", file=stream, size=0)
+    file = DataUpload(filename="file", file=stream, size=0)
     assert await file.read() == b""
     assert file.size == 0
     await file.write(b"data")
@@ -273,7 +273,7 @@ async def test_uploadfile_rolling(max_size: int) -> None:
 
 def xtest_formdata():
     stream = io.BytesIO(b"data")
-    upload = UploadFile(filename="file", file=stream, size=4)
+    upload = DataUpload(filename="file", file=stream, size=4)
     form = FormData([("a", "123"), ("a", "456"), ("b", upload)])
     assert "a" in form
     assert "A" not in form
@@ -297,15 +297,15 @@ def xtest_formdata():
 @pytest.mark.anyio
 async def test_upload_file_repr():
     stream = io.BytesIO(b"data")
-    file = UploadFile(filename="file", file=stream, size=4)
-    assert repr(file) == "UploadFile(filename='file', size=4, headers=Header({}))"
+    file = DataUpload(filename="file", file=stream, size=4)
+    assert repr(file) == "DataUpload(filename='file', size=4, headers=Header({}))"
 
 
 @pytest.mark.anyio
 async def test_upload_file_repr_headers():
     stream = io.BytesIO(b"data")
-    file = UploadFile(filename="file", file=stream, headers=Header({"foo": "bar"}))
-    assert repr(file) == "UploadFile(filename='file', size=None, headers=Header({'foo': 'bar'}))"
+    file = DataUpload(filename="file", file=stream, headers=Header({"foo": "bar"}))
+    assert repr(file) == "DataUpload(filename='file', size=None, headers=Header({'foo': 'bar'}))"
 
 
 @pytest.mark.parametrize("multi_dict", [MultiDict, ImmutableMultiDict, Header, QueryParam])
@@ -338,13 +338,13 @@ def test_to_immutable_multi_dict_as_mutable() -> None:
 
 @pytest.mark.anyio
 async def test_form_multi_close(mocker: MockerFixture) -> None:
-    close = mocker.patch("lilya.datastructures.UploadFile.close")
+    close = mocker.patch("lilya.datastructures.DataUpload.close")
     stream = io.BytesIO(b"data")
 
     multi_dict = FormMultiDict(
         [
-            ("file", UploadFile(filename="file", file=stream)),
-            ("another-file", UploadFile(filename="another-file", file=stream)),
+            ("file", DataUpload(filename="file", file=stream)),
+            ("another-file", DataUpload(filename="another-file", file=stream)),
         ]
     )
 
