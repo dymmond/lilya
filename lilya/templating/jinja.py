@@ -42,7 +42,7 @@ PathLike = Union[str, "os.PathLike[str]"]
 
 class TemplateRenderer(BaseTemplateRenderer):
     """
-    Custom Template Renderer for Starlette.
+    Custom Template Renderer.
 
     This class provides a simplified interface for rendering templates with
     context processing and response preparation.
@@ -115,7 +115,7 @@ class TemplateRenderer(BaseTemplateRenderer):
 
 class Jinja2Template:
     """
-    Wrapper class for Jinja2 templating engine in the context of Starlette.
+    Wrapper class for Jinja2 templating engine.
     """
 
     def __init__(
@@ -157,11 +157,11 @@ class Jinja2Template:
         @pass_context
         def path_for(context: dict, name: str, **path_params: Any) -> Any:
             """
-            Custom Jinja2 global function to generate URLs using Starlette's Request instance.
+            Custom Jinja2 global function to generate URLs using Lilya's Request instance.
 
             Args:
                 context (dict): Jinja2 context, including 'request'.
-                name (str): Name of the Starlette route.
+                name (str): Name of the Lilya route.
                 **path_params (Any): Additional path parameters.
 
             Returns:

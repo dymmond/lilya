@@ -19,7 +19,7 @@ printer = Print()
 @click.command(name="createdeployment")
 def create_deployment(name: str, verbosity: int, deployment_folder_name: str) -> None:
     """
-    Generates the scaffold for the deployment of an Lilya application.
+    Generates the scaffold for the deployment of a Lilya application.
 
     The scaffold contains the configurations for docker, nginx, supervisor and gunicorn.
 

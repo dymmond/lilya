@@ -56,9 +56,9 @@ Lilya comes bearing fruits.
 * Lifespan events (on_startup/on_shutdown and lifespan).
 * Native permission system.
 * Middlewares (Compressor, CSRF, Session, CORS...).
-* A native and **optional** cli.
+* A native and **optional** [client](https://lilya.dev/lilya-cli).
 * **Directive management control system** for any custom scripts to run inside the application.
-* Very little hard dependencies.
+* Little hard dependencies.
 * Compatibility with `trio` and `asyncio`.
 * Dynamic routing system with the help of the native **Include** and minimum boilerplate.
 * Native settings system. No more bloated instances.
@@ -151,6 +151,9 @@ In other words, you can build a [middleware](https://lilya.dev/middleware) or a 
 share those with any other existing ASGI framework out there, meaning, you could design a Lilya
 application, middlewares, permissions and any other component and re-use them in [Esmerald][esmerald]
 or [FastAPI][fastapi] or any other, really.
+
+**Lilya is not a full-fledge framework like [Esmerald][esmerald] or [FastAPI][fastapi], instead**
+**its a lightweight toolkit/framework that can be used to build those as well as working on its own.**
 
 **Example**
 

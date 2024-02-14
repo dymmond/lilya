@@ -12,7 +12,7 @@ T = TypeVar("T")
 class AyncLifespanContextManager:  # pragma: no cover
     """
     Manages and handles the on_startup and on_shutdown events
-    in an Lilya way.
+    in a Lilya way.
     """
 
     def __init__(

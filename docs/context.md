@@ -24,7 +24,7 @@ is automatically accessible via `context.handler` parameter.
 ```
 
 The `context` also provides access to the [`request`](./requests.md) object as well as the
-[application settings](./application/settings.md) and other functions.
+[application settings](./settings.md) and other functions.
 
 This means, if you want to pass a `request` and `context` you actually only need the `context`
 directly as the request is already available inside but you can still pass both anyway.

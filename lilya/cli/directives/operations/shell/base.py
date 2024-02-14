@@ -65,11 +65,6 @@ def handle_lifespan_events(
     on_shutdown: Optional[Sequence[Callable]] = None,
     lifespan: Optional[Any] = None,
 ) -> Any:
-    """Handles with the lifespan events in the new Starlette format of lifespan.
-    This adds a mask that keeps the old `on_startup` and `on_shutdown` events variable
-    declaration for legacy and comprehension purposes and build the async context manager
-    for the lifespan.
-    """
     if lifespan:
         return lifespan
     return AyncLifespanContextManager(on_startup=on_startup, on_shutdown=on_shutdown)

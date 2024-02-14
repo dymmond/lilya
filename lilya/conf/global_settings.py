@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, List, Optional, Sequence, Union
 
 from dymmond_settings import Settings as BaseSettings
 from dymmond_settings.enums import EnvironmentType
@@ -16,15 +16,19 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class Settings(BaseSettings):
+class _Internal(BaseSettings):
+    ipython_args: ClassVar[list[str]] = ["--no-banner"]
+    ptpython_config_file: str = "~/.config/ptpython/config.py"
+
+
+@dataclass
+class Settings(_Internal):
     debug: Annotated[
         bool,
         Doc(
             """
             Boolean indicating if the application should return the debug tracebacks on
             server errors, in other words, if you want to have debug errors being displayed.
-
-            Read more about this in the official [Starlette documentation](https://www.lilya.dev/applications/#instantiating-the-application).
 
             !!! Tip
                 Do not use this in production as `True`.

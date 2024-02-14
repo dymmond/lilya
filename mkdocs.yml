@@ -57,7 +57,7 @@ plugins:
               - griffe_typingdoc
             show_root_heading: true
             show_if_no_docstring: true
-            preload_modules: [httpx, starlette, a2wsgi]
+            preload_modules: [httpx, a2wsgi]
             inherited_members: true
             members_order: source
             separate_signature: true
@@ -93,8 +93,9 @@ nav:
       - WSGI Frameworks: "wsgi.md"
   - Clients:
       - Lilya Client:
-          - Directives: "directives/directives.md"
+          - Intro: "lilya-cli.md"
           - Application Discovery: "directives/discovery.md"
+          - Directives: "directives/directives.md"
           - Custom Directives: "directives/custom-directives.md"
           - Shell: "directives/shell.md"
       - Test Client: "test-client.md"
