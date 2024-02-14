@@ -132,6 +132,9 @@ share those with any other existing ASGI framework out there, meaning, you could
 application, middlewares, permissions and any other component and re-use them in [Esmerald][esmerald]
 or [FastAPI][fastapi] or any other, really.
 
+**Lilya is not a full-fledge framework like [Esmerald][esmerald] or [FastAPI][fastapi], instead**
+**its a lightweight toolkit/framework that can be used to build those as well as working on its own.**
+
 **Example**
 
 ```python
