@@ -165,7 +165,7 @@ async def handle_websocket_exception(
         await run_in_threadpool(handler, conn, exc)
 
 
-async def handle_value_error(request: Request, exc: ValueError):
+async def handle_value_error(request: Request, exc: ValueError) -> JSONResponse:
     status_code = status.HTTP_400_BAD_REQUEST
     details = loads(exc.json()) if hasattr(exc, "json") else exc.args[0]
     return JSONResponse({"detail": details}, status_code=status_code)
