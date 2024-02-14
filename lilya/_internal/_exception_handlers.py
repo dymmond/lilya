@@ -1,10 +1,13 @@
+from json import loads
 from typing import Dict, Type, Union, cast
 
+from lilya import status
 from lilya.compat import is_async_callable
 from lilya.concurrency import run_in_threadpool
 from lilya.enums import ScopeType
 from lilya.exceptions import HTTPException
 from lilya.requests import Request
+from lilya.responses import JSONResponse
 from lilya.types import (
     ASGIApp,
     ExceptionHandler,
@@ -160,3 +163,9 @@ async def handle_websocket_exception(
         await handler(conn, exc)
     else:
         await run_in_threadpool(handler, conn, exc)
+
+
+async def handle_value_error(request: Request, exc: ValueError):
+    status_code = status.HTTP_400_BAD_REQUEST
+    details = loads(exc.json()) if hasattr(exc, "json") else exc.args[0]
+    return JSONResponse({"detail": details}, status_code=status_code)

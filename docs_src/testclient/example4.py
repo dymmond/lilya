@@ -8,15 +8,15 @@ from lilya.testclient import TestClient, create_client
 from lilya.websockets import WebSocket
 
 
-async def allow_access() -> JSONResponse:
+async def allow_access():
     return JSONResponse("Hello, world")
 
 
-async def homepage() -> Response:
+async def homepage():
     return Response("Hello, world")
 
 
-async def websocket_endpoint(websocket: WebSocket) -> None:
+async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     await websocket.send_text("Hello, world!")
     await websocket.close()
