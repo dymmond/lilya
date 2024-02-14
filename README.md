@@ -56,9 +56,9 @@ Lilya comes bearing fruits.
 * Lifespan events (on_startup/on_shutdown and lifespan).
 * Native permission system.
 * Middlewares (Compressor, CSRF, Session, CORS...).
-* A native and **optional** cli.
+* A native and **optional** [client](https://lilya.dev/lilya-cli).
 * **Directive management control system** for any custom scripts to run inside the application.
-* Very little hard dependencies.
+* Little hard dependencies.
 * Compatibility with `trio` and `asyncio`.
 * Dynamic routing system with the help of the native **Include** and minimum boilerplate.
 * Native settings system. No more bloated instances.

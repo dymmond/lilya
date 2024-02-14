@@ -28,7 +28,7 @@ printer = Print()
     is_flag=True,
     show_default=True,
     default=False,
-    help="Creates a minimal project.",
+    help="Creates a project with a given structure of folders and files.",
 )
 @click.option("-v", "--verbosity", default=1, type=int, help="Displays the files generated.")
 @click.argument("name", type=str)

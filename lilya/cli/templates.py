@@ -18,7 +18,7 @@ printer = Print()
 
 class TemplateDirective(BaseDirective):
     """
-    Copy either an Lilya application layout template or an Lilya project
+    Copy either a Lilya application layout template or a Lilya project
     layout.
     """
 

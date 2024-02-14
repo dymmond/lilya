@@ -29,7 +29,7 @@ class DevelopmentSettings(AppSettings):
     def __init__(self, *args: Any, **kwds: Any) -> Any:
         super().__init__(*args, **kwds)
         logging_level = logging.DEBUG if self.debug else logging.INFO
-        loggers = ("uvicorn.asgi", "uvicorn.access", "esmerald")
+        loggers = ("uvicorn.asgi", "uvicorn.access", "lilya")
         logging.getLogger().handlers = [InterceptHandler()]
         for logger_name in loggers:
             logging_logger = logging.getLogger(logger_name)

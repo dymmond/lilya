@@ -131,5 +131,5 @@ class DirectiveEnv:
             break
 
         if not scaffold:
-            raise OSError("Could not find an Lilya application.")
+            raise OSError("Could not find a Lilya application.")
         return scaffold

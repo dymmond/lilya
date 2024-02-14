@@ -15,9 +15,9 @@ printer = Print()
 def create_app(name: str, verbosity: int) -> None:
     """Creates the scaffold of an application
 
-    How to run: `esmerald createapp <NAME>`
+    How to run: `lilya createapp <NAME>`
 
-    Example: `esmerald createapp myapp`
+    Example: `lilya createapp myapp`
     """
     options = {
         "secret_key": SECRET_KEY_INSECURE_PREFIX + get_random_secret_key(),

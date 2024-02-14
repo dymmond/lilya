@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, List, Optional, Sequence, Union
 
 from dymmond_settings import Settings as BaseSettings
 from dymmond_settings.enums import EnvironmentType
@@ -16,7 +16,13 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class Settings(BaseSettings):
+class _Internal(BaseSettings):
+    ipython_args: ClassVar[list[str]] = ["--no-banner"]
+    ptpython_config_file: str = "~/.config/ptpython/config.py"
+
+
+@dataclass
+class Settings(_Internal):
     debug: Annotated[
         bool,
         Doc(

@@ -93,8 +93,9 @@ nav:
       - WSGI Frameworks: "wsgi.md"
   - Clients:
       - Lilya Client:
-          - Directives: "directives/directives.md"
+          - Intro: "lilya-cli.md"
           - Application Discovery: "directives/discovery.md"
+          - Directives: "directives/directives.md"
           - Custom Directives: "directives/custom-directives.md"
           - Shell: "directives/shell.md"
       - Test Client: "test-client.md"
