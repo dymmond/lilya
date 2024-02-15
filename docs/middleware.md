@@ -1,9 +1,7 @@
 # Middleware
 
 Lilya includes several middleware classes unique to the application but also allowing some other ways of designing
-them by using `protocols`. Inspired by other great frameworks, Lilya has a similar approach
-for the middleware protocol. Let's be honest, it is not that we can reinvent the wheel on something already working out
-of the box.
+them by using `protocols`.
 
 ## Lilya middleware
 
@@ -43,7 +41,7 @@ Enforcing this protocol also aligns with writing a [Pure ASGI Middleware](#pure-
 {!> ../docs_src/middleware/sample.py !}
 ```
 
-## MiddlewareProtocol and the application
+## Middleware and the application
 
 Creating this type of middlewares will make sure the protocols are followed and therefore reducing development errors
 by removing common mistakes.
@@ -53,7 +51,7 @@ To add middlewares to the application is very simple.
 === "Application level"
 
     ```python
-    {!> ../docs_src/middleware/adding_middleware.py !}
+    {!> ../docs_src/middleware/adding_permission.py !}
     ```
 
 === "Any other level"
@@ -271,7 +269,7 @@ A middleware class for reading/generating request IDs and attaching them to appl
 #### <a href="https://github.com/steinnes/timing-asgi">TimingMiddleware</a>
 
 ASGI middleware to record and emit timing metrics (to something like statsd).
-This integration works using [EsmeraldTimming](https://github.com/dymmond/lilya-timing).
+This integration works using [EsmeraldTimming](https://github.com/dymmond/esmerald-timing).
 
 
 ## Important points

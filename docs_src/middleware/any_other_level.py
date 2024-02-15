@@ -50,7 +50,7 @@ async def home():
 
 # Via Path
 app = Lilya(
-    routes=[Path(handler=home, middleware=[DefineMiddleware(AnotherSample)])],
+    routes=[Path("/", handler=home, middleware=[DefineMiddleware(AnotherSample)])],
     middleware=[DefineMiddleware(SampleMiddleware)],
 )
 
@@ -59,7 +59,8 @@ app = Lilya(
 app = Lilya(
     routes=[
         Include(
-            routes=[Path(handler=home, middleware=[DefineMiddleware(SampleMiddleware)])],
+            "/",
+            routes=[Path("/", handler=home, middleware=[DefineMiddleware(SampleMiddleware)])],
             middleware=[DefineMiddleware(CustomMiddleware)],
         )
     ],

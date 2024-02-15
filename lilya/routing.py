@@ -830,7 +830,15 @@ class Host(BasePath):
         "name",
     )
 
-    def __init__(self, host: str, app: ASGIApp, name: Union[str, None] = None) -> None:
+    def __init__(
+        self,
+        host: str,
+        app: ASGIApp,
+        name: Union[str, None] = None,
+        *,
+        middleware: Union[Sequence[DefineMiddleware], None] = None,
+        permissions: Union[Sequence[DefinePermission], None] = None,
+    ) -> None:
         assert not host.startswith("/"), "Host must not start with '/'"
         self.host = host
         self.app = app
@@ -838,6 +846,39 @@ class Host(BasePath):
         self.host_regex, self.host_format, self.param_convertors, self.path_start = compile_path(
             host
         )
+        self.middleware = middleware if middleware is not None else []
+        self.permissions = permissions if permissions is not None else []
+
+        self._apply_middleware(middleware)
+        self._apply_permissions(permissions)
+
+    def _apply_middleware(self, middleware: Union[Sequence[DefineMiddleware], None]) -> None:
+        """
+        Apply middleware to the app.
+
+        Args:
+            middleware (Union[Sequence[DefineMiddleware], None]): The middleware.
+
+        Returns:
+            None
+        """
+        if middleware is not None:
+            for cls, args, options in reversed(middleware):
+                self.app = cls(app=self.app, *args, **options)
+
+    def _apply_permissions(self, permissions: Union[Sequence[DefinePermission], None]) -> None:
+        """
+        Apply permissions to the app.
+
+        Args:
+            permissions (Union[Sequence[DefinePermission], None]): The permissions.
+
+        Returns:
+            None
+        """
+        if permissions is not None:
+            for cls, args, options in reversed(permissions):
+                self.app = cls(app=self.app, *args, **options)
 
     @property
     def routes(self) -> List[BasePath]:
