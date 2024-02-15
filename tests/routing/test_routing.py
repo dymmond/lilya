@@ -1252,3 +1252,17 @@ def test_paths_with_root_path(test_client_factory: typing.Callable[..., TestClie
         "path": "/root/sub/path",
         "root_path": "/root/sub",
     }
+
+
+def user_param(name: str, age: int):
+    return f"{name}, {age}"
+
+
+def test_automatic_params_path(test_client_factory: typing.Callable[..., TestClient]):
+    app = Lilya(routes=[Path("/user-params/{name}/{age}", user_param)])
+    client = test_client_factory(app)
+
+    response = client.get("/user-params/lilya/24")
+    assert response.status_code == 200
+
+    assert response.json() == "lilya, 24"

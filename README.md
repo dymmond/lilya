@@ -190,5 +190,5 @@ INFO:     Application startup complete.
 INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
 ```
 
-[esmerald]: https://esmerald.dev/esmerald
+[esmerald]: https://lilya.dev/esmerald
 [fastapi]: https://fastapi.tiangolo.com
