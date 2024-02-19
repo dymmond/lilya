@@ -145,6 +145,9 @@ The `Router` object has some available functionalities that can be useful.
 * **permissions** - A list of [permissions](./permissions.md) to serve the application incoming
 requests (HTTP and Websockets).
 * **middleware** - A list of [middleware](./middleware.md)  to run for every request.
+* **exception handlers** - A dictionary of [exception types](./exceptions.md) (or custom exceptions) and the handler
+functions on an application top level. Exception handler callables should be of the form of
+`handler(request, exc) -> response` and may be be either standard functions, or async functions.
 
 ### add_websocket_route()
 
@@ -160,7 +163,9 @@ requests (HTTP and Websockets).
 * **permissions** - A list of [permissions](./permissions.md) to serve the application incoming
 requests (HTTP and Websockets).
 * **middleware** - A list of [middleware](./middleware.md)  to run for every request.
-* **name** - Name of the route.
+* **exception handlers** - A dictionary of [exception types](./exceptions.md) (or custom exceptions) and the handler
+functions on an application top level. Exception handler callables should be of the form of
+`handler(request, exc) -> response` and may be be either standard functions, or async functions.
 
 ### add_child_lilya()
 
@@ -177,6 +182,9 @@ requests (HTTP and Websockets).
 * **permissions** - A list of [permissions](./permissions.md) to serve the application incoming
 requests (HTTP and Websockets).
 * **middleware** - A list of [middleware](./middleware.md)  to run for every request.
+* **exception handlers** - A dictionary of [exception types](./exceptions.md) (or custom exceptions) and the handler
+functions on an application top level. Exception handler callables should be of the form of
+`handler(request, exc) -> response` and may be be either standard functions, or async functions.
 * **include_in_schema** - Boolean if this ChildLilya should be included in the schema.
 * **deprecated** - Boolean if this ChildLilya should be marked as deprecated.
 
@@ -195,6 +203,9 @@ with the application routing system
 * **permissions** - A list of [permissions](./permissions.md) to serve the application incoming
 requests (HTTP and Websockets).
 * **middleware** - A list of [middleware](./middleware.md) to run for every request.
+* **exception handlers** - A dictionary of [exception types](./exceptions.md) (or custom exceptions) and the handler
+functions on an application top level. Exception handler callables should be of the form of
+`handler(request, exc) -> response` and may be be either standard functions, or async functions.
 * **deprecated** - Boolean if this ChildLilya should be marked as deprecated.
 
 === "In a nutshell"
@@ -216,6 +227,9 @@ Same principle as [Path](#path) with one particularity. The websockets are `asyn
 * **permissions** - A list of [permissions](./permissions.md) to serve the application incoming
 requests (HTTP and Websockets).
 * **middleware** - A list of [middleware](./middleware.md) to run for every request.
+* **exception handlers** - A dictionary of [exception types](./exceptions.md) (or custom exceptions) and the handler
+functions on an application top level. Exception handler callables should be of the form of
+`handler(request, exc) -> response` and may be be either standard functions, or async functions.
 * **deprecated** - Boolean if this ChildLilya should be marked as deprecated.
 
 === "In a nutshell"
@@ -260,6 +274,9 @@ be `Path`, `WebSocketPath` or even another `Include`.
 * **permissions** - A list of [permissions](./permissions.md) to serve the application incoming
 requests (HTTP and Websockets).
 * **middleware** - A list of [middleware](./middleware.md) to run for every request.
+* **exception handlers** - A dictionary of [exception types](./exceptions.md) (or custom exceptions) and the handler
+functions on an application top level. Exception handler callables should be of the form of
+`handler(request, exc) -> response` and may be be either standard functions, or async functions.
 * **include_in_schema** - If route should be added to the OpenAPI Schema
 * **deprecated** - Boolean if this ChildLilya should be marked as deprecated.
 

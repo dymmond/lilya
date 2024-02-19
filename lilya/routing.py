@@ -1417,6 +1417,7 @@ class Router:
         name: Union[str, None] = None,
         middleware: Union[Sequence[DefineMiddleware], None] = None,
         permissions: Union[Sequence[DefinePermission], None] = None,
+        exception_handlers: Union[Mapping[Any, ExceptionHandler], None] = None,
         namespace: Union[str, None] = None,
         pattern: Union[str, None] = None,
         include_in_schema: bool = True,
@@ -1430,6 +1431,7 @@ class Router:
             name=name,
             middleware=middleware,
             permissions=permissions,
+            exception_handlers=exception_handlers,
             namespace=namespace,
             pattern=pattern,
             include_in_schema=include_in_schema,
@@ -1451,6 +1453,7 @@ class Router:
         name: Union[str, None] = None,
         middleware: Union[Sequence[DefineMiddleware], None] = None,
         permissions: Union[Sequence[DefinePermission], None] = None,
+        exception_handlers: Union[Mapping[Any, ExceptionHandler], None] = None,
         include_in_schema: bool = True,
     ) -> None:
         """
@@ -1462,6 +1465,7 @@ class Router:
             methods=methods,
             middleware=middleware,
             permissions=permissions,
+            exception_handlers=exception_handlers,
             name=name,
             include_in_schema=include_in_schema,
         )
@@ -1474,12 +1478,18 @@ class Router:
         name: Union[str, None] = None,
         middleware: Union[Sequence[DefineMiddleware], None] = None,
         permissions: Union[Sequence[DefinePermission], None] = None,
+        exception_handlers: Union[Mapping[Any, ExceptionHandler], None] = None,
     ) -> None:
         """
         Manually creates a `WebSocketPath` from a given handler.
         """
         route = WebSocketPath(
-            path, handler=handler, middleware=middleware, permissions=permissions, name=name
+            path,
+            handler=handler,
+            middleware=middleware,
+            permissions=permissions,
+            name=name,
+            exception_handlers=exception_handlers,
         )
         self.routes.append(route)
 

@@ -293,6 +293,7 @@ class Lilya:
         name: Union[str, None] = None,
         middleware: Union[Sequence[DefineMiddleware], None] = None,
         permissions: Union[Sequence[DefinePermission], None] = None,
+        exception_handlers: Union[Mapping[Any, ExceptionHandler], None] = None,
         namespace: Union[str, None] = None,
         pattern: Union[str, None] = None,
         include_in_schema: bool = True,
@@ -308,6 +309,7 @@ class Lilya:
             permissions=permissions,
             namespace=namespace,
             pattern=pattern,
+            exception_handlers=exception_handlers,
             include_in_schema=include_in_schema,
         )
 
@@ -325,6 +327,7 @@ class Lilya:
         name: Union[str, None] = None,
         middleware: Union[Sequence[DefineMiddleware], None] = None,
         permissions: Union[Sequence[DefinePermission], None] = None,
+        exception_handlers: Union[Mapping[Any, ExceptionHandler], None] = None,
         include_in_schema: bool = True,
     ) -> None:
         """
@@ -337,6 +340,7 @@ class Lilya:
             name=name,
             middleware=middleware,
             permissions=permissions,
+            exception_handlers=exception_handlers,
             include_in_schema=include_in_schema,
         )
 
@@ -347,12 +351,18 @@ class Lilya:
         name: Union[str, None] = None,
         middleware: Union[Sequence[DefineMiddleware], None] = None,
         permissions: Union[Sequence[DefinePermission], None] = None,
+        exception_handlers: Union[Mapping[Any, ExceptionHandler], None] = None,
     ) -> None:
         """
         Manually creates a `WebSocketPath` from a given handler.
         """
         self.router.add_websocket_route(
-            path=path, handler=handler, name=name, middleware=middleware, permissions=permissions
+            path=path,
+            handler=handler,
+            name=name,
+            middleware=middleware,
+            permissions=permissions,
+            exception_handlers=exception_handlers,
         )
 
     def add_middleware(
@@ -399,6 +409,7 @@ class Lilya:
         name: Optional[str] = None,
         middleware: Optional[Sequence[DefineMiddleware]] = None,
         permissions: Optional[Sequence[DefinePermission]] = None,
+        exception_handlers: Union[Mapping[Any, ExceptionHandler], None] = None,
         include_in_schema: Optional[bool] = True,
         deprecated: Optional[bool] = None,
     ) -> None:
@@ -412,6 +423,7 @@ class Lilya:
                 app=child,
                 middleware=middleware,
                 permissions=permissions,
+                exception_handlers=exception_handlers,
                 include_in_schema=include_in_schema,
                 deprecated=deprecated,
             )
