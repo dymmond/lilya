@@ -38,6 +38,7 @@ class Controller(BaseController):
             for method in HTTPMethod.to_list()
             if getattr(self, method.lower(), None) is not None
         ]
+
         await self.handle_dispatch(scope=scope, receive=receive, send=send)
 
     async def handle_dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:

@@ -464,7 +464,7 @@ parent order, the order is:
 {!> ../docs_src/routing/routes/exception_handlers.py !}
 ```
 
-The above example illustrates the various levels where the exception handlers can be implemented and follows an
+The above example illustrates the various levels where the exception handlers can be implemented and follows a
 parent order where the order is:
 
 1. Default application built-in exception handlers.
