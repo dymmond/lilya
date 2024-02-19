@@ -31,7 +31,7 @@ from lilya.protocols.middleware import MiddlewareProtocol
 from lilya.protocols.permissions import PermissionProtocol
 from lilya.requests import Request
 from lilya.responses import Response
-from lilya.routing import BasePath, Router
+from lilya.routing import BasePath, Include, Router
 from lilya.types import ApplicationType, ASGIApp, ExceptionHandler, Lifespan, Receive, Scope, Send
 from lilya.websockets import WebSocket
 
@@ -157,6 +157,8 @@ class Lilya:
                 self.settings_module = settings_module()
 
         self.debug = self.__load_settings_value("debug", debug, is_boolean=True)
+        self.settings.debug = self.debug
+
         self.exception_handlers = {} if exception_handlers is None else dict(exception_handlers)
         self.custom_middleware = self.__load_settings_value("middleware", middleware)
         self.custom_permissions = self.__load_settings_value("permissions", permissions)
@@ -291,6 +293,7 @@ class Lilya:
         name: Union[str, None] = None,
         middleware: Union[Sequence[DefineMiddleware], None] = None,
         permissions: Union[Sequence[DefinePermission], None] = None,
+        exception_handlers: Union[Mapping[Any, ExceptionHandler], None] = None,
         namespace: Union[str, None] = None,
         pattern: Union[str, None] = None,
         include_in_schema: bool = True,
@@ -306,6 +309,7 @@ class Lilya:
             permissions=permissions,
             namespace=namespace,
             pattern=pattern,
+            exception_handlers=exception_handlers,
             include_in_schema=include_in_schema,
         )
 
@@ -323,6 +327,7 @@ class Lilya:
         name: Union[str, None] = None,
         middleware: Union[Sequence[DefineMiddleware], None] = None,
         permissions: Union[Sequence[DefinePermission], None] = None,
+        exception_handlers: Union[Mapping[Any, ExceptionHandler], None] = None,
         include_in_schema: bool = True,
     ) -> None:
         """
@@ -335,6 +340,7 @@ class Lilya:
             name=name,
             middleware=middleware,
             permissions=permissions,
+            exception_handlers=exception_handlers,
             include_in_schema=include_in_schema,
         )
 
@@ -345,12 +351,18 @@ class Lilya:
         name: Union[str, None] = None,
         middleware: Union[Sequence[DefineMiddleware], None] = None,
         permissions: Union[Sequence[DefinePermission], None] = None,
+        exception_handlers: Union[Mapping[Any, ExceptionHandler], None] = None,
     ) -> None:
         """
         Manually creates a `WebSocketPath` from a given handler.
         """
         self.router.add_websocket_route(
-            path=path, handler=handler, name=name, middleware=middleware, permissions=permissions
+            path=path,
+            handler=handler,
+            name=name,
+            middleware=middleware,
+            permissions=permissions,
+            exception_handlers=exception_handlers,
         )
 
     def add_middleware(
@@ -382,6 +394,40 @@ class Lilya:
 
     def add_event_handler(self, event_type: str, func: Callable[[], Any]) -> None:
         self.router.add_event_handler(event_type, func)
+
+    def add_child_lilya(
+        self,
+        path: str,
+        child: Annotated[
+            ChildLilya,
+            Doc(
+                """
+                The ChildLilya instance to be added.
+                """
+            ),
+        ],
+        name: Optional[str] = None,
+        middleware: Optional[Sequence[DefineMiddleware]] = None,
+        permissions: Optional[Sequence[DefinePermission]] = None,
+        exception_handlers: Union[Mapping[Any, ExceptionHandler], None] = None,
+        include_in_schema: Optional[bool] = True,
+        deprecated: Optional[bool] = None,
+    ) -> None:
+        if not isinstance(child, ChildLilya):
+            raise ValueError("The child must be an instance of a ChildLilya.")
+
+        self.router.routes.append(
+            Include(
+                path=path,
+                name=name,
+                app=child,
+                middleware=middleware,
+                permissions=permissions,
+                exception_handlers=exception_handlers,
+                include_in_schema=include_in_schema,
+                deprecated=deprecated,
+            )
+        )
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         scope["app"] = self

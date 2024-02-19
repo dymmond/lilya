@@ -70,7 +70,7 @@ class Response:
         """
         Makes the Response object type.
         """
-        if content is None or content is NoReturn:
+        if content is None or content is NoReturn or not content:
             return b""
         if isinstance(content, bytes):
             return content

@@ -4,7 +4,7 @@ import functools
 import inspect
 import re
 import traceback
-from typing import Any, Awaitable, Callable, Dict, List, Sequence, Tuple, TypeVar, Union
+from typing import Any, Awaitable, Callable, Dict, List, Mapping, Sequence, Tuple, TypeVar, Union
 
 from lilya import status
 from lilya._internal._events import AsyncLifespan, handle_lifespan_events
@@ -26,7 +26,7 @@ from lilya.middleware.base import DefineMiddleware
 from lilya.permissions.base import DefinePermission
 from lilya.requests import Request
 from lilya.responses import PlainText, RedirectResponse, Response
-from lilya.types import ASGIApp, Lifespan, Receive, Scope, Send
+from lilya.types import ASGIApp, ExceptionHandler, Lifespan, Receive, Scope, Send
 from lilya.websockets import WebSocket, WebSocketClose
 
 T = TypeVar("T")
@@ -94,6 +94,7 @@ class BasePath:
             return
 
         scope.update(child_scope)
+
         await self.handle_dispatch(scope, receive, send)  # type: ignore
 
     async def handle_not_found(self, scope: Scope, receive: Receive, send: Send) -> None:
@@ -132,6 +133,75 @@ class BasePath:
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         await self.dispatch(scope=scope, receive=receive, send=send)
 
+    async def handle_exception_handlers(
+        self, scope: Scope, receive: Receive, send: Send, exc: Exception
+    ) -> None:
+        """
+        Manages exception handlers for HTTP and WebSocket scopes.
+
+        Args:
+            scope (dict): The ASGI scope.
+            receive (callable): The receive function.
+            send (callable): The send function.
+            exc (Exception): The exception to handle.
+        """
+        status_code = self._get_status_code(exc)
+
+        if scope["type"] == ScopeType.HTTP:
+            await self._handle_http_exception(scope, receive, send, exc, status_code)
+        elif scope["type"] == ScopeType.WEBSOCKET:
+            await self._handle_websocket_exception(send, exc, status_code)
+
+    def _get_status_code(self, exc: Exception) -> int:
+        """
+        Get the status code from the exception.
+
+        Args:
+            exc (Exception): The exception.
+
+        Returns:
+            int: The status code.
+        """
+        return getattr(exc, "status_code", status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    async def _handle_http_exception(
+        self, scope: Scope, receive: Receive, send: Send, exc: Exception, status_code: int
+    ) -> None:
+        """
+        Handle HTTP exceptions.
+
+        Args:
+            scope (dict): The ASGI scope.
+            receive (callable): The receive function.
+            send (callable): The send function.
+            exc (Exception): The exception to handle.
+            status_code (int): The status code.
+        """
+        exception_handler = self.exception_handlers.get(
+            status_code
+        ) or self.exception_handlers.get(exc.__class__)
+
+        if exception_handler is None:
+            raise exc
+
+        request = Request(scope=scope, receive=receive, send=send)
+        response = exception_handler(request, exc)
+        await response(scope=scope, receive=receive, send=send)
+
+    async def _handle_websocket_exception(
+        self, send: Send, exc: Exception, status_code: int
+    ) -> None:
+        """
+        Handle WebSocket exceptions.
+
+        Args:
+            send (callable): The send function.
+            exc (Exception): The exception to handle.
+            status_code (int): The status code.
+        """
+        reason = repr(exc)
+        await send({"type": "websocket.close", "code": status_code, "reason": reason})
+
     @property
     def stringify_parameters(self) -> List[str]:  # pragma: no cover
         """
@@ -166,6 +236,8 @@ class Path(BaseHandler, BasePath):
         "include_in_schema",
         "middleware",
         "permissions",
+        "exception_handlers",
+        "deprecated",
     )
 
     def __init__(
@@ -178,6 +250,8 @@ class Path(BaseHandler, BasePath):
         include_in_schema: bool = True,
         middleware: Union[Sequence[DefineMiddleware], None] = None,
         permissions: Union[Sequence[DefinePermission], None] = None,
+        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        deprecated: bool = False,
     ) -> None:
         assert path.startswith("/"), "Paths must start with '/'"
         self.path = clean_path(path)
@@ -185,6 +259,7 @@ class Path(BaseHandler, BasePath):
         self.name = get_name(handler) if name is None else name
         self.include_in_schema = include_in_schema
         self.methods: Union[List[str], None] = methods
+        self.deprecated = deprecated
 
         # Defition of the app
         handler_app = handler
@@ -205,6 +280,7 @@ class Path(BaseHandler, BasePath):
 
         self.middleware = middleware
         self.permissions = permissions
+        self.exception_handlers = {} if exception_handlers is None else dict(exception_handlers)
 
         self._apply_middleware(self.middleware)
         self._apply_permissions(self.permissions)
@@ -370,10 +446,13 @@ class Path(BaseHandler, BasePath):
                 response = PlainText("Method Not Allowed", status_code=405, headers=headers)
             await response(scope, receive, send)
         else:
-            if not hasattr(self.app, "__is_controller__"):
-                await self.app(scope, receive, send)
-            else:
-                await self.handle_controller(scope, receive, send)
+            try:
+                if not hasattr(self.app, "__is_controller__"):
+                    await self.app(scope, receive, send)
+                else:
+                    await self.handle_controller(scope, receive, send)
+            except Exception as ex:
+                await self.handle_exception_handlers(scope, receive, send, ex)
 
     def __repr__(self) -> str:
         methods = sorted(self.methods or [])
@@ -388,6 +467,7 @@ class WebSocketPath(BaseHandler, BasePath):
         "include_in_schema",
         "middleware",
         "permissions",
+        "exception_handlers",
     )
 
     def __init__(
@@ -399,6 +479,7 @@ class WebSocketPath(BaseHandler, BasePath):
         include_in_schema: bool = True,
         middleware: Union[Sequence[DefineMiddleware], None] = None,
         permissions: Union[Sequence[DefinePermission], None] = None,
+        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
     ) -> None:
         assert path.startswith("/"), "Paths must start with '/'"
         self.path = clean_path(path)
@@ -424,6 +505,7 @@ class WebSocketPath(BaseHandler, BasePath):
 
         self.middleware = middleware
         self.permissions = permissions
+        self.exception_handlers = {} if exception_handlers is None else dict(exception_handlers)
 
         self._apply_middleware(self.middleware)
         self._apply_permissions(self.permissions)
@@ -526,7 +608,10 @@ class WebSocketPath(BaseHandler, BasePath):
         Returns:
             None
         """
-        await self.app(scope, receive, send)
+        try:
+            await self.app(scope, receive, send)
+        except Exception as ex:
+            await self.handle_exception_handlers(scope, receive, send, ex)
 
     def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         """
@@ -580,8 +665,10 @@ class Include(BasePath):
         "pattern",
         "name",
         "exception_handlers",
-        "permissions",
         "middleware",
+        "permissions",
+        "exception_handlers",
+        "deprecated",
     )
 
     def __init__(
@@ -595,7 +682,9 @@ class Include(BasePath):
         *,
         middleware: Union[Sequence[DefineMiddleware], None] = None,
         permissions: Union[Sequence[DefinePermission], None] = None,
+        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
         include_in_schema: bool = True,
+        deprecated: bool = False,
     ) -> None:
         """
         Initialize the router with specified parameters.
@@ -643,12 +732,14 @@ class Include(BasePath):
 
         self.middleware = middleware if middleware is not None else []
         self.permissions = permissions if permissions is not None else []
+        self.exception_handlers = {} if exception_handlers is None else dict(exception_handlers)
 
         self._apply_middleware(middleware)
         self._apply_permissions(permissions)
 
         self.name = name
         self.include_in_schema = include_in_schema
+        self.deprecated = deprecated
 
         self.path_regex, self.path_format, self.param_convertors, self.path_start = compile_path(
             clean_path(self.path + "/{path:path}")
@@ -752,7 +843,10 @@ class Include(BasePath):
         Returns:
             None
         """
-        await self.app(scope, receive, send)
+        try:
+            await self.app(scope, receive, send)
+        except Exception as ex:
+            await self.handle_exception_handlers(scope, receive, send, ex)
 
     def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         """
@@ -828,6 +922,9 @@ class Host(BasePath):
         "host",
         "app",
         "name",
+        "middleware",
+        "permissions",
+        "exception_handlers",
     )
 
     def __init__(
@@ -838,6 +935,7 @@ class Host(BasePath):
         *,
         middleware: Union[Sequence[DefineMiddleware], None] = None,
         permissions: Union[Sequence[DefinePermission], None] = None,
+        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
     ) -> None:
         assert not host.startswith("/"), "Host must not start with '/'"
         self.host = host
@@ -848,6 +946,7 @@ class Host(BasePath):
         )
         self.middleware = middleware if middleware is not None else []
         self.permissions = permissions if permissions is not None else []
+        self.exception_handlers = {} if exception_handlers is None else dict(exception_handlers)
 
         self._apply_middleware(middleware)
         self._apply_permissions(permissions)
@@ -942,7 +1041,10 @@ class Host(BasePath):
         Returns:
             None
         """
-        await self.app(scope, receive, send)
+        try:
+            await self.app(scope, receive, send)
+        except Exception as ex:
+            await self.handle_exception_handlers(scope, receive, send, ex)
 
     def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         """
@@ -1029,6 +1131,21 @@ class Router:
     A Lilya router object.
     """
 
+    __slots__ = (
+        "routes",
+        "redirect_slashes",
+        "default",
+        "on_startup",
+        "on_shutdown",
+        "middleware",
+        "permissions",
+        "include_in_schema",
+        "deprecated",
+        "lifespan_context",
+        "middleware_stack",
+        "permission_started",
+    )
+
     def __init__(
         self,
         routes: Union[Sequence[BasePath], None] = None,
@@ -1041,6 +1158,7 @@ class Router:
         middleware: Union[Sequence[DefineMiddleware], None] = None,
         permissions: Union[Sequence[DefinePermission], None] = None,
         include_in_schema: bool = True,
+        deprecated: bool = False,
     ) -> None:
         assert lifespan is None or (
             on_startup is None and on_shutdown is None
@@ -1066,6 +1184,7 @@ class Router:
         self.redirect_slashes = redirect_slashes
         self.default = self.handle_not_found if default is None else default
         self.include_in_schema = include_in_schema
+        self.deprecated = deprecated
 
         self.middleware = middleware if middleware is not None else []
         self.permissions = permissions if permissions is not None else []
@@ -1298,6 +1417,7 @@ class Router:
         name: Union[str, None] = None,
         middleware: Union[Sequence[DefineMiddleware], None] = None,
         permissions: Union[Sequence[DefinePermission], None] = None,
+        exception_handlers: Union[Mapping[Any, ExceptionHandler], None] = None,
         namespace: Union[str, None] = None,
         pattern: Union[str, None] = None,
         include_in_schema: bool = True,
@@ -1311,6 +1431,7 @@ class Router:
             name=name,
             middleware=middleware,
             permissions=permissions,
+            exception_handlers=exception_handlers,
             namespace=namespace,
             pattern=pattern,
             include_in_schema=include_in_schema,
@@ -1332,6 +1453,7 @@ class Router:
         name: Union[str, None] = None,
         middleware: Union[Sequence[DefineMiddleware], None] = None,
         permissions: Union[Sequence[DefinePermission], None] = None,
+        exception_handlers: Union[Mapping[Any, ExceptionHandler], None] = None,
         include_in_schema: bool = True,
     ) -> None:
         """
@@ -1343,6 +1465,7 @@ class Router:
             methods=methods,
             middleware=middleware,
             permissions=permissions,
+            exception_handlers=exception_handlers,
             name=name,
             include_in_schema=include_in_schema,
         )
@@ -1355,12 +1478,18 @@ class Router:
         name: Union[str, None] = None,
         middleware: Union[Sequence[DefineMiddleware], None] = None,
         permissions: Union[Sequence[DefinePermission], None] = None,
+        exception_handlers: Union[Mapping[Any, ExceptionHandler], None] = None,
     ) -> None:
         """
         Manually creates a `WebSocketPath` from a given handler.
         """
         route = WebSocketPath(
-            path, handler=handler, middleware=middleware, permissions=permissions, name=name
+            path,
+            handler=handler,
+            middleware=middleware,
+            permissions=permissions,
+            name=name,
+            exception_handlers=exception_handlers,
         )
         self.routes.append(route)
 
