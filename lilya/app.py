@@ -31,7 +31,7 @@ from lilya.protocols.middleware import MiddlewareProtocol
 from lilya.protocols.permissions import PermissionProtocol
 from lilya.requests import Request
 from lilya.responses import Response
-from lilya.routing import BasePath, Router
+from lilya.routing import BasePath, Include, Router
 from lilya.types import ApplicationType, ASGIApp, ExceptionHandler, Lifespan, Receive, Scope, Send
 from lilya.websockets import WebSocket
 
@@ -382,6 +382,38 @@ class Lilya:
 
     def add_event_handler(self, event_type: str, func: Callable[[], Any]) -> None:
         self.router.add_event_handler(event_type, func)
+
+    def add_child_lilya(
+        self,
+        path: str,
+        child: Annotated[
+            ChildLilya,
+            Doc(
+                """
+                The ChildLilya instance to be added.
+                """
+            ),
+        ],
+        name: Optional[str] = None,
+        middleware: Optional[Sequence[DefineMiddleware]] = None,
+        permissions: Optional[Sequence[DefinePermission]] = None,
+        include_in_schema: Optional[bool] = True,
+        deprecated: Optional[bool] = None,
+    ) -> None:
+        if not isinstance(child, ChildLilya):
+            raise ValueError("The child must be an instance of a ChildLilya.")
+
+        self.router.routes.append(
+            Include(
+                path=path,
+                name=name,
+                app=child,
+                middleware=middleware,
+                permissions=permissions,
+                include_in_schema=include_in_schema,
+                deprecated=deprecated,
+            )
+        )
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         scope["app"] = self

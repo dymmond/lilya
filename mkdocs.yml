@@ -87,7 +87,6 @@ nav:
       - Permissions: "permissions.md"
       - Static Files: "static-files.md"
       - Templates: "templates.md"
-      - Integrations: "integrations.md"
       - Server Push: "server-push.md"
       - Exceptions & Exception Handlers: "exceptions.md"
       - WSGI Frameworks: "wsgi.md"

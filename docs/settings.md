@@ -142,7 +142,7 @@ There is an order or priority in which Lilya reads your settings.
 If a `settings_config` is passed into a Lilya instance, that same object takes priority above
 anything else. Let us imagine the following:
 
-* An Lilya application with normal settings.
+* A Lilya application with normal settings.
 * A `ChildLilya` with a specific set of configurations unique to it.
 
 ```python

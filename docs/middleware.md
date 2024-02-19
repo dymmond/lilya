@@ -51,7 +51,7 @@ To add middlewares to the application is very simple.
 === "Application level"
 
     ```python
-    {!> ../docs_src/middleware/adding_permission.py !}
+    {!> ../docs_src/middleware/adding_middleware.py !}
     ```
 
 === "Any other level"

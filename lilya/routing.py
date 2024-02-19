@@ -166,6 +166,7 @@ class Path(BaseHandler, BasePath):
         "include_in_schema",
         "middleware",
         "permissions",
+        "deprecated",
     )
 
     def __init__(
@@ -178,6 +179,7 @@ class Path(BaseHandler, BasePath):
         include_in_schema: bool = True,
         middleware: Union[Sequence[DefineMiddleware], None] = None,
         permissions: Union[Sequence[DefinePermission], None] = None,
+        deprecated: bool = False,
     ) -> None:
         assert path.startswith("/"), "Paths must start with '/'"
         self.path = clean_path(path)
@@ -185,6 +187,7 @@ class Path(BaseHandler, BasePath):
         self.name = get_name(handler) if name is None else name
         self.include_in_schema = include_in_schema
         self.methods: Union[List[str], None] = methods
+        self.deprecated = deprecated
 
         # Defition of the app
         handler_app = handler
@@ -582,6 +585,7 @@ class Include(BasePath):
         "exception_handlers",
         "permissions",
         "middleware",
+        "deprecated",
     )
 
     def __init__(
@@ -596,6 +600,7 @@ class Include(BasePath):
         middleware: Union[Sequence[DefineMiddleware], None] = None,
         permissions: Union[Sequence[DefinePermission], None] = None,
         include_in_schema: bool = True,
+        deprecated: bool = False,
     ) -> None:
         """
         Initialize the router with specified parameters.
@@ -649,6 +654,7 @@ class Include(BasePath):
 
         self.name = name
         self.include_in_schema = include_in_schema
+        self.deprecated = deprecated
 
         self.path_regex, self.path_format, self.param_convertors, self.path_start = compile_path(
             clean_path(self.path + "/{path:path}")
@@ -1029,6 +1035,21 @@ class Router:
     A Lilya router object.
     """
 
+    __slots__ = (
+        "routes",
+        "redirect_slashes",
+        "default",
+        "on_startup",
+        "on_shutdown",
+        "middleware",
+        "permissions",
+        "include_in_schema",
+        "deprecated",
+        "lifespan_context",
+        "middleware_stack",
+        "permission_started",
+    )
+
     def __init__(
         self,
         routes: Union[Sequence[BasePath], None] = None,
@@ -1041,6 +1062,7 @@ class Router:
         middleware: Union[Sequence[DefineMiddleware], None] = None,
         permissions: Union[Sequence[DefinePermission], None] = None,
         include_in_schema: bool = True,
+        deprecated: bool = False,
     ) -> None:
         assert lifespan is None or (
             on_startup is None and on_shutdown is None
@@ -1066,6 +1088,7 @@ class Router:
         self.redirect_slashes = redirect_slashes
         self.default = self.handle_not_found if default is None else default
         self.include_in_schema = include_in_schema
+        self.deprecated = deprecated
 
         self.middleware = middleware if middleware is not None else []
         self.permissions = permissions if permissions is not None else []
