@@ -27,4 +27,5 @@ def test_tuple():
 
 
 def test_conf_settings():
+    assert settings.debug is True
     assert settings.environment == EnvironmentType.TESTING

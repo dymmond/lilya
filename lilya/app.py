@@ -157,7 +157,6 @@ class Lilya:
                 self.settings_module = settings_module()
 
         self.debug = self.__load_settings_value("debug", debug, is_boolean=True)
-        self.settings.debug = self.debug
 
         self.exception_handlers = {} if exception_handlers is None else dict(exception_handlers)
         self.custom_middleware = self.__load_settings_value("middleware", middleware)
