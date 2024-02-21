@@ -27,7 +27,7 @@ is that sometimes you will need some specific information that is only available
 
 ### Using a single instance
 
-In the same way you created a singke background task for the handlers, in the response works in a
+In the same way you created a single background task for the handlers, in the response works in a
 similar way.
 
 ### Using a list

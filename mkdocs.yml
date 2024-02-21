@@ -105,6 +105,13 @@ nav:
       - "references/index.md"
       - Lilya: "references/lilya.md"
       - Settings: "references/settings.md"
+      - Tasks: "references/tasks.md"
+      - Routing:
+          - Path: "references/routing/path.md"
+          - WebSocketPath: "references/routing/websocketpath.md"
+          - Include: "references/routing/include.md"
+          - Host: "references/routing/host.md"
+          - Router: "references/routing/router.md"
   - Contributing: "contributing.md"
   - Sponsorship: "sponsorship.md"
   - Release Notes: "release-notes.md"

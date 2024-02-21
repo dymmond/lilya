@@ -17,7 +17,46 @@ P = ParamSpec("P")
 
 class Task(Repr):
     """
-    The representation of a background task.
+    `Task` as a single instance can be easily achieved.
+
+    **Example**
+
+    ```python
+    from datetime import datetime
+    from typing import Dict
+
+    from lilya.apps import Lilya
+    from lilya.background import Task
+    from lilya.requests import Request
+    from lilya.responses import Response
+    from lilya.routing import Path
+
+
+    async def send_email_notification(email: str, message: str):
+        send_notification(email, message)
+
+
+    async def create_user(request: Request) -> Response(Dict[str, str]):
+        return Response(
+            {"message": "Email sent"},
+            background=Task(
+                send_email_notification,
+                email="example@lilya.dev",
+                message="Thank you for registering.",
+            ),
+        )
+
+
+    app = Lilya(
+        routes=[
+            Path(
+                "/register",
+                create_user,
+                methods=["POST"],
+            )
+        ]
+    )
+    ```
     """
 
     __slots__ = ("func", "args", "kwargs")
@@ -35,8 +74,54 @@ class Tasks(Task):
     """
     A container for background tasks.
 
-    When `as_group` is set to True, it will run all the tasks
-    concurrently (as a group)
+    When `as_group` is set to `True`, it will run all the tasks
+    concurrently (as a group).
+
+    **Example**
+
+    ```python
+    from datetime import datetime
+
+    from lilya.apps import Lilya
+    from lilya.background import Tasks
+    from lilya.requests import Request
+    from lilya.responses import Response
+    from lilya.routing import Path
+
+
+    async def send_email_notification(email: str, message: str):
+        send_notification(email, message)
+
+
+    def write_in_file(email: str):
+        with open("log.txt", mode="w") as log:
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            content = f"Notification sent @ {now} to: {email}"
+            log.write(content)
+
+
+    async def create_user(request: Request):
+        background_tasks = Tasks(as_group=True)
+        background_tasks.add_task(
+            send_email_notification,
+            email="example@lilya.dev",
+            message="Thank you for registering.",
+        )
+        background_tasks.add_task(write_in_file, email=request.user.email)
+
+        return Response({"message": "Email sent"}, background=background_tasks)
+
+
+    app = Lilya(
+        routes=[
+            Path(
+                "/register",
+                create_user,
+                methods=["POST"],
+            )
+        ]
+    )
+    ```
     """
 
     __slots__ = ("tasks", "as_group")
