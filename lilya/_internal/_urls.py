@@ -2,17 +2,21 @@
 Functions to use with the Router.
 """
 
+from __future__ import annotations
+
 from importlib import import_module
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional, cast
 
 from lilya.conf import settings
+from lilya.datastructures import URLPath
 from lilya.exceptions import ImproperlyConfigured
+from lilya.types import ASGIApp
 
 if TYPE_CHECKING:  # pragma: no cover
     from lilya.routing import BasePath
 
 
-def include(arg: Any, pattern: Optional[str] = settings.default_route_pattern) -> List["BasePath"]:
+def include(arg: Any, pattern: Optional[str] = settings.default_route_pattern) -> List[BasePath]:
     """Simple retrieve functionality to make it easier to include
     routes in the urls. Example, nested routes.
     """
@@ -20,7 +24,7 @@ def include(arg: Any, pattern: Optional[str] = settings.default_route_pattern) -
         raise ImproperlyConfigured("The value should be a string with the format <module>.<file>")
 
     router_conf_module = import_module(arg)
-    patterns: List["BasePath"] = getattr(router_conf_module, pattern, None)
+    patterns: List[BasePath] = getattr(router_conf_module, pattern, None)
 
     assert (
         patterns is not None
@@ -28,3 +32,15 @@ def include(arg: Any, pattern: Optional[str] = settings.default_route_pattern) -
 
     assert isinstance(patterns, list), f"{patterns} should be a list and not {type(patterns)}."
     return patterns
+
+
+def reverse(name: str, app: ASGIApp | None = None, path_params: Any | None = None) -> URLPath:
+    """
+    Reverses the URL based on a name and parameters provided
+    and returns a URLPath.
+    """
+    if path_params is None:
+        path_params = {}
+
+    app_or_settings: ASGIApp = app or settings.app
+    return cast(URLPath, app_or_settings.path_for(name, **path_params))

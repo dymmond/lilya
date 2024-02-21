@@ -5,6 +5,8 @@ from concurrent import futures
 from concurrent.futures import Future
 from typing import Any, Awaitable, Generator, Generic, Protocol, TypeVar, Union
 
+from lilya._internal._urls import reverse as reverse
+
 T = TypeVar("T")
 
 

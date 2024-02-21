@@ -157,7 +157,6 @@ class Lilya:
                 self.settings_module = settings_module()
 
         self.debug = self.__load_settings_value("debug", debug, is_boolean=True)
-        self.settings.debug = self.debug
 
         self.exception_handlers = {} if exception_handlers is None else dict(exception_handlers)
         self.custom_middleware = self.__load_settings_value("middleware", middleware)
@@ -174,11 +173,17 @@ class Lilya:
             on_shutdown=self.__load_settings_value("on_shutdown", on_shutdown),
             lifespan=self.__load_settings_value("lifespan", lifespan),
             include_in_schema=include_in_schema,
+            settings_module=self.settings,
         )
+        self.__set_settings_app(self.settings, self)
 
     @property
     def routes(self) -> List[BasePath]:
         return self.router.routes
+
+    def __set_settings_app(self, settings_module: Settings, app: ASGIApp) -> None:
+        if settings_module.app is None:
+            self.router._set_settings_app(settings_module, app)
 
     def __load_settings_value(
         self, name: str, value: Optional[Any] = None, is_boolean: bool = False

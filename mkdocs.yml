@@ -75,11 +75,11 @@ nav:
       - Applications: "applications.md"
       - Settings: "settings.md"
       - Routing: "routing.md"
+      - Controllers: "controllers.md"
       - Requests: "requests.md"
-      - Context: "context.md"
       - Responses: "responses.md"
       - WebSockets: "websockets.md"
-      - Controllers: "controllers.md"
+      - Context: "context.md"
   - Features:
       - Tasks: "tasks.md"
       - Lifespan: "lifespan.md"
@@ -111,13 +111,10 @@ markdown_extensions:
       base_path: docs
   - admonition
   - extra
-  - pymdownx.superfences:
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_code_format ""
+  - pymdownx.superfences
   - pymdownx.tabbed:
       alternate_style: true
+  - pymdownx.highlight
   - attr_list
   - md_in_html
 

@@ -8,7 +8,7 @@ from dymmond_settings.enums import EnvironmentType
 from typing_extensions import Annotated, Doc
 
 from lilya import __version__
-from lilya.types import ApplicationType, ExceptionHandler
+from lilya.types import ApplicationType, ASGIApp, ExceptionHandler
 
 if TYPE_CHECKING:
     from lilya.middleware.base import DefineMiddleware
@@ -17,8 +17,24 @@ if TYPE_CHECKING:
 
 @dataclass
 class _Internal(BaseSettings):
+    app: Annotated[
+        ASGIApp | None,
+        Doc(
+            """
+            The global application where the global settings is hooked.
+            It is advised, unless you are confortable with it, **not to change it**.
+            """
+        ),
+    ] = None
     ipython_args: ClassVar[list[str]] = ["--no-banner"]
-    ptpython_config_file: str = "~/.config/ptpython/config.py"
+    ptpython_config_file: Annotated[
+        str,
+        Doc(
+            """
+            Default configuration for ptpython
+            """
+        ),
+    ] = "~/.config/ptpython/config.py"
 
 
 @dataclass

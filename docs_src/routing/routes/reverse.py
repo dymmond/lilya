@@ -1,4 +1,5 @@
 from lilya.app import Lilya
+from lilya.compat import reverse
 from lilya.requests import Request
 from lilya.routing import Path
 
@@ -12,7 +13,9 @@ app = Lilya(
     ]
 )
 
-request = Request(...)
-
 # Path lookup here
-path = request.path_for("user")
+path = reverse("user")
+
+# Reverse with a specific app
+# Path lookup here
+path = reverse("user", app=app)

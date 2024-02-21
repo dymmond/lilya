@@ -274,7 +274,7 @@ This integration works using [EsmeraldTimming](https://github.com/dymmond/esmera
 
 ## Important points
 
-1. Lilya supports [Lilya middleware](#lilya-middleware), [MiddlewareProtocol](#lilya-protocols).
+1. Lilya supports [Lilya middleware](#lilya-middleware) ([MiddlewareProtocol](#lilya-protocols)).
 2. A `MiddlewareProtocol` is simply an interface that enforces `__init__` and `async __call__` to be implemented.
 3. `app` is required parameter from any class inheriting from the `MiddlewareProtocol`.
 4. [Pure ASGI Middleware](#pure-asgi-middleware) is encouraged and the `MiddlewareProtocol` enforces that.
