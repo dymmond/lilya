@@ -28,7 +28,7 @@ The `packages` option allows inclusion of "static" directories from within a Pyt
 The Python "bootstrap4" package serves as an example.
 
 ```python
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.routing import Include
 from lilya.staticfiles import StaticFiles
 

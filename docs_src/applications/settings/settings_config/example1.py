@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from lilya.app import ChildLilya, Lilya
+from lilya.apps import ChildLilya, Lilya
 from lilya.conf import Settings
 from lilya.routing import Include
 

@@ -286,7 +286,7 @@ Starting the application with the above settings will make sure that has an init
 set with values **but** what happens if you use the settings + parameters on instantiation?
 
 ```python
-from lilya.app import Lilya
+from lilya.apps import Lilya
 
 app = Lilya(debug=True, middleware=[])
 ```

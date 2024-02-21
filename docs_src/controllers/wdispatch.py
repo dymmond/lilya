@@ -1,6 +1,6 @@
 from typing import Any
 
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.controllers import Controller, WebSocketController
 from lilya.responses import HTMLResponse
 from lilya.routing import Path, WebSocketPath

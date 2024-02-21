@@ -4,7 +4,7 @@ from typing import Any, Callable, Dict, Literal, Mapping, Optional, Sequence, Un
 
 import httpx
 
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.conf.global_settings import Settings
 from lilya.permissions.base import Permission
 from lilya.testclient import TestClient

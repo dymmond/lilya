@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.background import Tasks
 from lilya.requests import Request
 from lilya.responses import Response

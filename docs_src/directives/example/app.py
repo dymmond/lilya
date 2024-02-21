@@ -3,7 +3,7 @@ from typing import Any
 import saffier
 from saffier import Database, Registry
 
-from lilya.app import Lilya
+from lilya.apps import Lilya
 
 database = Database("postgres://postgres:password@localhost:5432/my_db")
 registry = Registry(database=database)

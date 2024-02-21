@@ -1,4 +1,4 @@
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.middleware import DefineMiddleware
 from lilya.middleware.compression import GZipMiddleware
 from lilya.responses import PlainText, StreamingResponse

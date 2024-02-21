@@ -1,7 +1,7 @@
 from flask import Flask, request
 from markupsafe import escape
 
-from lilya.app import ChildLilya, Lilya
+from lilya.apps import ChildLilya, Lilya
 from lilya.middleware.wsgi import WSGIMiddleware
 from lilya.requests import Request
 from lilya.routing import Include, Path

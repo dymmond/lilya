@@ -4,7 +4,7 @@ import shutil
 import pytest
 from tests.cli.utils import run_cmd
 
-from lilya.app import Lilya
+from lilya.apps import Lilya
 
 app = Lilya(routes=[])
 

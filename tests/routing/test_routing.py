@@ -6,7 +6,7 @@ import uuid
 
 import pytest
 
-from lilya.app import ChildLilya, Lilya
+from lilya.apps import ChildLilya, Lilya
 from lilya.compat import reverse
 from lilya.exceptions import HTTPException
 from lilya.middleware.base import DefineMiddleware

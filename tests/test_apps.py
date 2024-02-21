@@ -7,7 +7,7 @@ import httpx
 import pytest
 
 from lilya import status
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.controllers import Controller
 from lilya.exceptions import HTTPException, ImproperlyConfigured, WebSocketException
 from lilya.middleware.base import Middleware

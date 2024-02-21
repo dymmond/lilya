@@ -2,7 +2,7 @@ from typing import Type
 
 import pytest
 
-from lilya.app import ChildLilya
+from lilya.apps import ChildLilya
 from lilya.controllers import Controller
 from lilya.enums import MediaType
 from lilya.exceptions import (

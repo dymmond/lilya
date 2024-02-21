@@ -7,7 +7,7 @@ from pathlib import Path
 import anyio
 import pytest
 
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.exceptions import HTTPException
 
 # from lilya.middleware.base import BaseHTTPMiddleware

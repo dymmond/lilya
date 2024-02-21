@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Dict
 
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.background import Task, Tasks
 from lilya.requests import Request
 from lilya.responses import Response

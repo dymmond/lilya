@@ -16,7 +16,7 @@ from lilya.enums import HTTPMethod
 from lilya.routing import Path
 
 if TYPE_CHECKING:
-    from lilya.app import ChildLilya, Lilya
+    from lilya.apps import ChildLilya, Lilya
     from lilya.routing import BasePath, Router
 
 printer = Print()

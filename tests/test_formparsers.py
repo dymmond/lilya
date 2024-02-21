@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from lilya._internal._parsers import MultiPartException, _user_safe_decode
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.datastructures import DataUpload
 from lilya.requests import Request
 from lilya.responses import JSONResponse

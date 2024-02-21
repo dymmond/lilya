@@ -1,4 +1,4 @@
-from lilya.app import ChildLilya, Lilya
+from lilya.apps import ChildLilya, Lilya
 from lilya.requests import Request
 from lilya.responses import JSONResponse
 from lilya.routing import Path, Router

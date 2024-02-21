@@ -1,6 +1,6 @@
 from typing import Callable
 
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.middleware import DefineMiddleware
 from lilya.middleware.trustedhost import TrustedHostMiddleware
 from lilya.requests import Request

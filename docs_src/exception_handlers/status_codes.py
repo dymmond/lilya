@@ -1,4 +1,4 @@
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.exceptions import HTTPException
 from lilya.requests import Request
 from lilya.responses import Error

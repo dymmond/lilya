@@ -1,7 +1,7 @@
 import re
 from typing import Callable
 
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.middleware import DefineMiddleware
 from lilya.middleware.sessions import SessionMiddleware
 from lilya.requests import Request

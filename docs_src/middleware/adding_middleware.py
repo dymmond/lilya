@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.middleware import DefineMiddleware
 from lilya.protocols.middleware import MiddlewareProtocol
 from lilya.types import ASGIApp, Receive, Scope, Send

@@ -1,4 +1,4 @@
-from lilya.app import ChildLilya
+from lilya.apps import ChildLilya
 from lilya.exceptions import PermissionDenied
 from lilya.permissions import DefinePermission
 from lilya.protocols.permissions import PermissionProtocol

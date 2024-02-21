@@ -1,7 +1,7 @@
 from json import loads
 
 from lilya import status
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.requests import Request
 from lilya.responses import JSONResponse
 from lilya.routing import Include, Path

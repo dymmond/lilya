@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from importlib import import_module
 from pathlib import Path
 
-from lilya.app import ChildLilya, Lilya
+from lilya.apps import ChildLilya, Lilya
 from lilya.cli.constants import DISCOVERY_FILES, DISCOVERY_FUNCTIONS, LILYA_DISCOVER_APP
 from lilya.cli.terminal import Print
 

@@ -3,7 +3,7 @@ from msgspec import Struct
 from pydantic import BaseModel
 
 from lilya import status
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.responses import make_response
 from lilya.routing import Path
 

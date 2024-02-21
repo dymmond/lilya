@@ -1,4 +1,4 @@
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.middleware import DefineMiddleware
 from lilya.middleware.httpsredirect import HTTPSRedirectMiddleware
 from lilya.middleware.trustedhost import TrustedHostMiddleware
