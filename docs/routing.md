@@ -518,3 +518,28 @@ The lookups also allow path parameters.
 ```
 
 If an `Include` includes a name, subsequent submounts should employ a `{prefix}:{name}` format for reverse Path lookups.
+
+### Using the `reverse`
+
+This is an alternative for the reverse path lookup. It can be particularly useful if you want to
+reverse a path in testing or in isolation.
+
+
+#### Parameters
+
+* **name** - The name given to the path.
+* **app** - An ASGI application containing the routes. Useful for reversing paths on specific applications and/or testing. *(Optional)*.
+* **path_params** - A dictionary like object containing the parameters that should be passed in a given path. *(Optional)*.
+
+Using the `reverse`, if no `app` parameter is specified, it will automatically default to the application or application router,
+which under normal circunstances, besides `testing`, it is the expected behaviour.
+
+```python
+{!> ../docs_src/routing/routes/reverse.py !}
+```
+
+The reverse also allow path parameters.
+
+```python
+{!> ../docs_src/routing/routes/reverse_path.py !}
+```
