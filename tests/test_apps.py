@@ -8,8 +8,7 @@ import pytest
 
 from lilya import status
 from lilya.app import Lilya
-
-# from lilya.endpoints import HTTPEndpoint
+from lilya.controllers import Controller
 from lilya.exceptions import HTTPException, ImproperlyConfigured, WebSocketException
 from lilya.middleware.base import Middleware
 from lilya.middleware.trustedhost import TrustedHostMiddleware
@@ -32,17 +31,17 @@ async def http_exception(request, exc):
     return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
 
 
-def func_homepage(request):
+def func_homepage():
     return PlainText("Hello, world!")
 
 
-async def async_homepage(request):
+async def async_homepage():
     return PlainText("Hello, world!")
 
 
-# class Homepage(HTTPEndpoint):
-#     def get(self, request):
-#         return PlainText("Hello, world!")
+class Homepage(Controller):
+    def get(self):
+        return PlainText("Hello, world!")
 
 
 def all_users_page():
@@ -112,7 +111,7 @@ app = Lilya(
     routes=[
         Path("/func", handler=func_homepage),
         Path("/async", handler=async_homepage),
-        # Path("/class", handler=Homepage),
+        Path("/class", handler=Homepage),
         Path("/500", handler=runtime_error),
         WebSocketPath("/ws", handler=websocket_handler),
         WebSocketPath("/ws-raise-websocket", handler=websocket_raise_websocket),
@@ -151,10 +150,10 @@ def test_async_route(client):
     assert response.text == "Hello, world!"
 
 
-# def test_class_route(client):
-#     response = client.get("/class")
-#     assert response.status_code == 200
-#     assert response.text == "Hello, world!"
+def test_class_route(client):
+    response = client.get("/class")
+    assert response.status_code == 200
+    assert response.text == "Hello, world!"
 
 
 def test_mounted_route(client):
@@ -194,9 +193,9 @@ def test_405(client):
     assert response.status_code == 405
     assert response.json() == {"detail": "Custom message"}
 
-    # response = client.post("/class")
-    # assert response.status_code == 405
-    # assert response.json() == {"detail": "Custom message"}
+    response = client.post("/class")
+    assert response.status_code == 405
+    assert response.json() == {"detail": "Custom message"}
 
 
 def test_500(test_client_factory):

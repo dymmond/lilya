@@ -4,7 +4,22 @@ import functools
 import inspect
 import re
 import traceback
-from typing import Any, Awaitable, Callable, Dict, List, Mapping, Sequence, Tuple, TypeVar, Union
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+    cast,
+)
+
+from typing_extensions import Annotated, Doc
 
 from lilya import status
 from lilya._internal._events import AsyncLifespan, handle_lifespan_events
@@ -19,6 +34,7 @@ from lilya._internal._responses import BaseHandler
 from lilya._internal._urls import include
 from lilya.compat import is_async_callable
 from lilya.conf import settings
+from lilya.conf.global_settings import Settings
 from lilya.datastructures import URL, Header, URLPath
 from lilya.enums import EventType, HTTPMethod, Match, ScopeType
 from lilya.exceptions import HTTPException, ImproperlyConfigured
@@ -1144,6 +1160,7 @@ class Router:
         "lifespan_context",
         "middleware_stack",
         "permission_started",
+        "settings_module",
     )
 
     def __init__(
@@ -1157,6 +1174,18 @@ class Router:
         *,
         middleware: Union[Sequence[DefineMiddleware], None] = None,
         permissions: Union[Sequence[DefinePermission], None] = None,
+        settings_module: Annotated[
+            Optional[Settings],
+            Doc(
+                """
+                Alternative settings parameter. This parameter is an alternative to
+                `SETTINGS_MODULE` way of loading your settings into a Lilya application.
+
+                When the `settings_module` is provided, it will make sure it takes priority over
+                any other settings provided for the instance.
+                """
+            ),
+        ] = None,
         include_in_schema: bool = True,
         deprecated: bool = False,
     ) -> None:
@@ -1188,12 +1217,13 @@ class Router:
 
         self.middleware = middleware if middleware is not None else []
         self.permissions = permissions if permissions is not None else []
-
+        self.settings_module = settings_module
         self.middleware_stack = self.app
         self.permission_started = False
 
         self._apply_middleware(self.middleware)
         self._apply_permissions(self.permissions)
+        self._set_settings_app(self.settings_module, self)
 
     def _apply_middleware(self, middleware: Union[Sequence[DefineMiddleware], None]) -> None:
         """
@@ -1222,6 +1252,16 @@ class Router:
         if permissions is not None:
             for cls, args, options in reversed(self.permissions):
                 self.middleware_stack = cls(app=self.middleware_stack, *args, **options)
+
+    def _set_settings_app(self, settings_module: Settings, app: ASGIApp) -> None:
+        """
+        Sets the main `app` of the settings module.
+        This is particularly useful for reversing urls.
+        """
+        if settings_module is None:
+            settings_module = cast(Settings, settings)
+
+        settings_module.app = app
 
     def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         for route in self.routes:
