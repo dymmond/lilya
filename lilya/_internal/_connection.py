@@ -36,9 +36,6 @@ async def empty_send(message: Message) -> NoReturn:  # pragma: no cover
     """Raise a `RuntimeError`.
 
     Serves as a placeholder `send` function.
-
-    Raises:
-        RuntimeError
     """
     raise RuntimeError()
 

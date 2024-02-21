@@ -47,6 +47,10 @@ class Lilya:
     """
     Initialize the Lilya ASGI framework.
 
+    !!! Tip
+        All the parameters available in the object have defaults being loaded by the
+        [settings system](https://lilya.dev/settings/) if nothing is provided.
+
     **Example**:
 
     ```python
@@ -68,6 +72,17 @@ class Lilya:
 
                 When the `settings_module` is provided, it will make sure it takes priority over
                 any other settings provided for the instance.
+
+                Read more about the [settings module](https://lilya.dev/settings/)
+                and how you can leverage it in your application.
+
+                !!! Tip
+                    The settings module can be very useful if you want to have, for example, a
+                    [ChildLilya](https://lilya.dev/routing/#childlilya-application) that needs completely different settings
+                    from the main app.
+
+                    Example: A `ChildLilya` that takes care of the authentication into a cloud
+                    provider such as AWS and handles the `boto3` module.
                 """
             ),
         ] = None,
@@ -75,7 +90,45 @@ class Lilya:
             Union[Sequence[Any], None],
             Doc(
                 """
-                A sequence of routes for the application.
+                A global `list` of lilya routes. Those routes may vary and those can
+                be `Path`, `WebSocketPath` or even `Include`.
+
+                This is also the entry-point for the routes of the application itself.
+
+                Read more about how to use and leverage
+                the [routing system](https://esmerald.dev/routing/).
+
+                **Example**
+
+                ```python
+                from lilya.apps import Lilya, Request
+                from lilya.requests import Request
+                from lilya.routing import Path
+
+
+                async def homepage(request: Request) -> str:
+                    return "Hello, home!"
+
+                async def another(request: Request) -> str:
+                    return "Hello, another!"
+
+
+                app = Lilya(
+                    routes=[
+                        Path(
+                            "/", handler=homepage,
+                        ),
+                        Include("/nested", routes=[
+                            Path("/another", another)
+                        ])
+                    ]
+                )
+                ```
+
+                !!! Note
+                    The routing system is very powerful and this example
+                    is not enough to understand what more things you can do.
+                    Read in [more detail](https://lilya.dev/routing/) about this.
                 """
             ),
         ] = None,
@@ -83,7 +136,36 @@ class Lilya:
             Union[Sequence[DefineMiddleware], None],
             Doc(
                 """
-                A sequence of middleware components for the application.
+                A global sequence of Lilya middlewares that are
+                used by the application.
+
+                Read more about the [Middleware](https://lilya.dev/middleware/).
+
+                **All middlewares must be wrapped inside the `DefineMiddleware`**
+
+                ```python
+                from lilya.middleware import DefineMiddleware
+                ```
+
+                **Example**
+
+                ```python
+                from lilya.apps import Lilya
+                from lilya.middleware import DefineMiddleware
+                from lilya.middleware.httpsredirect import HTTPSRedirectMiddleware
+                from lilya.middleware.trustedhost import TrustedHostMiddleware
+
+                app = Lilya(
+                    routes=[...],
+                    middleware=[
+                        DefineMiddleware(
+                            TrustedHostMiddleware,
+                            allowed_hosts=["example.com", "*.example.com"],
+                        ),
+                        DefineMiddleware(HTTPSRedirectMiddleware),
+                    ],
+                )
+                ```
                 """
             ),
         ] = None,
@@ -91,7 +173,56 @@ class Lilya:
             Union[Mapping[Any, ExceptionHandler], None],
             Doc(
                 """
-                A mapping of exception types to handlers for the application.
+                A global dictionary with handlers for exceptions.
+
+                Read more about the [Exception handlers](https://lilya.dev/exceptions/).
+
+                **Example**
+
+                ```python
+                from json import loads
+
+                from lilya import status
+                from lilya.apps import Lilya
+                from lilya.requests import Request
+                from lilya.responses import JSONResponse
+                from lilya.routing import Include, Path
+
+
+                async def handle_type_error(request: Request, exc: TypeError):
+                    status_code = status.HTTP_400_BAD_REQUEST
+                    details = loads(exc.json()) if hasattr(exc, "json") else exc.args[0]
+                    return JSONResponse({"detail": details}, status_code=status_code)
+
+
+                async def handle_value_error(request: Request, exc: ValueError):
+                    status_code = status.HTTP_400_BAD_REQUEST
+                    details = loads(exc.json()) if hasattr(exc, "json") else exc.args[0]
+                    return JSONResponse({"detail": details}, status_code=status_code)
+
+
+                async def me():
+                    return "Hello, world!"
+
+
+                app = Lilya(
+                    routes=[
+                        Include(
+                            "/",
+                            routes=[
+                                Path(
+                                    "/me",
+                                    handler=me,
+                                )
+                            ],
+                        )
+                    ],
+                    exception_handlers={
+                        TypeError: handle_type_error,
+                        ValueError: handle_value_error,
+                    },
+                )
+                ```
                 """
             ),
         ] = None,
@@ -99,7 +230,53 @@ class Lilya:
             Union[Sequence[DefinePermission], None],
             Doc(
                 """
-                A sequence of permission components for the application.
+                A global sequence of Lilya permissions that are
+                used by the application.
+
+                Read more about the [Permissions](https://lilya.dev/permissions/).
+
+                **All permissions must be wrapped inside the `DefinePermission`**
+
+                ```python
+                from lilya.permissions import DefinePermission
+                ```
+
+                **Example**
+
+                ```python
+                from lilya.apps import Lilya
+                from lilya.exceptions import PermissionDenied
+                from lilya.permissions import DefinePermission
+                from lilya.protocols.permissions import PermissionProtocol
+                from lilya.requests import Request
+                from lilya.responses import Ok
+                from lilya.routing import Path
+                from lilya.types import ASGIApp, Receive, Scope, Send
+
+
+                class AllowAccess(PermissionProtocol):
+                    def __init__(self, app: ASGIApp, *args, **kwargs):
+                        super().__init__(app, *args, **kwargs)
+                        self.app = app
+
+                    async def __call__(self, scope: Scope, receive: Receive, send: Send):
+                        request = Request(scope=scope, receive=receive, send=send)
+
+                        if "allow-admin" in request.headers:
+                            await self.app(scope, receive, send)
+                            return
+                        raise PermissionDenied()
+
+
+                def user(user: str):
+                    return Ok({"message": f"Welcome {user}"})
+
+
+                app = Lilya(
+                    routes=[Path("/{user}", user)],
+                    permissions=[DefinePermission(AllowAccess)],
+                )
+                ```
                 """
             ),
         ] = None,
@@ -107,7 +284,35 @@ class Lilya:
             Union[Sequence[Callable[[], Any]], None],
             Doc(
                 """
-                A sequence of startup functions to be called when the application starts.
+                A `list` of events that are trigger upon the application
+                starts.
+
+                Read more about the [events](https://lilya.dev.dev/lifespan/).
+
+                **Example**
+
+                ```python
+                from saffier import Database, Registry
+
+                from lilya.apps import Lilya
+                from lilya.requests import Request
+                from lilya.routing import Path
+
+                database = Database("postgresql+asyncpg://user:password@host:port/database")
+                registry = Registry(database=database)
+
+
+                async def create_user(request: Request):
+                    # Logic to create the user
+                    data = await request.json()
+                    ...
+
+
+                app = Lilya(
+                    routes=[Path("/create", handler=create_user)],
+                    on_startup=[database.connect],
+                )
+                ```
                 """
             ),
         ] = None,
@@ -115,7 +320,35 @@ class Lilya:
             Union[Sequence[Callable[[], Any]], None],
             Doc(
                 """
-                A sequence of shutdown functions to be called when the application stops.
+                A `list` of events that are trigger upon the application
+                shuts down.
+
+                Read more about the [events](https://lilya.dev/lifespan/).
+
+                **Example**
+
+                ```python
+                from saffier import Database, Registry
+
+                from lilya.apps import Lilya
+                from lilya.requests import Request
+                from lilya.routing import Path
+
+                database = Database("postgresql+asyncpg://user:password@host:port/database")
+                registry = Registry(database=database)
+
+
+                async def create_user(request: Request):
+                    # Logic to create the user
+                    data = await request.json()
+                    ...
+
+
+                app = Lilya(
+                    routes=[Path("/create", handler=create_user)],
+                    on_shutdown=[database.disconnect],
+                )
+                ```
                 """
             ),
         ] = None,
@@ -131,7 +364,10 @@ class Lilya:
             Optional[Lifespan[ApplicationType]],
             Doc(
                 """
-                An optional lifespan handler for managing startup and shutdown events.
+                A `lifespan` context manager handler. This is an alternative
+                to `on_startup` and `on_shutdown` and you **cannot used all combined**.
+
+                Read more about the [lifespan](https://lilya.dev/lifespan/).
                 """
             ),
         ] = None,
@@ -139,7 +375,11 @@ class Lilya:
             bool,
             Doc(
                 """
-                Enable or disable inclusion of the application in the OpenAPI schema.
+                Enable or disable inclusion of the application in a OpenAPI schema integration.
+
+                !!! Note
+                    Lilya is not tight to any OpenAPI provider but provides some out of the box
+                    flags that can be used for any possible integration.
                 """
             ),
         ] = True,
@@ -231,7 +471,7 @@ class Lilya:
         **Example**
 
         ```python
-        from lilya.app import Lilya
+        from lilia.apps import Lilya
 
         app = Lilya()
         app.settings
@@ -326,17 +566,90 @@ class Lilya:
 
     def add_route(
         self,
-        path: str,
-        handler: Callable[[Request], Union[Awaitable[Response], Response]],
-        methods: Union[List[str], None] = None,
-        name: Union[str, None] = None,
-        middleware: Union[Sequence[DefineMiddleware], None] = None,
-        permissions: Union[Sequence[DefinePermission], None] = None,
-        exception_handlers: Union[Mapping[Any, ExceptionHandler], None] = None,
-        include_in_schema: bool = True,
+        path: Annotated[
+            str,
+            Doc(
+                """
+                Relative path of the `Path`.
+                The path can contain parameters in a dictionary like format.
+                """
+            ),
+        ],
+        handler: Annotated[
+            Callable[[Request], Union[Awaitable[Response], Response]],
+            Doc(
+                """
+                A python callable.
+                """
+            ),
+        ],
+        methods: Annotated[
+            list[str] | None,
+            Doc(
+                """
+                List of HTTP verbs (GET, POST, PUT, DELETE, HEAD...) allowed in
+                the route.
+                """
+            ),
+        ] = None,
+        name: Annotated[
+            str | None,
+            Doc(
+                """
+                The name for the PAth. The name can be reversed by `path_for()` or `reverse()`.
+                """
+            ),
+        ] = None,
+        middleware: Annotated[
+            Sequence[DefineMiddleware] | None,
+            Doc(
+                """
+                A list of middleware to run for every request.
+                """
+            ),
+        ] = None,
+        permissions: Annotated[
+            Sequence[DefinePermission] | None,
+            Doc(
+                """
+                A list of [permissions](https://lilya.dev/permissions/) to serve the application incoming requests (HTTP and Websockets).
+                """
+            ),
+        ] = None,
+        exception_handlers: Annotated[
+            Mapping[Any, ExceptionHandler] | None,
+            Doc(
+                """
+                A dictionary of [exception types](https://lilya.dev/exceptions/) (or custom exceptions) and the handler functions on an application top level. Exception handler callables should be of the form of `handler(request, exc) -> response` and may be be either standard functions, or async functions.
+                """
+            ),
+        ] = None,
+        include_in_schema: Annotated[
+            bool,
+            Doc(
+                """
+                Boolean flag indicating if it should be added to the OpenAPI docs.
+                """
+            ),
+        ] = True,
     ) -> None:
         """
-        Manually creates a `Path`` from a given handler.
+        Adds a [Path](https://lilya.dev/routing/)
+        to the application routing.
+
+        This is a dynamic way of adding routes on the fly.
+
+        **Example**
+
+        ```python
+        from lilya.apps import Lilya
+
+        async def hello():
+            return "Hello, World!"
+
+        app = Lilya()
+        app.add_route(path="/hello", handler=hello)
+        ```
         """
         self.router.add_route(
             path=path,
@@ -351,15 +664,79 @@ class Lilya:
 
     def add_websocket_route(
         self,
-        path: str,
-        handler: Callable[[WebSocket], Awaitable[None]],
-        name: Union[str, None] = None,
-        middleware: Union[Sequence[DefineMiddleware], None] = None,
-        permissions: Union[Sequence[DefinePermission], None] = None,
-        exception_handlers: Union[Mapping[Any, ExceptionHandler], None] = None,
+        path: Annotated[
+            str,
+            Doc(
+                """
+                Relative path of the `Path`.
+                The path can contain parameters in a dictionary like format.
+                """
+            ),
+        ],
+        handler: Annotated[
+            Callable[[WebSocket], Awaitable[None]],
+            Doc(
+                """
+                A python callable.
+                """
+            ),
+        ],
+        name: Annotated[
+            str | None,
+            Doc(
+                """
+                The name for the WebSocketPath. The name can be reversed by `path_for()` or `reverse()`.
+                """
+            ),
+        ] = None,
+        middleware: Annotated[
+            Sequence[DefineMiddleware] | None,
+            Doc(
+                """
+                A list of middleware to run for every request.
+                """
+            ),
+        ] = None,
+        permissions: Annotated[
+            Sequence[DefinePermission] | None,
+            Doc(
+                """
+                A list of [permissions](https://lilya.dev/permissions/) to serve the application incoming requests (HTTP and Websockets).
+                """
+            ),
+        ] = None,
+        exception_handlers: Annotated[
+            Mapping[Any, ExceptionHandler] | None,
+            Doc(
+                """
+                A dictionary of [exception types](https://lilya.dev/exceptions/) (or custom exceptions) and the handler functions on an application top level. Exception handler callables should be of the form of `handler(request, exc) -> response` and may be be either standard functions, or async functions.
+                """
+            ),
+        ] = None,
     ) -> None:
         """
-        Manually creates a `WebSocketPath` from a given handler.
+        Adds a websocket [WebsocketPath](https://lilya.dev/routing/)
+        to the application routing.
+
+        This is a dynamic way of adding routes on the fly.
+
+        **Example**
+
+        ```python
+        from lilya.apps import Lilya
+
+
+        async def websocket_route(websocket):
+            await websocket.accept()
+            data = await websocket.receive_json()
+
+            assert data
+            await websocket.send_json({"data": "esmerald"})
+            await websocket.close()
+
+        app = Lilya()
+        app.add_websocket_route(path="/ws", handler=websocket_route)
+        ```
         """
         self.router.add_websocket_route(
             path=path,
@@ -407,7 +784,8 @@ class Lilya:
             ChildLilya,
             Doc(
                 """
-                The ChildLilya instance to be added.
+                The [ChildLilya](https://lilya.dev/routing/#childlilya-application) instance
+                to be added.
                 """
             ),
         ],
@@ -418,6 +796,25 @@ class Lilya:
         include_in_schema: Optional[bool] = True,
         deprecated: Optional[bool] = None,
     ) -> None:
+        """
+        Adds a [ChildLilya](https://lilya.dev/routing/#childlilya-application) directly to the active application router.
+
+        **Example**
+
+        ```python
+        from lilya.apps import ChildLilya, Lilya
+        from lilya.routing import Path, Include
+
+
+        async def hello(self):
+            return "Hello, World!"
+
+        child = ChildLilya(routes=[Path("/", handler=hello)])
+
+        app = Lilya()
+        app.add_child_lilya(path"/child", child=child)
+        ```
+        """
         if not isinstance(child, ChildLilya):
             raise ValueError("The child must be an instance of a ChildLilya.")
 
@@ -453,13 +850,14 @@ class ChildLilya(Lilya):
 
     !!! Tip
         All the parameters available in the object have defaults being loaded by the
-        [settings system](https://lilya.dev/application/settings/) if nothing is provided.
+        [settings system](https://lilya.dev/settings/) if nothing is provided.
 
     ## Example
 
     ```python
-    from lilya.app import Lilya, ChildLilya
+    from lilia.apps import Lilya, ChildLilya
     from lilya.routing import Include
+
 
     app = Lilya(routes=[Include('/child', app=ChildLilya(...))])
     ```

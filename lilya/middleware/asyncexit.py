@@ -11,7 +11,6 @@ class AsyncExitStackMiddleware(MiddlewareProtocol):
 
         Args:
             app: The 'next' ASGI app to call.
-            config: The AsyncExitConfig instance.
         """
         super().__init__(app)
         self.app = app

@@ -1,9 +1,16 @@
-from esmerald import Lilya, Path, Request, get
+from lilya.apps import Lilya, Request
+from lilya.requests import Request
+from lilya.routing import Path
 
 
-@get()
 async def homepage(request: Request) -> str:
     return "Hello, home!"
 
 
-app = Lilya(routes=[Path(handler=homepage)])
+app = Lilya(
+    routes=[
+        Path(
+            handler=homepage,
+        )
+    ]
+)

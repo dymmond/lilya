@@ -105,7 +105,6 @@ class SessionMiddleware(MiddlewareProtocol):
             message (Message): ASGI message.
             scope (Scope): ASGI scope.
             initial_session_was_empty (bool): True if the initial session was empty, False otherwise.
-            connection (Connection): HTTP connection object.
             send (Send): ASGI send channel.
         """
         if message["type"] == "http.response.start":
@@ -122,7 +121,7 @@ class SessionMiddleware(MiddlewareProtocol):
 
         Args:
             scope (Scope): ASGI scope.
-            connection (Connection): HTTP connection object.
+            message (Message): ASGI message
         """
         data = b64encode(json.dumps(scope["session"]).encode("utf-8"))
         data = self.signer.sign(data)
