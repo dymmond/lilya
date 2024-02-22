@@ -96,7 +96,7 @@ class Lilya:
                 This is also the entry-point for the routes of the application itself.
 
                 Read more about how to use and leverage
-                the [routing system](https://esmerald.dev/routing/).
+                the [routing system](https://lilya.dev/routing/).
 
                 **Example**
 
@@ -731,7 +731,7 @@ class Lilya:
             data = await websocket.receive_json()
 
             assert data
-            await websocket.send_json({"data": "esmerald"})
+            await websocket.send_json({"data": "lilya"})
             await websocket.close()
 
         app = Lilya()

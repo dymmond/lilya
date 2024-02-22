@@ -27,14 +27,14 @@ defaults.update(
 def welcome_message(app: Any) -> None:
     """Displays the welcome message for the user"""
     now = datetime.datetime.now().strftime("%b %d %Y, %H:%M:%S")
-    esmerald_info_date = f"Lilya {lilya.__version__} (interactive shell, {now})"
+    lilya_info_date = f"Lilya {lilya.__version__} (interactive shell, {now})"
     info = "Interactive shell that imports the application defaults."
 
     application_text = printer.message("Lilya, version: ", colour=OutputColour.CYAN3)
     application_name = printer.message(lilya.__version__, colour=OutputColour.GREEN3)
     application = f"{application_text}{application_name}"
 
-    printer.write_plain(esmerald_info_date, colour=OutputColour.CYAN3)
+    printer.write_plain(lilya_info_date, colour=OutputColour.CYAN3)
     printer.write_plain(info, colour=OutputColour.CYAN3)
     printer.write_plain(application)
 

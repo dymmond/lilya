@@ -271,9 +271,7 @@ def test_exception_handling_with_gateway_exception_handler(
         (NotFound, "handler"),
     ],
 )
-def test_exception_handling_with_child_esmerald(
-    exc_to_raise: Exception, expected_layer: str
-) -> None:
+def test_exception_handling_with_child_lilya(exc_to_raise: Exception, expected_layer: str) -> None:
     caller = {"name": ""}
 
     def create_named_handler(
@@ -296,7 +294,7 @@ def test_exception_handling_with_child_esmerald(
         def get(self) -> None:
             raise exc_to_raise
 
-    child_esmerald = ChildLilya(
+    child_lilya = ChildLilya(
         routes=[
             Path(
                 path="/base/test",
@@ -314,7 +312,7 @@ def test_exception_handling_with_child_esmerald(
         routes=[
             Include(
                 "/",
-                routes=[Include(path="/child", app=child_esmerald)],
+                routes=[Include(path="/child", app=child_lilya)],
                 exception_handlers={NotAuthorized: create_named_handler("include", NotAuthorized)},
             )
         ],

@@ -113,28 +113,31 @@ assigning the result object into a `AuthResult` and make it available on every r
 
     ```python
     from lilya import Lilya
+    from lilya.middleware import DefineMiddleware
     from .middleware.jwt import JWTAuthMiddleware
 
 
-    app = Lilya(routes=[...], middleware=[JWTAuthMiddleware])
+    app = Lilya(routes=[...], middleware=[DefineMiddleware(JWTAuthMiddleware)])
     ```
 
 === "From the settings"
 
     ```python
+    from dataclasses import dataclass
     from typing import List
 
-    from lilya import EsmeraldAPISettings
-    from lilya.types import Middleware
+    from lilya.conf import Settings
+    from lilya.middleware import DefineMiddleware
     from .middleware.jwt import JWTAuthMiddleware
 
 
-    class AppSettings(EsmeraldAPISettings):
+    @dataclass
+    class AppSettings(Settings):
 
         @property
-        def middleware(self) -> List["Middleware"]:
+        def middleware(self) -> List[DefineMiddleware]:
             return [
-                JWTAuthMiddleware
+                DefineMiddleware(JWTAuthMiddleware)
             ]
 
     # load the settings via SETTINGS_MODULE=src.configs.live.AppSettings

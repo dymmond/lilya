@@ -88,7 +88,7 @@ visualisation purposes and for the sake of organisation.
 Let's use the same example used in the [custom routers](#custom-router) with the customers specific routes and rules.
 
 ```python title="/application/apps/routers/customers.py"
-{!> ../docs_src/routing/router/childesmerald/customers.py!}
+{!> ../docs_src/routing/router/childlilya/customers.py!}
 ```
 
 Since the `ChildLilya` is a representation of a [Lilya](./applications.md) class, we can pass
@@ -100,13 +100,13 @@ You can add as many `ChildLilya` as you desire, there are no limits.
 **Now in the main application**:
 
 ```python title="/application/app.py"
-{!> ../docs_src/routing/router/childesmerald/app.py!}
+{!> ../docs_src/routing/router/childlilya/app.py!}
 ```
 
 **Adding nested applications**
 
 ```python title="/application/app.py"
-{!> ../docs_src/routing/router/childesmerald/nested.py!}
+{!> ../docs_src/routing/router/childlilya/nested.py!}
 ```
 
 The example above, it is showing that you could even add the same application within nested includes and for each
@@ -485,7 +485,6 @@ The above example illustrates the various levels where the exception handlers ca
 parent order where the order is:
 
 1. Default application built-in exception handlers.
-2. `LilyaException : http_esmerald_handler`.
 3. `InternalServerError : http_internal_server_error_handler`.
 4. `NotAuthorized: http_not_authorized_handler`.
 
