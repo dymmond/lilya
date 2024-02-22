@@ -3,6 +3,6 @@ from lilya.routing import Include
 
 app = Lilya(
     routes=[
-        Include("src.urls"),
+        Include("/", namespace="src.urls"),
     ]
 )

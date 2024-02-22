@@ -252,6 +252,21 @@ in the [WSGI Frameworks](./wsgi.md) section.
 {!> ../docs_src/middleware/available/wsgi.py !}
 ```
 
+The `WSGIMiddleware` also allows to pass the `app` as a string `<dotted>.<path>` and this can make it
+easier for code organisation.
+
+Let us assume the previous example of the `flask` app was inside `myapp/asgi_or_wsgi/apps`. Like this:
+
+```python
+{!> ../docs_src/middleware/available/wsgi_str.py !}
+```
+
+To call it inside the middleware is as simple as;
+
+```python
+{!> ../docs_src/middleware/available/wsgi_import.py !}
+```
+
 ### Other middlewares
 
 You can build your own middlewares as explained above but also reuse middlewares directly for any other ASGI application if you wish.

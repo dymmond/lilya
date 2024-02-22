@@ -265,7 +265,8 @@ The patten only works if the imports are done via `namespace` and not via `route
 #### Parameters
 
 * **path** - The path for the child lilya.
-* **app** - An application can be anything that is treated as an ASGI application.
+* **app** - An application can be anything that is treated as an ASGI application. The `app` can be
+an ASGI related app of a string `<dotted>.<module>` location of the app.
 * **routes** - A global `list` of lilya routes. Those routes may vary and those can
 be `Path`, `WebSocketPath` or even another `Include`.
 * **namespace** - A string with a qualified namespace from where the URLs should be loaded.
@@ -278,7 +279,7 @@ requests (HTTP and Websockets).
 functions on an application top level. Exception handler callables should be of the form of
 `handler(request, exc) -> response` and may be be either standard functions, or async functions.
 * **include_in_schema** - If route should be added to the OpenAPI Schema
-* **deprecated** - Boolean if this ChildLilya should be marked as deprecated.
+* **deprecated** - Boolean if this `Include` should be marked as deprecated.
 
 === "Importing using namespace"
 
@@ -290,6 +291,15 @@ functions on an application top level. Exception handler callables should be of 
 
     ```python title='src/myapp/urls.py'
     {!> ../docs_src/routing/routes/include/routes_list.py!}
+    ```
+
+=== "Import the app via string"
+
+    This is an alternative of loading the app via `string` import instead
+    of passing the object directly.
+
+    ```python title='src/myapp/urls.py'
+    {!> ../docs_src/routing/routes/include/app_str.py!}
     ```
 
 #### Using a different pattern

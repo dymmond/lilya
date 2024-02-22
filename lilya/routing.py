@@ -23,6 +23,7 @@ from typing_extensions import Annotated, Doc
 
 from lilya import status
 from lilya._internal._events import AsyncLifespan, handle_lifespan_events
+from lilya._internal._module_loading import import_string
 from lilya._internal._path import (
     clean_path,
     compile_path,
@@ -690,7 +691,7 @@ class Include(BasePath):
     def __init__(
         self,
         path: str,
-        app: ASGIApp | None = None,
+        app: ASGIApp | str | None = None,
         routes: Union[Sequence[BasePath], None] = None,
         namespace: Union[str, None] = None,
         pattern: Union[str, None] = None,
@@ -707,7 +708,7 @@ class Include(BasePath):
 
         Args:
             path (str): The path associated with the router.
-            app (Union[ASGIApp, None]): The ASGI app.
+            app (Union[ASGIApp, str, None]): The ASGI app.
             routes (Union[Sequence[BasePath], None]): The routes.
             namespace (Union[str, None]): The namespace.
             pattern (Union[str, None]): The pattern.
@@ -741,9 +742,12 @@ class Include(BasePath):
         if namespace is not None:
             routes = include(namespace, pattern)
 
-        self.__base_app__: Union[ASGIApp, Router] = (
-            app if app is not None else Router(routes=routes)
-        )
+        self.__base_app__: Union[ASGIApp, Router]
+        if isinstance(app, str):
+            self.__base_app__ = import_string(app)
+        else:
+            self.__base_app__ = app if app is not None else Router(routes=routes)
+
         self.app = self.__base_app__
 
         self.middleware = middleware if middleware is not None else []
