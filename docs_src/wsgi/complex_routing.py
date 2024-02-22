@@ -1,6 +1,6 @@
 from flask import Flask, request
 
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.middleware.wsgi import WSGIMiddleware
 from lilya.requests import Request
 from lilya.routing import Include, Path

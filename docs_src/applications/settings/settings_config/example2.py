@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.conf import Settings
 
 

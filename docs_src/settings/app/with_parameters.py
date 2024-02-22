@@ -1,4 +1,4 @@
-from lilya.app import Lilya
+from lilya.apps import Lilya
 
 # Creates the application instance with app_name and version set
 # and loads the remaining parameters from the Settings

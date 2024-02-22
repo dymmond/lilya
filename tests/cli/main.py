@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.conf import settings
 
 database, models = settings.registry

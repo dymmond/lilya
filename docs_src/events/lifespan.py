@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 
 from saffier import Database, Registry
 
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.requests import Request
 from lilya.routing import Path
 

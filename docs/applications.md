@@ -3,7 +3,7 @@
 Lilya brings a class called `Lilya` which wraps all the functionality of the application.
 
 ```python
-from lilya.app import Lilya
+from lilya.apps import Lilya
 ```
 
 There are many ways of creating a Lilya application but:
@@ -95,7 +95,7 @@ The application instance is **always** available via `request` or via `context`.
 **Example**
 
 ```python
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.requests import Request
 from lilya.context import Context
 from lilya.routing import Path

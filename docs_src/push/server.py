@@ -1,4 +1,4 @@
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.requests import Request
 from lilya.responses import HTMLResponse
 from lilya.routing import Include, Path

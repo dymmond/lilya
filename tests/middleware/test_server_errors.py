@@ -2,7 +2,7 @@ from typing import Any, Callable
 
 import pytest
 
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.background import Task
 from lilya.middleware.server_error import ServerErrorMiddleware
 from lilya.requests import Request

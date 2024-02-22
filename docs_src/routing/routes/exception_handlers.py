@@ -1,4 +1,4 @@
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.exceptions import InternalServerError, LilyaException, NotAuthorized
 from lilya.requests import Request
 from lilya.responses import JSONResponse

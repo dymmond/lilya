@@ -192,7 +192,7 @@ auto discovery of the Lilya application.
 Because the application is inside `src/main.py` it will be automatically discovered by Lilya as
 it followed the [discovery pattern](#how-does-it-work).
 
-##### Using the --app or ESMERALD_DISCOVERY_APP
+##### Using the --app or LILYA_DEFAULT_APP
 
 This is the other way to tell Lilya where to find your application. Since the application is
 inside the `src/main.py` we need to provide the proper location is a `<module>:<app>` format.
@@ -241,7 +241,7 @@ $ lilya runserver
 Again, same principle as before because the `--app` or a `LILYA_DEFAULT_APP` was provided,
 it triggered the auto discovery of the Lilya application.
 
-##### Using the --app or ESMERALD_DISCOVERY_APP
+##### Using the --app or LILYA_DEFAULT_APP
 
 ###### --app
 

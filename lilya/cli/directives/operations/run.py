@@ -14,7 +14,7 @@ from lilya.compat import run_sync
 from lilya.types import Lifespan
 
 if TYPE_CHECKING:
-    from lilya.app import ChildLilya, Lilya
+    from lilya.apps import ChildLilya, Lilya
 
 T = TypeVar("T")
 

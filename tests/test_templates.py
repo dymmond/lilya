@@ -5,7 +5,7 @@ from unittest import mock
 import jinja2
 import pytest
 
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.background import Task
 from lilya.routing import Path
 from lilya.templating.jinja import Jinja2Template

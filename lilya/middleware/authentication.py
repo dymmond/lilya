@@ -34,13 +34,11 @@ class BaseAuthMiddleware(ABC, MiddlewareProtocol):  # pragma: no cover
     `authenticate`, the `request.user` will be available in any of your
     endpoints.
 
-    Read more about how [Lilya implements](https://lilya.dev/middleware#baseauthmiddleware) the `BaseAuthMiddleware`.
-
     When implementing the `authenticate`, you must assign the result into the
     `AuthResult` object in order for the middleware to assign the `request.user`
     properly.
 
-    The `AuthResult` is of type `esmerald.middleware.authentication.AuthResult`.
+    The `AuthResult` is of type `lilya.middleware.authentication.AuthResult`.
     """
 
     def __init__(

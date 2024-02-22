@@ -88,7 +88,7 @@ visualisation purposes and for the sake of organisation.
 Let's use the same example used in the [custom routers](#custom-router) with the customers specific routes and rules.
 
 ```python title="/application/apps/routers/customers.py"
-{!> ../docs_src/routing/router/childesmerald/customers.py!}
+{!> ../docs_src/routing/router/childlilya/customers.py!}
 ```
 
 Since the `ChildLilya` is a representation of a [Lilya](./applications.md) class, we can pass
@@ -100,13 +100,13 @@ You can add as many `ChildLilya` as you desire, there are no limits.
 **Now in the main application**:
 
 ```python title="/application/app.py"
-{!> ../docs_src/routing/router/childesmerald/app.py!}
+{!> ../docs_src/routing/router/childlilya/app.py!}
 ```
 
 **Adding nested applications**
 
 ```python title="/application/app.py"
-{!> ../docs_src/routing/router/childesmerald/nested.py!}
+{!> ../docs_src/routing/router/childlilya/nested.py!}
 ```
 
 The example above, it is showing that you could even add the same application within nested includes and for each
@@ -265,7 +265,8 @@ The patten only works if the imports are done via `namespace` and not via `route
 #### Parameters
 
 * **path** - The path for the child lilya.
-* **app** - An application can be anything that is treated as an ASGI application.
+* **app** - An application can be anything that is treated as an ASGI application. The `app` can be
+an ASGI related app of a string `<dotted>.<module>` location of the app.
 * **routes** - A global `list` of lilya routes. Those routes may vary and those can
 be `Path`, `WebSocketPath` or even another `Include`.
 * **namespace** - A string with a qualified namespace from where the URLs should be loaded.
@@ -278,7 +279,7 @@ requests (HTTP and Websockets).
 functions on an application top level. Exception handler callables should be of the form of
 `handler(request, exc) -> response` and may be be either standard functions, or async functions.
 * **include_in_schema** - If route should be added to the OpenAPI Schema
-* **deprecated** - Boolean if this ChildLilya should be marked as deprecated.
+* **deprecated** - Boolean if this `Include` should be marked as deprecated.
 
 === "Importing using namespace"
 
@@ -290,6 +291,15 @@ functions on an application top level. Exception handler callables should be of 
 
     ```python title='src/myapp/urls.py'
     {!> ../docs_src/routing/routes/include/routes_list.py!}
+    ```
+
+=== "Import the app via string"
+
+    This is an alternative of loading the app via `string` import instead
+    of passing the object directly.
+
+    ```python title='src/myapp/urls.py'
+    {!> ../docs_src/routing/routes/include/app_str.py!}
     ```
 
 #### Using a different pattern
@@ -485,7 +495,6 @@ The above example illustrates the various levels where the exception handlers ca
 parent order where the order is:
 
 1. Default application built-in exception handlers.
-2. `LilyaException : http_esmerald_handler`.
 3. `InternalServerError : http_internal_server_error_handler`.
 4. `NotAuthorized: http_not_authorized_handler`.
 

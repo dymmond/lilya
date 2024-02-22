@@ -32,7 +32,7 @@ directly as the request is already available inside but you can still pass both 
 **Example**
 
 ```python
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.context import Context
 from lilya.routing import Path
 

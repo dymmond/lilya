@@ -33,7 +33,7 @@ class Context:
     **Example**
 
     ```python
-    from lilya.app import Lilya
+    from lilia.apps import Lilya
     from lilya.requests import Request
     from lilya.context import Context
 

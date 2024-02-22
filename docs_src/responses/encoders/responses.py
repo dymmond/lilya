@@ -2,7 +2,7 @@ from attrs import define
 from msgspec import Struct
 from pydantic import BaseModel
 
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.routing import Path
 
 

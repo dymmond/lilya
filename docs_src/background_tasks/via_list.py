@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.background import Task, Tasks
 from lilya.responses import JSONResponse
 from lilya.routing import Path

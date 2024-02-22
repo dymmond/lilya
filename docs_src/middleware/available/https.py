@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List
 
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.conf import Settings
 from lilya.middleware import DefineMiddleware
 from lilya.middleware.httpsredirect import HTTPSRedirectMiddleware

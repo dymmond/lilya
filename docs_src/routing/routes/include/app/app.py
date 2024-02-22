@@ -1,8 +1,8 @@
-from lilya.app import Lilya
+from lilya.apps import Lilya
 from lilya.routing import Include
 
 app = Lilya(
     routes=[
-        Include("src.urls"),
+        Include("/", namespace="src.urls"),
     ]
 )

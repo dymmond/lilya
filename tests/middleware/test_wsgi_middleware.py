@@ -1,7 +1,7 @@
 from flask import Flask, request
 from markupsafe import escape
 
-from lilya.app import ChildLilya, Lilya
+from lilya.apps import ChildLilya, Lilya
 from lilya.middleware.wsgi import WSGIMiddleware
 from lilya.requests import Request
 from lilya.routing import Include, Path
@@ -21,7 +21,7 @@ async def home(request: Request):
     return {"name": name}
 
 
-def test_serve_flask_via_esmerald(test_client_factory):
+def test_serve_flask_via_lilya(test_client_factory):
     routes = [
         Path("/home/{name:str}", handler=home),
         Include("/flask", WSGIMiddleware(flask_app)),
@@ -116,7 +116,7 @@ def second_flask_main():
     return f"Hello, {escape(name)} from Flask!"
 
 
-def test_serve_more_than_one_flask_app_via_esmerald(test_client_factory):
+def test_serve_more_than_one_flask_app_via_lilya(test_client_factory):
     routes = [
         Path("/home/{name:str}", handler=home),
         Include("/flask", WSGIMiddleware(flask_app)),
@@ -137,7 +137,7 @@ def test_serve_more_than_one_flask_app_via_esmerald(test_client_factory):
         assert response.text == "Hello, Lilya from Flask!"
 
 
-def test_serve_more_than_one_flask_app_via_esmerald_two(test_client_factory):
+def test_serve_more_than_one_flask_app_via_lilya_two(test_client_factory):
     routes = [
         Path("/home/{name:str}", handler=home),
         Include("/flask", WSGIMiddleware(flask_app)),
