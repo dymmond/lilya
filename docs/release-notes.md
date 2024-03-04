@@ -7,8 +7,15 @@ hide:
 
 ## 0.1.0
 
-### Added
+Initial release of `Lilya`.
 
-### Changed
-
-### Fixed
+* A lightweight ASGI toolkit.
+* Support for HTTP/WebSocket.
+* Tasks (in ASGI known as background tasks).
+* Lifespan events (on_startup/on_shutdown and lifespan).
+* Native permission system.
+* Middlewares (Compressor, CSRF, Session, CORS...).
+* A native and **optional** [client](./lilya-cli.md).
+* **Directive management control system** for any custom scripts to run inside the application.
+* Dynamic routing system with the help of the native **Include** and minimum boilerplate.
+* Native settings system. No more bloated instances.
