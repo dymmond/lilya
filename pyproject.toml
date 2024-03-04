@@ -122,6 +122,9 @@ path = "lilya/__init__.py"
 [project.scripts]
 lilya = "lilya.__main__:run_cli"
 
+[tool.ruff.lint.isort]
+combine-as-imports = true
+
 [tool.isort]
 profile = "black"
 known_third_party = []

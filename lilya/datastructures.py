@@ -20,9 +20,7 @@ from typing import (
 from urllib.parse import SplitResult, parse_qsl, urlencode, urlsplit, urlunsplit
 
 from anyio.to_thread import run_sync
-from multidict import CIMultiDict
-from multidict import MultiDict as BaseMultiDict
-from multidict import MultiDictProxy, MultiMapping
+from multidict import CIMultiDict, MultiDict as BaseMultiDict, MultiDictProxy, MultiMapping
 
 from lilya.enums import DefaultPort, HTTPType, ScopeType, WebsocketType
 from lilya.types import Scope

@@ -31,20 +31,6 @@ repos:
     hooks:
       - id: black
         args: ["--line-length=99"]
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        name: isort (python)
-        args: ["--project=lilya", "--line-length=99"]
-      - id: isort
-        name: isort (cython)
-        types: [cython]
-        args: ["--project=lilya", "--line-length=99"]
-      - id: isort
-        name: isort (pyi)
-        types: [pyi]
-        args: ["--project=lilya", "--line-length=99"]
 ci:
   autofix_commit_msg: 🎨 [pre-commit.ci] Auto format from pre-commit.com hooks
   autoupdate_commit_msg: ⬆ [pre-commit.ci] pre-commit autoupdate

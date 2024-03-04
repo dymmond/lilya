@@ -5,11 +5,11 @@ import pytest
 from attrs import define
 from msgspec import Struct
 from pydantic import BaseModel
-from tests.conftest import dont_run
 
 from lilya.responses import make_response
 from lilya.routing import Path
 from lilya.testclient import create_client
+from tests.conftest import dont_run
 
 
 @dataclass

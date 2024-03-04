@@ -12,9 +12,12 @@ from lilya.responses import TemplateResponse
 from lilya.templating.base import BaseTemplateRenderer
 
 try:
-    from jinja2 import Environment, FileSystemLoader
-    from jinja2 import Template as JinjaTemplate
-    from jinja2 import TemplateNotFound as JinjaTemplateNotFound
+    from jinja2 import (
+        Environment,
+        FileSystemLoader,
+        Template as JinjaTemplate,
+        TemplateNotFound as JinjaTemplateNotFound,
+    )
 except ImportError as exc:
     raise MissingDependency("jinja2 is not installed") from exc
 

@@ -10,7 +10,6 @@ fi
 export SOURCE_FILES="lilya tests"
 set -x
 
+${PREFIX}mypy lilya
 ${PREFIX}ruff check $SOURCE_FILES --fix --line-length 99
 ${PREFIX}black $SOURCE_FILES --line-length 99
-${PREFIX}isort $SOURCE_FILES --project=lilya --line-length 99
-${PREFIX}mypy lilya

@@ -5,10 +5,9 @@ import random
 import string
 from typing import Any
 
-from tests.cli.simple.test_custom_directive import User
-
 from lilya.cli.base import BaseDirective
 from lilya.cli.terminal import Print
+from tests.cli.simple.test_custom_directive import User
 
 printer = Print()
 
