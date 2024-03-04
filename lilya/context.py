@@ -90,7 +90,7 @@ class Context:
 
     @property
     def app(self) -> Any:
-        return self.scope["app"]
+        return self.request.scope["app"]
 
     def add_to_context(
         self,
