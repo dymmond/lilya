@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.1.1
+
+### Fixed
+
+- Context scope for app not being properly called from the request.
+
 ## 0.1.0
 
 Initial release of `Lilya`.
