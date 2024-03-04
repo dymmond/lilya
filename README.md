@@ -102,7 +102,7 @@ A Lilya also uses a [native settings system](https://lilya.dev/settings) which i
 for any application.
 
 ```python
-from lilia.apps import Lilya
+from lilya.apps import Lilya
 from lilya.requests import Request
 from lilya.responses import Ok
 from lilya.routing import Path

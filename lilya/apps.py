@@ -459,7 +459,7 @@ class Lilya:
         **Example**
 
         ```python
-        from lilia.apps import Lilya
+        from lilya.apps import Lilya
 
         app = Lilya()
         app.settings
@@ -843,7 +843,7 @@ class ChildLilya(Lilya):
     ## Example
 
     ```python
-    from lilia.apps import Lilya, ChildLilya
+    from lilya.apps import Lilya, ChildLilya
     from lilya.routing import Include
 
 
