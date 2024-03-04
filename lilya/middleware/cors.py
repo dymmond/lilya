@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import functools
 import re
-from typing import Any, Dict, Sequence, Union
+from typing import Any, Sequence
 
 from lilya.datastructures import Header
 from lilya.enums import HeaderEnum, HTTPCorsEnum
@@ -13,12 +15,12 @@ class CORSMiddleware(MiddlewareProtocol):
     def __init__(
         self,
         app: ASGIApp,
-        allow_origins: Union[Sequence[str], None] = None,
-        allow_methods: Union[Sequence[str], None] = None,
-        allow_headers: Union[Sequence[str], None] = None,
+        allow_origins: Sequence[str] | None = None,
+        allow_methods: Sequence[str] | None = None,
+        allow_headers: Sequence[str] | None = None,
         allow_credentials: bool = False,
-        allow_origin_regex: Union[str, None] = None,
-        expose_headers: Union[Sequence[str], None] = None,
+        allow_origin_regex: str | None = None,
+        expose_headers: Sequence[str] | None = None,
         max_age: int = 600,
     ) -> None:
         """
@@ -253,7 +255,7 @@ class CORSMiddleware(MiddlewareProtocol):
         allow_all_headers: bool,
         allow_headers: Sequence[str],
         allow_credentials: bool,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get headers for preflight responses.
 

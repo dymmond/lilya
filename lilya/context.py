@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import copy
 import warnings
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any
 
 from typing_extensions import Annotated, Doc
 
@@ -135,7 +135,7 @@ class Context:
             )
         setattr(self, key, value)
 
-    def get_context_data(self, **kwargs: Any) -> Dict[Any, Any]:
+    def get_context_data(self, **kwargs: Any) -> dict[Any, Any]:
         """
         Returns the context in a python dictionary like structure.
         """

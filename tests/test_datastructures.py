@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import io
 from tempfile import SpooledTemporaryFile
-from typing import BinaryIO, Type, Union
+from typing import BinaryIO
 
 import pytest
 from pytest_mock import MockerFixture
@@ -309,14 +311,14 @@ async def test_upload_file_repr_headers():
 
 
 @pytest.mark.parametrize("multi_dict", [MultiDict, ImmutableMultiDict, Header, QueryParam])
-def test_multi_to_dict(multi_dict: Type[Union[MultiDict, ImmutableMultiDict]]) -> None:
+def test_multi_to_dict(multi_dict: type[MultiDict | ImmutableMultiDict]) -> None:
     multi = multi_dict([("a", "a"), ("a", "a2"), ("b", "b")])
 
     assert multi.dict() == {"a": ["a", "a2"], "b": ["b"]}
 
 
 @pytest.mark.parametrize("multi_dict", [MultiDict, ImmutableMultiDict, Header, QueryParam])
-def test_multi_items(multi_dict: Type[Union[MultiDict, ImmutableMultiDict]]) -> None:
+def test_multi_items(multi_dict: type[MultiDict | ImmutableMultiDict]) -> None:
     data = [("a", "a"), ("a", "a2"), ("b", "b")]
     multi = multi_dict(data)
 

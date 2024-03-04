@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import os
 import shutil
 import stat
 from importlib import import_module
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -107,9 +109,9 @@ class TemplateDirective(BaseDirective):
         base_name: str,
         app_or_project: str,
         template_dir: str,
-        context: Dict[str, Any],
+        context: dict[str, Any],
         with_deployment: bool = False,
-        deployment_folder_name: Union[str, None] = None,
+        deployment_folder_name: str | None = None,
     ) -> None:
         """
         Iterates through a specific template directory and populates with the corresponding
@@ -147,9 +149,8 @@ class TemplateDirective(BaseDirective):
 
                 if os.path.exists(new_path):
                     raise DirectiveError(
-                        "%s already exists. Overlaying %s %s into an existing "
-                        "directory won't replace conflicting files."
-                        % (
+                        "{} already exists. Overlaying {} {} into an existing "
+                        "directory won't replace conflicting files.".format(
                             new_path,
                             self.a_or_an,
                             app_or_project,
@@ -172,10 +173,10 @@ class TemplateDirective(BaseDirective):
 
     def manage_template_variables(
         self,
-        template: Union[str, Path],
-        destination: Union[str, Path],
-        template_dir: Union[str, Path],
-        context: Dict[str, Any],
+        template: str | Path,
+        destination: str | Path,
+        template_dir: str | Path,
+        context: dict[str, Any],
     ) -> None:
         """
         Goes through every file generated and replaces the variables with the given
@@ -189,14 +190,9 @@ class TemplateDirective(BaseDirective):
         with open(destination, "w") as f:
             f.write(rendered_template)
 
-    def validate_name(self, name: Optional[str], name_or_dir: str = "name") -> None:
+    def validate_name(self, name: str | None, name_or_dir: str = "name") -> None:
         if name is None:
-            raise DirectiveError(
-                "you must provide {an} {app} name".format(
-                    an=self.a_or_an,
-                    app=self.app_or_project,
-                )
-            )
+            raise DirectiveError(f"you must provide {self.a_or_an} {self.app_or_project} name")
         # Check it's a valid directory name.
         if not name.isidentifier():
             raise DirectiveError(
@@ -223,7 +219,7 @@ class TemplateDirective(BaseDirective):
                 )
             )
 
-    def apply_umask(self, old_path: Union[str, Path], new_path: Union[str, Path]) -> None:
+    def apply_umask(self, old_path: str | Path, new_path: str | Path) -> None:
         current_umask = os.umask(0)
         os.umask(current_umask)
         current_mode = stat.S_IMODE(os.stat(old_path).st_mode)

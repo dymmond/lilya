@@ -1,19 +1,7 @@
 from __future__ import annotations
 
 import sys
-from typing import (
-    Any,
-    Awaitable,
-    Callable,
-    Dict,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Type,
-    Union,
-    cast,
-)
+from typing import Any, Awaitable, Callable, Mapping, Sequence, cast
 
 from typing_extensions import Annotated, Doc
 
@@ -64,7 +52,7 @@ class Lilya:
         self,
         debug: Annotated[bool, Doc("Enable or disable debug mode. Defaults to False.")] = False,
         settings_module: Annotated[
-            Optional[Settings],
+            Settings | None,
             Doc(
                 """
                 Alternative settings parameter. This parameter is an alternative to
@@ -87,7 +75,7 @@ class Lilya:
             ),
         ] = None,
         routes: Annotated[
-            Union[Sequence[Any], None],
+            Sequence[Any] | None,
             Doc(
                 """
                 A global `list` of lilya routes. Those routes may vary and those can
@@ -133,7 +121,7 @@ class Lilya:
             ),
         ] = None,
         middleware: Annotated[
-            Union[Sequence[DefineMiddleware], None],
+            Sequence[DefineMiddleware] | None,
             Doc(
                 """
                 A global sequence of Lilya middlewares that are
@@ -170,7 +158,7 @@ class Lilya:
             ),
         ] = None,
         exception_handlers: Annotated[
-            Union[Mapping[Any, ExceptionHandler], None],
+            Mapping[Any, ExceptionHandler] | None,
             Doc(
                 """
                 A global dictionary with handlers for exceptions.
@@ -227,7 +215,7 @@ class Lilya:
             ),
         ] = None,
         permissions: Annotated[
-            Union[Sequence[DefinePermission], None],
+            Sequence[DefinePermission] | None,
             Doc(
                 """
                 A global sequence of Lilya permissions that are
@@ -281,7 +269,7 @@ class Lilya:
             ),
         ] = None,
         on_startup: Annotated[
-            Union[Sequence[Callable[[], Any]], None],
+            Sequence[Callable[[], Any]] | None,
             Doc(
                 """
                 A `list` of events that are trigger upon the application
@@ -317,7 +305,7 @@ class Lilya:
             ),
         ] = None,
         on_shutdown: Annotated[
-            Union[Sequence[Callable[[], Any]], None],
+            Sequence[Callable[[], Any]] | None,
             Doc(
                 """
                 A `list` of events that are trigger upon the application
@@ -361,7 +349,7 @@ class Lilya:
             ),
         ] = True,
         lifespan: Annotated[
-            Optional[Lifespan[ApplicationType]],
+            Lifespan[ApplicationType] | None,
             Doc(
                 """
                 A `lifespan` context manager handler. This is an alternative
@@ -403,7 +391,7 @@ class Lilya:
         self.custom_permissions = self.__load_settings_value("permissions", permissions)
 
         self.state = State()
-        self.middleware_stack: Union[ASGIApp, None] = None
+        self.middleware_stack: ASGIApp | None = None
 
         self.router: Router = Router(
             routes=routes,
@@ -418,7 +406,7 @@ class Lilya:
         self.__set_settings_app(self.settings, self)
 
     @property
-    def routes(self) -> List[BasePath]:
+    def routes(self) -> list[BasePath]:
         return self.router.routes
 
     def __set_settings_app(self, settings_module: Settings, app: ASGIApp) -> None:
@@ -426,7 +414,7 @@ class Lilya:
             self.router._set_settings_app(settings_module, app)
 
     def __load_settings_value(
-        self, name: str, value: Optional[Any] = None, is_boolean: bool = False
+        self, name: str, value: Any | None = None, is_boolean: bool = False
     ) -> Any:
         """
         Loader used to get the settings defaults and custom settings
@@ -447,7 +435,7 @@ class Lilya:
 
     def __get_settings_value(
         self,
-        local_settings: Optional[Settings],
+        local_settings: Settings | None,
         global_settings: Settings,
         value: str,
     ) -> Any:
@@ -506,7 +494,7 @@ class Lilya:
 
         return app
 
-    def _get_error_handler(self) -> Optional[Callable[[Request, Exception], Response]]:
+    def _get_error_handler(self) -> Callable[[Request, Exception], Response] | None:
         """
         Get the error handler for middleware based on the exception handlers.
 
@@ -515,7 +503,7 @@ class Lilya:
         """
         return self.exception_handlers.get(500) or self.exception_handlers.get(Exception)  # type: ignore
 
-    def _get_exception_handlers(self) -> Dict[Exception, ExceptionHandler]:
+    def _get_exception_handlers(self) -> dict[Exception, ExceptionHandler]:
         """
         Get the exception handlers for middleware based on the application's exception handlers.
 
@@ -535,12 +523,12 @@ class Lilya:
         self,
         path: str,
         app: ASGIApp,
-        name: Union[str, None] = None,
-        middleware: Union[Sequence[DefineMiddleware], None] = None,
-        permissions: Union[Sequence[DefinePermission], None] = None,
-        exception_handlers: Union[Mapping[Any, ExceptionHandler], None] = None,
-        namespace: Union[str, None] = None,
-        pattern: Union[str, None] = None,
+        name: str | None = None,
+        middleware: Sequence[DefineMiddleware] | None = None,
+        permissions: Sequence[DefinePermission] | None = None,
+        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        namespace: str | None = None,
+        pattern: str | None = None,
         include_in_schema: bool = True,
     ) -> None:
         """
@@ -558,7 +546,7 @@ class Lilya:
             include_in_schema=include_in_schema,
         )
 
-    def host(self, host: str, app: ASGIApp, name: Union[str, None] = None) -> None:
+    def host(self, host: str, app: ASGIApp, name: str | None = None) -> None:
         """
         Adds a Host application into the routes.
         """
@@ -576,7 +564,7 @@ class Lilya:
             ),
         ],
         handler: Annotated[
-            Callable[[Request], Union[Awaitable[Response], Response]],
+            Callable[[Request], Awaitable[Response] | Response],
             Doc(
                 """
                 A python callable.
@@ -748,7 +736,7 @@ class Lilya:
         )
 
     def add_middleware(
-        self, middleware: Type[MiddlewareProtocol], *args: P.args, **kwargs: P.kwargs
+        self, middleware: type[MiddlewareProtocol], *args: P.args, **kwargs: P.kwargs
     ) -> None:
         """
         Adds an external middleware to the stack.
@@ -758,7 +746,7 @@ class Lilya:
         self.custom_middleware.insert(0, DefineMiddleware(middleware, *args, **kwargs))
 
     def add_permission(
-        self, permission: Type[PermissionProtocol], *args: P.args, **kwargs: P.kwargs
+        self, permission: type[PermissionProtocol], *args: P.args, **kwargs: P.kwargs
     ) -> None:
         """
         Adds an external permissions to the stack.
@@ -769,7 +757,7 @@ class Lilya:
 
     def add_exception_handler(
         self,
-        exception_cls_or_status_code: Union[int, Type[Exception]],
+        exception_cls_or_status_code: int | type[Exception],
         handler: ExceptionHandler,
     ) -> None:
         self.exception_handlers[exception_cls_or_status_code] = handler
@@ -789,12 +777,12 @@ class Lilya:
                 """
             ),
         ],
-        name: Optional[str] = None,
-        middleware: Optional[Sequence[DefineMiddleware]] = None,
-        permissions: Optional[Sequence[DefinePermission]] = None,
-        exception_handlers: Union[Mapping[Any, ExceptionHandler], None] = None,
-        include_in_schema: Optional[bool] = True,
-        deprecated: Optional[bool] = None,
+        name: str | None = None,
+        middleware: Sequence[DefineMiddleware] | None = None,
+        permissions: Sequence[DefinePermission] | None = None,
+        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        include_in_schema: bool | None = True,
+        deprecated: bool | None = None,
     ) -> None:
         """
         Adds a [ChildLilya](https://lilya.dev/routing/#childlilya-application) directly to the active application router.

@@ -1,11 +1,13 @@
-from typing import Dict, List, Mapping, Set, Tuple, Union
+from __future__ import annotations
+
+from typing import Mapping
 
 from lilya import status
 
 
 class HeaderHelper:
     # According to https://tools.ietf.org/html/rfc2616#section-7.1
-    entity_headers: List[str] = [
+    entity_headers: list[str] = [
         "allow",
         "content-encoding",
         "content-language",
@@ -31,8 +33,8 @@ class HeaderHelper:
 
     @classmethod
     def remove_entity_headers(
-        cls, headers: Mapping[str, str], allowed: Union[Tuple[str, str], None] = None
-    ) -> Dict[str, str]:
+        cls, headers: Mapping[str, str], allowed: tuple[str, str] | None = None
+    ) -> dict[str, str]:
         """
         Removes all the entity headers present in the headers given.
         According to RFC 2616 Section 10.3.5.
@@ -42,7 +44,7 @@ class HeaderHelper:
         if allowed is None:
             allowed = ("content-location", "expires")
 
-        _allowed: Set[str] = {h.lower() for h in allowed}
+        _allowed: set[str] = {h.lower() for h in allowed}
         headers = {
             header: value
             for header, value in headers.items()
@@ -62,7 +64,7 @@ class HeaderHelper:
         return bool(status_code not in (204, 304) and not (100 <= status_code < 200))
 
     @classmethod
-    def get_content_type(self, charset: str, media_type: Union[str, None] = None) -> str:
+    def get_content_type(self, charset: str, media_type: str | None = None) -> str:
         """
         Builds the content-type based on the media type and charset.
         """

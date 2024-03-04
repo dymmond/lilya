@@ -5,7 +5,7 @@ Functions to use with the Router.
 from __future__ import annotations
 
 from importlib import import_module
-from typing import TYPE_CHECKING, Any, List, Optional, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from lilya.conf import settings
 from lilya.datastructures import URLPath
@@ -16,7 +16,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from lilya.routing import BasePath
 
 
-def include(arg: Any, pattern: Optional[str] = settings.default_route_pattern) -> List[BasePath]:
+def include(arg: Any, pattern: str | None = settings.default_route_pattern) -> list[BasePath]:
     """Simple retrieve functionality to make it easier to include
     routes in the urls. Example, nested routes.
     """
@@ -24,7 +24,7 @@ def include(arg: Any, pattern: Optional[str] = settings.default_route_pattern) -
         raise ImproperlyConfigured("The value should be a string with the format <module>.<file>")
 
     router_conf_module = import_module(arg)
-    patterns: List[BasePath] = getattr(router_conf_module, pattern, None)
+    patterns: list[BasePath] = getattr(router_conf_module, pattern, None)
 
     assert (
         patterns is not None

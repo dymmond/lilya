@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import select
 import sys
-from typing import Any, Callable, Optional, Sequence
+from typing import Any, Callable, Sequence
 
 import click
 import nest_asyncio
@@ -61,9 +63,9 @@ async def run_shell(app: Any, lifespan: Any, kernel: str) -> None:
 
 
 def handle_lifespan_events(
-    on_startup: Optional[Sequence[Callable]] = None,
-    on_shutdown: Optional[Sequence[Callable]] = None,
-    lifespan: Optional[Any] = None,
+    on_startup: Sequence[Callable] | None = None,
+    on_shutdown: Sequence[Callable] | None = None,
+    lifespan: Any | None = None,
 ) -> Any:
     if lifespan:
         return lifespan

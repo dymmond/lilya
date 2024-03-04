@@ -2,8 +2,9 @@
 Cases copied from Starlette implementation
 """
 
+from __future__ import annotations
+
 import sys
-from typing import List, Optional
 
 import anyio
 import pytest
@@ -74,7 +75,7 @@ def test_request_headers(test_client_factory):
         ({}, None),
     ],
 )
-def test_request_client(scope: Scope, expected_client: Optional[Address]):
+def test_request_client(scope: Scope, expected_client: Address | None):
     scope.update({"type": "http"})  # required by Request's constructor
     client = Request(scope).client
     assert client == expected_client
@@ -527,7 +528,7 @@ def test_request_send_push_promise_without_setting_send(test_client_factory):
     ],
 )
 @pytest.mark.anyio
-async def test_request_rcv(messages: List[Message]) -> None:
+async def test_request_rcv(messages: list[Message]) -> None:
     messages = messages.copy()
 
     async def rcv() -> Message:
@@ -542,7 +543,7 @@ async def test_request_rcv(messages: List[Message]) -> None:
 
 @pytest.mark.anyio
 async def test_request_stream_called_twice() -> None:
-    messages: List[Message] = [
+    messages: list[Message] = [
         {"type": "http.request", "body": b"1", "more_body": True},
         {"type": "http.request", "body": b"2", "more_body": True},
         {"type": "http.request", "body": b"3"},

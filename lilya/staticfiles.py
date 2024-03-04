@@ -4,7 +4,7 @@ import importlib.util
 import os
 import stat
 from email.utils import parsedate
-from typing import Tuple, Union
+from typing import Union
 
 import anyio
 import anyio.to_thread
@@ -19,7 +19,7 @@ PathLike = Union[str, "os.PathLike[str]"]
 
 
 class StaticResponse(Response):
-    NOT_MODIFIED_HEADERS: Tuple[str, ...] = (
+    NOT_MODIFIED_HEADERS: tuple[str, ...] = (
         "cache-control",
         "content-location",
         "date",
@@ -42,7 +42,7 @@ class StaticFiles:
         self,
         *,
         directory: str | None = None,
-        packages: list[str | Tuple[str, str]] | None = None,
+        packages: list[str | tuple[str, str]] | None = None,
         html: bool = False,
         check_dir: bool = True,
         follow_symlink: bool = False,
@@ -69,7 +69,7 @@ class StaticFiles:
     def get_directories(
         self,
         directory: str | None = None,
-        packages: list[str | Tuple[str, str]] | None = None,
+        packages: list[str | tuple[str, str]] | None = None,
     ) -> list[str]:
         """
         Given `directory` and `packages` arguments, return a list of all the
@@ -187,7 +187,7 @@ class StaticFiles:
                 return FileResponse(full_path, stat_result=stat_result, status_code=404)
         raise HTTPException(status_code=404)
 
-    def lookup_path(self, path: str) -> Tuple[str, os.stat_result | None]:
+    def lookup_path(self, path: str) -> tuple[str, os.stat_result | None]:
         """
         Look up the full path and stat result for a given path.
 

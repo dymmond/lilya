@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import typing
 
 from lilya.datastructures import URL, Header
@@ -12,7 +14,7 @@ class TrustedHostMiddleware(MiddlewareProtocol):
     def __init__(
         self,
         app: ASGIApp,
-        allowed_hosts: typing.Optional[typing.Sequence[str]] = None,
+        allowed_hosts: typing.Sequence[str] | None = None,
         www_redirect: bool = True,
     ) -> None:
         """
@@ -58,7 +60,7 @@ class TrustedHostMiddleware(MiddlewareProtocol):
         else:
             await self.handle_invalid_host(scope, receive, send, found_www_redirect)
 
-    def validate_host(self, host: str) -> typing.Tuple[bool, bool]:
+    def validate_host(self, host: str) -> tuple[bool, bool]:
         """
         Validate the host header against the allowed host patterns.
 

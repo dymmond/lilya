@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Set
+from typing import Any
 
 from typing_extensions import Annotated, Doc
 
@@ -54,7 +56,7 @@ class BaseAuthMiddleware(ABC, MiddlewareProtocol):  # pragma: no cover
     ):
         super().__init__(app)
         self.app = app
-        self.scopes: Set[str] = {ScopeType.HTTP, ScopeType.WEBSOCKET}
+        self.scopes: set[str] = {ScopeType.HTTP, ScopeType.WEBSOCKET}
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """

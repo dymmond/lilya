@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import html
 import inspect
 import traceback
-from typing import Any, Callable, Union
+from typing import Any, Callable
 
 from lilya import status
 from lilya.compat import is_async_callable
@@ -32,7 +34,7 @@ class ServerErrorMiddleware(MiddlewareProtocol):
     def __init__(
         self,
         app: ASGIApp,
-        handler: Union[Callable[[Request, Exception], Any], None] = None,
+        handler: Callable[[Request, Exception], Any] | None = None,
         debug: bool = False,
     ) -> None:
         """

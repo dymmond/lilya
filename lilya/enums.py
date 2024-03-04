@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import Dict, Set, Tuple
 
 from lilya.conf.enums import StrEnum
 
@@ -23,7 +22,7 @@ class DefaultPort(IntEnum):
         return int(self)
 
     @classmethod
-    def to_dict(cls) -> Dict[str, int]:
+    def to_dict(cls) -> dict[str, int]:
         return {
             "http": cls.HTTP.value,
             "https": cls.HTTPS.value,
@@ -114,7 +113,7 @@ class HTTPCorsEnum(StrEnum):
     OPTIONS = "OPTIONS"
 
     @classmethod
-    def to_tuple(cls) -> Tuple[str, ...]:
+    def to_tuple(cls) -> tuple[str, ...]:
         return tuple(method.value for method in cls)
 
 
@@ -125,7 +124,7 @@ class HeaderEnum(StrEnum):
     CONTENT_TYPE = "Content-Type"
 
     @classmethod
-    def to_set(cls) -> Set[str]:
+    def to_set(cls) -> set[str]:
         return {method.value for method in cls}
 
 

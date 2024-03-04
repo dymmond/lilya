@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, List, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Sequence
 
 from dymmond_settings import Settings as BaseSettings
 from dymmond_settings.enums import EnvironmentType
@@ -52,7 +52,7 @@ class Settings(_Internal):
         ),
     ] = field(default=False)
     environment: Annotated[
-        Optional[str],
+        str | None,
         Doc(
             """
             Optional string indicating the environment where the settings are running.
@@ -61,7 +61,7 @@ class Settings(_Internal):
         ),
     ] = field(default=EnvironmentType.PRODUCTION)
     version: Annotated[
-        Union[str, int, float],
+        str | int | float,
         Doc(
             """
             The version of the application and defaults to the current version of Lilya if
@@ -134,7 +134,7 @@ class Settings(_Internal):
     ] = False
 
     @property
-    def routes(self) -> List[Any]:
+    def routes(self) -> list[Any]:
         """
         The initial Lilya application routes.
         """
@@ -246,7 +246,7 @@ class Settings(_Internal):
         return []
 
     @property
-    def exception_handlers(self) -> Union[ExceptionHandler, Dict[Any, Any]]:
+    def exception_handlers(self) -> ExceptionHandler | dict[Any, Any]:
         """
         A global dictionary with handlers for exceptions.
 
@@ -374,7 +374,7 @@ class Settings(_Internal):
         return None
 
     @property
-    def lifespan(self) -> Optional[ApplicationType]:
+    def lifespan(self) -> ApplicationType | None:
         """
         A `lifespan` context manager handler. This is an alternative
         to `on_startup` and `on_shutdown` and you **cannot used all combined**.

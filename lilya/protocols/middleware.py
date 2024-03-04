@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys
 
 if sys.version_info >= (3, 10):  # pragma: no cover
@@ -5,7 +7,9 @@ if sys.version_info >= (3, 10):  # pragma: no cover
 else:  # pragma: no cover
     from typing_extensions import ParamSpec
 
-from typing_extensions import Protocol, runtime_checkable
+from typing import runtime_checkable
+
+from typing_extensions import Protocol
 
 from lilya.types import ASGIApp, Receive, Scope, Send
 

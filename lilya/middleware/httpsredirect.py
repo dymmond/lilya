@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from lilya.datastructures import URL
 from lilya.enums import ScopeType
 from lilya.protocols.middleware import MiddlewareProtocol

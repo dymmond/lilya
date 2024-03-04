@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
-from typing import Any, List, Union
+from typing import Any, Union
 
 from lilya import status
 from lilya.exceptions import MissingDependency, TemplateNotFound
@@ -12,9 +12,12 @@ from lilya.responses import TemplateResponse
 from lilya.templating.base import BaseTemplateRenderer
 
 try:
-    from jinja2 import Environment, FileSystemLoader
-    from jinja2 import Template as JinjaTemplate
-    from jinja2 import TemplateNotFound as JinjaTemplateNotFound
+    from jinja2 import (
+        Environment,
+        FileSystemLoader,
+        Template as JinjaTemplate,
+        TemplateNotFound as JinjaTemplateNotFound,
+    )
 except ImportError as exc:
     raise MissingDependency("jinja2 is not installed") from exc
 
@@ -120,7 +123,7 @@ class Jinja2Template:
 
     def __init__(
         self,
-        directory: Union[str, Path, List[Path]] | None = None,
+        directory: str | Path | list[Path] | None = None,
         *,
         env: Environment | None = None,
         **options: Any,
@@ -174,7 +177,7 @@ class Jinja2Template:
         return env
 
     def _create_environment(
-        self, directory: Union[str, Path, List[Path]], **env_options: Any
+        self, directory: str | Path | list[Path], **env_options: Any
     ) -> Environment:
         """
         Create a new Jinja2 environment with the specified options.

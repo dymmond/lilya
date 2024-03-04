@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import argparse
 import os
 import sys
 from abc import ABC, abstractmethod
-from typing import Any, Type
+from typing import Any
 
 import lilya
 from lilya.cli.exceptions import DirectiveError
@@ -24,7 +26,7 @@ class BaseDirective(ABC):
         """
         return lilya.__version__
 
-    def add_arguments(self, parser: Type["argparse.ArgumentParser"]) -> Any:
+    def add_arguments(self, parser: type[argparse.ArgumentParser]) -> Any:
         """
         Entrypoint for directives and custom arguments
         """
@@ -32,7 +34,7 @@ class BaseDirective(ABC):
 
     def create_parser(self, name: str, subdirective: str, **kwargs: Any) -> DirectiveParser:
         parser = DirectiveParser(
-            prog="{} {}".format(os.path.basename(name), subdirective),
+            prog=f"{os.path.basename(name)} {subdirective}",
             description=self.help,
             **kwargs,
         )
@@ -53,7 +55,7 @@ class BaseDirective(ABC):
         try:
             await self.run(*args, **cmd_options)
         except DirectiveError as e:
-            printer.write_error("{}: {}".format(e.__class__.__name__, e))
+            printer.write_error(f"{e.__class__.__name__}: {e}")
             sys.exit(e.returncode)
 
     async def run(self, *args: Any, **options: Any) -> Any:

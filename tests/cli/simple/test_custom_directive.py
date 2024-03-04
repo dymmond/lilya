@@ -2,10 +2,10 @@ import os
 import shutil
 
 import pytest
-from tests.cli.user import User
-from tests.cli.utils import run_cmd
 
 from lilya.conf import settings
+from tests.cli.user import User
+from tests.cli.utils import run_cmd
 
 database, models = settings.registry
 pytestmark = pytest.mark.anyio

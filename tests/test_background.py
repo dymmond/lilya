@@ -1,4 +1,6 @@
-from typing import Callable, Set
+from __future__ import annotations
+
+from typing import Callable
 
 import pytest
 
@@ -96,7 +98,7 @@ def test_multi_tasks_failure_avoids_next_execution(
 
 @pytest.mark.asyncio
 async def test_background_tasks_as_group() -> None:
-    values: Set[str] = set()
+    values: set[str] = set()
 
     def set_values(values_to_add) -> None:
         for value in values_to_add:

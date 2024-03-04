@@ -22,29 +22,15 @@ repos:
           - --py3-plus
           - --keep-runtime-typing
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.254
+    rev: v0.3.0
     hooks:
       - id: ruff
-        args: ["--fix", "--line-length=99"]
+        args: ["check", "--fix", "--line-length=99"]
   - repo: https://github.com/psf/black
     rev: 24.1.1
     hooks:
       - id: black
         args: ["--line-length=99"]
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        name: isort (python)
-        args: ["--project=lilya", "--line-length=99"]
-      - id: isort
-        name: isort (cython)
-        types: [cython]
-        args: ["--project=lilya", "--line-length=99"]
-      - id: isort
-        name: isort (pyi)
-        types: [pyi]
-        args: ["--project=lilya", "--line-length=99"]
 ci:
   autofix_commit_msg: 🎨 [pre-commit.ci] Auto format from pre-commit.com hooks
   autoupdate_commit_msg: ⬆ [pre-commit.ci] pre-commit autoupdate

@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import json
-from typing import Any, AsyncGenerator, Dict, List, Tuple, Union, cast
+from typing import Any, AsyncGenerator, Dict, Tuple, cast
 
 import anyio
 
@@ -31,7 +33,7 @@ class Request(Connection):
     for accessing various aspects of the request, such as headers, body, and form data.
     """
 
-    _form: Union[FormData, None] = None
+    _form: FormData | None = None
 
     def __init__(
         self, scope: Scope, receive: Receive = empty_receive, send: Send = empty_send
@@ -85,7 +87,7 @@ class Request(Connection):
         return self._send
 
     @property
-    def content_type(self) -> Tuple[str, Dict[str, str]]:
+    def content_type(self) -> tuple[str, dict[str, str]]:
         """
         Get the content type of the request.
 
@@ -133,7 +135,7 @@ class Request(Connection):
             bytes: The request body as bytes.
         """
         if self._body is Empty:
-            chunks: List[bytes] = []
+            chunks: list[bytes] = []
             async for chunk in self.stream():
                 chunks.append(chunk)
             self._body = b"".join(chunks)  # type: ignore
@@ -157,8 +159,8 @@ class Request(Connection):
     async def _get_form(
         self,
         *,
-        max_files: Union[int, float] = 1000,
-        max_fields: Union[int, float] = 1000,
+        max_files: int | float = 1000,
+        max_fields: int | float = 1000,
     ) -> FormData:
         """
         Parse and return form data from the request.
@@ -202,8 +204,8 @@ class Request(Connection):
     def form(
         self,
         *,
-        max_files: Union[int, float] = 1000,
-        max_fields: Union[int, float] = 1000,
+        max_files: int | float = 1000,
+        max_fields: int | float = 1000,
     ) -> AsyncResourceHandler[FormData]:
         """
         Get the form data from the request.
@@ -257,7 +259,7 @@ class Request(Connection):
             path (str): The path for which to send the push promise.
         """
         if "http.response.push" in self.scope.get("extensions", {}):
-            raw_headers: List[Tuple[bytes, bytes]] = []
+            raw_headers: list[tuple[bytes, bytes]] = []
             for name in SERVER_PUSH_HEADERS:
                 for value in self.headers.getlist(name):
                     raw_headers.append((name.encode("latin-1"), value.encode("latin-1")))

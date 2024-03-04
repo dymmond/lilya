@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from json import loads
-from typing import Dict, Type, Union, cast
+from typing import Dict, Type, cast
 
 from lilya import status
 from lilya.compat import is_async_callable
@@ -26,7 +28,7 @@ StatusHandlers = Dict[int, ExceptionHandler]
 
 def _lookup_exception_handler(
     exc_handlers: ExceptionHandlers, exc: Exception
-) -> Union[ExceptionHandler, None]:
+) -> ExceptionHandler | None:
     """
     Looks up an exception handler for a given exception type in the exception handlers dictionary.
 
@@ -43,7 +45,7 @@ def _lookup_exception_handler(
     return None
 
 
-def wrap_app_handling_exceptions(app: ASGIApp, conn: Union[Request, WebSocket]) -> ASGIApp:
+def wrap_app_handling_exceptions(app: ASGIApp, conn: Request | WebSocket) -> ASGIApp:
     """
     Wraps an ASGI application, handling exceptions and applying exception handlers.
 
@@ -104,7 +106,7 @@ def wrap_app_handling_exceptions(app: ASGIApp, conn: Union[Request, WebSocket]) 
 
 
 async def handle_exception(
-    scope: Scope, conn: Union[Request, WebSocket], exc: Exception, handler: ExceptionHandler
+    scope: Scope, conn: Request | WebSocket, exc: Exception, handler: ExceptionHandler
 ) -> None:
     """
     Handles an exception by applying the specified exception handler.

@@ -4,20 +4,7 @@ import functools
 import inspect
 import re
 import traceback
-from typing import (
-    Any,
-    Awaitable,
-    Callable,
-    Dict,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Tuple,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import Any, Awaitable, Callable, Mapping, Sequence, TypeVar, cast
 
 from typing_extensions import Annotated, Doc
 
@@ -55,7 +42,7 @@ class NoMatchFound(Exception):
     if no matching route exists.
     """
 
-    def __init__(self, name: str, path_params: Dict[str, Any]) -> None:
+    def __init__(self, name: str, path_params: dict[str, Any]) -> None:
         params = ", ".join(list(path_params.keys()))
         super().__init__(f'No route exists for name "{name}" and params "{params}".')
 
@@ -80,7 +67,7 @@ class BasePath:
     def handle_signature(self) -> None:
         raise NotImplementedError()  # pragma: no cover
 
-    def search(self, scope: Scope) -> Tuple[Match, Scope]:
+    def search(self, scope: Scope) -> tuple[Match, Scope]:
         """
         Searches for a matching route.
         """
@@ -220,7 +207,7 @@ class BasePath:
         await send({"type": "websocket.close", "code": status_code, "reason": reason})
 
     @property
-    def stringify_parameters(self) -> List[str]:  # pragma: no cover
+    def stringify_parameters(self) -> list[str]:  # pragma: no cover
         """
         Gets the param:type in string like list.
         Used for the directive `lilya show_urls`.
@@ -262,11 +249,11 @@ class Path(BaseHandler, BasePath):
         path: str,
         handler: Callable[..., Any],
         *,
-        methods: Union[List[str], None] = None,
-        name: Union[str, None] = None,
+        methods: list[str] | None = None,
+        name: str | None = None,
         include_in_schema: bool = True,
-        middleware: Union[Sequence[DefineMiddleware], None] = None,
-        permissions: Union[Sequence[DefinePermission], None] = None,
+        middleware: Sequence[DefineMiddleware] | None = None,
+        permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
         deprecated: bool = False,
     ) -> None:
@@ -275,7 +262,7 @@ class Path(BaseHandler, BasePath):
         self.handler = handler
         self.name = get_name(handler) if name is None else name
         self.include_in_schema = include_in_schema
-        self.methods: Union[List[str], None] = methods
+        self.methods: list[str] | None = methods
         self.deprecated = deprecated
 
         # Defition of the app
@@ -321,11 +308,11 @@ class Path(BaseHandler, BasePath):
 
         if self.signature.return_annotation is inspect._empty:
             raise ImproperlyConfigured(
-                "A return value of a route handler function should be type annotated."
+                "A return value of a route handler function should be type annotated. "
                 "If your function doesn't return a value or returns None, annotate it as returning 'NoReturn' or 'None' respectively."
             )
 
-    def _apply_middleware(self, middleware: Union[Sequence[DefineMiddleware], None]) -> None:
+    def _apply_middleware(self, middleware: Sequence[DefineMiddleware] | None) -> None:
         """
         Apply middleware to the app.
 
@@ -339,7 +326,7 @@ class Path(BaseHandler, BasePath):
             for cls, args, options in reversed(middleware):
                 self.app = cls(app=self.app, *args, **options)
 
-    def _apply_permissions(self, permissions: Union[Sequence[DefinePermission], None]) -> None:
+    def _apply_permissions(self, permissions: Sequence[DefinePermission] | None) -> None:
         """
         Apply permissions to the app.
 
@@ -412,7 +399,7 @@ class Path(BaseHandler, BasePath):
                 return self.handle_match(scope, match)
         return Match.NONE, {}
 
-    def handle_match(self, scope: Scope, match: re.Match) -> Tuple[Match, Scope]:
+    def handle_match(self, scope: Scope, match: re.Match) -> tuple[Match, Scope]:
         """
         Handles the case when a match is found in the route patterns.
 
@@ -492,10 +479,10 @@ class WebSocketPath(BaseHandler, BasePath):
         path: str,
         handler: Callable[..., Any],
         *,
-        name: Union[str, None] = None,
+        name: str | None = None,
         include_in_schema: bool = True,
-        middleware: Union[Sequence[DefineMiddleware], None] = None,
-        permissions: Union[Sequence[DefinePermission], None] = None,
+        middleware: Sequence[DefineMiddleware] | None = None,
+        permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
     ) -> None:
         assert path.startswith("/"), "Paths must start with '/'"
@@ -541,11 +528,11 @@ class WebSocketPath(BaseHandler, BasePath):
 
         if self.signature.return_annotation is inspect._empty:
             raise ImproperlyConfigured(
-                "A return value of a route handler function should be type annotated."
+                "A return value of a route handler function should be type annotated. "
                 "If your function doesn't return a value or returns None, annotate it as returning 'NoReturn' or 'None' respectively."
             )
 
-    def _apply_middleware(self, middleware: Union[Sequence[DefineMiddleware], None]) -> None:
+    def _apply_middleware(self, middleware: Sequence[DefineMiddleware] | None) -> None:
         """
         Apply middleware to the app.
 
@@ -559,7 +546,7 @@ class WebSocketPath(BaseHandler, BasePath):
             for cls, args, options in reversed(middleware):
                 self.app = cls(app=self.app, *args, **options)
 
-    def _apply_permissions(self, permissions: Union[Sequence[DefinePermission], None]) -> None:
+    def _apply_permissions(self, permissions: Sequence[DefinePermission] | None) -> None:
         """
         Apply permissions to the app.
 
@@ -594,7 +581,7 @@ class WebSocketPath(BaseHandler, BasePath):
 
         return Match.NONE, {}
 
-    def handle_match(self, scope: Scope, match: re.Match) -> Tuple[Match, Scope]:
+    def handle_match(self, scope: Scope, match: re.Match) -> tuple[Match, Scope]:
         """
         Handles the case when a match is found in the route patterns.
 
@@ -692,13 +679,13 @@ class Include(BasePath):
         self,
         path: str,
         app: ASGIApp | str | None = None,
-        routes: Union[Sequence[BasePath], None] = None,
-        namespace: Union[str, None] = None,
-        pattern: Union[str, None] = None,
-        name: Union[str, None] = None,
+        routes: Sequence[BasePath] | None = None,
+        namespace: str | None = None,
+        pattern: str | None = None,
+        name: str | None = None,
         *,
-        middleware: Union[Sequence[DefineMiddleware], None] = None,
-        permissions: Union[Sequence[DefinePermission], None] = None,
+        middleware: Sequence[DefineMiddleware] | None = None,
+        permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
         include_in_schema: bool = True,
         deprecated: bool = False,
@@ -742,7 +729,7 @@ class Include(BasePath):
         if namespace is not None:
             routes = include(namespace, pattern)
 
-        self.__base_app__: Union[ASGIApp, Router]
+        self.__base_app__: ASGIApp | Router
         if isinstance(app, str):
             self.__base_app__ = import_string(app)
         else:
@@ -765,7 +752,7 @@ class Include(BasePath):
             clean_path(self.path + "/{path:path}")
         )
 
-    def _apply_middleware(self, middleware: Union[Sequence[DefineMiddleware], None]) -> None:
+    def _apply_middleware(self, middleware: Sequence[DefineMiddleware] | None) -> None:
         """
         Apply middleware to the app.
 
@@ -779,7 +766,7 @@ class Include(BasePath):
             for cls, args, options in reversed(middleware):
                 self.app = cls(app=self.app, *args, **options)
 
-    def _apply_permissions(self, permissions: Union[Sequence[DefinePermission], None]) -> None:
+    def _apply_permissions(self, permissions: Sequence[DefinePermission] | None) -> None:
         """
         Apply permissions to the app.
 
@@ -794,7 +781,7 @@ class Include(BasePath):
                 self.app = cls(app=self.app, *args, **options)
 
     @property
-    def routes(self) -> List[BasePath]:
+    def routes(self) -> list[BasePath]:
         """
         Returns a list of declared path objects.
         """
@@ -824,7 +811,7 @@ class Include(BasePath):
 
     def handle_match(
         self, scope: Scope, match: re.Match, route_path: str, root_path: str
-    ) -> Tuple[Match, Scope]:
+    ) -> tuple[Match, Scope]:
         """
         Handles the case when a match is found in the route patterns.
 
@@ -951,10 +938,10 @@ class Host(BasePath):
         self,
         host: str,
         app: ASGIApp,
-        name: Union[str, None] = None,
+        name: str | None = None,
         *,
-        middleware: Union[Sequence[DefineMiddleware], None] = None,
-        permissions: Union[Sequence[DefinePermission], None] = None,
+        middleware: Sequence[DefineMiddleware] | None = None,
+        permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
     ) -> None:
         assert not host.startswith("/"), "Host must not start with '/'"
@@ -971,7 +958,7 @@ class Host(BasePath):
         self._apply_middleware(middleware)
         self._apply_permissions(permissions)
 
-    def _apply_middleware(self, middleware: Union[Sequence[DefineMiddleware], None]) -> None:
+    def _apply_middleware(self, middleware: Sequence[DefineMiddleware] | None) -> None:
         """
         Apply middleware to the app.
 
@@ -985,7 +972,7 @@ class Host(BasePath):
             for cls, args, options in reversed(middleware):
                 self.app = cls(app=self.app, *args, **options)
 
-    def _apply_permissions(self, permissions: Union[Sequence[DefinePermission], None]) -> None:
+    def _apply_permissions(self, permissions: Sequence[DefinePermission] | None) -> None:
         """
         Apply permissions to the app.
 
@@ -1000,7 +987,7 @@ class Host(BasePath):
                 self.app = cls(app=self.app, *args, **options)
 
     @property
-    def routes(self) -> List[BasePath]:
+    def routes(self) -> list[BasePath]:
         """
         Returns a list of declared path objects.
         """
@@ -1027,7 +1014,7 @@ class Host(BasePath):
 
         return Match.NONE, {}
 
-    def handle_match(self, scope: Scope, match: re.Match) -> Tuple[Match, Scope]:
+    def handle_match(self, scope: Scope, match: re.Match) -> tuple[Match, Scope]:
         """
         Handles the case when a match is found in the route patterns.
 
@@ -1169,17 +1156,17 @@ class Router:
 
     def __init__(
         self,
-        routes: Union[Sequence[BasePath], None] = None,
+        routes: Sequence[BasePath] | None = None,
         redirect_slashes: bool = True,
-        default: Union[ASGIApp, None] = None,
-        on_startup: Union[Sequence[Callable[[], Any]], None] = None,
-        on_shutdown: Union[Sequence[Callable[[], Any]], None] = None,
-        lifespan: Union[Lifespan[Any], None] = None,
+        default: ASGIApp | None = None,
+        on_startup: Sequence[Callable[[], Any]] | None = None,
+        on_shutdown: Sequence[Callable[[], Any]] | None = None,
+        lifespan: Lifespan[Any] | None = None,
         *,
-        middleware: Union[Sequence[DefineMiddleware], None] = None,
-        permissions: Union[Sequence[DefinePermission], None] = None,
+        middleware: Sequence[DefineMiddleware] | None = None,
+        permissions: Sequence[DefinePermission] | None = None,
         settings_module: Annotated[
-            Optional[Settings],
+            Settings | None,
             Doc(
                 """
                 Alternative settings parameter. This parameter is an alternative to
@@ -1229,7 +1216,7 @@ class Router:
         self._apply_permissions(self.permissions)
         self._set_settings_app(self.settings_module, self)
 
-    def _apply_middleware(self, middleware: Union[Sequence[DefineMiddleware], None]) -> None:
+    def _apply_middleware(self, middleware: Sequence[DefineMiddleware] | None) -> None:
         """
         Apply middleware to the app.
 
@@ -1243,7 +1230,7 @@ class Router:
             for cls, args, options in reversed(middleware):
                 self.middleware_stack = cls(app=self.middleware_stack, *args, **options)
 
-    def _apply_permissions(self, permissions: Union[Sequence[DefinePermission], None]) -> None:
+    def _apply_permissions(self, permissions: Sequence[DefinePermission] | None) -> None:
         """
         Apply permissions to the app.
 
@@ -1458,12 +1445,12 @@ class Router:
         self,
         path: str,
         app: ASGIApp,
-        name: Union[str, None] = None,
-        middleware: Union[Sequence[DefineMiddleware], None] = None,
-        permissions: Union[Sequence[DefinePermission], None] = None,
-        exception_handlers: Union[Mapping[Any, ExceptionHandler], None] = None,
-        namespace: Union[str, None] = None,
-        pattern: Union[str, None] = None,
+        name: str | None = None,
+        middleware: Sequence[DefineMiddleware] | None = None,
+        permissions: Sequence[DefinePermission] | None = None,
+        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        namespace: str | None = None,
+        pattern: str | None = None,
         include_in_schema: bool = True,
     ) -> None:
         """
@@ -1482,7 +1469,7 @@ class Router:
         )
         self.routes.append(route)
 
-    def host(self, host: str, app: ASGIApp, name: Union[str, None] = None) -> None:
+    def host(self, host: str, app: ASGIApp, name: str | None = None) -> None:
         """
         Adds a Host application into the routes.
         """
@@ -1492,12 +1479,12 @@ class Router:
     def add_route(
         self,
         path: str,
-        handler: Callable[[Request], Union[Awaitable[Response], Response]],
-        methods: Union[List[str], None] = None,
-        name: Union[str, None] = None,
-        middleware: Union[Sequence[DefineMiddleware], None] = None,
-        permissions: Union[Sequence[DefinePermission], None] = None,
-        exception_handlers: Union[Mapping[Any, ExceptionHandler], None] = None,
+        handler: Callable[[Request], Awaitable[Response] | Response],
+        methods: list[str] | None = None,
+        name: str | None = None,
+        middleware: Sequence[DefineMiddleware] | None = None,
+        permissions: Sequence[DefinePermission] | None = None,
+        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
         include_in_schema: bool = True,
     ) -> None:
         """
@@ -1519,10 +1506,10 @@ class Router:
         self,
         path: str,
         handler: Callable[[WebSocket], Awaitable[None]],
-        name: Union[str, None] = None,
-        middleware: Union[Sequence[DefineMiddleware], None] = None,
-        permissions: Union[Sequence[DefinePermission], None] = None,
-        exception_handlers: Union[Mapping[Any, ExceptionHandler], None] = None,
+        name: str | None = None,
+        middleware: Sequence[DefineMiddleware] | None = None,
+        permissions: Sequence[DefinePermission] | None = None,
+        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
     ) -> None:
         """
         Manually creates a `WebSocketPath` from a given handler.

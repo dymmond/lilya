@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys
 
 if sys.version_info >= (3, 10):  # pragma: no cover
@@ -5,7 +7,7 @@ if sys.version_info >= (3, 10):  # pragma: no cover
 else:  # pragma: no cover
     from typing_extensions import ParamSpec
 
-from typing import Any, Callable, Sequence, Union
+from typing import Any, Callable, Sequence
 
 import anyio
 
@@ -126,7 +128,7 @@ class Tasks(Task):
 
     __slots__ = ("tasks", "as_group")
 
-    def __init__(self, tasks: Union[Sequence[Task], None] = None, as_group: bool = False):
+    def __init__(self, tasks: Sequence[Task] | None = None, as_group: bool = False):
         self.tasks = list(tasks) if tasks else []
         self.as_group = as_group
 

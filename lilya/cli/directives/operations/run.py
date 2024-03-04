@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import os
 import sys
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import click
 
@@ -88,7 +90,7 @@ def get_position() -> int:
 
 
 async def execute_lifespan(
-    app: Optional[Union["Lilya", "ChildLilya"]],
+    app: Lilya | ChildLilya | None,
     lifespan: Lifespan,
     directive: Any,
     program_name: str,

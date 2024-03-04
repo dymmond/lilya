@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import json
 from base64 import b64decode, b64encode
-from typing import Literal, Optional, Union
+from typing import Literal
 
 import itsdangerous
 from itsdangerous.exc import BadSignature
@@ -15,13 +17,13 @@ class SessionMiddleware(MiddlewareProtocol):
     def __init__(
         self,
         app: ASGIApp,
-        secret_key: Union[str, Secret],
+        secret_key: str | Secret,
         session_cookie: str = "session",
-        max_age: Optional[int] = 14 * 24 * 60 * 60,  # 14 days, in seconds
+        max_age: int | None = 14 * 24 * 60 * 60,  # 14 days, in seconds
         path: str = "/",
         same_site: Literal["lax", "strict", "none"] = "lax",
         https_only: bool = False,
-        domain: Optional[str] = None,
+        domain: str | None = None,
     ) -> None:
         """
         Middleware for handling session data in ASGI applications.

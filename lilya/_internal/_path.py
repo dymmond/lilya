@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from collections import namedtuple
-from typing import Any, Dict, Iterable, Pattern, Set, Tuple, TypeVar, Union, cast
+from typing import Any, Iterable, Pattern, TypeVar, cast
 
 from lilya._internal._path_transformers import (
     TRANSFORMER_PYTHON_TYPES,
@@ -56,10 +56,10 @@ def get_route_path(scope: Scope) -> str:
 
 def replace_params(
     path: str,
-    param_convertors: Dict[str, Transformer[Any]],
-    path_params: Dict[str, str],
+    param_convertors: dict[str, Transformer[Any]],
+    path_params: dict[str, str],
     is_host: bool = False,
-) -> Tuple[str, Dict[str, str]]:
+) -> tuple[str, dict[str, str]]:
     """
     Replaces placeholders in the given path with normalized values from path parameters.
 
@@ -89,7 +89,7 @@ def replace_params(
     return updated_path, remaining_params
 
 
-def compile_path(path: str) -> Tuple[Pattern[str], str, Dict[str, Transformer[Any]], str]:
+def compile_path(path: str) -> tuple[Pattern[str], str, dict[str, Transformer[Any]], str]:
     """
     Compile a path or host string into a three-tuple of (regex, format, {param_name:convertor}).
 
@@ -110,9 +110,9 @@ def compile_path(path: str) -> Tuple[Pattern[str], str, Dict[str, Transformer[An
 
 def generate_regex_and_format(
     path: str, is_host: bool
-) -> Tuple[str, str, Dict[str, Transformer[Any]], str]:
+) -> tuple[str, str, dict[str, Transformer[Any]], str]:
     path_regex, path_format, param_convertors, index = "^", "", {}, 0  # type: ignore
-    duplicate_params: Set[str] = set()
+    duplicate_params: set[str] = set()
 
     for match in re.finditer(r"{([a-zA-Z_]\w*)(:[a-zA-Z_]\w*)?}", path):
         param_name, convertor_type = match.groups("str")
@@ -161,12 +161,12 @@ def update_paths_and_convertors(
     path: str,
     path_regex: str,
     path_format: str,
-    param_convertors: Dict[str, Transformer[Any]],
+    param_convertors: dict[str, Transformer[Any]],
     index: int,
     param_name: str,
     convertor: Transformer[Any],
     match: re.Match,
-) -> Tuple[str, str, Dict[str, Transformer[Any]], int, str, str]:
+) -> tuple[str, str, dict[str, Transformer[Any]], int, str, str]:
     path_start = path[index : match.start()]
 
     path_regex += re.escape(path_start)
@@ -185,7 +185,7 @@ def update_paths_and_convertors(
     return path_regex, path_format, param_convertors, index, path_start, duplicate_param
 
 
-def raise_for_duplicate_params(path: str, duplicate_params: Union[Set[str], None] = None) -> None:
+def raise_for_duplicate_params(path: str, duplicate_params: set[str] | None = None) -> None:
     """
     Builds and generates the error message for duplicate parameters
     in the path.
