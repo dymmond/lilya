@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import inspect
 import os
 import sys
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 import click
 from rich.console import Console
@@ -71,7 +73,7 @@ def show_urls(env: DirectiveEnv) -> None:
     printer.write(table)
 
 
-def get_routes_table(app: Optional[Union["Lilya", "ChildLilya"]], table: Table) -> Table:
+def get_routes_table(app: Lilya | ChildLilya | None, table: Table) -> Table:
     """Prints the routing system"""
     table.add_column("Path", style=OutputColour.GREEN, vertical="middle")
     table.add_column("Path Parameters", style=OutputColour.BRIGHT_CYAN, vertical="middle")
@@ -80,10 +82,10 @@ def get_routes_table(app: Optional[Union["Lilya", "ChildLilya"]], table: Table) 
     table.add_column("HTTP Methods", style=OutputColour.RED, vertical="middle")
 
     def parse_routes(
-        app: Optional[Union["Lilya", "ChildLilya", "Router", "BasePath"]],
+        app: Lilya | ChildLilya | Router | BasePath | None,
         table: Table,
-        route: Optional[Any] = None,
-        prefix: Optional[str] = "",
+        route: Any | None = None,
+        prefix: str | None = "",
     ) -> None:
         if getattr(app, "routes", None) is None:
             return

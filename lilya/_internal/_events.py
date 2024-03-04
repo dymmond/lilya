@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from lilya.compat import is_async_callable
 from lilya.types import ASGIApp, Lifespan, LifespanEvent, Receive, Scope, Send
@@ -17,13 +19,13 @@ class AyncLifespanContextManager:  # pragma: no cover
 
     def __init__(
         self,
-        on_shutdown: Union[LifespanEvent, None] = None,
-        on_startup: Union[LifespanEvent, None] = None,
+        on_shutdown: LifespanEvent | None = None,
+        on_startup: LifespanEvent | None = None,
     ) -> None:
         self.on_startup = [] if on_startup is None else list(on_startup)
         self.on_shutdown = [] if on_shutdown is None else list(on_shutdown)
 
-    def __call__(self: T, app: Union[ASGIApp, Any]) -> T:
+    def __call__(self: T, app: ASGIApp | Any) -> T:
         return self
 
     async def __aenter__(self) -> None:
@@ -34,7 +36,7 @@ class AyncLifespanContextManager:  # pragma: no cover
             else:
                 handler()
 
-    async def __aexit__(self, scope: Scope, receive: Receive, send: Send, **kwargs: "Any") -> None:
+    async def __aexit__(self, scope: Scope, receive: Receive, send: Send, **kwargs: Any) -> None:
         """Runs the functions on shutdown"""
         for handler in self.on_shutdown:
             if is_async_callable(handler):
@@ -44,7 +46,7 @@ class AyncLifespanContextManager:  # pragma: no cover
 
 
 class AsyncLifespan:
-    def __init__(self, router: "Router"):
+    def __init__(self, router: Router):
         self.router = router
 
     async def __aenter__(self) -> None:
@@ -58,10 +60,10 @@ class AsyncLifespan:
 
 
 def handle_lifespan_events(
-    on_startup: Union[LifespanEvent, None] = None,
-    on_shutdown: Union[LifespanEvent, None] = None,
-    lifespan: Optional[Lifespan[Any]] = None,
-) -> Union[AyncLifespanContextManager, Any, None]:  # pragma: no cover
+    on_startup: LifespanEvent | None = None,
+    on_shutdown: LifespanEvent | None = None,
+    lifespan: Lifespan[Any] | None = None,
+) -> AyncLifespanContextManager | Any | None:  # pragma: no cover
     if on_startup or on_shutdown:
         return AyncLifespanContextManager(on_startup=on_startup, on_shutdown=on_shutdown)
     elif lifespan:
@@ -70,9 +72,9 @@ def handle_lifespan_events(
 
 
 def generate_lifespan_events(
-    on_startup: Union[LifespanEvent, None] = None,
-    on_shutdown: Union[LifespanEvent, None] = None,
-    lifespan: Optional[Lifespan[Any]] = None,
+    on_startup: LifespanEvent | None = None,
+    on_shutdown: LifespanEvent | None = None,
+    lifespan: Lifespan[Any] | None = None,
 ) -> Any:  # pragma: no cover
     if lifespan:
         return lifespan

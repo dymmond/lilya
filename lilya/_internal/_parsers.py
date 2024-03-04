@@ -4,18 +4,7 @@ import http.cookies
 from dataclasses import dataclass, field
 from functools import lru_cache
 from tempfile import SpooledTemporaryFile
-from typing import (
-    Any,
-    AsyncGenerator,
-    BinaryIO,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Union,
-    cast,
-)
+from typing import Any, AsyncGenerator, BinaryIO, Callable, cast
 from urllib.parse import unquote, unquote_plus
 
 from lilya.datastructures import DataUpload, FormData, Header
@@ -30,7 +19,7 @@ except ModuleNotFoundError:  # pragma: nocover
 
 
 @lru_cache(1024)
-def cookie_parser(cookie_string: Union[str, bytes]) -> Dict[str, str]:
+def cookie_parser(cookie_string: str | bytes) -> dict[str, str]:
     """
     Parses a `Cookie` HTTP header into a dictionary of key/value pairs.
     This function has been adapted from Django 3.1.0.
@@ -43,7 +32,7 @@ def cookie_parser(cookie_string: Union[str, bytes]) -> Dict[str, str]:
         for cookie in cookie_string.split(";")
     ]
 
-    cookie_dict: Dict[str, str] = {
+    cookie_dict: dict[str, str] = {
         cookie[0].strip(): unquote(http.cookies._unquote(cookie[1].strip())) for cookie in cookies
     }
 
@@ -52,11 +41,11 @@ def cookie_parser(cookie_string: Union[str, bytes]) -> Dict[str, str]:
 
 @dataclass
 class MultipartPart:
-    content_disposition: Optional[bytes] = None
+    content_disposition: bytes | None = None
     field_name: str = ""
     data: bytes = b""
-    file: Optional[DataUpload] = None
-    item_headers: List[Tuple[bytes, bytes]] = field(default_factory=list)
+    file: DataUpload | None = None
+    item_headers: list[tuple[bytes, bytes]] = field(default_factory=list)
 
 
 def _user_safe_decode(src: bytes, codec: str) -> str:
@@ -97,7 +86,7 @@ class FormParser:
         ), "The `python-multipart` library must be installed to use form parsing."
         self.headers = headers
         self.stream = stream
-        self.messages: List[Tuple[FormMessage, bytes]] = []
+        self.messages: list[tuple[FormMessage, bytes]] = []
 
     def on_field_start(self) -> None:
         """
@@ -165,9 +154,9 @@ class FormParser:
         parser = multipart.QuerystringParser(callbacks)
         field_name = b""
         field_value = b""
-        items: List[Tuple[str, Union[str, DataUpload]]] = []
+        items: list[tuple[str, str | DataUpload]] = []
 
-        async def process_messages(messages: List[Tuple[FormMessage, bytes]]) -> None:
+        async def process_messages(messages: list[tuple[FormMessage, bytes]]) -> None:
             nonlocal field_name, field_value
             for message_type, message_bytes in messages:
                 if message_type == FormMessage.FIELD_START:
@@ -220,8 +209,8 @@ class MultiPartParser:
         headers: Header,
         stream: AsyncGenerator[bytes, None],
         *,
-        max_files: Union[int, float] = 1000,
-        max_fields: Union[int, float] = 1000,
+        max_files: int | float = 1000,
+        max_fields: int | float = 1000,
     ) -> None:
         """
         Initialize the MultiPartParser.
@@ -239,16 +228,16 @@ class MultiPartParser:
         self.stream = stream
         self.max_files = max_files
         self.max_fields = max_fields
-        self.items: List[Tuple[str, Union[str, DataUpload]]] = []
+        self.items: list[tuple[str, str | DataUpload]] = []
         self._current_files = 0
         self._current_fields = 0
         self._current_partial_header_name: bytes = b""
         self._current_partial_header_value: bytes = b""
         self._current_part = MultipartPart()
         self._charset = ""
-        self._file_parts_to_write: List[Tuple[MultipartPart, bytes]] = []
-        self._file_parts_to_finish: List[MultipartPart] = []
-        self._files_to_close_on_error: List[SpooledTemporaryFile[bytes]] = []
+        self._file_parts_to_write: list[tuple[MultipartPart, bytes]] = []
+        self._file_parts_to_finish: list[MultipartPart] = []
+        self._files_to_close_on_error: list[SpooledTemporaryFile[bytes]] = []
 
     def on_part_begin(self) -> None:
         """
@@ -332,7 +321,7 @@ class MultiPartParser:
         else:
             self._handle_no_filename()
 
-    def _set_field_name(self, options: Dict[bytes, bytes]) -> None:
+    def _set_field_name(self, options: dict[bytes, bytes]) -> None:
         """
         Set the field name based on options in Content-Disposition header.
 
@@ -346,7 +335,7 @@ class MultiPartParser:
                 'The Content-Disposition header field "name" must be provided.'
             ) from None
 
-    def _handle_filename(self, options: Dict[bytes, bytes]) -> None:
+    def _handle_filename(self, options: dict[bytes, bytes]) -> None:
         """
         Handle the case when the part has a filename.
 
@@ -474,7 +463,7 @@ class MultiPartParser:
         except KeyError:
             raise MultiPartException("Missing boundary in multipart.") from None
 
-    def _create_callbacks_dictionary(self) -> Dict[str, Callable]:
+    def _create_callbacks_dictionary(self) -> dict[str, Callable]:
         """
         Create the callbacks dictionary for the multipart parser.
 
@@ -493,7 +482,7 @@ class MultiPartParser:
         }
 
     def _create_multipart_parser(
-        self, boundary: bytes, callbacks: Dict[str, Callable]
+        self, boundary: bytes, callbacks: dict[str, Callable]
     ) -> multipart.MultipartParser:
         """
         Create the multipart parser with the specified boundary and callbacks.

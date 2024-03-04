@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import asyncio
 import functools
 import hashlib
 from concurrent import futures
 from concurrent.futures import Future
-from typing import Any, Awaitable, Generator, Generic, Protocol, TypeVar, Union
+from typing import Any, Awaitable, Generator, Generic, Protocol, TypeVar
 
 from lilya._internal._urls import reverse as reverse
 
@@ -92,7 +94,7 @@ class AsyncResourceHandler(Generic[SupportsAsyncCloseType]):
         self.entered_resource = await self.awaitable_resource
         return self.entered_resource
 
-    async def __aexit__(self, *args: Any) -> Union[None, bool]:
+    async def __aexit__(self, *args: Any) -> None | bool:
         """
         Exit the asynchronous context and close the resource.
 

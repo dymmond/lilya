@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import inspect
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Union, cast
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, cast
 
 from lilya._internal._encoders import json_encoder
 from lilya._internal._exception_handlers import wrap_app_handling_exceptions
@@ -24,7 +24,7 @@ class BaseHandler:
     """
 
     def handle_response(
-        self, func: Callable[[Request], Union[Awaitable[Response], Response]]
+        self, func: Callable[[Request], Awaitable[Response] | Response]
     ) -> ASGIApp:
         """
         Decorator for creating a request-response ASGI application.

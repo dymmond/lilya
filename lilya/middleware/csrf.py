@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import hashlib
 import hmac
 import secrets
-from typing import Literal, Optional, Set, Union
+from typing import Literal
 
 from lilya.datastructures import Cookie, Header
 from lilya.enums import ScopeType
@@ -30,14 +32,14 @@ class CSRFMiddleware(MiddlewareProtocol):
         self,
         app: ASGIApp,
         secret: str,
-        cookie_name: Union[str, None] = None,
-        header_name: Union[str, None] = None,
-        cookie_path: Union[str, None] = None,
-        safe_methods: Union[Set[str], None] = None,
+        cookie_name: str | None = None,
+        header_name: str | None = None,
+        cookie_path: str | None = None,
+        safe_methods: set[str] | None = None,
         secure: bool = False,
         httponly: bool = False,
         samesite: Literal["lax", "strict", "none"] = "lax",
-        domain: Union[str, None] = None,
+        domain: str | None = None,
     ) -> None:
         super().__init__(app)
         self.app = app
@@ -75,7 +77,7 @@ class CSRFMiddleware(MiddlewareProtocol):
         else:
             raise PermissionDenied(detail="CSRF token verification failed.")
 
-    def get_send_wrapper(self, send: Send, csrf_cookie: Optional[str]) -> Send:
+    def get_send_wrapper(self, send: Send, csrf_cookie: str | None) -> Send:
         """
         Wraps the original send function to inject a CSRF cookie if needed.
 
@@ -149,7 +151,7 @@ class CSRFMiddleware(MiddlewareProtocol):
         token_hash = self._generate_csrf_hash(token)
         return token + token_hash
 
-    def _decode_csrf_token(self, token: str) -> Optional[str]:
+    def _decode_csrf_token(self, token: str) -> str | None:
         """
         Decode a CSRF token and validate its HMAC.
 
@@ -171,7 +173,7 @@ class CSRFMiddleware(MiddlewareProtocol):
         return token_secret
 
     def _csrf_tokens_match(
-        self, request_csrf_token: Optional[str], cookie_csrf_token: Optional[str]
+        self, request_csrf_token: str | None, cookie_csrf_token: str | None
     ) -> bool:
         """
         Takes the CSRF tokens from the request and the cookie and verifies both are valid and identical.

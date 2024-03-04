@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, Iterator, Mapping, NoReturn, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, Iterator, Mapping, NoReturn, cast
 
 from lilya._internal._message import Address
 from lilya._internal._parsers import cookie_parser
@@ -48,7 +48,7 @@ class Connection(Mapping[str, Any]):
     The Base for all Connections.
     """
 
-    def __init__(self, scope: Scope, receive: Union[Receive, None] = None) -> None:
+    def __init__(self, scope: Scope, receive: Receive | None = None) -> None:
         assert scope["type"] in (ScopeType.HTTP, ScopeType.WEBSOCKET)
         self.scope = scope
         self._url: URL | None = None
@@ -130,12 +130,12 @@ class Connection(Mapping[str, Any]):
         return self._cookies
 
     @property
-    def client(self) -> Union[Address, None]:
+    def client(self) -> Address | None:
         client = self.scope.get("client")
         return Address(*client) if client else None
 
     @property
-    def server(self) -> Union[Address, None]:
+    def server(self) -> Address | None:
         server = self.scope.get("server")
         return Address(*server) if server else None
 

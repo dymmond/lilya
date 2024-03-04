@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import http
-from typing import Any, Dict, Union
+from typing import Any
 
 from lilya import status
 
@@ -26,9 +28,9 @@ class HTTPException(LilyaException):
     def __init__(
         self,
         *args: Any,
-        status_code: Union[int, None] = None,
-        detail: Union[str, None] = None,
-        headers: Union[Dict[str, str], None] = None,
+        status_code: int | None = None,
+        detail: str | None = None,
+        headers: dict[str, str] | None = None,
         **extra: Any,
     ) -> None:
         detail = detail or getattr(self, "detail", None)
@@ -51,7 +53,7 @@ class HTTPException(LilyaException):
 
 
 class WebSocketException(Exception):
-    def __init__(self, code: int, reason: Union[str, None] = None) -> None:
+    def __init__(self, code: int, reason: str | None = None) -> None:
         self.code = code
         self.reason = reason or ""
 

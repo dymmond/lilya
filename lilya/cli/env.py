@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 import os
 import sys
-import typing
 from dataclasses import dataclass
 from importlib import import_module
 from pathlib import Path
@@ -21,7 +22,7 @@ class Scaffold:
     """
 
     path: str
-    app: typing.Union[Lilya, ChildLilya]
+    app: Lilya | ChildLilya
 
 
 @dataclass
@@ -31,11 +32,11 @@ class DirectiveEnv:
     and returns the App.
     """
 
-    path: typing.Optional[str] = None
-    app: typing.Optional[typing.Union[Lilya, ChildLilya]] = None
-    command_path: typing.Optional[str] = None
+    path: str | None = None
+    app: Lilya | ChildLilya | None = None
+    command_path: str | None = None
 
-    def load_from_env(self, path: typing.Optional[str] = None) -> "DirectiveEnv":
+    def load_from_env(self, path: str | None = None) -> DirectiveEnv:
         """
         Loads the environment variables into the scaffold.
         """
@@ -57,7 +58,7 @@ class DirectiveEnv:
 
         return DirectiveEnv(path=_app.path, app=_app.app, command_path=command_path)
 
-    def import_app_from_string(cls, path: typing.Optional[str] = None) -> Scaffold:
+    def import_app_from_string(cls, path: str | None = None) -> Scaffold:
         if path is None:
             raise OSError(
                 "Path cannot be None. Set env `LILYA_DEFAULT_APP` or use `--app` instead."
@@ -67,13 +68,13 @@ class DirectiveEnv:
         app = getattr(module, app_name)
         return Scaffold(path=path, app=app)
 
-    def _get_folders(self, path: Path) -> typing.List[str]:
+    def _get_folders(self, path: Path) -> list[str]:
         """
         Lists all the folders and checks if there is any file from the DISCOVERY_FILES available
         """
         return [directory.path for directory in os.scandir(path) if directory.is_dir()]
 
-    def _find_app_in_folder(self, path: Path, cwd: Path) -> typing.Union[Scaffold, None]:
+    def _find_app_in_folder(self, path: Path, cwd: Path) -> Scaffold | None:
         """
         Iterates inside the folder and looks up to the DISCOVERY_FILES.
         """
@@ -102,7 +103,7 @@ class DirectiveEnv:
                     return Scaffold(app=fn(), path=app_path)
         return None
 
-    def find_app(self, path: typing.Optional[str], cwd: Path) -> Scaffold:
+    def find_app(self, path: str | None, cwd: Path) -> Scaffold:
         """
         Loads the application based on the path provided via env var.
 
@@ -112,7 +113,7 @@ class DirectiveEnv:
         if path:
             return self.import_app_from_string(path)
 
-        scaffold: typing.Union[Scaffold, None] = None
+        scaffold: Scaffold | None = None
 
         # Check current folder
         scaffold = self._find_app_in_folder(cwd, cwd)

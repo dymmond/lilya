@@ -1,4 +1,6 @@
-from typing import Any, Callable, Mapping, Type, Union
+from __future__ import annotations
+
+from typing import Any, Callable, Mapping
 
 from lilya import status
 from lilya._internal._exception_handlers import (
@@ -36,7 +38,7 @@ class ExceptionMiddleware(MiddlewareProtocol):
     def __init__(
         self,
         app: ASGIApp,
-        handlers: Union[Mapping[Any, Callable[[Request, Exception], Response]], None] = None,
+        handlers: Mapping[Any, Callable[[Request, Exception], Response]] | None = None,
         debug: bool = False,
     ) -> None:
         self.app = app
@@ -61,7 +63,7 @@ class ExceptionMiddleware(MiddlewareProtocol):
 
     def add_exception_handler(
         self,
-        exception_or_status: Union[Type[Exception], int],
+        exception_or_status: type[Exception] | int,
         handler: Callable[[Request, Exception], Response],
     ) -> None:
         """
@@ -105,9 +107,7 @@ class ExceptionMiddleware(MiddlewareProtocol):
         connection = self._get_connection(scope, receive, send)
         await wrap_app_handling_exceptions(self.app, connection)(scope, receive, send)
 
-    def _get_connection(
-        self, scope: Scope, receive: Receive, send: Send
-    ) -> Union[Request, WebSocket]:
+    def _get_connection(self, scope: Scope, receive: Receive, send: Send) -> Request | WebSocket:
         """
         Get the appropriate connection object based on the ASGI scope type.
 

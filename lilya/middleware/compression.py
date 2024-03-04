@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import gzip
 import io
 from typing import NoReturn

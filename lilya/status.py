@@ -1,10 +1,4 @@
-"""
-HTTP codes
-See HTTP Status Code Registry:
-https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
-"""
-
-from typing import List
+from __future__ import annotations
 
 __all__ = (
     "HTTP_100_CONTINUE",
@@ -173,5 +167,5 @@ WS_1014_BAD_GATEWAY = 1014
 WS_1015_TLS_HANDSHAKE = 1015
 
 
-def __dir__() -> List[str]:
+def __dir__() -> list[str]:
     return sorted(__all__)  # pragma: no cover

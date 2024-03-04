@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
-from typing import Any, List, Union
+from typing import Any, Union
 
 from lilya import status
 from lilya.exceptions import MissingDependency, TemplateNotFound
@@ -120,7 +120,7 @@ class Jinja2Template:
 
     def __init__(
         self,
-        directory: Union[str, Path, List[Path]] | None = None,
+        directory: str | Path | list[Path] | None = None,
         *,
         env: Environment | None = None,
         **options: Any,
@@ -174,7 +174,7 @@ class Jinja2Template:
         return env
 
     def _create_environment(
-        self, directory: Union[str, Path, List[Path]], **env_options: Any
+        self, directory: str | Path | list[Path], **env_options: Any
     ) -> Environment:
         """
         Create a new Jinja2 environment with the specified options.

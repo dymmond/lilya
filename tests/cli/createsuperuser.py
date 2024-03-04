@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import argparse
 import random
 import string
-from typing import Any, Type
+from typing import Any
 
 from tests.cli.simple.test_custom_directive import User
 
@@ -14,7 +16,7 @@ printer = Print()
 class Directive(BaseDirective):
     help: str = "Test directive"
 
-    def add_arguments(self, parser: Type["argparse.ArgumentParser"]) -> Any:
+    def add_arguments(self, parser: type[argparse.ArgumentParser]) -> Any:
         parser.add_argument("-n", "--name", dest="name", type=str, required=True)
 
     def get_random_string(self, length=10):

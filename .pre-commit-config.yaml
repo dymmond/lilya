@@ -22,10 +22,10 @@ repos:
           - --py3-plus
           - --keep-runtime-typing
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.254
+    rev: v0.3.0
     hooks:
       - id: ruff
-        args: ["--fix", "--line-length=99"]
+        args: ["check", "--fix", "--line-length=99"]
   - repo: https://github.com/psf/black
     rev: 24.1.1
     hooks:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, AsyncIterator, Iterable, Tuple, Union, cast
+from typing import Any, AsyncIterator, Iterable, cast
 
 from lilya._internal._connection import Connection
 from lilya.enums import Event, MessageMode, ScopeType, WebSocketState
@@ -10,7 +10,7 @@ from lilya.types import Message, Receive, Scope, Send
 
 
 class WebSocketDisconnect(Exception):
-    def __init__(self, code: int = 1000, reason: Union[str, None] = None) -> None:
+    def __init__(self, code: int = 1000, reason: str | None = None) -> None:
         self.code = code
         self.reason = reason or ""
 
@@ -109,8 +109,8 @@ class WebSocket(WebsocketMixin):
 
     async def accept(
         self,
-        subprotocol: Union[str, None] = None,
-        headers: Union[Iterable[Tuple[bytes, bytes]], None] = None,
+        subprotocol: str | None = None,
+        headers: Iterable[tuple[bytes, bytes]] | None = None,
     ) -> None:
         headers = headers or []
 
@@ -190,12 +190,12 @@ class WebSocket(WebsocketMixin):
             else await self.send({"type": Event.WEBSOCKET_SEND, "bytes": text.encode("utf-8")})
         )
 
-    async def close(self, code: int = 1000, reason: Union[str, None] = None) -> None:
+    async def close(self, code: int = 1000, reason: str | None = None) -> None:
         await self.send({"type": Event.WEBSOCKET_CLOSE, "code": code, "reason": reason or ""})
 
 
 class WebSocketClose:
-    def __init__(self, code: int = 1000, reason: Union[str, None] = None) -> None:
+    def __init__(self, code: int = 1000, reason: str | None = None) -> None:
         self.code = code
         self.reason = reason or ""
 

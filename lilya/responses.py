@@ -14,9 +14,7 @@ from typing import (
     AsyncIterable,
     Awaitable,
     Callable,
-    Dict,
     Iterable,
-    List,
     Literal,
     Mapping,
     NoReturn,
@@ -43,18 +41,18 @@ ContentStream = Union[AsyncContentStream, SyncContentStream]
 
 
 class Response:
-    media_type: Union[str, None] = None
-    status_code: Union[int, None] = None
+    media_type: str | None = None
+    status_code: int | None = None
     charset: str = "utf-8"
 
     def __init__(
         self,
         content: Any = None,
         status_code: int = status.HTTP_200_OK,
-        headers: Union[Mapping[str, str], None] = None,
-        cookies: Union[Mapping[str, str], Any, None] = None,
-        media_type: Union[str, None] = None,
-        background: Union[Task, None] = None,
+        headers: Mapping[str, str] | None = None,
+        cookies: Mapping[str, str] | Any | None = None,
+        media_type: str | None = None,
+        background: Task | None = None,
     ) -> None:
         if status_code is not None:
             self.status_code = status_code
@@ -63,10 +61,10 @@ class Response:
         self.background = background
         self.cookies = cookies
         self.body = self.make_response(content)
-        self.raw_headers: List[Any] = []
+        self.raw_headers: list[Any] = []
         self.make_headers(headers)
 
-    def make_response(self, content: Any) -> Union[bytes, str]:
+    def make_response(self, content: Any) -> bytes | str:
         """
         Makes the Response object type.
         """
@@ -77,7 +75,7 @@ class Response:
         return content.encode(self.charset)  # type: ignore
 
     def make_headers(
-        self, content_headers: Union[Mapping[str, str], Dict[str, str], None] = None
+        self, content_headers: Mapping[str, str] | dict[str, str] | None = None
     ) -> None:
         """
         Initializes the headers based on RFC specifications by setting appropriate conditions and restrictions.
@@ -85,7 +83,7 @@ class Response:
         Args:
             content_headers (Union[Mapping[str, str], Dict[str, str], None], optional): Additional headers to include (default is None).
         """
-        headers: Dict[str, str] = {} if content_headers is None else content_headers  # type: ignore
+        headers: dict[str, str] = {} if content_headers is None else content_headers  # type: ignore
 
         if HeaderHelper.has_entity_header_status(self.status_code):
             headers = HeaderHelper.remove_entity_headers(headers)
@@ -118,10 +116,10 @@ class Response:
         value: str = "",
         *,
         path: str = "/",
-        domain: Union[str, None] = None,
+        domain: str | None = None,
         secure: bool = False,
-        max_age: Union[int, None] = None,
-        expires: Union[Union[datetime, str, int], None] = None,
+        max_age: int | None = None,
+        expires: datetime | str | int | None = None,
         httponly: bool = False,
         samesite: Literal["lax", "strict", "none"] = "lax",
     ) -> None:
@@ -173,7 +171,7 @@ class Response:
         self,
         key: str,
         path: str = "/",
-        domain: Union[str, None] = None,
+        domain: str | None = None,
         secure: bool = False,
         httponly: bool = False,
         samesite: Literal["lax", "strict", "none"] = "lax",
@@ -201,7 +199,7 @@ class Response:
         )
 
     @property
-    def message(self) -> Dict[str, Any]:
+    def message(self) -> dict[str, Any]:
         return {
             "type": "http.response.start",
             "status": self.status_code,
@@ -237,9 +235,9 @@ class JSONResponse(Response):
         self,
         content: Any,
         status_code: int = status.HTTP_200_OK,
-        headers: Union[Mapping[str, str], None] = None,
-        media_type: Union[str, None] = None,
-        background: Union[Task, None] = None,
+        headers: Mapping[str, str] | None = None,
+        media_type: str | None = None,
+        background: Task | None = None,
     ) -> None:
         super().__init__(
             content=content,
@@ -266,10 +264,10 @@ class Ok(JSONResponse):
 class RedirectResponse(Response):
     def __init__(
         self,
-        url: Union[str, URL],
+        url: str | URL,
         status_code: int = status.HTTP_307_TEMPORARY_REDIRECT,
-        headers: Union[Mapping[str, str], None] = None,
-        background: Union[Task, None] = None,
+        headers: Mapping[str, str] | None = None,
+        background: Task | None = None,
     ) -> None:
         super().__init__(
             content=b"", status_code=status_code, headers=headers, background=background
@@ -284,9 +282,9 @@ class StreamingResponse(Response):
         self,
         content: ContentStream,
         status_code: int = status.HTTP_200_OK,
-        headers: Union[Mapping[str, str], None] = None,
-        media_type: Union[str, None] = None,
-        background: Union[Task, None] = None,
+        headers: Mapping[str, str] | None = None,
+        media_type: str | None = None,
+        background: Task | None = None,
     ) -> None:
         if isinstance(content, AsyncIterable):
             self.body_iterator = content
@@ -316,7 +314,7 @@ class StreamingResponse(Response):
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         async with anyio.create_task_group() as task_group:
 
-            async def wrap(func: "Callable[[], Awaitable[None]]") -> None:
+            async def wrap(func: Callable[[], Awaitable[None]]) -> None:
                 await func()
                 task_group.cancel_scope.cancel()
 
@@ -332,14 +330,14 @@ class FileResponse(Response):
 
     def __init__(
         self,
-        path: typing.Union[str, os.PathLike[str]],
+        path: str | os.PathLike[str],
         status_code: int = status.HTTP_200_OK,
-        headers: typing.Optional[typing.Mapping[str, str]] = None,
-        media_type: typing.Optional[str] = None,
-        background: typing.Optional[Task] = None,
-        filename: typing.Optional[str] = None,
-        stat_result: typing.Optional[os.stat_result] = None,
-        method: typing.Optional[str] = None,
+        headers: typing.Mapping[str, str] | None = None,
+        media_type: str | None = None,
+        background: Task | None = None,
+        filename: str | None = None,
+        stat_result: os.stat_result | None = None,
+        method: str | None = None,
         content_disposition_type: str = "attachment",
     ) -> None:
         self.path = path
@@ -359,9 +357,7 @@ class FileResponse(Response):
                     content_disposition_type, content_disposition_filename
                 )
             else:
-                content_disposition = '{}; filename="{}"'.format(
-                    content_disposition_type, self.filename
-                )
+                content_disposition = f'{content_disposition_type}; filename="{self.filename}"'
             self.headers.setdefault("content-disposition", content_disposition)
         self.stat_result = stat_result
         if stat_result is not None:
@@ -415,9 +411,9 @@ class TemplateResponse(HTMLResponse):
         self,
         template: Any,
         status_code: int = status.HTTP_200_OK,
-        context: Union[Dict[str, Any], None] = None,
+        context: dict[str, Any] | None = None,
         background: Task | None = None,
-        headers: Dict[str, Any] | None = None,
+        headers: dict[str, Any] | None = None,
         media_type: MediaType | str = MediaType.HTML,
     ):
         self.template = template
@@ -448,8 +444,8 @@ def make_response(
     content: Any,
     response_class: type[Response] = JSONResponse,
     status_code: int = status.HTTP_200_OK,
-    headers: Union[Mapping[str, str], None] = None,
-    background: Union[Task, None] = None,
+    headers: Mapping[str, str] | None = None,
+    background: Task | None = None,
 ) -> Response:
     """
     Build JSON responses from a given content and

@@ -13,9 +13,7 @@ from typing import (
     Iterable,
     Literal,
     Mapping,
-    Optional,
     Sequence,
-    Tuple,
     TypeVar,
     cast,
 )
@@ -148,7 +146,7 @@ class Header(MultiDict, CIMultiDict):  # type: ignore
         *args: MultiMapping
         | Mapping[str, Any]
         | Iterable[tuple[str, Any]]
-        | list[Tuple[bytes, bytes]]
+        | list[tuple[bytes, bytes]]
         | None,
     ) -> None:
         assert len(args) < 2, "Too many arguments."
@@ -158,14 +156,14 @@ class Header(MultiDict, CIMultiDict):  # type: ignore
             value, (dict, list)
         ), "The headers must be in the format of a list of tuples or dicttionary."
 
-        headers: list[Tuple[str, Any]] = self.parse_headers(value)
+        headers: list[tuple[str, Any]] = self.parse_headers(value)
         super().__init__(headers)
 
-    def parse_headers(self, value: Any) -> list[Tuple[str, Any]]:
+    def parse_headers(self, value: Any) -> list[tuple[str, Any]]:
         """
         Parses the headers and validates if its bytes or str.
         """
-        headers: list[Tuple[str, Any]] = []
+        headers: list[tuple[str, Any]] = []
 
         if isinstance(value, dict):
             for k, v in value.items():
@@ -650,9 +648,9 @@ class DataUpload:
         self,
         *,
         file: BinaryIO,
-        size: Optional[int] = None,
+        size: int | None = None,
         filename: str | None = None,
-        headers: Optional[Header] = None,
+        headers: Header | None = None,
     ) -> None:
         self.filename = filename
         self.size = size
@@ -703,12 +701,12 @@ class DataUpload:
 class Cookie:
     key: str
     value: str | None = None
-    max_age: Optional[int] = None
-    expires: Optional[int] = None
+    max_age: int | None = None
+    expires: int | None = None
     path: str = "/"
     domain: str | None = None
-    secure: Optional[bool] = None
-    httponly: Optional[bool] = None
+    secure: bool | None = None
+    httponly: bool | None = None
     samesite: Literal["lax", "strict", "none"] = "lax"
     description: str | None = None
 
@@ -731,7 +729,7 @@ class FormData(ImmutableMultiDict[Any]):
 
     def __init__(
         self,
-        *args: FormData | Mapping[str, str | DataUpload] | list[Tuple[str, str | DataUpload]],
+        *args: FormData | Mapping[str, str | DataUpload] | list[tuple[str, str | DataUpload]],
         **kwargs: str | DataUpload,
     ) -> None:
         super().__init__(*args, **kwargs)

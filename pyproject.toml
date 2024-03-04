@@ -96,7 +96,7 @@ test = [
     "pytest-mock>=3.12.0",
     "python-multipart>=0.0.6",
     "requests>=2.28.2",
-    "ruff>=0.0.256,<1.0.0",
+    "ruff>=0.3.0,<5.0.0",
 ]
 
 dev = ["ipdb>=0.13.13,<1.0.0", "pre-commit>=3.3.1,<4.0.0", "devtools>=0.12.2"]
@@ -145,13 +145,16 @@ strict_optional = false
 disable_error_code = "attr-defined,has-type,override"
 exclude = ["lilya/compat.py"]
 
-[tool.ruff]
+[tool.ruff.lint]
 select = [
-    "E", # pycodestyle errors
-    "W", # pycodestyle warnings
-    "F", # pyflakes
-    "C", # flake8-comprehensions
-    "B", # flake8-bugbear
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "C",  # flake8-comprehensions
+    "B",  # flake8-bugbear
+    "I",
+    "FA",
+    "UP",
 ]
 ignore = [
     "E501", # line too long, handled by black

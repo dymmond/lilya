@@ -1,4 +1,4 @@
-from typing import Type
+from __future__ import annotations
 
 import pytest
 
@@ -34,8 +34,8 @@ def test_exception_handling(exc_to_raise: Exception, expected_layer: str) -> Non
     caller = {"name": ""}
 
     def create_named_handler(
-        caller_name: str, expected_exception: Type[Exception]
-    ) -> "ExceptionHandler":
+        caller_name: str, expected_exception: type[Exception]
+    ) -> ExceptionHandler:
         def handler(req: Request, exc: Exception) -> Response:
             assert isinstance(exc, expected_exception)
             assert isinstance(req, Request)
@@ -85,8 +85,8 @@ def test_exception_handling_with_include(exc_to_raise: Exception, expected_layer
     caller = {"name": ""}
 
     def create_named_handler(
-        caller_name: str, expected_exception: Type[Exception]
-    ) -> "ExceptionHandler":
+        caller_name: str, expected_exception: type[Exception]
+    ) -> ExceptionHandler:
         def handler(req: Request, exc: Exception) -> Response:
             assert isinstance(exc, expected_exception)
             assert isinstance(req, Request)
@@ -149,8 +149,8 @@ def test_exception_handling_with_include_exception_handler(
     caller = {"name": ""}
 
     def create_named_handler(
-        caller_name: str, expected_exception: Type[Exception]
-    ) -> "ExceptionHandler":
+        caller_name: str, expected_exception: type[Exception]
+    ) -> ExceptionHandler:
         def handler(req: Request, exc: Exception) -> Response:
             assert isinstance(exc, expected_exception)
             assert isinstance(req, Request)
@@ -214,8 +214,8 @@ def test_exception_handling_with_gateway_exception_handler(
     caller = {"name": ""}
 
     def create_named_handler(
-        caller_name: str, expected_exception: Type[Exception]
-    ) -> "ExceptionHandler":
+        caller_name: str, expected_exception: type[Exception]
+    ) -> ExceptionHandler:
         def handler(req: Request, exc: Exception) -> Response:
             assert isinstance(exc, expected_exception)
             assert isinstance(req, Request)
@@ -275,8 +275,8 @@ def test_exception_handling_with_child_lilya(exc_to_raise: Exception, expected_l
     caller = {"name": ""}
 
     def create_named_handler(
-        caller_name: str, expected_exception: Type[Exception]
-    ) -> "ExceptionHandler":
+        caller_name: str, expected_exception: type[Exception]
+    ) -> ExceptionHandler:
         def handler(req: Request, exc: Exception) -> Response:
             assert isinstance(exc, expected_exception)
             assert isinstance(req, Request)

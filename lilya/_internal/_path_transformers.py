@@ -5,7 +5,7 @@ import re
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, ClassVar, Dict, Generic, TypeVar
+from typing import Any, ClassVar, Generic, TypeVar
 
 T = TypeVar("T")
 
@@ -106,7 +106,7 @@ class DatetimeTransformer(Transformer[datetime]):
 
 
 # Available converter types
-TRANSFORMER_TYPES: Dict[str, Transformer] = {
+TRANSFORMER_TYPES: dict[str, Transformer] = {
     "str": StringTransformer(),
     "path": PathTransformer(),
     "int": IntegerTransformer(),

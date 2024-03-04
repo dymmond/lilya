@@ -1,4 +1,6 @@
-from typing import Any, Dict
+from __future__ import annotations
+
+from typing import Any
 
 from lilya.context import Context
 from lilya.requests import Request
@@ -6,7 +8,7 @@ from lilya.routing import Path
 from lilya.testclient import create_client
 
 
-async def get_data(context: Context) -> Dict[str, Any]:
+async def get_data(context: Context) -> dict[str, Any]:
     data = {
         "method": context.handler.methods,
         "middlewares": context.handler.middleware,
@@ -21,7 +23,7 @@ def test_context(test_client_factory):
         assert response.json() == {"method": ["GET", "HEAD"], "middlewares": None}
 
 
-async def get_context_route(context: Context) -> Dict[str, Any]:
+async def get_context_route(context: Context) -> dict[str, Any]:
     data = {
         "method": context.handler.methods,
         "middlewares": context.handler.middleware,
@@ -39,7 +41,7 @@ def test_context_route(test_client_factory):
         assert "middlewares" in response.json()
 
 
-async def change_context(context: Context) -> Dict[str, Any]:
+async def change_context(context: Context) -> dict[str, Any]:
     ctx = context
     ctx.add_to_context("call", "ok")
     return ctx.get_context_data()

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys
 
 if sys.version_info >= (3, 10):  # pragma: no cover
@@ -5,7 +7,9 @@ if sys.version_info >= (3, 10):  # pragma: no cover
 else:  # pragma: no cover
     from typing_extensions import ParamSpec
 
-from typing_extensions import Protocol, runtime_checkable
+from typing import runtime_checkable
+
+from typing_extensions import Protocol
 
 from lilya.types import ASGIApp, Receive, Scope, Send
 
@@ -16,6 +20,6 @@ P = ParamSpec("P")
 class PermissionProtocol(Protocol[P]):  # pragma: no cover
     __slots__ = ("app",)
 
-    def __init__(self, app: "ASGIApp", *args: P.args, **kwargs: P.kwargs): ...
+    def __init__(self, app: ASGIApp, *args: P.args, **kwargs: P.kwargs): ...
 
-    async def __call__(self, scope: "Scope", receive: "Receive", send: "Send") -> None: ...
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None: ...

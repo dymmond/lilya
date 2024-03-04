@@ -1,7 +1,8 @@
+from __future__ import annotations
+
 import os
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Tuple
 
 from edgy import Database, Registry
 
@@ -19,6 +20,6 @@ class TestSettings(Settings):
     environment: str = EnvironmentType.TESTING.value
 
     @cached_property
-    def registry(self) -> Tuple[Database, Registry]:
+    def registry(self) -> tuple[Database, Registry]:
         database = Database(TEST_DATABASE_URL)
         return database, Registry(database=database)

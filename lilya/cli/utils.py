@@ -1,6 +1,4 @@
-"""
-Utils used by the Lilya core management.
-"""
+from __future__ import annotations
 
 import functools
 import importlib
@@ -10,7 +8,7 @@ import sys
 import typing
 from difflib import get_close_matches
 from importlib import import_module
-from typing import Any, Optional
+from typing import Any
 
 from lilya.cli.base import BaseDirective
 from lilya.cli.exceptions import DirectiveError
@@ -24,7 +22,7 @@ OPERATIONS = "operations"
 EXCUDED_DIRECTIVES = ["list", "run"]
 
 
-def find_directives(management_dir: str) -> typing.List[str]:
+def find_directives(management_dir: str) -> list[str]:
     """
     Shows the available directives from Lilya.
     """
@@ -39,7 +37,7 @@ def find_directives(management_dir: str) -> typing.List[str]:
 
 def find_application_directives(
     management_dir: str,
-) -> typing.Sequence[typing.Union[typing.Dict[Any, Any], str]]:
+) -> typing.Sequence[dict[Any, Any] | str]:
     """
     Iterates through the application tree and finds the directives available
     to run.
@@ -60,7 +58,7 @@ def load_directive_class(app_name: str, name: str) -> Any:
     """
     Loads the directive class from native Lilya.
     """
-    module = import_module("{}.directives.operations.{}".format(app_name, name))
+    module = import_module(f"{app_name}.directives.operations.{name}")
     return module.Directive()
 
 
@@ -81,7 +79,7 @@ def load_directive_class_by_filename(app_name: str, location: str) -> Any:
 
 
 @functools.lru_cache(maxsize=None)
-def get_directives(location: str) -> typing.Sequence[typing.Union[typing.Dict[Any, Any], str]]:
+def get_directives(location: str) -> typing.Sequence[dict[Any, Any] | str]:
     command_list = find_directives(location)
     directives = []
 
@@ -93,7 +91,7 @@ def get_directives(location: str) -> typing.Sequence[typing.Union[typing.Dict[An
 @functools.lru_cache(maxsize=None)
 def get_application_directives(
     location: str,
-) -> typing.Sequence[typing.Dict[Any, Any]]:
+) -> typing.Sequence[dict[Any, Any]]:
     command_list = find_application_directives(location)
     directives = []
 
@@ -104,7 +102,7 @@ def get_application_directives(
     return directives
 
 
-def fetch_custom_directive(subdirective: Any, location: Optional[str]) -> Any:
+def fetch_custom_directive(subdirective: Any, location: str | None) -> Any:
     """Fetches the directive classes custom and native"""
     directives = get_application_directives(location)
 
@@ -148,7 +146,7 @@ def fetch_custom_directive(subdirective: Any, location: Optional[str]) -> Any:
     return klass
 
 
-def fetch_directive(subdirective: Any, location: Optional[str], is_custom: bool = False) -> Any:
+def fetch_directive(subdirective: Any, location: str | None, is_custom: bool = False) -> Any:
     """Fetches the directive classes custom and native"""
     if not is_custom:
         directives = get_directives(location)

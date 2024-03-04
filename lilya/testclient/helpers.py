@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Literal, Mapping, Optional, Sequence, Union, cast
+from typing import Any, Callable, Literal, Mapping, Sequence, cast
 
 import httpx
 
@@ -12,24 +12,24 @@ from lilya.types import ApplicationType, ExceptionHandler, Lifespan
 
 
 def create_client(
-    routes: Union[Sequence[Any], None] = None,
+    routes: Sequence[Any] | None = None,
     *,
-    settings_module: Optional[Settings] = None,
+    settings_module: Settings | None = None,
     base_url: str = "http://testserver",
     backend: Literal["asyncio", "trio"] = "asyncio",
-    backend_options: Optional[Dict[str, Any]] = None,
-    permissions: Union[Sequence[Permission], None] = None,
-    middleware: Union[Sequence[Any], None] = None,
-    exception_handlers: Union[Mapping[Any, ExceptionHandler], None] = None,
-    on_startup: Union[Sequence[Callable[[], Any]], None] = None,
-    on_shutdown: Union[Sequence[Callable[[], Any]], None] = None,
+    backend_options: dict[str, Any] | None = None,
+    permissions: Sequence[Permission] | None = None,
+    middleware: Sequence[Any] | None = None,
+    exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+    on_startup: Sequence[Callable[[], Any]] | None = None,
+    on_shutdown: Sequence[Callable[[], Any]] | None = None,
     include_in_schema: bool = True,
     raise_server_exceptions: bool = True,
-    lifespan: Optional[Lifespan[ApplicationType]] = None,
+    lifespan: Lifespan[ApplicationType] | None = None,
     redirect_slashes: bool = True,
     debug: bool = False,
     root_path: str = "",
-    cookies: Optional[httpx._types.CookieTypes] = None,
+    cookies: httpx._types.CookieTypes | None = None,
     **kwargs: Any,
 ) -> TestClient:
     """
