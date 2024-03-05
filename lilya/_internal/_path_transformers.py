@@ -13,7 +13,7 @@ T = TypeVar("T")
 path_regex = re.compile(r"{([^:]+):([^}]+)}")
 
 
-@dataclass
+@dataclass(frozen=True, eq=True)
 class Transformer(Generic[T]):
     """
     Base for all path transformers
@@ -30,7 +30,7 @@ class Transformer(Generic[T]):
         raise NotImplementedError()  # pragma: no cover
 
 
-@dataclass
+@dataclass(frozen=True, eq=True)
 class StringTransformer(Transformer[str]):
     regex = "[^/]+"
 
@@ -44,7 +44,7 @@ class StringTransformer(Transformer[str]):
         return value
 
 
-@dataclass
+@dataclass(frozen=True, eq=True)
 class PathTransformer(Transformer[str]):
     regex = ".*"
 
@@ -55,7 +55,7 @@ class PathTransformer(Transformer[str]):
         return str(value)
 
 
-@dataclass
+@dataclass(frozen=True, eq=True)
 class IntegerTransformer(Transformer[int]):
     regex = "[0-9]+"
 
@@ -68,7 +68,7 @@ class IntegerTransformer(Transformer[int]):
         return str(value)
 
 
-@dataclass
+@dataclass(frozen=True, eq=True)
 class FloatTransformer(Transformer[float]):
     regex = r"[0-9]+(\.[0-9]+)?"
 
@@ -83,7 +83,7 @@ class FloatTransformer(Transformer[float]):
         return ("%0.20f" % value).rstrip("0").rstrip(".")
 
 
-@dataclass
+@dataclass(frozen=True, eq=True)
 class UUIDTransformer(Transformer[uuid.UUID]):
     regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
 
@@ -94,7 +94,7 @@ class UUIDTransformer(Transformer[uuid.UUID]):
         return str(value)
 
 
-@dataclass
+@dataclass(frozen=True, eq=True)
 class DatetimeTransformer(Transformer[datetime]):
     regex = "[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(.[0-9]+)?"
 
