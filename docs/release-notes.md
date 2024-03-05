@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.1.2
+
+### Fixed
+
+- `Transformer` to allow to be hashable from the dataclasses.
+
 ## 0.1.1
 
 ### Fixed
