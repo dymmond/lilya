@@ -38,7 +38,7 @@ T = TypeVar("T")
 
 class NoMatchFound(Exception):
     """
-    Raised by `.url_for(name, **path_params)` and `.url_path_for(name, **path_params)`
+    Raised by `.path_for(name, **path_params)` and `.path_for(name, **path_params)`
     if no matching route exists.
     """
 
@@ -242,6 +242,8 @@ class Path(BaseHandler, BasePath):
         "permissions",
         "exception_handlers",
         "deprecated",
+        "__handler_app__",
+        "_signature",
     )
 
     def __init__(
@@ -266,16 +268,11 @@ class Path(BaseHandler, BasePath):
         self.deprecated = deprecated
 
         # Defition of the app
-        handler_app = handler
-        while isinstance(handler_app, functools.partial):
-            handler_app = handler_app.func
+        self.__handler_app__ = handler
+        while isinstance(self.__handler_app__, functools.partial):
+            self.__handler_app__ = self.__handler_app__.func
 
-        self.signature: inspect.Signature = inspect.signature(handler_app)
-
-        # Handles the signature validation
-        self.handle_signature()
-
-        if inspect.isfunction(handler_app) or inspect.ismethod(handler_app):
+        if inspect.isfunction(self.__handler_app__) or inspect.ismethod(self.__handler_app__):
             self.app = self.handle_response(handler)
             if methods is None:
                 self.methods = [HTTPMethod.GET.value]
@@ -297,6 +294,13 @@ class Path(BaseHandler, BasePath):
         self.path_regex, self.path_format, self.param_convertors, self.path_start = compile_path(
             self.path
         )
+
+    @property
+    def signature(self) -> inspect.Signature:
+        if not hasattr(self, "_signature"):
+            self._signature: inspect.Signature = inspect.signature(self.__handler_app__)
+            self.handle_signature()
+        return self._signature
 
     def handle_signature(self) -> None:
         """
@@ -472,6 +476,8 @@ class WebSocketPath(BaseHandler, BasePath):
         "middleware",
         "permissions",
         "exception_handlers",
+        "__handler_app__",
+        "_signature",
     )
 
     def __init__(
@@ -493,16 +499,11 @@ class WebSocketPath(BaseHandler, BasePath):
         self.include_in_schema = include_in_schema
 
         # Defition of the app
-        handler_app = handler
-        while isinstance(handler_app, functools.partial):
-            handler_app = handler_app.func
+        self.__handler_app__ = handler
+        while isinstance(self.__handler_app__, functools.partial):
+            self.__handler_app__ = self.__handler_app__.func
 
-        self.signature: inspect.Signature = inspect.signature(handler_app)
-
-        # Handles the signature
-        self.handle_signature()
-
-        if inspect.isfunction(handler_app) or inspect.ismethod(handler_app):
+        if inspect.isfunction(self.__handler_app__) or inspect.ismethod(self.__handler_app__):
             self.app = self.handle_websocket_session(handler)
         else:
             self.app = handler
@@ -517,6 +518,13 @@ class WebSocketPath(BaseHandler, BasePath):
         self.path_regex, self.path_format, self.param_convertors, self.path_start = compile_path(
             self.path
         )
+
+    @property
+    def signature(self) -> inspect.Signature:
+        if not hasattr(self, "_signature"):
+            self._signature: inspect.Signature = inspect.signature(self.__handler_app__)
+            self.handle_signature()
+        return self._signature
 
     def handle_signature(self) -> None:
         """
