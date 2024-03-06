@@ -6,8 +6,9 @@ from typing import Any, Callable, Coroutine, Generator, cast
 
 from lilya import status
 from lilya._internal._responses import BaseHandler
+from lilya.conf import settings
 from lilya.enums import Event, HTTPMethod, ScopeType, SignatureDefault
-from lilya.exceptions import HTTPException
+from lilya.exceptions import HTTPException, ImproperlyConfigured
 from lilya.requests import Request
 from lilya.responses import PlainText, Response
 from lilya.types import Message, Receive, Scope, Send
@@ -16,6 +17,20 @@ from lilya.websockets import WebSocket
 
 class BaseController(BaseHandler):
     __is_controller__: bool = True
+
+    def handle_signature(self) -> None:
+        """
+        Validates the return annotation of a handler
+        if `enforce_return_annotation` is set to True.
+        """
+        if not settings.enforce_return_annotation:
+            return None
+
+        if self.signature.return_annotation is inspect._empty:
+            raise ImproperlyConfigured(
+                "A return value of a route handler function should be type annotated. "
+                "If your function doesn't return a value or returns None, annotate it as returning 'NoReturn' or 'None' respectively."
+            )
 
 
 class Controller(BaseController):
