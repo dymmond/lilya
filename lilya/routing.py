@@ -38,7 +38,7 @@ T = TypeVar("T")
 
 class NoMatchFound(Exception):
     """
-    Raised by `.path_for(name, **path_params)` and `.url_path_for(name, **path_params)`
+    Raised by `.path_for(name, **path_params)` and `.path_for(name, **path_params)`
     if no matching route exists.
     """
 
