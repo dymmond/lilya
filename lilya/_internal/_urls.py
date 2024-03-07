@@ -1,7 +1,3 @@
-"""
-Functions to use with the Router.
-"""
-
 from __future__ import annotations
 
 from importlib import import_module
@@ -16,7 +12,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from lilya.routing import BasePath
 
 
-def include(arg: Any, pattern: str | None) -> list[BasePath]:
+def include(arg: Any, pattern: str | None = None) -> list[BasePath]:
     """Simple retrieve functionality to make it easier to include
     routes in the urls. Example, nested routes.
     """
