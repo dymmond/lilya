@@ -717,8 +717,8 @@ class Include(BasePath):
         """
         assert path == "" or path.startswith("/"), "Routed paths must start with '/'"
         assert (
-            app is not None or routes is not None
-        ), "Either 'app=...', or 'routes=' must be specified"
+            app is not None or routes is not None or namespace is not None
+        ), "Either 'app=...', or 'routes=...', or 'namespace=...' must be specified"
         self.path = clean_path(path)
 
         assert (

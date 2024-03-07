@@ -16,12 +16,15 @@ if TYPE_CHECKING:  # pragma: no cover
     from lilya.routing import BasePath
 
 
-def include(arg: Any, pattern: str | None = settings.default_route_pattern) -> list[BasePath]:
+def include(arg: Any, pattern: str | None) -> list[BasePath]:
     """Simple retrieve functionality to make it easier to include
     routes in the urls. Example, nested routes.
     """
     if not isinstance(arg, str):
         raise ImproperlyConfigured("The value should be a string with the format <module>.<file>")
+
+    if pattern is None:
+        pattern = settings.default_route_pattern
 
     router_conf_module = import_module(arg)
     patterns: list[BasePath] = getattr(router_conf_module, pattern, None)
