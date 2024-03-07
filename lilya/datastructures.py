@@ -610,6 +610,9 @@ class Secret:
     def __bool__(self) -> bool:
         return bool(self.value)
 
+    def __len__(self) -> int:
+        return len(self.value)
+
 
 class QueryParam(ImmutableMultiDict[Any]):
     """
