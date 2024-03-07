@@ -149,12 +149,8 @@ class TemplateDirective(BaseDirective):
 
                 if os.path.exists(new_path):
                     raise DirectiveError(
-                        "{} already exists. Overlaying {} {} into an existing "
-                        "directory won't replace conflicting files.".format(
-                            new_path,
-                            self.a_or_an,
-                            app_or_project,
-                        )
+                        f"{new_path} already exists. Overlaying {self.a_or_an} {app_or_project} into an existing "
+                        "directory won't replace conflicting files."
                     )
 
                 shutil.copyfile(old_path, new_path)
@@ -196,12 +192,8 @@ class TemplateDirective(BaseDirective):
         # Check it's a valid directory name.
         if not name.isidentifier():
             raise DirectiveError(
-                "'{name}' is not a valid {app} {type}. Please make sure the "
-                "{type} is a valid identifier.".format(
-                    name=name,
-                    app=self.app_or_project,
-                    type=name_or_dir,
-                )
+                f"'{name}' is not a valid {self.app_or_project} {type}. Please make sure the "
+                "{type} is a valid identifier."
             )
         try:
             import_module(name)
@@ -209,14 +201,9 @@ class TemplateDirective(BaseDirective):
             pass
         else:
             raise DirectiveError(
-                "'{name}' conflicts with the name of an existing Python "
-                "module and cannot be used as {an} {app} {type}. Please try "
-                "another {type}.".format(
-                    name=name,
-                    an=self.a_or_an,
-                    app=self.app_or_project,
-                    type=name_or_dir,
-                )
+                f"'{name}' conflicts with the name of an existing Python "
+                f"module and cannot be used as {self.a_or_an} {self.app_or_project} {self.name_or_dir}. Please try "
+                f"another {self.name_or_dir}."
             )
 
     def apply_umask(self, old_path: str | Path, new_path: str | Path) -> None:
