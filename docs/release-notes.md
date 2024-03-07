@@ -5,6 +5,26 @@ hide:
 
 # Release Notes
 
+## 0.2.0
+
+### Added
+
+- Support for `len` in `Secret` datastructure.
+
+### Changed
+
+- The way the signature is evaluated in the Path and WebSocketPath
+- Internal code refactoring for signature and `include`.
+
+**BREAKING CHANGE**
+
+- `SETTINGS_MODULE` was renamed to `LILYA_SETTINGS_MODULE`.
+
+### Fixed
+
+- `namespace` validation for Include.
+- Internal form parser was duplicating the values.
+
 ## 0.1.2
 
 ### Fixed
