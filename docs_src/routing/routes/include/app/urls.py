@@ -1,5 +1,4 @@
-from lilya.apps import Lilya
-from lilya.routing import Include, Path
+from lilya.routing import Include
 
 route_patterns = [
     Include(

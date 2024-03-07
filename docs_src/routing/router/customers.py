@@ -4,7 +4,7 @@ from lilya.routing import Path, Router
 
 
 async def create(request: Request):
-    data = await request.json()
+    await request.json()
     return JSONResponse({"created": True})
 
 

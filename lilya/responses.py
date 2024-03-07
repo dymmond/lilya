@@ -353,8 +353,8 @@ class FileResponse(Response):
         if self.filename is not None:
             content_disposition_filename = quote(self.filename)
             if content_disposition_filename != self.filename:
-                content_disposition = "{}; filename*=utf-8''{}".format(
-                    content_disposition_type, content_disposition_filename
+                content_disposition = (
+                    f"{content_disposition_type}; filename*=utf-8''{content_disposition_filename}"
                 )
             else:
                 content_disposition = f'{content_disposition_type}; filename="{self.filename}"'

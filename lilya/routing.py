@@ -717,8 +717,8 @@ class Include(BasePath):
         """
         assert path == "" or path.startswith("/"), "Routed paths must start with '/'"
         assert (
-            app is not None or routes is not None
-        ), "Either 'app=...', or 'routes=' must be specified"
+            app is not None or routes is not None or namespace is not None
+        ), "Either 'app=...', or 'routes=...', or 'namespace=...' must be specified"
         self.path = clean_path(path)
 
         assert (
@@ -1178,7 +1178,7 @@ class Router:
             Doc(
                 """
                 Alternative settings parameter. This parameter is an alternative to
-                `SETTINGS_MODULE` way of loading your settings into a Lilya application.
+                `LILYA_SETTINGS_MODULE` way of loading your settings into a Lilya application.
 
                 When the `settings_module` is provided, it will make sure it takes priority over
                 any other settings provided for the instance.

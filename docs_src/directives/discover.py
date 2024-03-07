@@ -9,7 +9,7 @@ async def show_name(name: str):
 
 
 async def create_or_update_item(request: Request, name: str):
-    data = await request.json()
+    await request.json()
     # Does something with PUT or POST
     ...
 

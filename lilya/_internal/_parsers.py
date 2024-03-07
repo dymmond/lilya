@@ -156,8 +156,13 @@ class FormParser:
         field_value = b""
         items: list[tuple[str, str | DataUpload]] = []
 
-        async def process_messages(messages: list[tuple[FormMessage, bytes]]) -> None:
-            nonlocal field_name, field_value
+        async for chunk in self.stream:
+            if chunk:
+                parser.write(chunk)
+            else:
+                parser.finalize()
+            messages = list(self.messages)
+            self.messages.clear()
             for message_type, message_bytes in messages:
                 if message_type == FormMessage.FIELD_START:
                     field_name = b""
@@ -170,23 +175,6 @@ class FormParser:
                     name = unquote_plus(field_name.decode("latin-1"))
                     value = unquote_plus(field_value.decode("latin-1"))
                     items.append((name, value))
-
-        async def feed_parser(chunk: bytes) -> None:
-            nonlocal parser
-            if chunk:
-                parser.write(chunk)
-            else:
-                parser.finalize()
-
-        # Feed the parser with data from the request.
-        async for chunk in self.stream:
-            await feed_parser(chunk)
-
-        # Finalize the parser in case there is any remaining data.
-        await feed_parser(b"")
-
-        # Process any remaining messages.
-        await process_messages(self.messages)
 
         return FormData(items)
 

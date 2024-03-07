@@ -25,7 +25,7 @@ from lilya.cli.directives.operations import (
     shell,
     show_urls,
 )
-from lilya.cli.directives.operations._constants import SETTINGS_MODULE
+from lilya.cli.directives.operations._constants import LILYA_SETTINGS_MODULE
 from lilya.cli.env import DirectiveEnv
 from lilya.cli.terminal.print import Print
 
@@ -58,7 +58,7 @@ class DirectiveGroup(click.Group):
         """
         Process the settings context" if any is passed.
 
-        Exports any SETTINGS_MODULE to the environment if --settings is passed and exists
+        Exports any LILYA_SETTINGS_MODULE to the environment if --settings is passed and exists
         as one of the params of any subcommand.
         """
         args = [*ctx.protected_args, *ctx.args]
@@ -67,8 +67,8 @@ class DirectiveGroup(click.Group):
 
         settings = sub_ctx.params.get("settings", None)
         if settings:
-            settings_module: str = os.environ.get(SETTINGS_MODULE, settings)
-            os.environ.setdefault(SETTINGS_MODULE, settings_module)
+            settings_module: str = os.environ.get(LILYA_SETTINGS_MODULE, settings)
+            os.environ.setdefault(LILYA_SETTINGS_MODULE, settings_module)
 
     def invoke(self, ctx: click.Context) -> typing.Any:
         """

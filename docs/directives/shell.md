@@ -86,7 +86,7 @@ Sometimes you want to use your application settings as well while loading the sh
 [more details](../settings.md) about the settings and [how to use them](../settings.md).
 
 ```shell
-$ export SETTINGS_MODULE=MyCustomSettings
+$ export LILYA_SETTINGS_MODULE=MyCustomSettings
 $ export LILYA_DEFAULT_APP=--app myproject.main:app
 $ lilya shell # default
 $ lilya shell --kernel ptpython # start with ptpython

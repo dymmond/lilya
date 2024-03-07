@@ -271,7 +271,7 @@ make run
 What this command is actually doing is:
 
 ```shell
-SETTINGS_MODULE=myproject.configs.development.settings.DevelopmentAppSettings python -m myproject.serve
+LILYA_SETTINGS_MODULE=myproject.configs.development.settings.DevelopmentAppSettings python -m myproject.serve
 ```
 
 If you want another [settings](../settings.md#custom-settings) you can simply update the command to
@@ -447,7 +447,7 @@ This directive helps you starting your local development in a simple way, very s
     <sup>Default: `on`</sup>
 
 * **--settings** - Start the server with specific settings. This is an alternative to
-[SETTINGS_MODULE][settings_module] way of starting.
+[LILYA_SETTINGS_MODULE][settings_module] way of starting.
 
     <sup>Default: `None`</sup>
 
@@ -483,7 +483,7 @@ $ lilya runserver --lifespan auto
 
 ###### Run with different settings
 
-As mentioned before, this is an alternative to the [SETTINGS_MODULE][settings_module]
+As mentioned before, this is an alternative to the [LILYA_SETTINGS_MODULE][settings_module]
 approach and **it should only be used for development purposes**.
 
 Use one or the other.
@@ -523,10 +523,10 @@ As you can see, we have three different types of settings:
 $ lilya runserver --settings src.configs.development.settings.DevelopmentAppSettings
 ```
 
-Running with [SETTINGS_MODULE][settings_module] would be:
+Running with [LILYA_SETTINGS_MODULE][settings_module] would be:
 
 ```shell
-$ SETTINGS_MODULE=src.configs.development.settings.DevelopmentAppSettings lilya runserver
+$ LILYA_SETTINGS_MODULE=src.configs.development.settings.DevelopmentAppSettings lilya runserver
 ```
 
 **Run with testing settings**
@@ -535,10 +535,10 @@ $ SETTINGS_MODULE=src.configs.development.settings.DevelopmentAppSettings lilya 
 $ lilya runserver --settings src.configs.testing.settings.TestingAppSettings
 ```
 
-Running with [SETTINGS_MODULE][settings_module] would be:
+Running with [LILYA_SETTINGS_MODULE][settings_module] would be:
 
 ```shell
-$ SETTINGS_MODULE=src.configs.testing.settings.TestingAppSettings lilya runserver
+$ LILYA_SETTINGS_MODULE=src.configs.testing.settings.TestingAppSettings lilya runserver
 ```
 
 **Run with production settings**
@@ -547,10 +547,10 @@ $ SETTINGS_MODULE=src.configs.testing.settings.TestingAppSettings lilya runserve
 $ lilya runserver --settings src.configs.settings.AppSettings
 ```
 
-Running with [SETTINGS_MODULE][settings_module] would be:
+Running with [LILYA_SETTINGS_MODULE][settings_module] would be:
 
 ```shell
-$ SETTINGS_MODULE=src.configs.settings.AppSettings lilya runserver
+$ LILYA_SETTINGS_MODULE=src.configs.settings.AppSettings lilya runserver
 ```
 
 

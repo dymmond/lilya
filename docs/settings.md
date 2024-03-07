@@ -14,7 +14,7 @@ Lilya leverages [Dymmond Setings](https://settings.dymmond.com).
 
 There are two ways of using the settings object within a Lilya application.
 
-* Using the **SETTINGS_MODULE** environment variable
+* Using the **LILYA_SETTINGS_MODULE** environment variable
 * Using the **[settings_module](#the-settings_module)** instance attribute.
 
 Each one of them has particular use cases but they also work together is perfect harmony.
@@ -80,10 +80,10 @@ What just happened?
 
 ## Settings Module
 
-Lilya by default is looking for a `SETTINGS_MODULE` environment variable to execute any custom settings,
+Lilya by default is looking for a `LILYA_SETTINGS_MODULE` environment variable to execute any custom settings,
 if nothing is provided then it will execute the application defaults.
 
-=== "Without SETTINGS_MODULE"
+=== "Without LILYA_SETTINGS_MODULE"
 
     ```shell
     uvicorn src:app --reload
@@ -95,10 +95,10 @@ if nothing is provided then it will execute the application defaults.
     INFO:     Application startup complete.
     ```
 
-=== "With SETTINGS_MODULE"
+=== "With LILYA_SETTINGS_MODULE"
 
     ```shell
-    SETTINGS_MODULE=src.configs.production.ProductionSettings uvicorn src:app
+    LILYA_SETTINGS_MODULE=src.configs.production.ProductionSettings uvicorn src:app
 
     INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
     INFO:     Started reloader process [28720]
@@ -107,7 +107,7 @@ if nothing is provided then it will execute the application defaults.
     INFO:     Application startup complete.
     ```
 
-It is very simple, `SETTINGS_MODULE` looks for the custom settings class created for the application
+It is very simple, `LILYA_SETTINGS_MODULE` looks for the custom settings class created for the application
 and loads it in lazy mode and make it globaly available.
 
 ## The settings_module
@@ -164,15 +164,15 @@ So, how does the priority take place here using the `settings_module`?
 * If no parameter value (upon instantiation), for example `app_name`, is provided, it will check for that same value
 inside the `settings_module`.
 * If `settings_module` does not provide an `app_name` value, it will look for the value in the
-`SETTINGS_MODULE`.
-* If no `SETTINGS_MODULE` environment variable is provided by you, then it will default
+`LILYA_SETTINGS_MODULE`.
+* If no `LILYA_SETTINGS_MODULE` environment variable is provided by you, then it will default
 to the Lilya defaults. [Read more about this here](#settings-module).
 
 So the order of priority:
 
 * Parameter instance value takes priority above `settings_module`.
-* `settings_module` takes priority above `SETTINGS_MODULE`.
-* `SETTINGS_MODULE` is the last being checked.
+* `settings_module` takes priority above `LILYA_SETTINGS_MODULE`.
+* `LILYA_SETTINGS_MODULE` is the last being checked.
 
 
 ## Settings config and Lilya settings module
@@ -182,13 +182,13 @@ the same time ([order of priority](#order-of-priority)).
 
 Let us use an example where:
 
-1. We create a main Lilya settings object to be used by the `SETTINGS_MODULE`.
+1. We create a main Lilya settings object to be used by the `LILYA_SETTINGS_MODULE`.
 2. We create a `settings_module` to be used by the Lilya instance.
 3. We start the application using both.
 
 Let us also assume you have all the settings inside a `src/configs` directory.
 
-**Create a configuration to be used by the SETTINGS_MODULE**
+**Create a configuration to be used by the LILYA_SETTINGS_MODULE**
 
 ```python title="src/configs/main_settings.py"
 {!> ../docs_src/applications/settings/settings_config/main_settings.py !}
@@ -210,7 +210,7 @@ Now we can start the server using the `AppSettings` as global and `InstanceSetti
 via instantiation. The AppSettings from the main_settings.py is used to call from the command-line.
 
 ```shell
-SETTINGS_MODULE=src.configs.main_settings.AppSettings uvicorn src:app --reload
+LILYA_SETTINGS_MODULE=src.configs.main_settings.AppSettings uvicorn src:app --reload
 
 INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
 INFO:     Started reloader process [28720]
@@ -219,7 +219,7 @@ INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 ```
 
-Great! Now not only we have used the `settings_module` and `SETTINGS_MODULE` but we used
+Great! Now not only we have used the `settings_module` and `LILYA_SETTINGS_MODULE` but we used
 them at the same time!
 
 Check out the [order of priority](#order-of-priority) to understand which value takes precedence
