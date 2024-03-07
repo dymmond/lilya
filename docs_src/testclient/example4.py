@@ -1,10 +1,9 @@
 import pytest
 
 from lilya.enums import MediaType
-from lilya.requests import Request
 from lilya.responses import JSONResponse, Response
 from lilya.routing import Include, Path, WebSocketPath
-from lilya.testclient import TestClient, create_client
+from lilya.testclient import create_client
 from lilya.websockets import WebSocket
 
 

@@ -140,7 +140,7 @@ assigning the result object into a `AuthResult` and make it available on every r
                 DefineMiddleware(JWTAuthMiddleware)
             ]
 
-    # load the settings via SETTINGS_MODULE=src.configs.live.AppSettings
+    # load the settings via LILYA_SETTINGS_MODULE=src.configs.live.AppSettings
     app = Lilya(routes=[...])
     ```
 
@@ -162,7 +162,7 @@ to use to start a Lilya application.
 
 
 ```shell
-SETTINGS_MODULE=configs.live.AppSettings uvicorn src:app
+LILYA_SETTINGS_MODULE=configs.live.AppSettings uvicorn src:app
 
 INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
 INFO:     Started reloader process [28720]
@@ -172,7 +172,7 @@ INFO:     Application startup complete.
 ```
 
 !!! attention
-    If `SETTINGS_MODULE` is not specified as the module to be loaded, **Lilya** will load the default settings
+    If `LILYA_SETTINGS_MODULE` is not specified as the module to be loaded, **Lilya** will load the default settings
     but your middleware will not be initialized.
 
 ### Important

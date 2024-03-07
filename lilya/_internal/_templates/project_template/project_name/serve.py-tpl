@@ -14,7 +14,7 @@ from .main import app as app  # noqa
 
 if __name__ == "__main__":
     """
-    Uses the `SETTINGS_MODULE` settings configuration and loads accordingly.
+    Uses the `LILYA_SETTINGS_MODULE` settings configuration and loads accordingly.
     """
     port = getattr(settings, "port", 8000)
     uvicorn.run(

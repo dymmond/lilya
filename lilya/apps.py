@@ -56,7 +56,7 @@ class Lilya:
             Doc(
                 """
                 Alternative settings parameter. This parameter is an alternative to
-                `SETTINGS_MODULE` way of loading your settings into a Lilya application.
+                `LILYA_SETTINGS_MODULE` way of loading your settings into a Lilya application.
 
                 When the `settings_module` is provided, it will make sure it takes priority over
                 any other settings provided for the instance.

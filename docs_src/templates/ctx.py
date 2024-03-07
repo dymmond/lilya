@@ -1,5 +1,3 @@
-import typing
-
 from lilya.requests import Request
 
 

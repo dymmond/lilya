@@ -5,7 +5,7 @@ from lilya.routing import Path
 
 async def create(request: Request):
     # Operations to create here
-    data = await request.json()
+    await request.json()
     ...
 
 

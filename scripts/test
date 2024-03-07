@@ -13,8 +13,8 @@ if [ -z $GITHUB_ACTIONS ]; then
   scripts/check
 fi
 
-export SETTINGS_MODULE='tests.settings.TestSettings'
+export LILYA_SETTINGS_MODULE='tests.settings.TestSettings'
 
 ${PREFIX}pytest $@
 
-unset SETTINGS_MODULE
+unset LILYA_SETTINGS_MODULE

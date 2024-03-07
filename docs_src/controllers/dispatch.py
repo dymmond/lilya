@@ -1,6 +1,5 @@
 from lilya.apps import Lilya
 from lilya.controllers import Controller
-from lilya.requests import Request
 from lilya.responses import Ok, Response
 from lilya.routing import Path
 

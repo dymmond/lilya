@@ -1,5 +1,3 @@
-from flask import Flask, make_response
-
 from lilya.apps import Lilya
 from lilya.middleware.wsgi import WSGIMiddleware
 from lilya.routing import Include

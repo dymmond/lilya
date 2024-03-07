@@ -12,7 +12,7 @@ registry = Registry(database=database)
 
 async def create_user(request: Request) -> None:
     # Logic to create the user
-    data = await request.json()
+    await request.json()
     ...
 
 

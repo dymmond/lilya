@@ -1,6 +1,5 @@
 from lilya.apps import Lilya
 from lilya.compat import reverse
-from lilya.requests import Request
 from lilya.routing import Path
 
 

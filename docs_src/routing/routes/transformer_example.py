@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import ipaddress
 
 from lilya.transformers import Transformer, register_path_transformer

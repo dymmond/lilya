@@ -1,5 +1,4 @@
 from lilya.apps import Lilya, Request
-from lilya.requests import Request
 from lilya.routing import Path
 
 

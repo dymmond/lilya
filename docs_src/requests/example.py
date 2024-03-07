@@ -8,7 +8,7 @@ async def app(scope: Scope, receive: Receive, send: Send):
     assert scope["type"] == ScopeType.HTTP
 
     request = Request(scope=scope, receive=receive, send=send)
-    data = "{} {}".format(request.method, request.url.path)
+    data = f"{request.method} {request.url.path}"
 
     response = PlainText(content=data)
     await response(scope, receive, send)
