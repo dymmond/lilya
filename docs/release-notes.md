@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.2.2
+
+### Added
+
+- New lazy loading settings system making it more unique and dynamic.
+
 ## 0.2.1
 
 ### Changed
