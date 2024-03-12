@@ -29,8 +29,8 @@ the `Jinja2Template`.
 {!> ../docs_src/templates/template.py !}
 ```
 ### Templates response parameters
-The get_template_response function expects the following arguments:
 
+The get_template_response function expects the following arguments:
 - `request`: (required): The HTTP request object.
 - `name`: (required): The name of the template to render.
 Any additional arguments or keyword arguments provided will be passed directly to the template as context. This allows you to include dynamic data in the template rendering process.
