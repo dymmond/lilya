@@ -36,7 +36,7 @@ Furthermore, the details of the message can be customized as needed.
 For those coming from a more enforced typed language like Java or C#, a protocol is the python equivalent to an
 interface.
 
-The `PermissionProtocol` is simply an interface to build middlewares for **Lilya** by enforcing the implementation of
+The `PermissionProtocol` is simply an interface to build permissions for **Lilya** by enforcing the implementation of
 the `__init__` and the `async def __call__`.
 
 Enforcing this protocol also aligns with writing a [Pure ASGI Permission](#pure-asgi-permission).
@@ -49,7 +49,7 @@ Enforcing this protocol also aligns with writing a [Pure ASGI Permission](#pure-
 
 ## Permission and the application
 
-Creating this type of middlewares will make sure the protocols are followed and therefore reducing development errors
+Creating this type of permissions will make sure the protocols are followed and therefore reducing development errors
 by removing common mistakes.
 
 To add middlewares to the application is very simple. You can add it at any level of the application.
@@ -93,7 +93,7 @@ parameter **should always be an app** and the `__call__` should **always return 
 ## Permissions and the settings
 
 One of the advantages of Lilya is leveraging the settings to make the codebase tidy, clean and easy to maintain.
-As mentioned in the [settings](./settings.md) document, the middleware is one of the properties available
+As mentioned in the [settings](./settings.md) document, the permissions is one of the properties available
 to use to start a Lilya application.
 
 ```python

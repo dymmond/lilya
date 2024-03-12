@@ -5,6 +5,17 @@ hide:
 
 # Release Notes
 
+## 0.2.3
+
+### Added
+
+- Alias `Middleware` to be imported from `lilya.middleware`.
+
+
+### Fixed
+
+- `message` in responses was not passing the proper headers.
+
 ## 0.2.2
 
 ### Added

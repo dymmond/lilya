@@ -50,12 +50,12 @@ app = Lilya(
         Path(
             "/{user}",
             handler=user,
-            middleware=[
+            permissions=[
                 DefinePermission(AdminAccess),
             ],
         ),
     ],
-    middleware=[DefinePermission(AllowAccess)],
+    permissions=[DefinePermission(AllowAccess)],
 )
 
 
@@ -69,12 +69,12 @@ app = Lilya(
                 Path(
                     "/{user}",
                     handler=user,
-                    middleware=[
+                    permissions=[
                         DefinePermission(AdminAccess),
                     ],
                 ),
             ],
-            middleware=[DefinePermission(AllowAccess)],
+            permissions=[DefinePermission(AllowAccess)],
         )
     ]
 )

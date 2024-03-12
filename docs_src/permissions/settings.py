@@ -26,7 +26,7 @@ class AllowAccess(PermissionProtocol):
 @dataclass
 class AppSettings(Settings):
     @property
-    def middleware(self) -> List[DefinePermission]:
+    def permissions(self) -> List[DefinePermission]:
         """
         All the permissions to be added when the application starts.
         """

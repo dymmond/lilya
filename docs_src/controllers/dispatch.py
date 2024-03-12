@@ -16,7 +16,7 @@ class AuthController(Controller):
 
 app = Lilya(
     routes=[
-        Path("/", endpoint=ASGIAppController),
-        Path("/{username}", endpoint=AuthController),
+        Path("/", handler=ASGIAppController),
+        Path("/{username}", handler=AuthController),
     ]
 )
