@@ -96,7 +96,7 @@ class ServerErrorMiddleware(MiddlewareProtocol):
             The appropriate HTTP response.
         """
         if self.debug:
-            return await self.debug_response(request, exc)
+            return self.debug_response(request, exc)
         elif self.handler is None:
             return self.error_response(request, exc)
         else:
@@ -153,7 +153,7 @@ class ServerErrorMiddleware(MiddlewareProtocol):
             "Internal Server Error", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
-    async def debug_response(self, request: Request, exc: Exception) -> Response:
+    def debug_response(self, request: Request, exc: Exception) -> Response:
         """
         Generate a debug response with HTML or plain text.
 
@@ -167,12 +167,12 @@ class ServerErrorMiddleware(MiddlewareProtocol):
         accept = request.headers.get("accept", "")
 
         if MediaType.HTML in accept:
-            content = await self.generate_html(exc)
+            content = self.generate_html(exc)
             return HTMLResponse(content, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        content = await self.generate_plain_text(exc)
+        content = self.generate_plain_text(exc)
         return PlainText(content, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    async def generate_html(self, exc: Exception) -> str:
+    def generate_html(self, exc: Exception) -> str:
         """
         Generate HTML content for the debug response.
 
@@ -202,7 +202,7 @@ class ServerErrorMiddleware(MiddlewareProtocol):
         template = get_template_errors()
         return template.format(styles=get_css_style(), js=get_js(), error=error, exc_html=exc_html)
 
-    async def generate_plain_text(self, exc: Exception) -> str:
+    def generate_plain_text(self, exc: Exception) -> str:
         """
         Generate plain text content for the debug response.
 
