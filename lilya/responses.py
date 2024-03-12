@@ -199,16 +199,30 @@ class Response:
         )
 
     @property
-    def message(self) -> dict[str, Any]:
+    def encoded_headers(self) -> list[Any]:
+        headers: list[tuple[Any, Any]] = []
+
+        for name, value in list(self.headers.multi_items()):
+            if not isinstance(value, bytes):
+                headers.append(
+                    (name.encode("latin-1"), f"{value}".encode(errors="surrogateescape"))
+                )
+            else:
+                headers.append((name.encode("latin-1"), value))
+        return headers
+
+    def message(self, prefix: str) -> dict[str, Any]:
         return {
-            "type": "http.response.start",
+            "type": prefix + "http.response.start",
             "status": self.status_code,
-            "headers": list(self.headers.multi_items()),
+            "headers": self.encoded_headers,
         }
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        await send(self.message)
-        await send({"type": "http.response.body", "body": self.body})
+        prefix = "websocket." if scope["type"] == "websocket" else ""
+        await send(self.message(prefix=prefix))
+        await send({"type": prefix + "http.response.body", "body": self.body})
+
         if self.background is not None:
             await self.background()
 
@@ -302,7 +316,7 @@ class StreamingResponse(Response):
                 break
 
     async def stream(self, send: Send) -> None:
-        await send(self.message)
+        await send(self.message(prefix=""))
 
         async for chunk in self.body_iterator:
             if not isinstance(chunk, bytes):
@@ -385,7 +399,8 @@ class FileResponse(Response):
                 if not stat.S_ISREG(mode):
                     raise RuntimeError(f"File at path {self.path} is not a file.") from None
 
-        await send(self.message)
+        prefix = "websocket." if scope["type"] == "websocket" else ""
+        await send(self.message(prefix=prefix))
 
         if self.send_header_only:
             await send({"type": "http.response.body", "body": b"", "more_body": False})
