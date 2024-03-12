@@ -1,3 +1,3 @@
-from .base import DefineMiddleware
+from .base import DefineMiddleware, Middleware
 
-__all__ = ["DefineMiddleware"]
+__all__ = ["DefineMiddleware", "Middleware"]

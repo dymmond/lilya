@@ -1,3 +1,3 @@
-from .base import DefinePermission
+from .base import DefinePermission, Permission
 
-__all__ = ["DefinePermission"]
+__all__ = ["DefinePermission", "Permission"]
