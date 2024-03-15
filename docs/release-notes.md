@@ -11,7 +11,6 @@ hide:
 
 - Alias `Middleware` to be imported from `lilya.middleware`.
 
-
 ### Fixed
 
 - `message` in responses was not passing the proper headers.

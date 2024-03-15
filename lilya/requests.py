@@ -33,6 +33,16 @@ class Request(Connection):
     for accessing various aspects of the request, such as headers, body, and form data.
     """
 
+    __slots__ = (
+        "_receive",
+        "_send",
+        "_stream_consumed",
+        "_is_disconnected",
+        "_json",
+        "_content_type",
+        "_body",
+    )
+
     _form: FormData | None = None
 
     def __init__(
