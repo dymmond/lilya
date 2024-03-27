@@ -5,6 +5,17 @@ hide:
 
 # Release Notes
 
+## 0.3.0
+
+### Added
+
+- Allow `Encoder` and `Transformer`  to be registered without forcing to be
+instances.
+
+### Changed
+
+- Add `__slots__` to  `Request`.
+
 ## 0.2.3
 
 ### Added
