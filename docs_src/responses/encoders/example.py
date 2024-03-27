@@ -17,4 +17,8 @@ class MsgSpecEncoder(Encoder):
         return msgspec.json.decode(msgspec.json.encode(obj))
 
 
+# A normal way
 register_encoder(MsgSpecEncoder())
+
+# As alternative
+register_encoder(MsgSpecEncoder)

@@ -18,4 +18,8 @@ class AttrsEncoder(Encoder):
         return asdict(obj)
 
 
+# A normal way
 register_encoder(AttrsEncoder())
+
+# As alternative
+register_encoder(AttrsEncoder)
