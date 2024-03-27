@@ -7,6 +7,8 @@ from pathlib import PurePath
 from types import GeneratorType
 from typing import Any, Generic, TypeVar, cast
 
+from lilya._utils import is_class_and_subclass
+
 T = TypeVar("T")
 
 
@@ -86,6 +88,8 @@ ENCODER_TYPES: set[Encoder] = {
 
 
 def register_encoder(encoder: Encoder[Any]) -> None:
+    if is_class_and_subclass(encoder, Encoder):
+        encoder = encoder()  # type: ignore
     ENCODER_TYPES.add(encoder)
 
 

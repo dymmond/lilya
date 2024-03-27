@@ -14,4 +14,8 @@ class PydanticEncoder(Encoder):
         return obj.model_dump()
 
 
+# A normal way
 register_encoder(PydanticEncoder())
+
+# As alternative
+register_encoder(PydanticEncoder)

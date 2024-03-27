@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, ClassVar, Generic, TypeVar
 
+from lilya._utils import is_class_and_subclass
+
 T = TypeVar("T")
 
 # path_regex = re.compile(r"{(.*?)}")
@@ -123,5 +125,8 @@ def register_path_transformer(key: str, transformer: Transformer[Any]) -> None:
     Adds custom transformers to the already known dictionary of path
     transformers.
     """
+    if is_class_and_subclass(transformer, Transformer):
+        transformer = transformer()  # type: ignore
+
     TRANSFORMER_TYPES[key] = transformer
     TRANSFORMER_PYTHON_TYPES[transformer.__class__.__name__] = key
