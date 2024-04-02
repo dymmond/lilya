@@ -63,10 +63,10 @@ class Request(Connection):
         self._send = send
         self._stream_consumed = False
         self._is_disconnected = False
-        self._media: type[Empty] | dict[str, Any] = Empty
+        self._media = Empty
         self._json = Empty
         self._content_type = Empty
-        self._body: type[Empty] | bytes = Empty
+        self._body = Empty
 
     def _assert_multipart(self) -> None:
         """
@@ -116,8 +116,8 @@ class Request(Connection):
         if self._media is Empty:
             content_type_header = self.headers.get("Content-type", "")
             content_type, opts = parse_options_header(content_type_header)
-            self._media = dict(opts, content_type=content_type)
-        return cast(dict[str, Any], self._media)
+            self._media = dict(opts, content_type=content_type)  # type: ignore
+        return cast(Dict[str, Any], self._media)
 
     @property
     def charset(self) -> str:
@@ -178,7 +178,7 @@ class Request(Connection):
             bytes: The request body as bytes.
         """
         if self._body is Empty:
-            self._body = b"".join([chunk async for chunk in self.stream()])
+            self._body = b"".join([chunk async for chunk in self.stream()])  # type: ignore
         return cast(bytes, self._body)
 
     async def json(self) -> Any:
