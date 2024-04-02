@@ -136,6 +136,8 @@ class MediaType(StrEnum):
     TEXT_CHARSET = "text/plain; charset=utf-8"
     PNG = "image/png"
     OCTET = "application/octet-stream"
+    MULTIPART = "multipart/form-data"
+    URLENCODED = "application/x-www-form-urlencoded"
 
 
 class WebSocketState(IntEnum):
