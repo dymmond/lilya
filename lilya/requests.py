@@ -15,7 +15,7 @@ from lilya._internal._connection import (
 from lilya._internal._parsers import FormParser, MultiPartException, MultiPartParser
 from lilya.compat import AsyncResourceHandler
 from lilya.datastructures import FormData
-from lilya.enums import Event, ScopeType
+from lilya.enums import Event, MediaType, ScopeType
 from lilya.exceptions import HTTPException
 from lilya.types import Empty, Message, Receive, Scope, Send
 
@@ -41,6 +41,8 @@ class Request(Connection):
         "_json",
         "_content_type",
         "_body",
+        "_charset",
+        "_media",
     )
 
     _form: FormData | None = None
@@ -62,9 +64,19 @@ class Request(Connection):
         self._send = send
         self._stream_consumed = False
         self._is_disconnected = False
+        self._media: type[Empty] | dict[str, Any] = Empty
         self._json = Empty
+        self._charset = "utf-8"
         self._content_type = Empty
-        self._body = Empty
+        self._body: type[Empty] | bytes = Empty
+
+    def _assert_multipart(self) -> None:
+        """
+        Asserts if the multipart python package is installed.
+        """
+        assert (
+            parse_options_header is not None
+        ), "The `python-multipart` library must be installed to use form parsing."
 
     @property
     def method(self) -> str:
@@ -97,6 +109,19 @@ class Request(Connection):
         return self._send
 
     @property
+    def media(self) -> type[Empty] | dict[str, Any]:
+        """
+        Gathers the information about the media for the request
+        and returns a dictionary type.
+        """
+        self._assert_multipart()
+        if self._media is Empty:
+            content_type_header = self.headers.get("Content-type", "")
+            content_type, opts = parse_options_header(content_type_header)
+            self._media = dict(opts, content_type=content_type)
+        return self._media
+
+    @property
     def content_type(self) -> tuple[str, dict[str, str]]:
         """
         Get the content type of the request.
@@ -105,9 +130,12 @@ class Request(Connection):
             Tuple[str, Dict[str, str]]: The content type as a tuple containing a string
             and a dictionary of parameters.
         """
+        self._assert_multipart()
+
         if self._content_type is Empty:
-            self._content_type = self.headers.get("Content-Type", "")
-        return cast(Tuple[str, Dict[str, str]], self._content_type)
+            content_type = self.headers.get("Content-Type", "")
+            self._content_type, _ = parse_options_header(content_type)
+        return cast(Tuple[str, Dict[str, str]], self._content_type.decode(self._charset))
 
     async def stream(self) -> AsyncGenerator[bytes, None]:
         """
@@ -145,10 +173,7 @@ class Request(Connection):
             bytes: The request body as bytes.
         """
         if self._body is Empty:
-            chunks: list[bytes] = []
-            async for chunk in self.stream():
-                chunks.append(chunk)
-            self._body = b"".join(chunks)  # type: ignore
+            self._body = b"".join([chunk async for chunk in self.stream()])
         return cast(bytes, self._body)
 
     async def json(self) -> Any:
@@ -165,6 +190,33 @@ class Request(Connection):
                 body = self.scope["_body"] = await self.body() or b"null"
             self._json = json.loads(body)
         return self._json
+
+    async def text(self) -> Any:
+        """
+        Returns the body in as a string.
+        """
+        body = await self.body()
+        try:
+            return body.decode(self._charset)
+        except (LookupError, ValueError) as exc:
+            raise exc
+
+    async def data(self, *, raise_exception: bool = False) -> str | bytes | Any:
+        """
+        Returns any form or multipart forms from the request
+        or simply returns a JSON or text/plain format.
+        """
+        try:
+            if self.content_type in (MediaType.MULTIPART, MediaType.URLENCODED):
+                return await self.form()
+            if self.content_type == MediaType.JSON:
+                return await self.json()  # type: ignore
+        except ValueError as e:
+            if raise_exception:
+                raise e
+            return await self.body()
+        else:
+            return await self.text()
 
     async def _get_form(
         self,
@@ -185,9 +237,7 @@ class Request(Connection):
             FormData: The parsed form data.
         """
         if self._form is None:
-            assert (
-                parse_options_header is not None
-            ), "The `python-multipart` library must be installed to use form parsing."
+            self._assert_multipart()
             content_type_header = self.headers.get("Content-Type")
             content_type: bytes
             content_type, _ = parse_options_header(content_type_header)

@@ -1,19 +1,62 @@
 """
-Cases copied from Starlette implementation
+Cases adapted from Starlette implementation
 """
 
 from __future__ import annotations
 
 import sys
+from typing import Any, Dict
 
 import anyio
 import pytest
 
 from lilya._internal._message import Address
-from lilya.datastructures import State
+from lilya.datastructures import DataUpload, State
 from lilya.requests import ClientDisconnect, Request
 from lilya.responses import JSONResponse, PlainText, Response
+from lilya.routing import Path
+from lilya.testclient import create_client
 from lilya.types import Message, Scope
+
+
+class ForceMultipartDict(Dict[Any, Any]):
+    def __bool__(self) -> bool:
+        return True
+
+
+FORCE_MULTIPART = ForceMultipartDict()
+
+
+async def home(request: Request):
+    data = await request.data()
+    return next(data.multi_items())
+
+
+async def create_file(request: Request) -> dict[str, str]:
+    data = await request.data()
+    file: DataUpload = data["file"]
+    return {"size": file.size, "filename": file.filename}
+
+
+def test_request_data(test_client_factory) -> None:
+    with create_client(routes=[Path("/", handler=home, methods=["POST"])]) as client:
+        response = client.post("/", data={"some": "data"}, files=FORCE_MULTIPART)
+        assert response.json() == ["some", "data"]
+
+
+def test_request_data_post_file(test_client_factory, tmp_path):
+    path = tmp_path / "test.txt"
+    path.write_bytes(b"<file content>")
+
+    with create_client(
+        routes=[
+            Path("/files", handler=create_file, methods=["POST"]),
+        ]
+    ) as client:
+        with path.open("rb") as file:
+            response = client.post("/files", files={"file": file})
+        assert response.status_code == 200, response.text
+        assert response.json() == {"size": 14, "filename": "test.txt"}
 
 
 def test_request_url(test_client_factory):
@@ -528,7 +571,7 @@ def test_request_send_push_promise_without_setting_send(test_client_factory):
     ],
 )
 @pytest.mark.anyio
-async def test_request_rcv(messages: list[Message]) -> None:
+async def test_request_body_many(messages: list[Message]) -> None:
     messages = messages.copy()
 
     async def rcv() -> Message:

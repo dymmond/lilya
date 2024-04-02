@@ -165,6 +165,16 @@ request = Request(scope, receive)
 await request.json()
 ```
 
+##### As text
+
+```python
+from lilya.requests import Request
+
+request = Request(scope, receive)
+
+await request.text()
+```
+
 ##### As form data or multipart form
 
 ```python
@@ -174,6 +184,16 @@ request = Request(scope, receive)
 
 async with request.form() as form:
     ...
+```
+
+##### As data
+
+```python
+from lilya.requests import Request
+
+request = Request(scope, receive)
+
+await request.data()
 ```
 
 ##### As a stream
