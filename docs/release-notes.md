@@ -5,6 +5,14 @@ hide:
 
 # Release Notes
 
+## 0.3.1
+
+### Added
+
+- New `await request.data()` and `await request.text()` .
+- `media` to `Request` object returning a dict containing the content type media definitions in a dictionary
+like format.
+
 ## 0.3.0
 
 ### Added
