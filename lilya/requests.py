@@ -41,7 +41,6 @@ class Request(Connection):
         "_json",
         "_content_type",
         "_body",
-        "_charset",
         "_media",
     )
 
@@ -66,7 +65,6 @@ class Request(Connection):
         self._is_disconnected = False
         self._media: type[Empty] | dict[str, Any] = Empty
         self._json = Empty
-        self._charset = "utf-8"
         self._content_type = Empty
         self._body: type[Empty] | bytes = Empty
 
@@ -109,7 +107,7 @@ class Request(Connection):
         return self._send
 
     @property
-    def media(self) -> type[Empty] | dict[str, Any]:
+    def media(self) -> dict[str, Any]:
         """
         Gathers the information about the media for the request
         and returns a dictionary type.
@@ -119,7 +117,14 @@ class Request(Connection):
             content_type_header = self.headers.get("Content-type", "")
             content_type, opts = parse_options_header(content_type_header)
             self._media = dict(opts, content_type=content_type)
-        return self._media
+        return cast(dict[str, Any], self._media)
+
+    @property
+    def charset(self) -> str:
+        """
+        Get a charset for the scope.
+        """
+        return cast(str, self.media.get("charset", "utf-8"))
 
     @property
     def content_type(self) -> tuple[str, dict[str, str]]:
@@ -135,7 +140,7 @@ class Request(Connection):
         if self._content_type is Empty:
             content_type = self.headers.get("Content-Type", "")
             self._content_type, _ = parse_options_header(content_type)
-        return cast(Tuple[str, Dict[str, str]], self._content_type.decode(self._charset))
+        return cast(Tuple[str, Dict[str, str]], self._content_type.decode(self.charset))
 
     async def stream(self) -> AsyncGenerator[bytes, None]:
         """
@@ -197,7 +202,7 @@ class Request(Connection):
         """
         body = await self.body()
         try:
-            return body.decode(self._charset)
+            return body.decode(self.charset)
         except (LookupError, ValueError) as exc:
             raise exc
 
