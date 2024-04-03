@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.3.2
+
+### Fixed
+
+- Missing requirements needed for the `pip install lilya[cli]`
+
 ## 0.3.1
 
 ### Added
