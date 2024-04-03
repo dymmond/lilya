@@ -16,9 +16,9 @@ async def another(request: Request):
     return {"detail": "Another world!"}
 
 
-async def world_socket(socket: WebSocket):
-    await socket.accept()
-    msg = await socket.receive_json()
+async def world_socket(websocket: WebSocket):
+    await websocket.accept()
+    msg = await websocket.receive_json()
     assert msg
-    assert socket
-    await socket.close()
+    assert websocket
+    await websocket.close()
