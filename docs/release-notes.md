@@ -5,6 +5,67 @@ hide:
 
 # Release Notes
 
+## 0.3.3
+
+### Added
+
+- `settings_module` when passed in the instance of Esmerald will take precedence
+over the global settings, removing the need of using constantly the `ESMERALD_SETTINGS_MODULE`.
+- `ApplicationSettingsMiddleware` as internal that handles with the `settings_module` provided and maps
+the context of the settings.
+
+#### Example of the way the settings are evaluated
+
+```python
+from dataclasses import dataclass
+
+from lilya.apps import Lilya
+from lilya.conf import settings
+from lilya.conf.global_settings import Settings
+from lilya.responses import Ok
+from lilya.routing import Include, Path
+
+async def home():
+    title = getattr(settings, "title", "Lilya")
+    return Ok({"title": title, "debug": settings.debug})
+
+
+@dataclass
+class NewSettings(Settings):
+    title: str = "Settings being parsed by the middleware and make it app global"
+    debug: bool = False
+
+
+@dataclass
+class NestedAppSettings(Settings):
+    title: str = "Nested app title"
+    debug: bool = True
+
+
+app = Lilya(
+    settings_module=NewSettings,
+    routes=[
+        Path("/home", handler=home),
+        Include(
+            "/child",
+            app=Lilya(
+                settings_module=NestedAppSettings,
+                routes=[
+                    Path("/home", handler=home),
+                ],
+            ),
+        ),
+    ],
+)
+```
+
+In the context of the `controller home`, based on the path being called, it should return the
+corresponding value of the `title` according to the settings of the app that is included.
+
+### Changed
+
+- `createapp` directive `views.py` file generated renamed to `controllers.py`.
+
 ## 0.3.2
 
 ### Fixed
