@@ -9,8 +9,8 @@ hide:
 
 ### Added
 
-- `settings_module` when passed in the instance of Esmerald will take precedence
-over the global settings, removing the need of using constantly the `ESMERALD_SETTINGS_MODULE`.
+- `settings_module` when passed in the instance of Lilya will take precedence
+over the global settings, removing the need of using constantly the `LILYA_SETTINGS_MODULE`.
 - `ApplicationSettingsMiddleware` as internal that handles with the `settings_module` provided and maps
 the context of the settings.
 
