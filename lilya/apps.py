@@ -6,10 +6,11 @@ from typing import Any, Awaitable, Callable, Mapping, Sequence, cast
 from typing_extensions import Annotated, Doc
 
 from lilya._utils import is_class_and_subclass
-from lilya.conf import settings as lilya_settings
+from lilya.conf import reload_settings, settings as lilya_settings
 from lilya.conf.exceptions import FieldException
 from lilya.conf.global_settings import Settings
 from lilya.datastructures import State, URLPath
+from lilya.middleware.app_settings import ApplicationSettingsMiddleware
 from lilya.middleware.asyncexit import AsyncExitStackMiddleware
 from lilya.middleware.base import DefineMiddleware
 from lilya.middleware.exceptions import ExceptionMiddleware
@@ -484,6 +485,7 @@ class Lilya:
         middleware = [
             DefineMiddleware(ServerErrorMiddleware, handler=error_handler, debug=self.debug),
             *self.custom_middleware,
+            DefineMiddleware(ApplicationSettingsMiddleware),
             DefineMiddleware(ExceptionMiddleware, handlers=exception_handlers, debug=self.debug),
             DefineMiddleware(AsyncExitStackMiddleware),
         ]
@@ -819,12 +821,21 @@ class Lilya:
             )
         )
 
+    async def _globalise_settings(self) -> None:
+        """
+        Making sure the global settings remain as is
+        after the request is done.
+        """
+        settings = reload_settings()
+        lilya_settings.configure(settings())
+
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         scope["app"] = self
 
         if self.middleware_stack is None:
             self.middleware_stack = self.build_middleware_stack()
         await self.middleware_stack(scope, receive, send)
+        await self._globalise_settings()
 
 
 class ChildLilya(Lilya):

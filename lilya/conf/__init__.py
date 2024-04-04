@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from functools import lru_cache
 from typing import TYPE_CHECKING, Any
 
 from lilya._internal._module_loading import import_string
@@ -10,6 +11,18 @@ if TYPE_CHECKING:
     from lilya.conf.global_settings import Settings
 
 ENVIRONMENT_VARIABLE = "LILYA_SETTINGS_MODULE"
+
+
+@lru_cache
+def reload_settings() -> type[Settings]:
+    """
+    Reloads the global settings.
+    """
+    settings_module: str = os.environ.get(
+        ENVIRONMENT_VARIABLE, "lilya.conf.global_settings.Settings"
+    )
+    settings: type[Settings] = import_string(settings_module)
+    return settings
 
 
 class LilyaLazySettings(LazyObject):
@@ -35,6 +48,14 @@ class LilyaLazySettings(LazyObject):
             assert setting.islower(), "%s should be in lowercase." % setting
 
         self._wrapped = settings()
+
+    def configure(self, override_settings: type[Settings]) -> None:
+        """
+        Making sure the settings are overriden by the settings_module
+        provided by a given application and therefore use it as the application
+        global.
+        """
+        self._wrapped = override_settings
 
     def __repr__(self: LilyaLazySettings) -> str:
         # Hardcode the class name as otherwise it yields 'Settings'.
