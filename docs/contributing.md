@@ -74,7 +74,7 @@ Because Lilya uses pytest, any additional arguments will be passed. More info wi
 For example, to run a single test_script:
 
 ```shell
-$ scripts/test tests/test_apiviews.py
+$ scripts/test tests/test_encoders.py
 ```
 
 To run the linting, use:

@@ -44,9 +44,7 @@ def create_folders():
 
 
 def test_create_project_with_structure(create_folders):
-    (o, e, ss) = run_cmd(
-        "tests.cli.main:app", "lilya createproject myproject --with-structure --with-structure"
-    )
+    (o, e, ss) = run_cmd("tests.cli.main:app", "lilya createproject myproject --with-structure")
     assert ss == 0
 
     with open("myproject/Makefile") as f:

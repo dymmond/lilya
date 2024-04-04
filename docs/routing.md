@@ -304,7 +304,7 @@ functions on an application top level. Exception handler callables should be of 
 
 #### Using a different pattern
 
-```python title="src/myapp/accounts/views.py"
+```python title="src/myapp/accounts/controllers.py"
 {!> ../docs_src/routing/routes/include/views.py!}
 ```
 
