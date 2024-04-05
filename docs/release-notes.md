@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.3.4
+
+### Added
+
+- Extra validations to handle the events.
+
 ## 0.3.3
 
 ### Added
