@@ -40,6 +40,8 @@ class ScopeType(StrEnum):
 class EventType(StrEnum):
     ON_STARTUP = "on_startup"
     ON_SHUTDOWN = "on_shutdown"
+    STARTUP = "startup"
+    SHUTDOWN = "shutdown"
 
 
 class SignatureDefault(StrEnum):

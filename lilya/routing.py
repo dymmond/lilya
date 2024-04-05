@@ -1535,9 +1535,14 @@ class Router:
     def add_event_handler(
         self, event_type: str, func: Callable[[], Any]
     ) -> None:  # pragma: no cover
-        assert event_type in (EventType.ON_STARTUP, EventType.ON_SHUTDOWN)
+        assert event_type in (
+            EventType.ON_STARTUP,
+            EventType.ON_SHUTDOWN,
+            EventType.STARTUP,
+            EventType.SHUTDOWN,
+        )
 
-        if event_type == EventType.ON_STARTUP:
+        if event_type in (EventType.ON_STARTUP, EventType.STARTUP):
             self.on_startup.append(func)
         else:
             self.on_shutdown.append(func)
