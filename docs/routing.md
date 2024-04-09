@@ -250,7 +250,7 @@ Includes are unique to Lilya, powerful and with more control and allows:
 6. Less human lead bugs.
 
 !!! Warning
-    Includes **DO NOT** take path parameters. E.g.: `Include('/{name:path}, routes=[...])`.
+    Includes **DO NOT** take path parameters. E.g.: `Include('/include/{id:int}, routes=[...])`.
 
 ### Include and application
 
