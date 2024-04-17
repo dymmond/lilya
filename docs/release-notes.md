@@ -5,6 +5,16 @@ hide:
 
 # Release Notes
 
+## 0.3.5
+
+### Changed
+
+- Documentation improvements.
+
+### Fixed
+
+- Typo in the create project directive urls file descripton.
+
 ## 0.3.4
 
 ### Added
