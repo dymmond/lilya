@@ -18,7 +18,7 @@ from typing import (
     Literal,
     Mapping,
     NoReturn,
-    Union,
+    Sequence,
 )
 from urllib.parse import quote
 
@@ -31,13 +31,14 @@ from lilya.background import Task
 from lilya.compat import md5_hexdigest
 from lilya.concurrency import iterate_in_threadpool
 from lilya.datastructures import URL, Header
+from lilya.encoders import Encoder, register_encoder
 from lilya.enums import Event, HTTPMethod, MediaType
 from lilya.types import Receive, Scope, Send
 
-Content = Union[str, bytes]
+Content = str | bytes
 SyncContentStream = Iterable[Content]
 AsyncContentStream = AsyncIterable[Content]
-ContentStream = Union[AsyncContentStream, SyncContentStream]
+ContentStream = AsyncContentStream | SyncContentStream
 
 
 class Response:
@@ -53,6 +54,7 @@ class Response:
         cookies: Mapping[str, str] | Any | None = None,
         media_type: str | None = None,
         background: Task | None = None,
+        encoders: Sequence[Encoder[Any]] | Sequence[type[Encoder[Any]]] | None = None,
     ) -> None:
         if status_code is not None:
             self.status_code = status_code
@@ -63,6 +65,10 @@ class Response:
         self.body = self.make_response(content)
         self.raw_headers: list[Any] = []
         self.make_headers(headers)
+        self.encoders = encoders or []
+
+        for encoder in self.encoders:
+            register_encoder(encoder)
 
     def make_response(self, content: Any) -> bytes | str:
         """
@@ -252,6 +258,7 @@ class JSONResponse(Response):
         headers: Mapping[str, str] | None = None,
         media_type: str | None = None,
         background: Task | None = None,
+        encoders: Sequence[Encoder[Any]] | Sequence[type[Encoder[Any]]] | None = None,
     ) -> None:
         super().__init__(
             content=content,
@@ -259,6 +266,7 @@ class JSONResponse(Response):
             headers=headers,
             media_type=media_type,
             background=background,
+            encoders=encoders,
         )
 
     def make_response(self, content: Any) -> bytes:
@@ -282,9 +290,14 @@ class RedirectResponse(Response):
         status_code: int = status.HTTP_307_TEMPORARY_REDIRECT,
         headers: Mapping[str, str] | None = None,
         background: Task | None = None,
+        encoders: Sequence[Encoder[Any]] | Sequence[type[Encoder[Any]]] | None = None,
     ) -> None:
         super().__init__(
-            content=b"", status_code=status_code, headers=headers, background=background
+            content=b"",
+            status_code=status_code,
+            headers=headers,
+            background=background,
+            encoders=encoders,
         )
         self.headers["location"] = quote(str(url), safe=":/%#?=@[]!$&'()*+,;")
 
@@ -299,6 +312,7 @@ class StreamingResponse(Response):
         headers: Mapping[str, str] | None = None,
         media_type: str | None = None,
         background: Task | None = None,
+        encoders: Sequence[Encoder[Any]] | Sequence[type[Encoder[Any]]] | None = None,
     ) -> None:
         if isinstance(content, AsyncIterable):
             self.body_iterator = content
@@ -308,6 +322,10 @@ class StreamingResponse(Response):
         self.media_type = self.media_type if media_type is None else media_type
         self.background = background
         self.make_headers(headers)
+
+        self.encoders = encoders or []
+        for encoder in self.encoders:
+            register_encoder(encoder)
 
     async def wait_for_disconnect(self, receive: Receive) -> None:
         while True:
@@ -353,6 +371,7 @@ class FileResponse(Response):
         stat_result: os.stat_result | None = None,
         method: str | None = None,
         content_disposition_type: str = "attachment",
+        encoders: Sequence[Encoder[Any]] | Sequence[type[Encoder[Any]]] | None = None,
     ) -> None:
         self.path = path
         self.status_code = status_code
@@ -376,6 +395,10 @@ class FileResponse(Response):
         self.stat_result = stat_result
         if stat_result is not None:
             self.set_stat_headers(stat_result)
+
+        self.encoders = encoders or []
+        for encoder in self.encoders:
+            register_encoder(encoder)
 
     def set_stat_headers(self, stat_result: os.stat_result) -> None:
         content_length = str(stat_result.st_size)
@@ -430,6 +453,7 @@ class TemplateResponse(HTMLResponse):
         background: Task | None = None,
         headers: dict[str, Any] | None = None,
         media_type: MediaType | str = MediaType.HTML,
+        encoders: Sequence[Encoder[Any]] | Sequence[type[Encoder[Any]]] | None = None,
     ):
         self.template = template
         self.context = context or {}
@@ -440,6 +464,7 @@ class TemplateResponse(HTMLResponse):
             headers=headers,
             media_type=media_type,
             background=background,
+            encoders=encoders,
         )
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
@@ -461,6 +486,7 @@ def make_response(
     status_code: int = status.HTTP_200_OK,
     headers: Mapping[str, str] | None = None,
     background: Task | None = None,
+    encoders: Sequence[Encoder[Any]] | Sequence[type[Encoder[Any]]] | None = None,
 ) -> Response:
     """
     Build JSON responses from a given content and
@@ -474,4 +500,5 @@ def make_response(
         headers=headers,
         media_type=MediaType.JSON,
         background=background,
+        encoders=encoders,
     )
