@@ -5,6 +5,14 @@ hide:
 
 # Release Notes
 
+## 0.4.0
+
+### Added
+
+- `encoders` directly embed in any response. The `encoders` is a list of `lilya.encoder.Encoder` type
+of objects that can be passed directly into the response. SInce the responses can be independent ASGI applications,
+the encoders can be passed directly there.
+
 ## 0.3.5
 
 ### Changed
