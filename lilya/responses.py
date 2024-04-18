@@ -19,6 +19,7 @@ from typing import (
     Mapping,
     NoReturn,
     Sequence,
+    Union,
 )
 from urllib.parse import quote
 
@@ -35,10 +36,10 @@ from lilya.encoders import Encoder, register_encoder
 from lilya.enums import Event, HTTPMethod, MediaType
 from lilya.types import Receive, Scope, Send
 
-Content = str | bytes
+Content = Union[str, bytes]
 SyncContentStream = Iterable[Content]
 AsyncContentStream = AsyncIterable[Content]
-ContentStream = AsyncContentStream | SyncContentStream
+ContentStream = Union[AsyncContentStream, SyncContentStream]
 
 
 class Response:
