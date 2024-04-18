@@ -87,10 +87,10 @@ ENCODER_TYPES: set[Encoder] = {
 }
 
 
-def register_encoder(encoder: Encoder[Any]) -> None:
+def register_encoder(encoder: Encoder[Any] | type[Encoder[Any]]) -> None:
     if is_class_and_subclass(encoder, Encoder):
         encoder = encoder()  # type: ignore
-    ENCODER_TYPES.add(encoder)
+    ENCODER_TYPES.add(cast(Encoder[Any], encoder))
 
 
 def json_encoder(value: Any) -> Any:
