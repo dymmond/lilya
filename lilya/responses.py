@@ -62,13 +62,14 @@ class Response:
             self.media_type = media_type
         self.background = background
         self.cookies = cookies
-        self.body = self.make_response(content)
-        self.raw_headers: list[Any] = []
-        self.make_headers(headers)
         self.encoders = encoders or []
 
         for encoder in self.encoders:
             register_encoder(encoder)
+
+        self.body = self.make_response(content)
+        self.raw_headers: list[Any] = []
+        self.make_headers(headers)
 
     def make_response(self, content: Any) -> bytes | str:
         """
@@ -314,6 +315,10 @@ class StreamingResponse(Response):
         background: Task | None = None,
         encoders: Sequence[Encoder[Any]] | Sequence[type[Encoder[Any]]] | None = None,
     ) -> None:
+        self.encoders = encoders or []
+        for encoder in self.encoders:
+            register_encoder(encoder)
+
         if isinstance(content, AsyncIterable):
             self.body_iterator = content
         else:
@@ -322,10 +327,6 @@ class StreamingResponse(Response):
         self.media_type = self.media_type if media_type is None else media_type
         self.background = background
         self.make_headers(headers)
-
-        self.encoders = encoders or []
-        for encoder in self.encoders:
-            register_encoder(encoder)
 
     async def wait_for_disconnect(self, receive: Receive) -> None:
         while True:
@@ -381,6 +382,11 @@ class FileResponse(Response):
             media_type = guess_type(filename or path)[0] or MediaType.TEXT
         self.media_type = media_type
         self.background = background
+
+        self.encoders = encoders or []
+        for encoder in self.encoders:
+            register_encoder(encoder)
+
         self.make_headers(headers)
 
         if self.filename is not None:
@@ -395,10 +401,6 @@ class FileResponse(Response):
         self.stat_result = stat_result
         if stat_result is not None:
             self.set_stat_headers(stat_result)
-
-        self.encoders = encoders or []
-        for encoder in self.encoders:
-            register_encoder(encoder)
 
     def set_stat_headers(self, stat_result: os.stat_result) -> None:
         content_length = str(stat_result.st_size)
