@@ -5,6 +5,29 @@ hide:
 
 # Release Notes
 
+## 0.5.0
+
+### Added
+
+- `settings_module` also supports import as string
+
+#### Example
+
+```python
+from lilya.apps import Lilya
+from lilya.requests import Request
+from lilya.routing import Path
+
+
+async def home(): ...
+
+
+app = Lilya(
+    routes=[Path("/", handler=home)],
+    settings_module="myapp.configs.settings.AppSettings",
+)
+```
+
 ## 0.4.0
 
 ### Added

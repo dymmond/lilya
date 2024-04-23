@@ -116,9 +116,9 @@ This is a great tool to make your Lilya applications 100% independent and modula
 where you simply want to plug an existing lilya application into another and that same lilya application
 already has unique settings and defaults.
 
-The `settings_config` is a parameter available in every single `Lilya` instance as well as `ChildLilya`.
+The `settings_module` is a parameter available in every single `Lilya` instance as well as `ChildLilya`.
 
-### Creating a settings_config
+### Creating a settings_module
 
 The configurations have **literally the same concept**
 as the [Settings](#settings-and-the-application), which means that every single
@@ -135,11 +135,27 @@ and keeping the intregrity at the same time.
 
 Check out the [order of priority](#order-of-priority) to understand a bit more.
 
+### Settings module as a string
+
+Lilya also offers the possibility of importing the settings via string. This means that you can
+literally make you codebase cleaner and avoid imports everywhere by simply using the dotted path
+import.
+
+**Example**
+
+Let us assume we have a settings file with a class name `AppSettings` located inside `myapp/configs/settings.py`.
+
+How to import via string?
+
+```python
+{!> ../docs_src/applications/settings/settings_config/via_string.py !}
+```
+
 ## Order of priority
 
 There is an order or priority in which Lilya reads your settings.
 
-If a `settings_config` is passed into a Lilya instance, that same object takes priority above
+If a `settings_module` is passed into a Lilya instance, that same object takes priority above
 anything else. Let us imagine the following:
 
 * A Lilya application with normal settings.
@@ -194,7 +210,7 @@ Let us also assume you have all the settings inside a `src/configs` directory.
 {!> ../docs_src/applications/settings/settings_config/main_settings.py !}
 ```
 
-**Create a configuration to be used by the setting_config**
+**Create a configuration to be used by the settings_module**
 
 ```python title="src/configs/app_settings.py"
 {!> ../docs_src/applications/settings/settings_config/app_settings.py !}
