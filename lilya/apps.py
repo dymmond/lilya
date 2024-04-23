@@ -5,6 +5,7 @@ from typing import Any, Awaitable, Callable, Mapping, Sequence, cast
 
 from typing_extensions import Annotated, Doc
 
+from lilya._internal._module_loading import import_string
 from lilya._utils import is_class_and_subclass
 from lilya.conf import reload_settings, settings as lilya_settings
 from lilya.conf.exceptions import FieldException
@@ -53,7 +54,7 @@ class Lilya:
         self,
         debug: Annotated[bool, Doc("Enable or disable debug mode. Defaults to False.")] = False,
         settings_module: Annotated[
-            Settings | None,
+            Settings | str | None,
             Doc(
                 """
                 Alternative settings parameter. This parameter is an alternative to
@@ -375,15 +376,18 @@ class Lilya:
     ) -> None:
         self.settings_module: Settings = None
 
+        if settings_module is not None and isinstance(settings_module, str):
+            settings_module = import_string(settings_module)
+
         if settings_module:
             if not isinstance(settings_module, Settings) and not is_class_and_subclass(
                 settings_module, Settings
-            ):  # type: ignore
+            ):
                 raise FieldException("'settings_module' must be a subclass of Settings")
             elif isinstance(settings_module, Settings):
                 self.settings_module = settings_module
-            elif is_class_and_subclass(settings_module, Settings):  # type: ignore
-                self.settings_module = settings_module()
+            elif is_class_and_subclass(settings_module, Settings):
+                self.settings_module = settings_module()  # type: ignore
 
         self.debug = self.__load_settings_value("debug", debug, is_boolean=True)
 
