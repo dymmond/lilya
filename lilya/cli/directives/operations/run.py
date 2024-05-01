@@ -61,7 +61,7 @@ def run(env: DirectiveEnv, directive: str, directive_args: Any) -> None:
     # Loads the directive object
     directive = fetch_directive(name, env.command_path, True)
     if not directive:
-        printer.write_error("Unknown directive: %r" % name)
+        printer.write_error(f"Unknown directive: {name!r}")
         sys.exit(1)
 
     # Execute the directive

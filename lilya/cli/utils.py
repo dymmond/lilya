@@ -123,7 +123,7 @@ def fetch_custom_directive(subdirective: Any, location: str | None) -> Any:
             matches.extend(get_close_matches(subdirective, directive))
 
             if matches and len(directives) == counter:
-                printer.write_error("Did you mean %s?" % matches[0])
+                printer.write_error(f"Did you mean {matches[0]}?")
 
             if len(directives) == counter:
                 return None
@@ -134,7 +134,7 @@ def fetch_custom_directive(subdirective: Any, location: str | None) -> Any:
         matches.extend(get_close_matches(subdirective, directive))
 
         if matches:
-            printer.write_error("Did you mean %s?" % matches[0])
+            printer.write_error(f"Did you mean {matches[0]}?")
             return None
         return None
 
@@ -166,7 +166,7 @@ def fetch_directive(subdirective: Any, location: str | None, is_custom: bool = F
             matches.extend(get_close_matches(subdirective, directive))
 
             if matches and len(directives) == counter:
-                printer.write_error("Did you mean %s?" % matches[0])
+                printer.write_error(f"Did you mean {matches[0]}?")
 
             if len(directives) == counter:
                 return None
