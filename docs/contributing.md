@@ -60,7 +60,7 @@ $ hatch env create
 The project comes with a pre-commit hook configuration. To enable it, just run inside the clone:
 
 ```shell
-$ hatch run pre-commit
+$ hatch run pre-commit install
 ```
 
 ### Run the tests
