@@ -90,6 +90,7 @@ dependencies = [
     "devtools>=0.12.2",
     "ipython",
     "ptpython",
+    "twine",
 ]
 [tool.hatch.envs.default.scripts]
 clean_pyc = "find . -type f -name \"*.pyc\" -delete"
