@@ -96,9 +96,8 @@ dependencies = [
 clean_pyc = "find . -type f -name \"*.pyc\" -delete"
 clean_pyi = "find . -type f -name \"*.pyi\" -delete"
 clean_pycache = "find . -type d -name \"*__pycache__*\" -delete"
-lint = "ruff check --fix --line-length 99  lilya tests {args}"
-check_types = "mypy -p lilya"
 build_with_check = "hatch build; twine check dist/*"
+lint = "ruff check --fix --line-length 99  lilya tests {args}"
 
 
 [tool.hatch.envs.docs]
@@ -137,12 +136,15 @@ dependencies = [
     "pytest-mock>=3.12.0",
     "python-multipart>=0.0.6",
     "requests>=2.28.2",
+    "mypy==1.9.0",
+    "ipython",
+    "ptpython",
 ]
 [tool.hatch.envs.test.scripts]
 # needs docker services running
 test = "LILYA_SETTINGS_MODULE='tests.settings.TestSettings' pytest {args}"
 coverage = "LILYA_SETTINGS_MODULE='tests.settings.TestSettings' pytest --cov=asyncz --cov=tests --cov-report=term-missing:skip-covered --cov-report=html tests {args}"
-
+check_types = "mypy -p lilya"
 
 
 [project.scripts]
