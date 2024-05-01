@@ -45,8 +45,10 @@ jobs:
           key: ${{ runner.os }}-python-${{ env.pythonLocation }}-${{ hashFiles('pyproject.toml') }}-test-v02
       - name: "Install dependencies"
         if: steps.cache.outputs.cache-hit != 'true'
-        run: "scripts/install"
+        run: "pip install hatch"
       - name: "Run linting checks"
-        run: "scripts/check"
+        run: "hatch run lint"
+      - name: "Run typing checks"
+        run: "hatch run check_types"
       - name: "Run tests"
-        run: "scripts/test"
+        run: "hatch run test:test"
