@@ -45,6 +45,15 @@ After, clone your fork with the follow command replacing `YOUR-USERNAME` wih you
 $ git clone https://github.com/YOUR-USERNAME/lilya
 ```
 
+Lilya also uses [hatch](https://hatch.pypa.io/latest/) for its development, testing and release
+cycles.
+
+Please make sure you run:
+
+```shell
+pip install hatch
+```
+
 ### Install the project dependencies
 
 Not necessary because the dependencies are automatically installed by hatch.
