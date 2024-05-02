@@ -47,9 +47,12 @@ $ git clone https://github.com/YOUR-USERNAME/lilya
 
 ### Install the project dependencies
 
+Not necessary because the dependencies are automatically installed by hatch.
+But if environments should be pre-initialized it can be done with `hatch env`
+
 ```shell
 $ cd lilya
-$ scripts/install
+$ hatch env create
 ```
 
 ### Enable pre-commit
@@ -57,7 +60,7 @@ $ scripts/install
 The project comes with a pre-commit hook configuration. To enable it, just run inside the clone:
 
 ```shell
-$ pre-commit
+$ hatch run pre-commit install
 ```
 
 ### Run the tests
@@ -65,7 +68,7 @@ $ pre-commit
 To run the tests, use:
 
 ```shell
-$ scripts/test
+$ hatch run test:test
 ```
 
 Because Lilya uses pytest, any additional arguments will be passed. More info within the
@@ -74,13 +77,13 @@ Because Lilya uses pytest, any additional arguments will be passed. More info wi
 For example, to run a single test_script:
 
 ```shell
-$ scripts/test tests/test_encoders.py
+$ hatch run test:test tests/test_encoders.py
 ```
 
 To run the linting, use:
 
 ```shell
-$ scripts/format
+$ hatch run lint
 ```
 
 ### Documentation
@@ -90,7 +93,7 @@ Improving the documentation is quite easy and it is placed inside the `lilya/doc
 To start the docs, run:
 
 ```shell
-$ scripts/docs
+$ hatch run docs:serve
 ```
 
 ## Building Lilya
@@ -98,13 +101,13 @@ $ scripts/docs
 To build a package locally, run:
 
 ```shell
-$ scripts/build
+$ hatch build
 ```
 
 Alternatively running:
 
 ```
-$ scripts/install
+$ hatch shell
 ```
 
 It will install the requirements and create a local build in your virtual environment.

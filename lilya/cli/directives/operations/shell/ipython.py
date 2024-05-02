@@ -35,7 +35,7 @@ def get_ipython(app: typing.Any, options: typing.Any = None) -> typing.Any:
             start_ipython(argv=ipython_arguments, user_ns=imported_objects)  # type: ignore
 
     except (ModuleNotFoundError, ImportError):
-        error = "You must have IPython installed to run this. Run `pip install lilya[ipython]`"
+        error = "You must have IPython installed to run this. Run `pip install ipython`"
         printer.write_error(error)
         sys.exit(1)
 

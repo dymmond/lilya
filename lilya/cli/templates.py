@@ -155,16 +155,16 @@ class TemplateDirective(BaseDirective):
 
                 shutil.copyfile(old_path, new_path)
                 if self.verbosity >= 2:
-                    printer.write_info("Creating %s" % new_path)
+                    printer.write_info(f"Creating {new_path}")
                 try:
                     self.manage_template_variables(template_name, new_path, project_dir, context)
                     self.apply_umask(old_path, new_path)
                     self.make_file_writable(new_path)
                 except OSError:
                     printer.write_error(
-                        "Notice: Couldn't set permission bits on %s. You're "
+                        f"Notice: Couldn't set permission bits on {new_path}. You're "
                         "probably using an uncommon filesystem setup. No "
-                        "problem." % new_path,
+                        "problem.",
                     )
 
     def manage_template_variables(

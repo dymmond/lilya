@@ -45,7 +45,7 @@ def list(env: DirectiveEnv) -> None:
 
     for app in sorted(directives_dict):
         usage.append("")
-        usage.append(output.message("\\[%s]" % app, colour=OutputColour.SUCCESS))
+        usage.append(output.message(f"\\[{app}]", colour=OutputColour.SUCCESS))
 
         for name in sorted(directives_dict[app]):
             usage.append(output.message(f"    {name}", colour=OutputColour.INFO))

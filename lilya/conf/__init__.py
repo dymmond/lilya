@@ -45,7 +45,7 @@ class LilyaLazySettings(LazyObject):
         settings: type[Settings] = import_string(settings_module)
 
         for setting, _ in settings().dict().items():
-            assert setting.islower(), "%s should be in lowercase." % setting
+            assert setting.islower(), f"{setting} should be in lowercase."
 
         self._wrapped = settings()
 
