@@ -26,11 +26,11 @@ class BaseDirective(ABC):
         """
         return lilya.__version__
 
-    def add_arguments(self, parser: type[argparse.ArgumentParser]) -> Any:
+    def add_arguments(self, parser: type[argparse.ArgumentParser]) -> Any:  # noqa
         """
         Entrypoint for directives and custom arguments
         """
-        raise NotImplementedError()
+        ...
 
     def create_parser(self, name: str, subdirective: str, **kwargs: Any) -> DirectiveParser:
         parser = DirectiveParser(
