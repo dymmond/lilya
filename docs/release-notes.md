@@ -5,6 +5,14 @@ hide:
 
 # Release Notes
 
+## 0.6.1
+
+### Changed
+
+- Internal support for `hatch` and removed the need for a `Makefile`
+- Documentation references
+- Internals for Directives. [#54](https://github.com/dymmond/lilya/pull/54) by [@devkral](https://github.com/devkral).
+
 ## 0.6.0
 
 ### Fixed
