@@ -57,7 +57,7 @@ The `customer_id` declared in the `path` was obtained by accessing the `request`
 
 Let's assume there are specific **customer** submodules inside a `customers` dedicated file.
 There are two way of separating the routes within the application, using [Include](#include),
-a [ChildLilya](#child-lilya-application) or by creating another router. Let's focus on the latter.
+a [ChildLilya](#childlilya-application) or by creating another router. Let's focus on the latter.
 
 ```python title="/application/apps/routers/customers.py"
 {!> ../docs_src/routing/router/customers.py!}

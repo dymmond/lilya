@@ -43,7 +43,7 @@ A list of [Path](./routing.md#path), [WebSocketPath](./routing.md#websocketpath)
 requests (HTTP and Websockets).
 * **permissions** - A list of [permissions](./permissions.md) to serve the application incoming
 requests (HTTP and Websockets).
-* **middleware** - A list of [middleware](./middleware.md) to run for every request. The middlewares can be subclasses of the [MiddlewareProtocol](./middleware.md#protocol).
+* **middleware** - A list of [middleware](./middleware.md) to run for every request. The middlewares can be subclasses of the [MiddlewareProtocol](./middleware.md#middlewareprotocol).
 * **exception handlers** - A dictionary of [exception types](./exceptions.md) (or custom exceptions) and the handler
 functions on an application top level. Exception handler callables should be of the form of
 `handler(request, exc) -> response` and may be be either standard functions, or async functions.
@@ -61,7 +61,7 @@ should indicate that all the paths should be considered deprecated.
 ## Application settings
 
 Settings are another way of controlling the parameters passed to the
-[Lilya object when instantiating](#instantiating-the-application). Check out the [settings](./settings.md) for
+Lilya object when instantiating. Check out the [settings](./settings.md) for
 more details and how to use it to power up your application.
 
 To access the application settings there are different ways:

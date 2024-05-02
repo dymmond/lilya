@@ -458,7 +458,7 @@ some of the options to see how it would look like.
 
 !!! Warning
     The following examples and explanations will be using the [auto discovery](./discovery.md#auto-discovery)
-    approach but the [--app and environment variables](./discovery.md##environment-variables)
+    approach but the [--app and environment variables](./discovery.md#environment-variables)
     is equally valid and works in the same way.
 
 ###### Run on a different port
@@ -554,4 +554,4 @@ $ LILYA_SETTINGS_MODULE=src.configs.settings.AppSettings lilya runserver
 ```
 
 
-[settings_module]: ../settings.md#lilya-settings-module
+[settings_module]: ../settings.md#settings-config-and-lilya-settings-module
