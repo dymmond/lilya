@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.6.0
+
+### Fixed
+
+- `add_arguments` from BaseDirective to not raise `NotImplementedError` exception.
+
 ## 0.5.0
 
 ### Added
