@@ -73,9 +73,7 @@ cli = [
     "uvicorn>=0.29.0",
 ]
 
-test = [
-    "httpx>=0.22.0",
-]
+test = ["httpx>=0.22.0"]
 
 
 [tool.hatch.version]
@@ -97,7 +95,7 @@ clean_pyc = "find . -type f -name \"*.pyc\" -delete"
 clean_pyi = "find . -type f -name \"*.pyi\" -delete"
 clean_pycache = "find . -type d -name \"*__pycache__*\" -delete"
 build_with_check = "hatch build; twine check dist/*"
-lint = "ruff check --fix --line-length 99  lilya tests {args}"
+lint = "ruff check --fix --line-length 99  mongoz tests {args}"
 
 
 [tool.hatch.envs.docs]
