@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import warnings
 from pathlib import Path
-from typing import Any, Callable, Generator, TypeVar
+from typing import Any, Callable, Generator, TypeVar, cast
 
 from multidict import MultiDict
 
@@ -41,7 +41,7 @@ class BooleanParser:
             )
         return self._boolean_mapping[self._value]
 
-    def __call__(self) -> None:
+    def __call__(self) -> Any:
         return self.__cast__()
 
 
@@ -59,9 +59,9 @@ class EnvironLoader(MultiDict):
         ignore_case: bool = False,
     ) -> None:
         if not ignore_case and environ is not None:
-            environ = {k.upper(): v for k, v in environ.items()}
+            environ = cast(MultiDict, {k.upper(): v for k, v in environ.items()})
 
-        self.__env__: MultiDict = environ if environ is not None else os.environ
+        self.__env__: MultiDict = environ if environ is not None else cast(MultiDict, os.environ)
         super().__init__(self.__env__)
         self.__read__: set[str] = set()
         self._env_file = env_file
@@ -76,7 +76,7 @@ class EnvironLoader(MultiDict):
 
     def __getitem__(self, __key: str) -> str:
         self.__read__.add(__key)
-        return self.getone(__key)
+        return cast(str, self.getone(__key))
 
     def __setitem__(self, __key: str, __value: str) -> None:
         if __key in self.__read__:
