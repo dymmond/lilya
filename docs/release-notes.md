@@ -5,6 +5,16 @@ hide:
 
 # Release Notes
 
+## 0.7.0
+
+### Added
+
+- New [EnvironLoader](./environments.md) support.
+
+### Fixed
+
+- Internal `AsyncExitStack` middleware raising exception.
+
 ## 0.6.1
 
 ### Changed
