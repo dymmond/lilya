@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.7.1
+
+### Fixed
+
+- Import cast clashing with local variables.
+
 ## 0.7.0
 
 ### Added
