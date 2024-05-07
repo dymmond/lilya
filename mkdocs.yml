@@ -90,6 +90,7 @@ nav:
       - Server Push: "server-push.md"
       - Exceptions & Exception Handlers: "exceptions.md"
       - WSGI Frameworks: "wsgi.md"
+      - Environments: "environments.md"
   - Clients:
       - Lilya Client:
           - Intro: "lilya-cli.md"

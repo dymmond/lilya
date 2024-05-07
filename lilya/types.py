@@ -31,5 +31,4 @@ WebSocketExceptionHandler = Callable[[Any, Exception], Awaitable[None]]
 ExceptionHandler = Union[HTTPExceptionHandler, WebSocketExceptionHandler]
 
 
-class Empty:
-    """A placeholder class."""
+class Empty: ...
