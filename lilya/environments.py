@@ -77,7 +77,7 @@ class EnvironLoader(MultiDict):
 
     def __getitem__(self, __key: str) -> str:
         self.__read__.add(__key)
-        return cast(str, self.getone(__key))
+        return tcast(str, self.getone(__key))
 
     def __setitem__(self, __key: str, __value: str) -> None:
         if __key in self.__read__:
