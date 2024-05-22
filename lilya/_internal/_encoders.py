@@ -117,4 +117,4 @@ def json_encoder(value: Any) -> Any:
             continue
 
     # If no encoder was found, raise a ValueError
-    raise ValueError(f"Object of type {type(value)} is not JSON serializable.")
+    raise ValueError(f"Object of type '{type(value).__name__}' is not JSON serializable.")
