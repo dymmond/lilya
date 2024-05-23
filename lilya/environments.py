@@ -3,8 +3,7 @@ from __future__ import annotations
 import os
 import warnings
 from pathlib import Path
-from typing import Any, Callable, Generator, TypeVar
-from typing import cast as tcast
+from typing import Any, Callable, Generator, TypeVar, cast as tcast
 
 from multidict import MultiDict
 
