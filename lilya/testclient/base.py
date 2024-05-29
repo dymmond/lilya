@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# type: ignore
 from __future__ import annotations
 
 import contextlib
@@ -175,7 +177,7 @@ class TestClient(httpx.Client):
         )
 
     def _process_request(
-        self, method: str, url: URLTypes, *args: Any, **kwargs: RequestInputs
+        self, method: str, url: URLTypes, **kwargs: RequestInputs
     ) -> httpx.Request:
         """
         Processes the request.
@@ -189,64 +191,63 @@ class TestClient(httpx.Client):
             httpx.Request: The HTTP request.
         """
         if not kwargs:
-            kwargs = RequestInputsDefaultValues
+            kwargs = RequestInputsDefaultValues  # type: ignore
         else:
             remaining_kwargs = {
                 k: v for k, v in RequestInputsDefaultValues.items() if k not in kwargs
             }
-            kwargs.update(remaining_kwargs)
+            kwargs.update(remaining_kwargs)  # type: ignore
 
-        return self.request(method=method, url=url, *args, **kwargs)
+        return self.request(method=method, url=url, **kwargs)  # type: ignore
 
     def get(
         self,
         url: URLTypes,
-        *args: Any,
         **kwargs: Unpack[RequestInputs],
     ) -> httpx.Response:
-        return self._process_request(method="GET", url=url, *args, **kwargs)
+        return self._process_request(method="GET", url=url, **kwargs)  # type: ignore
 
     def head(
         self,
         url: URLTypes,
         **kwargs: Unpack[RequestInputs],
     ) -> httpx.Response:
-        return self._process_request(method="HEAD", url=url, **kwargs)
+        return self._process_request(method="HEAD", url=url, **kwargs)  # type: ignore
 
     def post(
         self,
         url: URLTypes,
         **kwargs: Unpack[RequestInputs],
     ) -> httpx.Response:
-        return self._process_request(method="POST", url=url, **kwargs)
+        return self._process_request(method="POST", url=url, **kwargs)  # type: ignore
 
     def put(
         self,
         url: URLTypes,
         **kwargs: Unpack[RequestInputs],
     ) -> httpx.Response:
-        return self._process_request(method="PUT", url=url, **kwargs)
+        return self._process_request(method="PUT", url=url, **kwargs)  # type: ignore
 
     def patch(
         self,
         url: URLTypes,
         **kwargs: Unpack[RequestInputs],
     ) -> httpx.Response:
-        return self._process_request(method="PATCH", url=url, **kwargs)
+        return self._process_request(method="PATCH", url=url, **kwargs)  # type: ignore
 
     def delete(
         self,
         url: URLTypes,
         **kwargs: Unpack[RequestInputs],
     ) -> httpx.Response:
-        return self._process_request(method="DELETE", url=url, **kwargs)
+        return self._process_request(method="DELETE", url=url, **kwargs)  # type: ignore
 
     def options(
         self,
         url: URLTypes,
         **kwargs: Unpack[RequestInputs],
     ) -> httpx.Response:
-        return self._process_request(method="OPTIONS", url=url, **kwargs)
+        return self._process_request(method="OPTIONS", url=url, **kwargs)  # type: ignore
 
     def websocket_connect(
         self,

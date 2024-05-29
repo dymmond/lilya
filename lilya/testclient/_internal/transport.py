@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import io
 from types import GeneratorType
-from typing import TYPE_CHECKING, Any, Sequence
+from typing import Any, Sequence, cast
 from urllib.parse import unquote
 
 import anyio
@@ -12,9 +12,6 @@ from lilya.testclient._internal.types import ASGI3App, PortalFactoryType
 from lilya.testclient._internal.websockets import WebSocketTestSession
 from lilya.testclient.exceptions import UpgradeException
 from lilya.types import Message
-
-if TYPE_CHECKING:
-    from lilya.testclient.base import WebSocketTestSession
 
 
 class TestClientTransport(httpx.BaseTransport):
@@ -61,15 +58,19 @@ class TestClientTransport(httpx.BaseTransport):
 
         if scheme in {"ws", "wss"}:
             session = self._handle_websocket_request(
-                request, scheme, path, raw_path, query, headers, host, port
+                request, scheme, path, cast(str, raw_path), query, headers, host, port
             )
             raise UpgradeException(session)
 
-        scope = self._build_http_scope(request, scheme, path, raw_path, query, headers, host, port)
+        scope = self._build_http_scope(
+            request, scheme, path, cast(str, raw_path), query, headers, host, port
+        )
         response = self._process_http_request(scope, request)
         return response
 
-    def _parse_url(self, url: httpx.URL) -> tuple[str, str, str, str, str]:
+    def _parse_url(
+        self, url: httpx.URL
+    ) -> tuple[str, str, str, str, str] | tuple[str, str, str, bytes, str]:
         """
         Parse the URL components.
 
@@ -86,7 +87,7 @@ class TestClientTransport(httpx.BaseTransport):
         query = url.query.decode(encoding=self.encoding)
         return scheme, netloc, path, raw_path, query
 
-    def _parse_host_and_port(self, netloc: str, scheme: str) -> tuple[str, int]:
+    def _parse_host_and_port(self, netloc: str, scheme: str) -> tuple[str, int, int]:
         """
         Parse the netloc and scheme to extract the host and port.
 
@@ -126,7 +127,7 @@ class TestClientTransport(httpx.BaseTransport):
             list[tuple[bytes, bytes]]: The built headers as a list of tuples.
 
         """
-        headers = []
+        headers: list[Any] = []
         if "host" in request_headers:
             headers = []
         elif port == default_port:
@@ -277,6 +278,31 @@ class TestClientTransport(httpx.BaseTransport):
         context = None
 
         async def receive() -> Message:
+            """
+            Receive an HTTP request message from the ASGI application.
+
+            Returns:
+            Message: The received message.
+
+            Notes:
+            This method is responsible for receiving an HTTP request message from the ASGI application.
+            It handles different types of request bodies, including strings, generators, and bytes.
+
+            If the request body is a string, it is encoded as UTF-8 bytes before being returned.
+
+            If the request body is a generator, it sends a chunk of the body using the `send` method.
+            The chunk is encoded as UTF-8 bytes before being returned. If there are more chunks to send,
+            the message type is set to "http.request" with the "more_body" flag set to True.
+
+            If the request body is None, an empty bytes object is returned.
+
+            If the request body is not a string, generator, or None, it is assumed to be bytes and returned as is.
+
+            Once the request body is received, the method sets the `request_complete` flag to True to indicate
+            that the request is complete.
+
+            If the request is complete and the response is not yet complete, a "http.disconnect" message is returned.
+            """
             nonlocal request_complete
 
             if request_complete:
@@ -285,11 +311,11 @@ class TestClientTransport(httpx.BaseTransport):
                 return {"type": "http.disconnect"}
 
             body = request.read()
-            if isinstance(body, str):
+            if isinstance(cast(str, body), str):
                 body_bytes: bytes = body.encode("utf-8")
             elif body is None:
                 body_bytes = b""
-            elif isinstance(body, GeneratorType):
+            elif isinstance(cast(str, body), GeneratorType):
                 try:
                     chunk = body.send(None)
                     if isinstance(chunk, str):
@@ -305,6 +331,29 @@ class TestClientTransport(httpx.BaseTransport):
             return {"type": "http.request", "body": body_bytes}
 
         async def send(message: Message) -> None:
+            """
+            Process the messages received from the ASGI application and update the response accordingly.
+
+            Args:
+            message (Message): The message received from the ASGI application.
+
+            Raises:
+            AssertionError: If the messages are received in an unexpected order.
+
+            Notes:
+            This method is responsible for processing the messages received from the ASGI application
+            and updating the response object accordingly. It handles messages of type "http.response.start",
+            "http.response.body", and "http.response.debug".
+
+            If a "http.response.start" message is received, it updates the status code and headers of the response.
+
+            If a "http.response.body" message is received, it appends the body to the response stream. If the
+            message indicates that there is no more body, it sets the response stream as complete.
+
+            If a "http.response.debug" message is received, it updates the template and context of the response.
+
+            If the messages are received in an unexpected order, an AssertionError is raised.
+            """
             nonlocal raw_kwargs, response_started, template, context
 
             if message["type"] == "http.response.start":
