@@ -3,7 +3,6 @@ from __future__ import annotations
 import contextlib
 import io
 import math
-import sys
 import typing
 import warnings
 from concurrent.futures import Future
@@ -17,9 +16,9 @@ from anyio.streams.stapled import StapledObjectStream
 
 from lilya.testclient.exceptions import UpgradeException
 from lilya.testclient.types import ASGI2App, ASGI3App, PortalFactoryType, RequestData
-from lilya.testclient.utils import is_asgi3
+from lilya.testclient.utils import AsyncBackend, WrapASGI2, is_asgi3
 from lilya.testclient.websockets import WebSocketTestSession
-from lilya.types import ASGIApp, Message, Receive, Scope, Send
+from lilya.types import ASGIApp, Message
 
 try:
     import httpx
@@ -29,30 +28,6 @@ except ModuleNotFoundError:  # pragma: no cover
         "You can install this with:\n"
         "    $ pip install httpx\n"
     ) from None
-
-
-if sys.version_info >= (3, 10):  # pragma: no cover
-    pass
-else:  # pragma: no cover
-    pass
-
-
-class _WrapASGI2:
-    """
-    Provide an ASGI3 interface onto an ASGI2 app.
-    """
-
-    def __init__(self, app: ASGI2App) -> None:
-        self.app = app
-
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        instance = self.app(scope)
-        await instance(receive, send)
-
-
-class _AsyncBackend(typing.TypedDict):
-    backend: str
-    backend_options: dict[str, typing.Any]
 
 
 class _TestClientTransport(httpx.BaseTransport):
@@ -65,6 +40,16 @@ class _TestClientTransport(httpx.BaseTransport):
         *,
         app_state: dict[str, typing.Any],
     ) -> None:
+        """
+        Initialize the _TestClientTransport.
+
+        Args:
+            app: The ASGI3App instance.
+            portal_factory: The PortalFactoryType instance.
+            raise_server_exceptions: Whether to raise server exceptions.
+            root_path: The root path.
+            app_state: The application state.
+        """
         self.app = app
         self.raise_server_exceptions = raise_server_exceptions
         self.root_path = root_path
@@ -72,6 +57,15 @@ class _TestClientTransport(httpx.BaseTransport):
         self.app_state = app_state
 
     def handle_request(self, request: httpx.Request) -> httpx.Response:
+        """
+        Handle the HTTP request.
+
+        Args:
+            request: The httpx.Request instance.
+
+        Returns:
+            The httpx.Response instance.
+        """
         scheme = request.url.scheme
         netloc = request.url.netloc.decode(encoding="ascii")
         path = request.url.path
@@ -245,12 +239,12 @@ class TestClient(httpx.Client):
         headers: dict[str, str] | None = None,
         follow_redirects: bool = True,
     ) -> None:
-        self.async_backend = _AsyncBackend(backend=backend, backend_options=backend_options or {})
+        self.async_backend = AsyncBackend(backend=backend, backend_options=backend_options or {})
         if is_asgi3(app):
             asgi_app = app
         else:
             app = typing.cast(ASGI2App, app)  # type: ignore[assignment]
-            asgi_app = _WrapASGI2(app)  # type: ignore[arg-type]
+            asgi_app = WrapASGI2(app)  # type: ignore[arg-type]
         self.app = asgi_app
         self.app_state: dict[str, typing.Any] = {}
         transport = _TestClientTransport(

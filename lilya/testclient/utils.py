@@ -27,6 +27,6 @@ class WrapASGI2:
         await instance(receive, send)
 
 
-class _AsyncBackend(TypedDict):
+class AsyncBackend(TypedDict):
     backend: str
     backend_options: dict[str, Any]
