@@ -5,6 +5,13 @@ hide:
 
 # Release Notes
 
+## 0.7.2
+
+### Changed
+
+- Optimised the `encoders` and how it evaluates the `ENCODER_TYPES`.
+- Internal fixes in the `TestClient` and internals.
+
 ## 0.7.1
 
 ### Fixed
