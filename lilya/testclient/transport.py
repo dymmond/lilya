@@ -1,17 +1,16 @@
 from __future__ import annotations
 
-import contextlib
 import io
-import typing
-from typing import TYPE_CHECKING
+from types import GeneratorType
+from typing import TYPE_CHECKING, Any, Sequence
 from urllib.parse import unquote
 
 import anyio
 import httpx
-from anyio.abc import BlockingPortal
 
-from lilya.testclient.exceptions import _Upgrade
-from lilya.testclient.types import ASGI3App
+from lilya.testclient.exceptions import UpgradeException
+from lilya.testclient.types import ASGI3App, PortalFactoryType
+from lilya.testclient.websockets import WebSocketTestSession
 from lilya.types import Message
 
 if TYPE_CHECKING:
@@ -19,27 +18,27 @@ if TYPE_CHECKING:
 
 
 class TestClientTransport(httpx.BaseTransport):
-    """
-    Custom transport for HTTP and WebSocket requests in test client.
-
-    Args:
-        app (ASGI3App): The ASGI3 application handler.
-        portal_factory (typing.Callable[[], contextlib.AbstractContextManager[anyio.abc.BlockingPortal]]):
-            Factory function for creating a context manager for portal.
-        raise_server_exceptions (bool, optional): Whether to raise server exceptions. Defaults to True.
-        root_path (str, optional): The root path. Defaults to "".
-        app_state (dict[str, typing.Any]): Application state.
-    """
+    encoding: str = "ascii"
 
     def __init__(
         self,
         app: ASGI3App,
-        portal_factory: typing.Callable[[], contextlib.AbstractContextManager[BlockingPortal]],
+        portal_factory: PortalFactoryType,
         raise_server_exceptions: bool = True,
         root_path: str = "",
         *,
-        app_state: dict[str, typing.Any],
+        app_state: dict[str, Any],
     ) -> None:
+        """
+        Initialize the TestClientTransport.
+
+        Args:
+            app: The ASGI3App instance.
+            portal_factory: The PortalFactoryType instance.
+            raise_server_exceptions: Whether to raise server exceptions.
+            root_path: The root path.
+            app_state: The application state.
+        """
         self.app = app
         self.raise_server_exceptions = raise_server_exceptions
         self.root_path = root_path
@@ -48,148 +47,174 @@ class TestClientTransport(httpx.BaseTransport):
 
     def handle_request(self, request: httpx.Request) -> httpx.Response:
         """
-        Handles an HTTP or WebSocket request.
+        Handle the HTTP request.
 
         Args:
-            request (httpx.Request): The HTTP request.
+            request: The httpx.Request instance.
 
         Returns:
-            httpx.Response: The HTTP response.
+            The httpx.Response instance.
         """
-        scheme = request.url.scheme
-        netloc = request.url.netloc.decode(encoding="ascii")
-        path = request.url.path
-        raw_path = request.url.raw_path
-        query = request.url.query.decode(encoding="ascii")
-
-        default_port = {"http": 80, "ws": 80, "https": 443, "wss": 443}[scheme]
-
-        host, port = self._parse_netloc(netloc, default_port)
-
-        headers = self._build_headers(request.headers, host, port)
+        scheme, netloc, path, raw_path, query = self._parse_url(request.url)
+        host, port, default_port = self._parse_host_and_port(netloc, scheme)
+        headers = self._build_headers(request.headers, host, port, default_port)
 
         if scheme in {"ws", "wss"}:
-            return self._handle_websocket(path, raw_path, query, headers)
+            session = self._handle_websocket_request(
+                request, scheme, path, raw_path, query, headers, host, port
+            )
+            raise UpgradeException(session)
 
-        return self._handle_http(path, raw_path, query, headers, request)
+        scope = self._build_http_scope(request, scheme, path, raw_path, query, headers, host, port)
+        response = self._process_http_request(scope, request)
+        return response
 
-    def _parse_netloc(self, netloc: str, default_port: int) -> tuple[str, int]:
+    def _parse_url(self, url: httpx.URL) -> tuple[str, str, str, str, str]:
         """
-        Parses the netloc to extract host and port.
+        Parse the URL components.
 
         Args:
-            netloc (str): The network location.
-            default_port (int): The default port based on the scheme.
+            url: The httpx.URL instance.
 
         Returns:
-            tuple[str, int]: The host and port.
+            A tuple containing the scheme, netloc, path, raw_path, and query components of the URL.
         """
+        scheme = url.scheme
+        netloc = url.netloc.decode(encoding=self.encoding)
+        path = url.path
+        raw_path = url.raw_path
+        query = url.query.decode(encoding=self.encoding)
+        return scheme, netloc, path, raw_path, query
+
+    def _parse_host_and_port(self, netloc: str, scheme: str) -> tuple[str, int]:
+        """
+        Parse the netloc and scheme to extract the host and port.
+
+        Args:
+            netloc (str): The network location string, including the host and optional port.
+            scheme (str): The scheme of the URL.
+
+        Returns:
+            tuple[str, int]: A tuple containing the host and port.
+
+        Raises:
+            None
+
+        """
+        default_port = {"http": 80, "ws": 80, "https": 443, "wss": 443}[scheme]
         if ":" in netloc:
             host, port_string = netloc.split(":", 1)
             port = int(port_string)
         else:
             host = netloc
             port = default_port
-        return host, port
+        return host, port, default_port
 
     def _build_headers(
-        self, request_headers: httpx.Headers, host: str, port: int
+        self, request_headers: httpx.Headers, host: str, port: int, default_port: int
     ) -> list[tuple[bytes, bytes]]:
         """
-        Builds headers for the request.
+        Build the headers for an HTTP request.
 
         Args:
-            request_headers (httpx.Headers): The request headers.
-            host (str): The host.
-            port (int): The port.
+            request_headers (httpx.Headers): The headers provided in the request.
+            host (str): The host of the request.
+            port (int): The port of the request.
+            default_port (int): The default port to use if no port is specified.
 
         Returns:
-            list[tuple[bytes, bytes]]: The built headers.
+            list[tuple[bytes, bytes]]: The built headers as a list of tuples.
+
         """
+        headers = []
         if "host" in request_headers:
             headers = []
-        elif (
-            port
-            == {"http": 80, "ws": 80, "https": 443, "wss": 443}[request_headers["scheme"].decode()]
-        ):
+        elif port == default_port:
             headers = [(b"host", host.encode())]
         else:
-            headers = [(b"host", f"{host}:{port}".encode())]
-
+            headers = [(b"host", (f"{host}:{port}").encode())]
         headers += [
             (key.lower().encode(), value.encode()) for key, value in request_headers.multi_items()
         ]
-
         return headers
 
-    def _handle_websocket(
+    def _handle_websocket_request(
         self,
+        request: httpx.Request,
+        scheme: str,
         path: str,
-        raw_path: bytes,
+        raw_path: str,
         query: str,
         headers: list[tuple[bytes, bytes]],
-    ) -> httpx.Response:
+        host: str,
+        port: int,
+    ) -> WebSocketTestSession:
         """
-        Handles WebSocket requests.
+        Handles a WebSocket request and returns a WebSocketTestSession.
 
         Args:
-            path (str): The path.
-            raw_path (bytes): The raw path.
-            query (str): The query string.
-            headers (list[tuple[bytes, bytes]]): The headers.
+            request (httpx.Request): The HTTP request object.
+            scheme (str): The scheme of the request (e.g., "http" or "https").
+            path (str): The path of the request.
+            raw_path (str): The raw path of the request.
+            query (str): The query string of the request.
+            headers (list[tuple[bytes, bytes]]): The headers of the request.
+            host (str): The host of the request.
+            port (int): The port of the request.
 
         Returns:
-            httpx.Response: The HTTP response.
+            WebSocketTestSession: The WebSocketTestSession object.
+
         """
+        subprotocol = request.headers.get("sec-websocket-protocol", None)
+        if subprotocol is None:
+            subprotocols: Sequence[str] = []
+        else:
+            subprotocols = [value.strip() for value in subprotocol.split(",")]
         scope = {
             "type": "websocket",
             "path": unquote(path),
             "raw_path": raw_path,
             "root_path": self.root_path,
-            "scheme": "ws" if "ws" in headers else "wss",
+            "scheme": scheme,
             "query_string": query.encode(),
             "headers": headers,
             "client": None,
-            "server": None,
-            "subprotocols": [],
+            "server": [host, port],
+            "subprotocols": subprotocols,
             "state": self.app_state.copy(),
             "extensions": {"websocket.http.response": {}},
         }
-        session = self._create_websocket_session(scope)
-        raise _Upgrade(session)
+        session = WebSocketTestSession(self.app, scope, self.portal_factory)
+        return session
 
-    def _create_websocket_session(self, scope: dict[str, typing.Any]) -> WebSocketTestSession:
-        """
-        Creates a WebSocket test session.
-
-        Args:
-            scope (dict[str, typing.Any]): The ASGI scope.
-
-        Returns:
-            WebSocketTestSession: The WebSocket test session.
-        """
-        return WebSocketTestSession(self.app, scope, self.portal_factory)
-
-    def _handle_http(
+    def _build_http_scope(
         self,
+        request: httpx.Request,
+        scheme: str,
         path: str,
-        raw_path: bytes,
+        raw_path: str,
         query: str,
         headers: list[tuple[bytes, bytes]],
-        request: httpx.Request,
-    ) -> httpx.Response:
+        host: str,
+        port: int,
+    ) -> dict[str, Any]:
         """
-        Handles HTTP requests.
+        Build the HTTP scope dictionary for the given request.
 
         Args:
-            path (str): The path.
-            raw_path (bytes): The raw path.
-            query (str): The query string.
-            headers (list[tuple[bytes, bytes]]): The headers.
-            request (httpx.Request): The HTTP request.
+            request (httpx.Request): The HTTP request object.
+            scheme (str): The scheme of the request (e.g., "http" or "https").
+            path (str): The decoded path of the request.
+            raw_path (str): The raw path of the request.
+            query (str): The query string of the request.
+            headers (list[tuple[bytes, bytes]]): The headers of the request.
+            host (str): The host of the request.
+            port (int): The port of the request.
 
         Returns:
-            httpx.Response: The HTTP response.
+            dict[str, Any]: The HTTP scope dictionary.
+
         """
         scope = {
             "type": "http",
@@ -198,84 +223,134 @@ class TestClientTransport(httpx.BaseTransport):
             "path": unquote(path),
             "raw_path": raw_path,
             "root_path": self.root_path,
-            "scheme": request.url.scheme,
+            "scheme": scheme,
             "query_string": query.encode(),
             "headers": headers,
             "client": None,
-            "server": None,
+            "server": [host, port],
             "extensions": {"http.response.debug": {}},
             "state": self.app_state.copy(),
         }
+        return scope
 
-        response = self._invoke_application(scope, request)
-        return response
-
-    def _invoke_application(
-        self, scope: dict[str, typing.Any], request: typing.Any
+    def _process_http_request(
+        self, scope: dict[str, Any], request: httpx.Request
     ) -> httpx.Response:
         """
-        Invokes the ASGI application.
+        Process an HTTP request and return an HTTP response.
 
         Args:
-            scope (dict[str, typing.Any]): The ASGI scope.
+            scope (dict[str, Any]): The ASGI scope of the request.
+            request (httpx.Request): The HTTP request object.
 
         Returns:
-            httpx.Response: The HTTP response.
-        """
-        with self.portal_factory() as portal:
-            response_complete = portal.call(anyio.Event)
-            portal.call(self.app, scope, self._receive, self._send)
+            httpx.Response: The HTTP response object.
 
-        if not response_complete.is_set():
+        Raises:
+            Exception: If an error occurs during processing.
+
+        Notes:
+            This method is responsible for processing an incoming HTTP request and generating
+            an appropriate HTTP response. It handles the request body, response headers, and
+            response body.
+
+            The method uses an async generator function `receive` to receive messages from the
+            ASGI application, and an async function `send` to send messages back to the ASGI
+            application.
+
+            The method creates a portal using the `portal_factory` method, which is responsible
+            for managing the communication between the test client and the ASGI application.
+
+            If an exception occurs during processing and `raise_server_exceptions` is set to
+            `True`, the exception is re-raised. Otherwise, if no response has been started, a
+            default 500 Internal Server Error response is returned.
+
+            The method returns an `httpx.Response` object representing the processed response.
+            If a template and context are provided in the response messages, they are attached
+            to the response object.
+        """
+        request_complete = False
+        response_started = False
+        response_complete: anyio.Event
+        raw_kwargs: dict[str, Any] = {"stream": io.BytesIO()}
+        template = None
+        context = None
+
+        async def receive() -> Message:
+            nonlocal request_complete
+
+            if request_complete:
+                if not response_complete.is_set():
+                    await response_complete.wait()
+                return {"type": "http.disconnect"}
+
+            body = request.read()
+            if isinstance(body, str):
+                body_bytes: bytes = body.encode("utf-8")
+            elif body is None:
+                body_bytes = b""
+            elif isinstance(body, GeneratorType):
+                try:
+                    chunk = body.send(None)
+                    if isinstance(chunk, str):
+                        chunk = chunk.encode("utf-8")
+                    return {"type": "http.request", "body": chunk, "more_body": True}
+                except StopIteration:
+                    request_complete = True
+                    return {"type": "http.request", "body": b""}
+            else:
+                body_bytes = body
+
+            request_complete = True
+            return {"type": "http.request", "body": body_bytes}
+
+        async def send(message: Message) -> None:
+            nonlocal raw_kwargs, response_started, template, context
+
+            if message["type"] == "http.response.start":
+                assert not response_started, 'Received multiple "http.response.start" messages.'
+                raw_kwargs["status_code"] = message["status"]
+                raw_kwargs["headers"] = list(message.get("headers", []))
+                response_started = True
+            elif message["type"] == "http.response.body":
+                assert (
+                    response_started
+                ), 'Received "http.response.body" without "http.response.start".'
+                assert (
+                    not response_complete.is_set()
+                ), 'Received "http.response.body" after response completed.'
+                body = message.get("body", b"")
+                more_body = message.get("more_body", False)
+                if request.method != "HEAD":
+                    raw_kwargs["stream"].write(body)
+                if not more_body:
+                    raw_kwargs["stream"].seek(0)
+                    response_complete.set()
+            elif message["type"] == "http.response.debug":
+                template = message["info"]["template"]
+                context = message["info"]["context"]
+
+        try:
+            with self.portal_factory() as portal:
+                response_complete = portal.call(anyio.Event)
+                portal.call(self.app, scope, receive, send)
+        except BaseException as exc:
+            if self.raise_server_exceptions:
+                raise exc
+
+        if self.raise_server_exceptions:
+            assert response_started, "TestClient did not receive any response."
+        elif not response_started:
             raw_kwargs = {
                 "status_code": 500,
                 "headers": [],
                 "stream": io.BytesIO(),
             }
-        else:
-            raw_kwargs = self._finalize_response()
 
         raw_kwargs["stream"] = httpx.ByteStream(raw_kwargs["stream"].read())
 
-        response = httpx.Response(**raw_kwargs, request=request)  # type: ignore
+        response = httpx.Response(**raw_kwargs, request=request)
+        if template is not None:
+            response.template = template
+            response.context = context
         return response
-
-    async def _receive(self) -> Message:
-        """
-        Receives a message asynchronously.
-
-        Returns:
-            Message: The received message.
-        """
-        # Implementation based on your receive function; adjust as needed
-        ...
-
-    async def _send(self, message: Message) -> None:
-        """
-        Sends a message asynchronously.
-
-        Args:
-            message (Message): The message to send.
-        """
-        # Implementation based on your send function; adjust as needed
-        ...
-
-    def _finalize_response(self) -> dict[str, typing.Any]:
-        """
-        Finalizes the HTTP response.
-
-        Returns:
-            dict[str, typing.Any]: The response details.
-        """
-        # Implementation based on your response finalization; adjust as needed
-        ...
-
-    def _should_raise_exceptions(self, exc: BaseException) -> None:
-        """
-        Raises server exceptions if configured to do so.
-
-        Args:
-            exc (BaseException): The exception to raise.
-        """
-        if self.raise_server_exceptions:
-            raise exc
