@@ -8,9 +8,9 @@ from urllib.parse import unquote
 import anyio
 import httpx
 
+from lilya.testclient._internal.types import ASGI3App, PortalFactoryType
+from lilya.testclient._internal.websockets import WebSocketTestSession
 from lilya.testclient.exceptions import UpgradeException
-from lilya.testclient.types import ASGI3App, PortalFactoryType
-from lilya.testclient.websockets import WebSocketTestSession
 from lilya.types import Message
 
 if TYPE_CHECKING:

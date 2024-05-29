@@ -10,7 +10,7 @@ from functools import cached_property
 import anyio
 import anyio.from_thread
 
-from lilya.testclient.types import ASGI3App, PortalFactoryType
+from lilya.testclient._internal.types import ASGI3App, PortalFactoryType
 from lilya.types import Message, Scope
 from lilya.websockets import WebSocketDisconnect
 

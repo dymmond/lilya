@@ -4,7 +4,7 @@ import inspect
 from typing import Any, TypedDict, TypeGuard
 
 from lilya.compat import is_async_callable
-from lilya.testclient.types import ASGI2App, ASGI3App
+from lilya.testclient._internal.types import ASGI2App, ASGI3App
 from lilya.types import Receive, Scope, Send
 
 
