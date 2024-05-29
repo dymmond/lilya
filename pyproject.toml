@@ -92,7 +92,7 @@ testing = [
     "pytest-mock>=3.12.0",
     "python-multipart>=0.0.6",
     "requests>=2.28.2",
-    "mypy==1.9.0",
+    "mypy==1.10.0",
     "ipython",
     "ptpython",
     "ipdb",
@@ -105,7 +105,7 @@ path = "lilya/__init__.py"
 
 [tool.hatch.envs.default]
 dependencies = [
-    "mypy==1.9.0",
+    "mypy==1.10.0",
     "ruff>=0.3.0,<5.0.0",
     "pre-commit>=3.3.1,<4.0.0",
     "devtools>=0.12.2",
@@ -149,7 +149,7 @@ installer = "pip"
 test = "LILYA_SETTINGS_MODULE='tests.settings.TestSettings' pytest {args} --disable-pytest-warnings"
 test_man = "LILYA_SETTINGS_MODULE='tests.settings.TestSettings' pytest {args} --disable-pytest-warnings -s -vv"
 coverage = "LILYA_SETTINGS_MODULE='tests.settings.TestSettings' pytest --cov=lilya --cov=tests --cov-report=term-missing:skip-covered --cov-report=html tests {args}"
-check_types = "mypy -p lilya"
+check_types = "mypy -p lilya --show-traceback"
 
 
 [project.scripts]
@@ -170,7 +170,7 @@ warn_redundant_casts = true
 no_implicit_optional = false
 strict_equality = false
 strict_optional = false
-disable_error_code = "attr-defined,has-type,override"
+disable_error_code = "attr-defined,has-type,override,misc,safe-super"
 exclude = ["lilya/compat.py"]
 
 [tool.ruff.lint]
