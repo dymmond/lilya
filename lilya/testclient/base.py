@@ -1,41 +1,6 @@
-"""
-Copyright © 2018, [Encode OSS Ltd](https://www.encode.io/).
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-* Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
-
-* Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
-
-* Neither the name of the copyright holder nor the names of its
-  contributors may be used to endorse or promote products derived from
-  this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-This file contains some adaptations used for Lilya purposes.
-The nature of the test client is exactly the same as the one
-provided by Starlette, therefore, Lilya reuses it.
-"""
-
 from __future__ import annotations
 
 import contextlib
-import inspect
 import io
 import math
 import sys
@@ -50,8 +15,9 @@ import anyio.from_thread
 from anyio.abc import ObjectReceiveStream, ObjectSendStream
 from anyio.streams.stapled import StapledObjectStream
 
-from lilya.compat import is_async_callable
 from lilya.testclient.exceptions import UpgradeException
+from lilya.testclient.types import ASGI2App, ASGI3App, PortalFactoryType, RequestData
+from lilya.testclient.utils import is_asgi3
 from lilya.testclient.websockets import WebSocketTestSession
 from lilya.types import ASGIApp, Message, Receive, Scope, Send
 
@@ -66,25 +32,9 @@ except ModuleNotFoundError:  # pragma: no cover
 
 
 if sys.version_info >= (3, 10):  # pragma: no cover
-    from typing import TypeGuard
+    pass
 else:  # pragma: no cover
-    from typing_extensions import TypeGuard
-
-
-_PortalFactoryType = typing.Callable[[], typing.ContextManager[anyio.abc.BlockingPortal]]
-
-ASGIInstance = typing.Callable[[Receive, Send], typing.Awaitable[None]]
-ASGI2App = typing.Callable[[Scope], ASGIInstance]
-ASGI3App = typing.Callable[[Scope, Receive, Send], typing.Awaitable[None]]
-
-
-_RequestData = typing.Mapping[str, typing.Union[str, typing.Iterable[str]]]
-
-
-def _is_asgi3(app: ASGI2App | ASGI3App) -> TypeGuard[ASGI3App]:
-    if inspect.isclass(app):
-        return hasattr(app, "__await__")
-    return is_async_callable(app)
+    pass
 
 
 class _WrapASGI2:
@@ -109,7 +59,7 @@ class _TestClientTransport(httpx.BaseTransport):
     def __init__(
         self,
         app: ASGI3App,
-        portal_factory: _PortalFactoryType,
+        portal_factory: PortalFactoryType,
         raise_server_exceptions: bool = True,
         root_path: str = "",
         *,
@@ -296,7 +246,7 @@ class TestClient(httpx.Client):
         follow_redirects: bool = True,
     ) -> None:
         self.async_backend = _AsyncBackend(backend=backend, backend_options=backend_options or {})
-        if _is_asgi3(app):
+        if is_asgi3(app):
             asgi_app = app
         else:
             app = typing.cast(ASGI2App, app)  # type: ignore[assignment]
@@ -354,7 +304,7 @@ class TestClient(httpx.Client):
         url: httpx._types.URLTypes,
         *,
         content: httpx._types.RequestContent | None = None,
-        data: _RequestData | None = None,
+        data: RequestData | None = None,
         files: httpx._types.RequestFiles | None = None,
         json: typing.Any = None,
         params: httpx._types.QueryParamTypes | None = None,
@@ -480,7 +430,7 @@ class TestClient(httpx.Client):
         url: httpx._types.URLTypes,
         *,
         content: httpx._types.RequestContent | None = None,
-        data: _RequestData | None = None,
+        data: RequestData | None = None,
         files: httpx._types.RequestFiles | None = None,
         json: typing.Any = None,
         params: httpx._types.QueryParamTypes | None = None,
@@ -517,7 +467,7 @@ class TestClient(httpx.Client):
         url: httpx._types.URLTypes,
         *,
         content: httpx._types.RequestContent | None = None,
-        data: _RequestData | None = None,
+        data: RequestData | None = None,
         files: httpx._types.RequestFiles | None = None,
         json: typing.Any = None,
         params: httpx._types.QueryParamTypes | None = None,
@@ -554,7 +504,7 @@ class TestClient(httpx.Client):
         url: httpx._types.URLTypes,
         *,
         content: httpx._types.RequestContent | None = None,
-        data: _RequestData | None = None,
+        data: RequestData | None = None,
         files: httpx._types.RequestFiles | None = None,
         json: typing.Any = None,
         params: httpx._types.QueryParamTypes | None = None,
