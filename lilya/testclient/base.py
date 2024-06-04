@@ -5,7 +5,7 @@ from __future__ import annotations
 import contextlib
 import math
 from concurrent.futures import Future
-from typing import Any, Generator, Literal, MutableMapping, Sequence, cast
+from typing import Any, Generator, Literal, MutableMapping, Sequence, Unpack, cast
 from urllib.parse import urljoin
 
 import anyio
@@ -23,7 +23,7 @@ from httpx._types import (
     TimeoutTypes,
     URLTypes,
 )
-from typing_extensions import Unpack
+from typing_extensions import Annotated, Doc
 
 from lilya.testclient._internal.inputs import RequestInputs, RequestInputsDefaultValues
 from lilya.testclient._internal.transport import TestClientTransport
@@ -203,49 +203,49 @@ class TestClient(httpx.Client):
     def get(
         self,
         url: URLTypes,
-        **kwargs: Unpack[RequestInputs],
+        **kwargs: Annotated[Unpack[RequestInputs], Doc("""Arguments of the http verb""")],
     ) -> httpx.Response:
         return self._process_request(method="GET", url=url, **kwargs)  # type: ignore
 
     def head(
         self,
         url: URLTypes,
-        **kwargs: Unpack[RequestInputs],
+        **kwargs: Annotated[Unpack[RequestInputs], Doc("""Arguments of the http verb""")],
     ) -> httpx.Response:
         return self._process_request(method="HEAD", url=url, **kwargs)  # type: ignore
 
     def post(
         self,
         url: URLTypes,
-        **kwargs: Unpack[RequestInputs],
+        **kwargs: Annotated[Unpack[RequestInputs], Doc("""Arguments of the http verb""")],
     ) -> httpx.Response:
         return self._process_request(method="POST", url=url, **kwargs)  # type: ignore
 
     def put(
         self,
         url: URLTypes,
-        **kwargs: Unpack[RequestInputs],
+        **kwargs: Annotated[Unpack[RequestInputs], Doc("""Arguments of the http verb""")],
     ) -> httpx.Response:
         return self._process_request(method="PUT", url=url, **kwargs)  # type: ignore
 
     def patch(
         self,
         url: URLTypes,
-        **kwargs: Unpack[RequestInputs],
+        **kwargs: Annotated[Unpack[RequestInputs], Doc("""Arguments of the http verb""")],
     ) -> httpx.Response:
         return self._process_request(method="PATCH", url=url, **kwargs)  # type: ignore
 
     def delete(
         self,
         url: URLTypes,
-        **kwargs: Unpack[RequestInputs],
+        **kwargs: Annotated[Unpack[RequestInputs], Doc("""Arguments of the http verb""")],
     ) -> httpx.Response:
         return self._process_request(method="DELETE", url=url, **kwargs)  # type: ignore
 
     def options(
         self,
         url: URLTypes,
-        **kwargs: Unpack[RequestInputs],
+        **kwargs: Annotated[Unpack[RequestInputs], Doc("""Arguments of the http verb""")],
     ) -> httpx.Response:
         return self._process_request(method="OPTIONS", url=url, **kwargs)  # type: ignore
 
