@@ -23,9 +23,8 @@ from httpx._types import (
     TimeoutTypes,
     URLTypes,
 )
-from typing_extensions import Unpack
 
-from lilya.testclient._internal.inputs import RequestInputs, RequestInputsDefaultValues
+from lilya.testclient._internal.inputs import RequestInputsDefaultValues
 from lilya.testclient._internal.transport import TestClientTransport
 from lilya.testclient._internal.types import ASGI2App, RequestData
 from lilya.testclient._internal.utils import AsyncBackend, WrapASGI2, is_asgi3
@@ -176,9 +175,7 @@ class TestClient(httpx.Client):
             extensions=extensions,
         )
 
-    def _process_request(
-        self, method: str, url: URLTypes, **kwargs: RequestInputs
-    ) -> httpx.Request:
+    def _process_request(self, method: str, url: URLTypes, **kwargs: Any) -> httpx.Request:
         """
         Processes the request.
 
@@ -203,49 +200,49 @@ class TestClient(httpx.Client):
     def get(
         self,
         url: URLTypes,
-        **kwargs: Unpack[RequestInputs],
+        **kwargs: Any,
     ) -> httpx.Response:
         return self._process_request(method="GET", url=url, **kwargs)  # type: ignore
 
     def head(
         self,
         url: URLTypes,
-        **kwargs: Unpack[RequestInputs],
+        **kwargs: Any,
     ) -> httpx.Response:
         return self._process_request(method="HEAD", url=url, **kwargs)  # type: ignore
 
     def post(
         self,
         url: URLTypes,
-        **kwargs: Unpack[RequestInputs],
+        **kwargs: Any,
     ) -> httpx.Response:
         return self._process_request(method="POST", url=url, **kwargs)  # type: ignore
 
     def put(
         self,
         url: URLTypes,
-        **kwargs: Unpack[RequestInputs],
+        **kwargs: Any,
     ) -> httpx.Response:
         return self._process_request(method="PUT", url=url, **kwargs)  # type: ignore
 
     def patch(
         self,
         url: URLTypes,
-        **kwargs: Unpack[RequestInputs],
+        **kwargs: Any,
     ) -> httpx.Response:
         return self._process_request(method="PATCH", url=url, **kwargs)  # type: ignore
 
     def delete(
         self,
         url: URLTypes,
-        **kwargs: Unpack[RequestInputs],
+        **kwargs: Any,
     ) -> httpx.Response:
         return self._process_request(method="DELETE", url=url, **kwargs)  # type: ignore
 
     def options(
         self,
         url: URLTypes,
-        **kwargs: Unpack[RequestInputs],
+        **kwargs: Any,
     ) -> httpx.Response:
         return self._process_request(method="OPTIONS", url=url, **kwargs)  # type: ignore
 
