@@ -84,7 +84,7 @@ class TestClient(httpx.Client):
         self.app = asgi_app
         self.app_state: dict[str, Any] = {}
         transport = TestClientTransport(
-            self.app,
+            app=self.app,
             portal_factory=self._portal_factory,
             raise_server_exceptions=raise_server_exceptions,
             root_path=root_path,
@@ -94,7 +94,6 @@ class TestClient(httpx.Client):
             headers = {}
         headers.setdefault("user-agent", "testclient")
         super().__init__(
-            app=self.app,
             base_url=base_url,
             headers=headers,
             transport=transport,
