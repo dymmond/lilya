@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import math
+import sys
 from concurrent.futures import Future
 from typing import Any, Generator, Literal, MutableMapping, Sequence, Unpack, cast
 from urllib.parse import urljoin
@@ -32,6 +33,11 @@ from lilya.testclient._internal.utils import AsyncBackend, WrapASGI2, is_asgi3
 from lilya.testclient._internal.websockets import WebSocketTestSession
 from lilya.testclient.exceptions import UpgradeException
 from lilya.types import ASGIApp
+
+if sys.version_info >= (3, 10):  # pragma: no cover
+    from typing import Unpack
+else:  # pragma: no cover
+    from typing_extensions import Unpack
 
 try:
     import httpx

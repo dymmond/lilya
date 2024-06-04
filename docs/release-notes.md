@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.7.3
+
+### Fixed
+
+- Documentation generation for `typing.Unpack`.
+
 ## 0.7.2
 
 ### Changed
