@@ -17,17 +17,17 @@ from lilya.testclient._internal.types import RequestData
 
 
 class RequestInputs(TypedDict, total=False):
-    content: RequestContent | None = None
-    data: RequestData | None = None
-    files: RequestFiles | None = None
-    json: Any = None
-    params: QueryParamTypes | None = None
-    headers: HeaderTypes | None = None
-    cookies: CookieTypes | None = None
-    follow_redirects: bool | None = None
+    content: RequestContent | None
+    data: RequestData | None
+    files: RequestFiles | None
+    json: Any
+    params: QueryParamTypes | None
+    headers: HeaderTypes | None
+    cookies: CookieTypes | None
+    follow_redirects: bool | None
     auth: AuthTypes | httpx._client.UseClientDefault
     timeout: TimeoutTypes | httpx._client.UseClientDefault
-    extensions: dict[str, Any] | None = None
+    extensions: dict[str, Any] | None
 
 
 RequestInputsDefaultValues = {
