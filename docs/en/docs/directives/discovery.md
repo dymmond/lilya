@@ -159,7 +159,7 @@ The `main.py` is the file that contains the `Lilya` application. A file that cou
 this:
 
 ```python title="myproject/src/main.py"
-{!> ../docs_src/directives/discover.py !}
+{!> ../../../docs_src/directives/discover.py !}
 ```
 
 This is a simple example with two endpoints, you can do as you desire with the patterns you wish to

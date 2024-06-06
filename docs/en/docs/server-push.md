@@ -11,5 +11,5 @@ If server push functionality is not available, this method takes no action.
 - `path`: A string specifying the path of the resource.
 
 ```python
-{!> ../docs_src/push/server.py !}
+{!> ../../../docs_src/push/server.py !}
 ```

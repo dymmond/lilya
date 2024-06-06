@@ -9,7 +9,7 @@ The Lilya middleware is the classic already available way of declaring the middl
 application.
 
 ```python
-{!> ../docs_src/middleware/lilya_middleware.py !}
+{!> ../../../docs_src/middleware/lilya_middleware.py !}
 ```
 
 ## Lilya protocols
@@ -22,7 +22,7 @@ which forces a certain structure to happen.
 When designing a middleware, you can inherit and subclass the **MiddlewareProtocol** provided by Lilya.
 
 ```python
-{!> ../docs_src/middleware/protocols.py !}
+{!> ../../../docs_src/middleware/protocols.py !}
 ```
 
 ### MiddlewareProtocol
@@ -38,7 +38,7 @@ Enforcing this protocol also aligns with writing a [Pure ASGI Middleware](#pure-
 ### Quick sample
 
 ```python
-{!> ../docs_src/middleware/sample.py !}
+{!> ../../../docs_src/middleware/sample.py !}
 ```
 
 ## Middleware and the application
@@ -51,13 +51,13 @@ To add middlewares to the application is very simple.
 === "Application level"
 
     ```python
-    {!> ../docs_src/middleware/adding_middleware.py !}
+    {!> ../../../docs_src/middleware/adding_middleware.py !}
     ```
 
 === "Any other level"
 
     ```python
-    {!> ../docs_src/middleware/any_other_level.py !}
+    {!> ../../../docs_src/middleware/any_other_level.py !}
     ```
 
 ### Quick note
@@ -101,7 +101,7 @@ assigning the result object into a `AuthResult` and make it available on every r
 ### Example of a JWT middleware class
 
 ```python title='/src/middleware/jwt.py'
-{!> ../docs_src/middleware/auth_middleware_example.py !}
+{!> ../../../docs_src/middleware/auth_middleware_example.py !}
 ```
 
 1. Import the `BaseAuthMiddleware` and `AuthResult` from `lilya.middleware.authentication`.
@@ -155,7 +155,7 @@ As mentioned in the [settings](./settings.md) document, the middleware is one of
 to use to start a Lilya application.
 
 ```python title='src/configs/live.py'
-{!> ../docs_src/middleware/settings.py !}
+{!> ../../../docs_src/middleware/settings.py !}
 ```
 
 **Start the application with the new settings**
@@ -198,7 +198,7 @@ The default parameters used by the CSRFMiddleware implementation are restrictive
 ways of using this middleware depending of the taste.
 
 ```python
-{!> ../docs_src/middleware/available/csrf.py !}
+{!> ../../../docs_src/middleware/available/csrf.py !}
 ```
 
 ### CORSMiddleware
@@ -207,7 +207,7 @@ The default parameters used by the CORSMiddleware implementation are restrictive
 ways of using this middleware depending of the taste.
 
 ```python
-{!> ../docs_src/middleware/available/cors.py !}
+{!> ../../../docs_src/middleware/available/cors.py !}
 ```
 
 ### SessionMiddleware
@@ -215,7 +215,7 @@ ways of using this middleware depending of the taste.
 Adds signed cookie-based HTTP sessions. Session information is readable but not modifiable.
 
 ```python
-{!> ../docs_src/middleware/available/sessions.py !}
+{!> ../../../docs_src/middleware/available/sessions.py !}
 ```
 
 ### HTTPSRedirectMiddleware
@@ -224,7 +224,7 @@ Enforces that all incoming requests must either be https or wss. Any http os ws 
 the secure schemes instead.
 
 ```python
-{!> ../docs_src/middleware/available/https.py !}
+{!> ../../../docs_src/middleware/available/https.py !}
 ```
 
 ### TrustedHostMiddleware
@@ -232,7 +232,7 @@ the secure schemes instead.
 Enforces all requests to have a correct set `Host` header in order to protect against heost header attacks.
 
 ```python
-{!> ../docs_src/middleware/available/trusted_hosts.py !}
+{!> ../../../docs_src/middleware/available/trusted_hosts.py !}
 ```
 
 ### GZipMiddleware
@@ -240,7 +240,7 @@ Enforces all requests to have a correct set `Host` header in order to protect ag
 It handles GZip responses for any request that includes "gzip" in the Accept-Encoding header.
 
 ```python
-{!> ../docs_src/middleware/available/gzip.py !}
+{!> ../../../docs_src/middleware/available/gzip.py !}
 ```
 
 ### WSGIMiddleware
@@ -249,7 +249,7 @@ A middleware class in charge of converting a WSGI application into an ASGI one. 
 in the [WSGI Frameworks](./wsgi.md) section.
 
 ```python
-{!> ../docs_src/middleware/available/wsgi.py !}
+{!> ../../../docs_src/middleware/available/wsgi.py !}
 ```
 
 The `WSGIMiddleware` also allows to pass the `app` as a string `<dotted>.<path>` and this can make it
@@ -258,13 +258,13 @@ easier for code organisation.
 Let us assume the previous example of the `flask` app was inside `myapp/asgi_or_wsgi/apps`. Like this:
 
 ```python
-{!> ../docs_src/middleware/available/wsgi_str.py !}
+{!> ../../../docs_src/middleware/available/wsgi_str.py !}
 ```
 
 To call it inside the middleware is as simple as;
 
 ```python
-{!> ../docs_src/middleware/available/wsgi_import.py !}
+{!> ../../../docs_src/middleware/available/wsgi_import.py !}
 ```
 
 ### Other middlewares

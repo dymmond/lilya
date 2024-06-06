@@ -11,13 +11,13 @@ There are many ways of creating a Lilya application but:
 === "In a nutshell"
 
     ```python
-    {!> ../docs_src/applications/nutshell.py !}
+    {!> ../../../docs_src/applications/nutshell.py !}
     ```
 
 === "With Include"
 
     ```python
-    {!> ../docs_src/applications/with_include.py!}
+    {!> ../../../docs_src/applications/with_include.py!}
     ```
 
 ## Testing using curl
@@ -69,13 +69,13 @@ To access the application settings there are different ways:
 === "Within the application request"
 
     ```python hl_lines="6"
-    {!> ../docs_src/applications/settings/within_app_request.py!}
+    {!> ../../../docs_src/applications/settings/within_app_request.py!}
     ```
 
 === "From the global settings"
 
     ```python hl_lines="1 6"
-    {!> ../docs_src/applications/settings/global_settings.py!}
+    {!> ../../../docs_src/applications/settings/global_settings.py!}
     ```
 
 ## State and application instance
@@ -85,7 +85,7 @@ You can store arbitraty extra state on the application instance using the `state
 Example:
 
 ```python hl_lines="6"
-{!> ../docs_src/applications/app_state.py !}
+{!> ../../../docs_src/applications/app_state.py !}
 ```
 
 ## Accessing the application instance

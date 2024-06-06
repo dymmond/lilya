@@ -54,7 +54,7 @@ Let us see how we can use both approaches to extract the values.
 For those familiar with external libraries, this way follows the same principle. Very easy to understand and use.
 
 ```python
-{!> ../docs_src/environments/normal.py!}
+{!> ../../../docs_src/environments/normal.py!}
 ```
 
 ### Via direct access
@@ -62,7 +62,7 @@ For those familiar with external libraries, this way follows the same principle.
 With direct access is pretty much the same but without calling the `env()` function.
 
 ```python
-{!> ../docs_src/environments/normal.py!}
+{!> ../../../docs_src/environments/normal.py!}
 ```
 
 ## Order of priority

@@ -27,13 +27,13 @@ system settings object, the `Settings`.
 === "No parameters"
 
     ```python
-    {!> ../docs_src/settings/app/no_parameters.py!}
+    {!> ../../../docs_src/settings/app/no_parameters.py!}
     ```
 
 === "With Parameters"
 
     ```python
-    {!> ../docs_src/settings/app/with_parameters.py!}
+    {!> ../../../docs_src/settings/app/with_parameters.py!}
     ```
 
 ## Custom settings
@@ -50,25 +50,25 @@ file that contains common settings across the three environments.
 === "Base"
 
     ```python
-    {!> ../docs_src/settings/custom/base.py!}
+    {!> ../../../docs_src/settings/custom/base.py!}
     ```
 
 === "Development"
 
     ```python
-    {!> ../docs_src/settings/custom/development.py!}
+    {!> ../../../docs_src/settings/custom/development.py!}
     ```
 
 === "Testing"
 
     ```python
-    {!> ../docs_src/settings/custom/testing.py!}
+    {!> ../../../docs_src/settings/custom/testing.py!}
     ```
 
 === "Production"
 
     ```python
-    {!> ../docs_src/settings/custom/production.py!}
+    {!> ../../../docs_src/settings/custom/production.py!}
     ```
 
 What just happened?
@@ -127,7 +127,7 @@ as the [Settings](#settings-and-the-application), which means that every single
 The reason why the above is to keep the integrity of the application and settings.
 
 ```python
-{!> ../docs_src/applications/settings/settings_config/example2.py !}
+{!> ../../../docs_src/applications/settings/settings_config/example2.py !}
 ```
 
 Is this simple, literally, Lilya simplifies the way you can manipulate settings on each level
@@ -148,7 +148,7 @@ Let us assume we have a settings file with a class name `AppSettings` located in
 How to import via string?
 
 ```python
-{!> ../docs_src/applications/settings/settings_config/via_string.py !}
+{!> ../../../docs_src/applications/settings/settings_config/via_string.py !}
 ```
 
 ## Order of priority
@@ -162,7 +162,7 @@ anything else. Let us imagine the following:
 * A `ChildLilya` with a specific set of configurations unique to it.
 
 ```python
-{!> ../docs_src/applications/settings/settings_config/example1.py !}
+{!> ../../../docs_src/applications/settings/settings_config/example1.py !}
 ```
 
 
@@ -207,19 +207,19 @@ Let us also assume you have all the settings inside a `src/configs` directory.
 **Create a configuration to be used by the LILYA_SETTINGS_MODULE**
 
 ```python title="src/configs/main_settings.py"
-{!> ../docs_src/applications/settings/settings_config/main_settings.py !}
+{!> ../../../docs_src/applications/settings/settings_config/main_settings.py !}
 ```
 
 **Create a configuration to be used by the settings_module**
 
 ```python title="src/configs/app_settings.py"
-{!> ../docs_src/applications/settings/settings_config/app_settings.py !}
+{!> ../../../docs_src/applications/settings/settings_config/app_settings.py !}
 ```
 
 **Create a Lilya instance**
 
 ```python title="src/app.py"
-{!> ../docs_src/applications/settings/settings_config/app.py !}
+{!> ../../../docs_src/applications/settings/settings_config/app.py !}
 ```
 
 Now we can start the server using the `AppSettings` as global and `InstanceSettings` being passed
@@ -252,13 +252,13 @@ To access the application settings there are different ways:
 === "Within the application request"
 
     ```python
-    {!> ../docs_src/settings/access/within_app.py!}
+    {!> ../../../docs_src/settings/access/within_app.py!}
     ```
 
 === "From the global settings"
 
     ```python
-    {!> ../docs_src/settings/access/global.py!}
+    {!> ../../../docs_src/settings/access/global.py!}
     ```
 
 !!! info

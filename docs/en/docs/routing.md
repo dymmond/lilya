@@ -20,7 +20,7 @@ also allows to add extra [custom routers](#custom-router) as well but another wa
 [ChildLilya](#child-lilya-application) application.
 
 ```python
-{!> ../docs_src/routing/router/router_class.py!}
+{!> ../../../docs_src/routing/router/router_class.py!}
 ```
 
 The main `Router` class is instantiated within the `Lilya` application with the given routes and the application
@@ -39,7 +39,7 @@ of getting the path parameters.
 This is probably the easiest and simplest way.
 
 ```python
-{!> ../docs_src/routing/handlers/patch.py !}
+{!> ../../../docs_src/routing/handlers/patch.py !}
 ```
 
 The `customer_id` declared in the `path` was also declared in the function handler allowing Lilya
@@ -48,7 +48,7 @@ to inject the **values found by order from the path parameters** for you.
 #### From the `request` path parameters.
 
 ```python
-{!> ../docs_src/routing/handlers/request.py !}
+{!> ../../../docs_src/routing/handlers/request.py !}
 ```
 
 The `customer_id` declared in the `path` was obtained by accessing the `request` object.
@@ -60,7 +60,7 @@ There are two way of separating the routes within the application, using [Includ
 a [ChildLilya](#childlilya-application) or by creating another router. Let's focus on the latter.
 
 ```python title="/application/apps/routers/customers.py"
-{!> ../docs_src/routing/router/customers.py!}
+{!> ../../../docs_src/routing/router/customers.py!}
 ```
 
 Above you create the `/application/apps/routers/customers.py` with all the information you need. It does not need
@@ -69,7 +69,7 @@ to be in one file, you can have a entirely seperate package just to manage the c
 Now you need to add the new custom router into the main application.
 
 ```python title="/application/app.py"
-{!> ../docs_src/routing/router/app.py!}
+{!> ../../../docs_src/routing/router/app.py!}
 ```
 
 This simple and your router is added to the main **Lilya** application.
@@ -88,7 +88,7 @@ visualisation purposes and for the sake of organisation.
 Let's use the same example used in the [custom routers](#custom-router) with the customers specific routes and rules.
 
 ```python title="/application/apps/routers/customers.py"
-{!> ../docs_src/routing/router/childlilya/customers.py!}
+{!> ../../../docs_src/routing/router/childlilya/customers.py!}
 ```
 
 Since the `ChildLilya` is a representation of a [Lilya](./applications.md) class, we can pass
@@ -100,13 +100,13 @@ You can add as many `ChildLilya` as you desire, there are no limits.
 **Now in the main application**:
 
 ```python title="/application/app.py"
-{!> ../docs_src/routing/router/childlilya/app.py!}
+{!> ../../../docs_src/routing/router/childlilya/app.py!}
 ```
 
 **Adding nested applications**
 
 ```python title="/application/app.py"
-{!> ../docs_src/routing/router/childlilya/nested.py!}
+{!> ../../../docs_src/routing/router/childlilya/nested.py!}
 ```
 
 The example above, it is showing that you could even add the same application within nested includes and for each
@@ -132,7 +132,7 @@ The `Router` object has some available functionalities that can be useful.
 ### add_route()
 
 ```python
-{!> ../docs_src/routing/router/add_route.py!}
+{!> ../../../docs_src/routing/router/add_route.py!}
 ```
 
 #### Parameters
@@ -152,7 +152,7 @@ functions on an application top level. Exception handler callables should be of 
 ### add_websocket_route()
 
 ```python
-{!> ../docs_src/routing/router/add_websocket_route.py!}
+{!> ../../../docs_src/routing/router/add_websocket_route.py!}
 ```
 
 #### Parameters
@@ -170,7 +170,7 @@ functions on an application top level. Exception handler callables should be of 
 ### add_child_lilya()
 
 ```python
-{!> ../docs_src/routing/router/add_child_lilya.py!}
+{!> ../../../docs_src/routing/router/add_child_lilya.py!}
 ```
 
 #### Parameters
@@ -211,7 +211,7 @@ functions on an application top level. Exception handler callables should be of 
 === "In a nutshell"
 
     ```python
-    {!> ../docs_src/routing/routes/gateway_nutshell.py!}
+    {!> ../../../docs_src/routing/routes/gateway_nutshell.py!}
     ```
 
 ## WebSocketPath
@@ -235,7 +235,7 @@ functions on an application top level. Exception handler callables should be of 
 === "In a nutshell"
 
     ```python
-    {!> ../docs_src/routing/routes/websocket_nutshell.py!}
+    {!> ../../../docs_src/routing/routes/websocket_nutshell.py!}
     ```
 
 ## Include
@@ -284,13 +284,13 @@ functions on an application top level. Exception handler callables should be of 
 === "Importing using namespace"
 
     ```python title='myapp/urls.py'
-    {!> ../docs_src/routing/routes/include/with_namespace.py!}
+    {!> ../../../docs_src/routing/routes/include/with_namespace.py!}
     ```
 
 === "Importing using routes list"
 
     ```python title='src/myapp/urls.py'
-    {!> ../docs_src/routing/routes/include/routes_list.py!}
+    {!> ../../../docs_src/routing/routes/include/routes_list.py!}
     ```
 
 === "Import the app via string"
@@ -299,23 +299,23 @@ functions on an application top level. Exception handler callables should be of 
     of passing the object directly.
 
     ```python title='src/myapp/urls.py'
-    {!> ../docs_src/routing/routes/include/app_str.py!}
+    {!> ../../../docs_src/routing/routes/include/app_str.py!}
     ```
 
 #### Using a different pattern
 
 ```python title="src/myapp/accounts/controllers.py"
-{!> ../docs_src/routing/routes/include/views.py!}
+{!> ../../../docs_src/routing/routes/include/views.py!}
 ```
 
 ```python title="src/myapp/accounts/urls.py"
-{!> ../docs_src/routing/routes/include/different_pattern.py!}
+{!> ../../../docs_src/routing/routes/include/different_pattern.py!}
 ```
 
 === "Importing using namespace"
 
     ```python title='src/myapp/urls.py'
-    {!> ../docs_src/routing/routes/include/namespace.py!}
+    {!> ../../../docs_src/routing/routes/include/namespace.py!}
     ```
 
 #### Include and application instance
@@ -327,11 +327,11 @@ Lilya object as well.
 **Example**:
 
 ```python title='src/urls.py'
-{!> ../docs_src/routing/routes/include/app/urls.py!}
+{!> ../../../docs_src/routing/routes/include/app/urls.py!}
 ```
 
 ```python title='src/app.py'
-{!> ../docs_src/routing/routes/include/app/app.py!}
+{!> ../../../docs_src/routing/routes/include/app/app.py!}
 ```
 
 ## Nested Routes
@@ -341,13 +341,13 @@ When complexity increses and the level of routes increases as well, `Include` al
 === "Simple Nested"
 
     ```python hl_lines="9"
-    {!> ../docs_src/routing/routes/include/nested/simple.py!}
+    {!> ../../../docs_src/routing/routes/include/nested/simple.py!}
     ```
 
 === "Complex Nested Routes"
 
     ```python hl_lines="10-41"
-    {!> ../docs_src/routing/routes/include/nested/complex.py!}
+    {!> ../../../docs_src/routing/routes/include/nested/complex.py!}
     ```
 
 `Include` supports as many nested routes with different paths and Includes as you
@@ -366,7 +366,7 @@ Nested routes also allows all the functionalities on each level, from middleware
 If you decide to do this:
 
 ```python
-{!> ../docs_src/routing/routes/careful/example1.py!}
+{!> ../../../docs_src/routing/routes/careful/example1.py!}
 ```
 
 ## Host
@@ -381,13 +381,13 @@ purposes, you can explicitly specify it.
 There are multiple approaches to establish host-based routes for your application.
 
 ```python
-{!> ../docs_src/routing/routes/host.py !}
+{!> ../../../docs_src/routing/routes/host.py !}
 ```
 
 URL lookups can encompass host parameters, similar to how path parameters are included.
 
 ```python
-{!> ../docs_src/routing/routes/host_encompass.py !}
+{!> ../../../docs_src/routing/routes/host_encompass.py !}
 ```
 
 ## Routes priority
@@ -401,7 +401,7 @@ routes are listed before general cases.
 Example:
 
 ```python
-{!> ../docs_src/routing/routes/routes_priority.py !}
+{!> ../../../docs_src/routing/routes/routes_priority.py !}
 ```
 
 ## Path parameters
@@ -448,7 +448,7 @@ Path('/uploaded/{rest_of_path:path}', handler=uploaded)
 If a need for a different transformer that is not defined or available, you can also create your own.
 
 ```python
-{!> ../docs_src/routing/routes/transformer_example.py !}
+{!> ../../../docs_src/routing/routes/transformer_example.py !}
 ```
 
 With the custom transformer created you can now use it.
@@ -473,7 +473,7 @@ from the parent to the very handler and the same is applied to [exception handle
 and [permissions](./permissions.md).
 
 ```python
-{!> ../docs_src/routing/routes/middleware.py !}
+{!> ../../../docs_src/routing/routes/middleware.py !}
 ```
 
 The above example illustrates the various levels where a middleware can be implemented and because it follows an
@@ -488,7 +488,7 @@ parent order, the order is:
 #### Exception Handlers
 
 ```python
-{!> ../docs_src/routing/routes/exception_handlers.py !}
+{!> ../../../docs_src/routing/routes/exception_handlers.py !}
 ```
 
 The above example illustrates the various levels where the exception handlers can be implemented and follows a
@@ -506,7 +506,7 @@ Permissions are a must in **every** application. More on [permissions](./permiss
 to use them.
 
 ```python
-{!> ../docs_src/permissions/any_other_level.py !}
+{!> ../../../docs_src/permissions/any_other_level.py !}
 ```
 
 **More than one permission can be added to each list.**
@@ -517,13 +517,13 @@ Frequently, there is a need to generate the URL for a specific route, especially
 response is required.
 
 ```python
-{!> ../docs_src/routing/routes/lookup.py !}
+{!> ../../../docs_src/routing/routes/lookup.py !}
 ```
 
 The lookups also allow path parameters.
 
 ```python
-{!> ../docs_src/routing/routes/lookup_path.py !}
+{!> ../../../docs_src/routing/routes/lookup_path.py !}
 ```
 
 If an `Include` includes a name, subsequent submounts should employ a `{prefix}:{name}` format for reverse Path lookups.
@@ -544,11 +544,11 @@ Using the `reverse`, if no `app` parameter is specified, it will automatically d
 which under normal circunstances, besides `testing`, it is the expected behaviour.
 
 ```python
-{!> ../docs_src/routing/routes/reverse.py !}
+{!> ../../../docs_src/routing/routes/reverse.py !}
 ```
 
 The reverse also allow path parameters.
 
 ```python
-{!> ../docs_src/routing/routes/reverse_path.py !}
+{!> ../../../docs_src/routing/routes/reverse_path.py !}
 ```

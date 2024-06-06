@@ -14,19 +14,19 @@ $ pip install Lilya[test]
 ## The test client
 
 ```python
-{!> ../docs_src/testclient/example1.py !}
+{!> ../../../docs_src/testclient/example1.py !}
 ```
 
 You can use any of the `httpx` standard API like authentication, session cookies and file uploads.
 
 ```python
-{!> ../docs_src/testclient/example2.py !}
+{!> ../../../docs_src/testclient/example2.py !}
 ```
 
 **TestClient**
 
 ```python
-{!> ../docs_src/testclient/example3.py !}
+{!> ../../../docs_src/testclient/example3.py !}
 ```
 
 `httpx` is a great library created by the same author of `Starlette` and `Django Rest Framework`.
@@ -50,7 +50,7 @@ Lilya also brings a ready to use functionality to be used as context manager for
 This function is prepared to be used as a context manager for your tests and ready to use at any given time.
 
 ```python
-{!> ../docs_src/testclient/example4.py !}
+{!> ../../../docs_src/testclient/example4.py !}
 ```
 
 The tests work with both `sync` and `async` functions.

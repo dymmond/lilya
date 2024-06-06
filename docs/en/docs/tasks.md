@@ -17,7 +17,7 @@ background.
 Of course there is also the situation where more than one background task needs to happen.
 
 ```python
-{!> ../docs_src/background_tasks/via_list.py !}
+{!> ../../../docs_src/background_tasks/via_list.py !}
 ```
 
 ## Via response
@@ -36,7 +36,7 @@ The same happens when executing more than one background task and when more than
 needed.
 
 ```python
-{!> ../docs_src/background_tasks/response/via_list.py !}
+{!> ../../../docs_src/background_tasks/response/via_list.py !}
 ```
 
 ### Using the add_task
@@ -45,7 +45,7 @@ Another way of adding multiple tasks is by using the `add_tasks` function provid
 `Tasks` object.
 
 ```python
-{!> ../docs_src/background_tasks/response/add_tasks.py !}
+{!> ../../../docs_src/background_tasks/response/add_tasks.py !}
 ```
 
 The `.add_task()` receives as arguments:
