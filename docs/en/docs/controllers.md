@@ -18,7 +18,7 @@ of the `__call__` and dispatches the requests.
 This is also responsible for implementing the HTTP dispatching of the requests, only.
 
 ```python
-{!> ../docs_src/controllers/controller.py!}
+{!> ../../../docs_src/controllers/controller.py!}
 ```
 
 When employing a Lilya application instance for routing management, you have the option to dispatch to a `Controller` class.
@@ -29,7 +29,7 @@ When employing a Lilya application instance for routing management, you have the
 Here's an example for clarification:
 
 ```python
-{!> ../docs_src/controllers/dispatch.py !}
+{!> ../../../docs_src/controllers/dispatch.py !}
 ```
 
 In this scenario, the `ASGIApp` class is dispatched, not an instance of it.
@@ -57,11 +57,11 @@ There are three methods that can be overridden to handle specific ASGI WebSocket
 3. `async def on_disconnect(websocket, close_code)`
 
 ```python
-{!> ../docs_src/controllers/websocketcontroller.py !}
+{!> ../../../docs_src/controllers/websocketcontroller.py !}
 ```
 
 The `WebSocketController` is also compatible with the Lilya application class.
 
 ```python
-{!> ../docs_src/controllers/wdispatch.py !}
+{!> ../../../docs_src/controllers/wdispatch.py !}
 ```

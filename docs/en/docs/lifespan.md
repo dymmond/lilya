@@ -53,7 +53,7 @@ Lilya.
 Using the database use case defined above:
 
 ```python
-{!> ../docs_src/events/start_shutdown.py !}
+{!> ../../../docs_src/events/start_shutdown.py !}
 ```
 
 As you can see, when the application is starting up, we declared the `database.connect()` to happen
@@ -71,7 +71,7 @@ To define the *startup* and *shutown* events, you will need a *context manager* 
 Let us see what does it mean in practical examples by changing the previous one to a `lifespan`.
 
 ```python
-{!> ../docs_src/events/lifespan.py !}
+{!> ../../../docs_src/events/lifespan.py !}
 ```
 
 This is quite something to unwrap here. What is actually happening?
@@ -94,7 +94,7 @@ This is standard python for using a `decorator` and this one in particular conve
 function into something called **async context manager**.
 
 ```python
-{!> ../docs_src/events/lifespan.py !}
+{!> ../../../docs_src/events/lifespan.py !}
 ```
 
 In Python, a **context manager** is something that you can use with the `with` keyword. One widely
@@ -132,7 +132,7 @@ Let use see an example still using the [Saffier](https://saffier.tarsild.io) ORM
 #### Using functions
 
 ```python
-{!> ../docs_src/events/curiosities/example.py !}
+{!> ../../../docs_src/events/curiosities/example.py !}
 ```
 
 As you can see, we used the `@asynccontextmanager` to transform our function into an `async`
@@ -146,7 +146,7 @@ even better as you can "visually" see and understand the behaviour.
 Let us get back to the same example with [Saffier](https://saffier.tarsild.io) ORM.
 
 ```python
-{!> ../docs_src/events/curiosities/classes.py !}
+{!> ../../../docs_src/events/curiosities/classes.py !}
 ```
 
 This example is actually very clear. The `aenter` is the equivalent to what happens before the

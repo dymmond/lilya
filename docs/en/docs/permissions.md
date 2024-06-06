@@ -18,7 +18,7 @@ The Lilya application class provides a means to include the ASGI permission in a
 guarantees it remains encapsulated within the exception handler.
 
 ```python
-{!> ../docs_src/permissions/sample.py !}
+{!> ../../../docs_src/permissions/sample.py !}
 ```
 
 When defining a `permission`, it is imperative to utilize `lilya.permissions.DefinePermission` to encapsulate it.
@@ -44,7 +44,7 @@ Enforcing this protocol also aligns with writing a [Pure ASGI Permission](#pure-
 ### Quick sample
 
 ```python
-{!> ../docs_src/permissions/quick_sample.py !}
+{!> ../../../docs_src/permissions/quick_sample.py !}
 ```
 
 ## Permission and the application
@@ -58,13 +58,13 @@ Those can be included in the `Lilya`/`ChildLilya`, `Include`, `Path` and `WebSoc
 === "Application level"
 
     ```python
-    {!> ../docs_src/permissions/adding_permission.py !}
+    {!> ../../../docs_src/permissions/adding_permission.py !}
     ```
 
 === "Any other level"
 
     ```python
-    {!> ../docs_src/permissions/any_other_level.py !}
+    {!> ../../../docs_src/permissions/any_other_level.py !}
     ```
 
 ## Pure ASGI permission
@@ -97,5 +97,5 @@ As mentioned in the [settings](./settings.md) document, the permissions is one o
 to use to start a Lilya application.
 
 ```python
-{!> ../docs_src/permissions/settings.py !}
+{!> ../../../docs_src/permissions/settings.py !}
 ```

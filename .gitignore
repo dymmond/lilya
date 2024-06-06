@@ -15,6 +15,7 @@ dist/
 node_modules/
 results/
 site/
+site_lang/
 target/
 
 # files

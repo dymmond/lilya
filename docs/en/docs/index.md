@@ -107,7 +107,7 @@ A Lilya also uses a [native settings system](./settings.md) which is something t
 for any application.
 
 ```python
-{!> ../docs_src/quickstart/app.py !}
+{!> ../../../docs_src/quickstart/app.py !}
 ```
 
 Is this simple. Although there is a lot to unwrap here. Did you notice the path `/{user}` not only
@@ -138,7 +138,7 @@ or [FastAPI][fastapi] or any other, really.
 **Example**
 
 ```python
-{!> ../docs_src/quickstart/example.py !}
+{!> ../../../docs_src/quickstart/example.py !}
 ```
 
 ## Run the application

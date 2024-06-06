@@ -15,37 +15,37 @@ compared to other giants like Django.
 === "Simple Routing"
 
     ```python
-    {!> ../docs_src/wsgi/simple_routing.py!}
+    {!> ../../../docs_src/wsgi/simple_routing.py!}
     ```
 
 === "Nested Routing"
 
     ```python
-    {!> ../docs_src/wsgi/nested_routing.py!}
+    {!> ../../../docs_src/wsgi/nested_routing.py!}
     ```
 
 === "Complex Routing"
 
     ```python
-    {!> ../docs_src/wsgi/complex_routing.py!}
+    {!> ../../../docs_src/wsgi/complex_routing.py!}
     ```
 
 === "Multiple Flask"
 
     ```python
-    {!> ../docs_src/wsgi/multiple.py!}
+    {!> ../../../docs_src/wsgi/multiple.py!}
     ```
 
 === "Lilya"
 
     ```python
-    {!> ../docs_src/wsgi/lilya.py!}
+    {!> ../../../docs_src/wsgi/lilya.py!}
     ```
 
 === "ChildLilya"
 
     ```python
-    {!> ../docs_src/wsgi/childlilya.py!}
+    {!> ../../../docs_src/wsgi/childlilya.py!}
     ```
 
 You already get the idea, the integrations are endeless!

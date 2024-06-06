@@ -26,7 +26,7 @@ want to use. In case you want a different `jinja2.Enviroment`, that can be also 
 the `Jinja2Template`.
 
 ```python
-{!> ../docs_src/templates/template.py !}
+{!> ../../../docs_src/templates/template.py !}
 ```
 ### Templates response parameters
 
@@ -35,7 +35,7 @@ The get_template_response function expects the following arguments:
 - `request`: (required): The HTTP request object.
 - `name`: (required): The name of the template to render.
 
-Any additional arguments or keyword arguments provided will be passed directly to the template as context. 
+Any additional arguments or keyword arguments provided will be passed directly to the template as context.
 This allows you to include dynamic data in the template rendering process.
 You can pass these arguments either as keyword arguments or positional arguments, depending on your preference.
 
@@ -47,13 +47,13 @@ The Jinja2 template context automatically incorporates a `url_for` function, all
 For instance, static files can be linked from within HTML templates:
 
 ```jinja
-{!> ../docs_src/_shared/jinja.html !}
+{!> ../../../docs_src/_shared/jinja.html !}
 ```
 
 Should you wish to utilize [custom filters][jinja2], you will need to update the `env` property of `Jinja2Template`:
 
 ```python
-{!> ../docs_src/templates/custom.py !}
+{!> ../../../docs_src/templates/custom.py !}
 ```
 
 ## The `jinja2.Environment`
@@ -62,7 +62,7 @@ Lilya accepts a preconfigured [jinja2.Environment](https://jinja.palletsprojects
 passing it inside the `env` attribute when instantiaing the `Jinja2Template`.
 
 ```python
-{!> ../docs_src/templates/env.py !}
+{!> ../../../docs_src/templates/env.py !}
 ```
 
 ## Context Processors
@@ -73,7 +73,7 @@ A context processor is a function that returns a dictionary to be merged into a 
 A typical use case for template processors is to enhance the template context with shared variables.
 
 ```python
-{!> ../docs_src/templates/ctx.py !}
+{!> ../../../docs_src/templates/ctx.py !}
 ```
 
 ### Registering Context Processors
@@ -81,7 +81,7 @@ A typical use case for template processors is to enhance the template context wi
 To register context processors, pass them to the `context_processors` argument of the `Jinja2Template` class.
 
 ```python
-{!> ../docs_src/templates/ctx_register.py !}
+{!> ../../../docs_src/templates/ctx_register.py !}
 ```
 
 ## Custom Jinja2 Environment
@@ -93,7 +93,7 @@ For the list of options available to `Environment`, refer to the Jinja2 document
 [here](https://jinja.palletsprojects.com/en/3.0.x/api/#jinja2.Environment).
 
 ```python
-{!> ../docs_src/templates/custom_jinja.py !}
+{!> ../../../docs_src/templates/custom_jinja.py !}
 ```
 
 ## Asynchronous Template Rendering

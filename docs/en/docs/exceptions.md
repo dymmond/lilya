@@ -11,7 +11,7 @@ The exception handlers are read a python dictionary and you can pass the key as 
 that will always use the exception itself.
 
 ```python
-{!> ../docs_src/exception_handlers/precedent.py !}
+{!> ../../../docs_src/exception_handlers/precedent.py !}
 ```
 
 ### What is happening
@@ -28,7 +28,7 @@ an handler.
 **Example**
 
 ```python
-{!> ../docs_src/exception_handlers/example.py !}
+{!> ../../../docs_src/exception_handlers/example.py !}
 ```
 
 This example is a not usual at all but it serves to show where an exception is raised.
@@ -45,7 +45,7 @@ from lilya._internal._exception_handlers import handle_value_error
 How it would look like the previous example using this custom exception handler?
 
 ```python
-{!> ../docs_src/exception_handlers/example_use.py !}
+{!> ../../../docs_src/exception_handlers/example_use.py !}
 ```
 
 ## Using status codes
@@ -58,7 +58,7 @@ This can be very useful if you only want to narrow down to `status_code` approac
 `Exception` itself.
 
 ```python
-{!> ../docs_src/exception_handlers/status_codes.py !}
+{!> ../../../docs_src/exception_handlers/status_codes.py !}
 ```
 
 ## HTTPException

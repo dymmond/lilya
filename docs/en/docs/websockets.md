@@ -6,7 +6,7 @@ of data over a WebSocket, enabling both sending and receiving operations.
 ### WebSocket
 
 ```python
-{!> ../docs_src/websockets/websocket.py !}
+{!> ../../../docs_src/websockets/websocket.py !}
 ```
 
 WebSockets present a mapping interface, so you can use them in the same
@@ -105,7 +105,7 @@ To receive JSON over binary data frames, employ `websocket.receive_json(data, mo
 Much like `receive_text`, `receive_bytes`, and `receive_json`, this function returns an asynchronous iterator.
 
 ```python
-{!> ../docs_src/websockets/example.py !}
+{!> ../../../docs_src/websockets/example.py !}
 ```
 
 Upon the occurrence of `lilya.websockets.WebSocketDisconnect`, the iterator will terminate.

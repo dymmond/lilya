@@ -45,7 +45,7 @@ from lilya.responses import Response
 **Example**
 
 ```python
-{!> ../docs_src/responses/response.py !}
+{!> ../../../docs_src/responses/response.py !}
 ```
 
 ##### Set cookie
@@ -121,7 +121,7 @@ from lilya.responses import HTMLResponse
 **Example**
 
 ```python
-{!> ../docs_src/responses/html.py !}
+{!> ../../../docs_src/responses/html.py !}
 ```
 
 ### Error
@@ -135,7 +135,7 @@ from lilya.responses import Error
 **Example**
 
 ```python
-{!> ../docs_src/responses/error.py !}
+{!> ../../../docs_src/responses/error.py !}
 ```
 
 ### PlainText
@@ -149,7 +149,7 @@ from lilya.responses import PlainText
 **Example**
 
 ```python
-{!> ../docs_src/responses/plain.py !}
+{!> ../../../docs_src/responses/plain.py !}
 ```
 
 ### JSONResponse
@@ -163,7 +163,7 @@ from lilya.responses import JSONResponse
 **Example**
 
 ```python
-{!> ../docs_src/responses/json.py !}
+{!> ../../../docs_src/responses/json.py !}
 ```
 
 ### Ok
@@ -178,7 +178,7 @@ from lilya.responses import Ok
 **Example**
 
 ```python
-{!> ../docs_src/responses/ok.py !}
+{!> ../../../docs_src/responses/ok.py !}
 ```
 
 ### RedirectResponse
@@ -192,7 +192,7 @@ from lilya.responses import RedirectResponse
 **Example**
 
 ```python
-{!> ../docs_src/responses/redirect.py !}
+{!> ../../../docs_src/responses/redirect.py !}
 ```
 
 ### StreamingResponse
@@ -204,7 +204,7 @@ from lilya.responses import StreamingResponse
 **Example**
 
 ```python
-{!> ../docs_src/responses/streaming.py !}
+{!> ../../../docs_src/responses/streaming.py !}
 ```
 
 ### FileResponse
@@ -226,7 +226,7 @@ Streams a file asynchronously as the response, employing a distinct set of argum
 **Example**
 
 ```python
-{!> ../docs_src/responses/file.py !}
+{!> ../../../docs_src/responses/file.py !}
 ```
 
 ## Importing the appropriate class
@@ -237,7 +237,7 @@ contains a list of available responses of Lilya but you are also free to design 
 **Example**
 
 ```python
-{!> ../docs_src/responses/json.py !}
+{!> ../../../docs_src/responses/json.py !}
 ```
 
 ## Build the Response
@@ -252,7 +252,7 @@ from lilya.responses import make_response
 **Example**
 
 ```python
-{!> ../docs_src/responses/make.py !}
+{!> ../../../docs_src/responses/make.py !}
 ```
 
 By default, the `make_response` returns a [JSONResponse](#jsonresponse) but that can be also
@@ -275,7 +275,7 @@ Delegating to Lilya means that if no response is specified, Lilya will go throug
 Let us see an example.
 
 ```python
-{!> ../docs_src/responses/delegate.py !}
+{!> ../../../docs_src/responses/delegate.py !}
 ```
 
 As you can see, no `response` was specified but instead a python `dict` was returned. What Lilya
@@ -287,7 +287,7 @@ If the type of response is not json serialisable, then a `ValueError` is raised.
 Let us see some more examples.
 
 ```python
-{!> ../docs_src/responses/delegate_examples.py !}
+{!> ../../../docs_src/responses/delegate_examples.py !}
 ```
 
 And the list goes on and on. Lilya by design understands almost every single datastructure of Python
@@ -343,7 +343,7 @@ from lilya.encoders import Encoder, register_encoder
 Create and register an encoder that handles `msgspec.Struct` types.
 
 ```python
-{!> ../docs_src/responses/encoders/example.py !}
+{!> ../../../docs_src/responses/encoders/example.py !}
 ```
 
 Simple right? Because now the `MsgSpecEncoder` is registered, you can simply do this in your handlers
@@ -382,19 +382,19 @@ Let us see how it would look like for all of them.
 **For Pydantic BaseModel**
 
 ```python
-{!> ../docs_src/responses/encoders/pydantic.py !}
+{!> ../../../docs_src/responses/encoders/pydantic.py !}
 ```
 
 **For msgspec Struct**
 
 ```python
-{!> ../docs_src/responses/encoders/example.py !}
+{!> ../../../docs_src/responses/encoders/example.py !}
 ```
 
 **For attrs**
 
 ```python
-{!> ../docs_src/responses/encoders/attrs.py !}
+{!> ../../../docs_src/responses/encoders/attrs.py !}
 ```
 
 Easy and poweful, right? Yes.
@@ -411,7 +411,7 @@ After the [custom encoders in the examples](#build-a-custom-encoder) are created
 do something like this directly.
 
 ```python
-{!> ../docs_src/responses/encoders/responses.py !}
+{!> ../../../docs_src/responses/encoders/responses.py !}
 ```
 
 #### Custom encoders and the `make_response`
@@ -427,5 +427,5 @@ The custom encoder **does not handle** that for you but the `make_response` does
 Let us see how it would look like now using the `make_response`.
 
 ```python
-{!> ../docs_src/responses/encoders/make_response.py !}
+{!> ../../../docs_src/responses/encoders/make_response.py !}
 ```

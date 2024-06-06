@@ -20,7 +20,7 @@ a function handler (view) is declared all the information passed to it
 is automatically accessible via `context.handler` parameter.
 
 ```python
-{!> ../docs_src/context/app.py !}
+{!> ../../../docs_src/context/app.py !}
 ```
 
 The `context` also provides access to the [`request`](./requests.md) object as well as the

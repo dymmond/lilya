@@ -15,7 +15,7 @@ from lilya.requests import Request
 A `Request` instance receives a `scope`, a `receive` and a `send` parameter.
 
 ```python
-{!> ../docs_src/requests/example.py !}
+{!> ../../../docs_src/requests/example.py !}
 ```
 
 The requests, as mentioned before, present an interface to the `scope`, which means if you use
@@ -199,7 +199,7 @@ await request.data()
 ##### As a stream
 
 ```python
-{!> ../docs_src/requests/stream.py !}
+{!> ../../../docs_src/requests/stream.py !}
 ```
 
 When employing .stream(), byte chunks are furnished without the necessity of storing the entire body in memory.
