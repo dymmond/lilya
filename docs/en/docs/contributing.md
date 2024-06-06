@@ -221,7 +221,7 @@ Now you can go to <a href="http://127.0.0.1:8000" class="external-link" target="
 
 You will see that every language has all the pages. But some pages are not translated and have an info box at the top, about the missing translation.
 
-Now let's say that you want to add a translation for the section [Router](routing/router.md){.internal-link target=_blank}.
+Now let's say that you want to add a translation for the section [Router](./routing.md){.internal-link target=_blank}.
 
 * Copy the file at:
 
