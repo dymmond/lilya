@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from __future__ import annotations
 
 import os
@@ -6,7 +7,7 @@ import subprocess
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List
 
 import click
 import mkdocs.commands.build
@@ -34,7 +35,7 @@ build_site_path = Path(site_lang).absolute()
 def cli(): ...
 
 
-def get_en_config() -> dict[str, Any]:
+def get_en_config() -> Dict[str, Any]:
     """
     Get the English configuration from the specified file.
 
@@ -44,12 +45,12 @@ def get_en_config() -> dict[str, Any]:
     return mkdocs.utils.yaml_load(en_config_path.read_text(encoding="utf-8"))
 
 
-def get_lang_paths() -> list[Path]:
+def get_lang_paths() -> List[Path]:
     """
     Returns a sorted list of paths to language files.
 
     Returns:
-        list[Path]: A sorted list of paths to language files.
+        List[Path]: A sorted list of paths to language files.
     """
     return sorted(docs_path.iterdir())
 
@@ -69,20 +70,20 @@ def complete_existing_lang(incomplete: str):
             yield lang_path.name
 
 
-def get_updated_config_content() -> dict[str, Any]:
+def get_updated_config_content() -> Dict[str, Any]:
     """
     Get the updated configuration content with alternate language links.
 
     Returns:
-        dict[str, Any]: The updated configuration content.
+        Dict[str, Any]: The updated configuration content.
     """
     config = get_en_config()
     languages = [{"en": "/"}]
-    new_alternate: list[dict[str, str]] = []
+    new_alternate: List[Dict[str, str]] = []
 
     # Load local language names from language_names.yml
     language_names_path = Path(__file__).parent / "../docs/language_names.yml"
-    local_language_names: dict[str, str] = mkdocs.utils.yaml_load(
+    local_language_names: Dict[str, str] = mkdocs.utils.yaml_load(
         language_names_path.read_text(encoding="utf-8")
     )
 
