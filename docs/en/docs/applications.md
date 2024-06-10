@@ -44,7 +44,7 @@ requests (HTTP and Websockets).
 * **permissions** - A list of [permissions](./permissions.md) to serve the application incoming
 requests (HTTP and Websockets).
 * **middleware** - A list of [middleware](./middleware.md) to run for every request. The middlewares can be subclasses of the [MiddlewareProtocol](./middleware.md#middlewareprotocol).
-* **exception handlers** - A dictionary of [exception types](./exceptions.md) (or custom exceptions) and the handler
+* **exception_handlers** - A dictionary of [exception types](./exceptions.md) (or custom exceptions) and the handler
 functions on an application top level. Exception handler callables should be of the form of
 `handler(request, exc) -> response` and may be be either standard functions, or async functions.
 * **on_shutdown** - A list of callables to run on application shutdown. Shutdown handler callables do not take any
