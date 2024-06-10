@@ -1,56 +1,55 @@
-# Controllers
+# Controladores
 
-Lilya embraces both functional and object-oriented programming (OOP) methodologies.
-Within the Lilya framework, the OOP paradigm is referred to as a *controller*, a nomenclature inspired by other notable technologies.
+Lilya adopta tanto a metodologia de programação funcional quanto a orientada a objetos (OOP). Dentro da framework Lilya,
+o paradigma OOP é chamado de *controller*, uma nomenclatura inspirada noutras tecnologias notáveis.
 
-The `Controller` serves as the orchestrator for handling standard HTTP requests and managing WebSocket sessions.
+O `Controller` actua como o orquestrador para lidar com pedidos HTTP padrão e gerir sessões WebSocket.
 
-Internally, the `Controller` and `WebSocketController` implement the same response wrappers as the
-[Path](./routing.md#path) and [WebSocketPath](./routing.md#websocketpath) making sure that remains
-as one source of truth and that also means that the [auto discovery](./routing.md#auto-discovering-the-parameters) of
-the parameters also works here.
+Internamente, o `Controller` e o `WebSocketController` implementam os mesmos *wrappers* de resposta que o
+[Path](./routing.md#path) e [WebSocketPath](./routing.md#websocketpath), garantindo que permanece
+como uma única fonte de verdade e isso também significa que a [descoberta automática](./routing.md#auto-discovering-the-parameters) dos
+parâmetros também funciona.
 
-## The `Controller` class
+## A classe `Controller`
 
-This object also serves as ASGI application, which means that embraces the internal implementation
-of the `__call__` and dispatches the requests.
+Este objeto também serve como aplicação ASGI, o que significa que abraça a implementação interna
+do `__call__` e despacha os pedidos.
 
-This is also responsible for implementing the HTTP dispatching of the requests, only.
+Ele também é responsável por implementar apenas o despacho HTTP dos pedidos.
 
 ```python
 {!> ../../../docs_src/controllers/controller.py!}
 ```
 
-When employing a Lilya application instance for routing management, you have the option to dispatch to a `Controller` class.
+Quando se utiliza uma instância da aplicação Lilya para gestão de roteamento, tem a opção de despachar para uma classe `Controller`.
 
 !!! warning
-    It's crucial to dispatch directly to the class, not to an instance of the class.
+    É crucial o despacho directo para a class e não para uma instância.
 
-Here's an example for clarification:
+Aqui está um exemplo para esclarecimento:
 
 ```python
 {!> ../../../docs_src/controllers/dispatch.py !}
 ```
 
-In this scenario, the `ASGIApp` class is dispatched, not an instance of it.
+Neste caso, a `ASGIApp` classe é despachada, não a instância da classe.
 
-`Controller` classes, when encountering request methods that do not map to a corresponding handler,
-will automatically respond with `405 Method Not Allowed` responses.
+As classes `Controller`, ao encontrarem métodos de pedido que não correspondem a um manipulador correspondente,
+responderão automaticamente com respostas `405 Method not allowed`.
 
-## The `WebSocketController` class
+## A classe `WebSocketController`
 
-The `WebSocketController` class serves as an ASGI application, encapsulating the functionality of a `WebSocket` instance.
+A classe `WebSocketController` serve como uma aplicação ASGI, encapsulando a funcionalidade de uma instância `WebSocket`.
 
-The ASGI connection scope is accessible on the endpoint instance through `.scope` and features an attribute called `encoding`.
-This attribute, which may be optionally set, is utilized to validate the expected WebSocket data in the `on_receive` method.
+O âmbito da conecção ASGI é acessível na instância do *endpoint* através de `.scope` e possui um atributo chamado `encoding`.
+Esse atributo, que pode ser opcionalmente definido, é utilizado para validar os dados esperados do WebSocket no método `on_receive`.
 
-The available encoding types are:
+Os tipos de codificação disponíveis são:
 
 - `'json'`
 - `'bytes'`
 - `'text'`
-
-There are three methods that can be overridden to handle specific ASGI WebSocket message types:
+Existem três métodos que podem ser substituídos para lidar com tipos específicos de mensagens ASGI WebSocket:
 
 1. `async def on_connect(websocket, **kwargs)`
 2. `async def on_receive(websocket, data)`
@@ -60,7 +59,7 @@ There are three methods that can be overridden to handle specific ASGI WebSocket
 {!> ../../../docs_src/controllers/websocketcontroller.py !}
 ```
 
-The `WebSocketController` is also compatible with the Lilya application class.
+O `WebSocketController` também é compatível com a classe da aplicação Lilya.
 
 ```python
 {!> ../../../docs_src/controllers/wdispatch.py !}
