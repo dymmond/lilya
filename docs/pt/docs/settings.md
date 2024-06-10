@@ -1,51 +1,49 @@
-# Settings
+# Definições
 
-In every application, there arises a need for project-specific settings to ensure its uniqueness.
+Em cada aplicação, surge a necessidade de definições específicas do projeto para garantir a sua singularidade.
 
-As a project grows in complexity, and settings become dispersed throughout the codebase,
-managing them can become challenging, leading to a potential organizational mess.
-
-Lilya leverages [Dymmond Setings](https://settings.dymmond.com).
+À medida que um projeto se torna mais complexo e as definições dispersam-se por todo o código-fonte,
+geri-las pode se tornar um desafio, levando a uma possível desordem.
 
 !!! warning
-    All the settings in Lilya use Python dataclasses.
+    Todas as definições no Lilya usam dataclasses em Python.
 
-## How to use
+## Como utilizar
 
-There are two ways of using the settings object within a Lilya application.
+Existem duas formas de utilizar o objeto de configurações dentro de uma aplicação Lilya.
 
-* Using the **LILYA_SETTINGS_MODULE** environment variable
-* Using the **[settings_module](#the-settings_module)** instance attribute.
+* Utilizando a variável de ambiente **LILYA_SETTINGS_MODULE**
+* Utilizando o atributo de instância **[settings_module](#o-settings_module)**.
 
-Each one of them has particular use cases but they also work together is perfect harmony.
+Cada um deles tem casos de uso específicos, mas também trabalham juntos em perfeita harmonia.
 
-## Settings and the application
+## Definições e a aplicação
 
-When starting a Lilya instance if no parameters are provided, it will automatically load the defaults from the
-system settings object, the `Settings`.
+Ao iniciar uma instância do Lilya, se nenhum parâmetro for fornecido, ela carregará automaticamente as configurações
+padrão do objeto de configurações do sistema, o `Settings`.
 
-=== "No parameters"
+=== "Sem parâmetros"
 
     ```python
     {!> ../../../docs_src/settings/app/no_parameters.py!}
     ```
 
-=== "With Parameters"
+=== "Com Parâmetros"
 
     ```python
     {!> ../../../docs_src/settings/app/with_parameters.py!}
     ```
 
-## Custom settings
+## Definições personalizadas
 
-Using the defaults from `Settings` generally will not do too much for majority of the applications.
+Utilizar as configurações padrão do `Settings` geralmente não será suficiente para a maioria das aplicações.
 
-For that reason custom settings are needed.
+Por essa razão, são necessárias configurações personalizadas.
 
-**All the custom settings should be inherited from the `Settings`**.
+**Todas as configurações personalizadas devem ser herdadas do `Settings`**.
 
-Let's assume we have three environment for one application: `production`, `testing`, `development` and a base settings
-file that contains common settings across the three environments.
+Vamos supor que temos três ambientes para uma aplicação: `produção`, `teste` e `desenvolvimento`, e um ficheiro de configurações
+base que contém configurações comuns aos três ambientes.
 
 === "Base"
 
@@ -53,37 +51,36 @@ file that contains common settings across the three environments.
     {!> ../../../docs_src/settings/custom/base.py!}
     ```
 
-=== "Development"
+=== "Desenvolviment"
 
     ```python
     {!> ../../../docs_src/settings/custom/development.py!}
     ```
 
-=== "Testing"
+=== "Teste"
 
     ```python
     {!> ../../../docs_src/settings/custom/testing.py!}
     ```
 
-=== "Production"
+=== "Produção"
 
     ```python
     {!> ../../../docs_src/settings/custom/production.py!}
     ```
 
-What just happened?
+O que é que acabou de acontecer?
 
-1. Created an `AppSettings` inherited from the `Settings` with common cross environment properties.
-2. Created one settings file per environment and inherited from the base `AppSettings`.
-3. Created specific  events `on_startup` and `on_shutdown` for each environment.
+1. Criou-se um `AppSettings` herdado do `Settings` com propriedades comuns entre os ambientes.
+2. Criou-se um ficheiro de configuração para cada ambiente, herdando do `AppSettings` base.
+3. Criaram-se eventos específicos `on_startup` e `on_shutdown` para cada ambiente.
 
+## Módulo de Configurações
 
-## Settings Module
+Por defeito, o Lilya procura por uma variável de ambiente chamada `LILYA_SETTINGS_MODULE` para executar as configurações personalizadas.
+Se nada for fornecido, ele executará as configurações padrão da aplicação.
 
-Lilya by default is looking for a `LILYA_SETTINGS_MODULE` environment variable to execute any custom settings,
-if nothing is provided then it will execute the application defaults.
-
-=== "Without LILYA_SETTINGS_MODULE"
+=== "Sem LILYA_SETTINGS_MODULE"
 
     ```shell
     uvicorn src:app --reload
@@ -95,7 +92,7 @@ if nothing is provided then it will execute the application defaults.
     INFO:     Application startup complete.
     ```
 
-=== "With LILYA_SETTINGS_MODULE"
+=== "Com LILYA_SETTINGS_MODULE"
 
     ```shell
     LILYA_SETTINGS_MODULE=src.configs.production.ProductionSettings uvicorn src:app
@@ -107,123 +104,111 @@ if nothing is provided then it will execute the application defaults.
     INFO:     Application startup complete.
     ```
 
-It is very simple, `LILYA_SETTINGS_MODULE` looks for the custom settings class created for the application
-and loads it in lazy mode and make it globaly available.
+É muito simples, o `LILYA_SETTINGS_MODULE` procura a classe de configurações personalizadas criada para a aplicação
+e carrega-a em modo preguiçoso, tornando-a globalmente disponível.
 
-## The settings_module
+## O settings_module
 
-This is a great tool to make your Lilya applications 100% independent and modular. There are cases
-where you simply want to plug an existing lilya application into another and that same lilya application
-already has unique settings and defaults.
+Esta é uma ótima ferramenta para tornar suas aplicações Lilya 100% independentes e modulares.
+Existem casos em que simplesmente se deseja conectar uma aplicação Lilya existente a outra e essa mesma aplicação Lilya já possui configurações e padrões exclusivos.
 
-The `settings_module` is a parameter available in every single `Lilya` instance as well as `ChildLilya`.
+O `settings_moduke` é um parâmetro disponível em cada instância do `Lilya`, assim como no `ChildLilya`.
 
-### Creating a settings_module
+### Criar um settings_module
 
-The configurations have **literally the same concept**
-as the [Settings](#settings-and-the-application), which means that every single
-`settings_module` **must be derived from the Settings** or a `FieldException` is thrown.
+As configurações têm **literalmente o mesmo conceito** que as [Definições](#definicoes-e-a-aplicação), o que significa que cada `settings_module` **deve ser derivado das Definições** ou um `FieldException` é lançado.
 
-The reason why the above is to keep the integrity of the application and settings.
+A razão pela qual o acima é para manter a integridade da aplicação e das configurações.
 
 ```python
 {!> ../../../docs_src/applications/settings/settings_config/example2.py !}
 ```
 
-Is this simple, literally, Lilya simplifies the way you can manipulate settings on each level
-and keeping the intregrity at the same time.
+Isto é simples, literalmente, o Lilya simplifica a forma como pode manipular as definições em cada nível
+e mantendo a integridade ao mesmo tempo.
 
-Check out the [order of priority](#order-of-priority) to understand a bit more.
+Consulte a [ordem de prioridade](#ordem-de-prioridade) para entender um pouco mais.
+### Módulo de configurações como uma string
 
-### Settings module as a string
+O Lilya também oferece a possibilidade de importar as configurações via string. Isso significa que pode
+literalmente deixar seu código mais limpo e evitar importações em todos os lugares, simplesmente utilizando o caminho do módulo
+de importação.
 
-Lilya also offers the possibility of importing the settings via string. This means that you can
-literally make you codebase cleaner and avoid imports everywhere by simply using the dotted path
-import.
+**Exemplo**
 
-**Example**
+Vamos supor que temos um ficheiro de configuração com um nome de classe `AppSettings` localizado dentro de `myapp/configs/settings.py`.
 
-Let us assume we have a settings file with a class name `AppSettings` located inside `myapp/configs/settings.py`.
-
-How to import via string?
+Como importar via string?
 
 ```python
 {!> ../../../docs_src/applications/settings/settings_config/via_string.py !}
 ```
 
-## Order of priority
+## Ordem de prioridade
 
-There is an order or priority in which Lilya reads your settings.
+Existe uma ordem de prioridade na qual o Lilya lê as suas configurações.
 
-If a `settings_module` is passed into a Lilya instance, that same object takes priority above
-anything else. Let us imagine the following:
+Se um `settings_module` for passado para uma instância do Lilya, esse mesmo objeto tem prioridade acima de qualquer outra coisa. Vamos imaginar o seguinte:
 
-* A Lilya application with normal settings.
-* A `ChildLilya` with a specific set of configurations unique to it.
+* Uma aplicação Lilya com configurações normais.
+* Um `ChildLilya` com um conjunto específico de configurações exclusivas.
 
 ```python
 {!> ../../../docs_src/applications/settings/settings_config/example1.py !}
 ```
 
+**O que está a acontecer aqui?**
 
-**What is happenening here?**
+No exemplo acima, nós:
 
-In the example above we:
+* Criámos um objeto de configurações derivado do `Settings` principal e passámos alguns valores predefinidos.
+* Passámos o `ChildLilyaSettings` para a instância do `ChildLilya`.
+* Passámos o `ChildLilya` para a aplicação `Lilya`.
 
-* Created a settings object derived from the main `Settings` and
-passed some defaults.
-* Passed the `ChildLilyaSettings` into the `ChildLilya` instance.
-* Passed the `ChildLilya` into the `Lilya` application.
+Então, como é que a prioridade é aplicada aqui usando o `settings_module`?
 
-So, how does the priority take place here using the `settings_module`?
+* Se nenhum valor de parâmetro (ao instanciar), por exemplo `app_name`, for fornecido, então irá verificar esse mesmo valor dentro do `settings_module`.
+* Se o `settings_module` não fornecer um valor para `app_name`, então irá procurar o valor no `LILYA_SETTINGS_MODULE`.
+* Se nenhuma variável de ambiente `LILYA_SETTINGS_MODULE` for fornecida, então usará as predefinições do Lilya. [Leia mais sobre isso aqui](#o-settings_module).
 
-* If no parameter value (upon instantiation), for example `app_name`, is provided, it will check for that same value
-inside the `settings_module`.
-* If `settings_module` does not provide an `app_name` value, it will look for the value in the
-`LILYA_SETTINGS_MODULE`.
-* If no `LILYA_SETTINGS_MODULE` environment variable is provided by you, then it will default
-to the Lilya defaults. [Read more about this here](#settings-module).
+Portanto, a ordem de prioridade é a seguinte:
 
-So the order of priority:
+* O valor do parâmetro da instância tem prioridade sobre o `settings_module`.
+* O `settings_module` tem prioridade sobre o `LILYA_SETTINGS_MODULE`.
+* O `LILYA_SETTINGS_MODULE` é o último a ser verificado.
 
-* Parameter instance value takes priority above `settings_module`.
-* `settings_module` takes priority above `LILYA_SETTINGS_MODULE`.
-* `LILYA_SETTINGS_MODULE` is the last being checked.
+## Configuração de definições e módulo de configurações do Lilya
 
+A beleza desta abordagem modular é o facto de tornar possível usar **ambas** as abordagens ao mesmo tempo ([ordem de prioridade](#ordem-de-prioridade)).
 
-## Settings config and Lilya settings module
+Vamos usar um exemplo em que:
 
-The beauty of this modular approach is the fact that makes it possible to use **both** approaches at
-the same time ([order of priority](#order-of-priority)).
+1. Criamos um objeto principal de definições do Lilya para ser usado pelo `LILYA_SETTINGS_MODULE`.
+2. Criamos um `settings_module` para ser usado pela instância do Lilya.
+3. Iniciamos a aplicação utilizando ambos.
 
-Let us use an example where:
+Vamos também assumir que tem todas as definições dentro de uma directoria `src/configs`.
 
-1. We create a main Lilya settings object to be used by the `LILYA_SETTINGS_MODULE`.
-2. We create a `settings_module` to be used by the Lilya instance.
-3. We start the application using both.
-
-Let us also assume you have all the settings inside a `src/configs` directory.
-
-**Create a configuration to be used by the LILYA_SETTINGS_MODULE**
+**Criar uma configuração a ser usada pelo LILYA_SETTINGS_MODULE**
 
 ```python title="src/configs/main_settings.py"
 {!> ../../../docs_src/applications/settings/settings_config/main_settings.py !}
 ```
 
-**Create a configuration to be used by the settings_module**
+**Criar uma configuração a ser usada pelo settings_module**
 
 ```python title="src/configs/app_settings.py"
 {!> ../../../docs_src/applications/settings/settings_config/app_settings.py !}
 ```
 
-**Create a Lilya instance**
+**Criar uma instância do Lilya**
 
 ```python title="src/app.py"
 {!> ../../../docs_src/applications/settings/settings_config/app.py !}
 ```
 
-Now we can start the server using the `AppSettings` as global and `InstanceSettings` being passed
-via instantiation. The AppSettings from the main_settings.py is used to call from the command-line.
+Agora podemos iniciar o servidor usando o `AppSettings` como global e o `InstanceSettings` sendo passado
+via instanciação. O AppSettings do main_settings.py é usado para chamar a partir da linha de comandos.
 
 ```shell
 LILYA_SETTINGS_MODULE=src.configs.main_settings.AppSettings uvicorn src:app --reload
@@ -235,45 +220,42 @@ INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 ```
 
-Great! Now not only we have used the `settings_module` and `LILYA_SETTINGS_MODULE` but we used
-them at the same time!
+Ótimo! Agora não só utilizamos o `settings_module` e o `LILYA_SETTINGS_MODULE`, mas também os utilizamos ao mesmo tempo!
 
-Check out the [order of priority](#order-of-priority) to understand which value takes precedence
-and how Lilya reads them out.
+Confira a [ordem de prioridade](#ordem-de-prioridade) para entender qual valor tem precedência e como o Lilya os lê.
 
-## Parameters
+## Parâmetros
 
-The parameters available inside `Settings` can be overridden by any custom settings.
+Os parâmetros disponíveis dentro de `Settings` podem ser substituídos por quaisquer configurações personalizadas.
+## Aceder às definições
 
-## Accessing settings
+Para aceder às definições da aplicação existem diferentes formas:
 
-To access the application settings there are different ways:
 
-=== "Within the application request"
+=== "Dentro do pedido da aplicação"
 
     ```python
     {!> ../../../docs_src/settings/access/within_app.py!}
     ```
 
-=== "From the global settings"
+=== "Das configurações globais"
 
     ```python
     {!> ../../../docs_src/settings/access/global.py!}
     ```
 
 !!! info
-    Some of this information might have been mentioned in some other parts of the documentation but we assume
-    the people reading it might have missed.
+    Algumas destas informações podem ter sido mencionadas noutras partes da documentação,
+    mas assumimos que as pessoas que as estão a ler podem ter perdido essa mesma informação.
 
+## Ordem de importância
 
-## Order of importance
+Utilizar as definições para iniciar uma aplicação em vez de fornecer os parâmetros diretamente no momento da
+instanciação não significa que um funcionará com o outro.
 
-Using the settings to start an application instead of providing the parameters directly in the moment of
-instantiation does not mean that one will work with the other.
+Quando instancia uma aplicação **ou passa parâmetros diretamente ou usa as definições ou uma combinação de ambos**.
 
-When you instantiate an application **or you pass parameters directly or you use settings or a mix of both**.
-
-Passing parameters in the object will always override the values from the default settings.
+Passar parâmetros no objeto substituirá sempre os valores das definições padrão.
 
 ```python
 from dataclasses import dataclass
@@ -293,13 +275,13 @@ class AppSettings(Settings):
 
 ```
 
-The application will:
+A aplicação irá:
 
-1. Start with `debug` as `False`.
-2. Will start with a middleware `HTTPSRedirectMiddleware`.
+1. Iniciar com `debug` como `False`.
+2. Irá iniciar com um middleware `HTTPSRedirectMiddleware`.
 
-Starting the application with the above settings will make sure that has an initial `HTTPSRedirectMiddleware` and `debug`
-set with values **but** what happens if you use the settings + parameters on instantiation?
+Ao iniciar a aplicação com as configurações acima, garantirá que tenha um `HTTPSRedirectMiddleware` inicial e `debug`
+definido com os valores **mas** o que acontece se utilizar as configurações + parâmetros na instanciação?
 
 ```python
 from lilya.apps import Lilya
@@ -307,21 +289,20 @@ from lilya.apps import Lilya
 app = Lilya(debug=True, middleware=[])
 ```
 
-The application will:
+A aplicação irá:
 
-1. Start with `debug` as `True`.
-2. Will start without custom middlewares it the `HTTPSRedirectMiddleware` it was overridden by `[]`.
+1. Iniciar com `debug` como `True`.
+2. Irá iniciar sem middlewares personalizados se o `HTTPSRedirectMiddleware` for substituído por `[]`.
 
-Although it was set in the settings to start with `HTTPSRedirectMiddleware` and debug as `False`, once you pass different
-values in the moment of instantiating a `Lilya` object, those will become the values to be used.
+Embora tenha sido definido nas configurações para iniciar com `HTTPSRedirectMiddleware` e debug como `False`,
+uma vez que passa valores diferentes no momento de instanciar um objeto `Lilya`, esses valores tornar-se-ão os valores a serem usados.
 
-**Declaring parameters in the instance will always precede the values from your settings**.
+**Declarar parâmetros na instância sempre terá precedência sobre os valores das configurações**.
 
-The reason why you should be using settings it is because will make your codebase more organised and easier
-to maintain.
+A razão pela qual deve usar as configurações é porque isso tornará o seu código-fonte mais organizado e mais fácil de manter.
 
 !!! Check
-    When you pass the parameters via instantiation of a Lilya object and not via parameters, when accessing the
-    values via `request.app.settings`, the values **won't be in the settings** as those were passed via application
-    instantiation and not via settings object. The way to access those values is, for example, `request.app.debug`
-    directly.
+    Quando se passa os valores via instanciação de um objeto Lilya e não via parâmetros, ao aceder os
+    valores através de `request.app.settings`, os valores **não estarão nas configurações** pois eles foram passados via
+    instanciação da aplicação e não via objeto de configurações. A forma de aceder a esses valores é, por exemplo, via `request.app.debug`
+    diretamente.

@@ -5,8 +5,6 @@ In every application, there arises a need for project-specific settings to ensur
 As a project grows in complexity, and settings become dispersed throughout the codebase,
 managing them can become challenging, leading to a potential organizational mess.
 
-Lilya leverages [Dymmond Setings](https://settings.dymmond.com).
-
 !!! warning
     All the settings in Lilya use Python dataclasses.
 
@@ -165,7 +163,6 @@ anything else. Let us imagine the following:
 {!> ../../../docs_src/applications/settings/settings_config/example1.py !}
 ```
 
-
 **What is happenening here?**
 
 In the example above we:
@@ -189,7 +186,6 @@ So the order of priority:
 * Parameter instance value takes priority above `settings_module`.
 * `settings_module` takes priority above `LILYA_SETTINGS_MODULE`.
 * `LILYA_SETTINGS_MODULE` is the last being checked.
-
 
 ## Settings config and Lilya settings module
 
@@ -323,5 +319,5 @@ to maintain.
 !!! Check
     When you pass the parameters via instantiation of a Lilya object and not via parameters, when accessing the
     values via `request.app.settings`, the values **won't be in the settings** as those were passed via application
-    instantiation and not via settings object. The way to access those values is, for example, `request.app.debug`
+    instantiation and not via settings object. The way to access those values is, for example, via `request.app.debug`
     directly.
