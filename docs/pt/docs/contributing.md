@@ -1,63 +1,57 @@
-# Contributing
+# Contribuir
 
-Thank you for showing interes in contributing to Lilya. There are many ways you can help and contribute to the
-project.
+Obrigado por mostrar interesse em contribuir para o Lilya. Existem várias maneiras nas quais pode ajudar e contribuir para o projeto.
 
-* Try Lilya and [report bugs and issues](https://github.com/dymmond/lilya/issues/new) you find.
-* [Implement new features](https://github.com/dymmond/lilya/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
-* Help othes by [reviewing pull requests](https://github.com/dymmond/lilya/pulls)
-* Help writting documentation
-* Use the discussions and actively participate on them.
-* Become an contributor by helping Lilya growing and spread the words across small, medium, large or any company
-size.
+* Experimente o Lilya e [reporte os bugs e problemas](https://github.com/dymmond/lilya/issues/new) que encontrar.
+* [Implemente novas funcionalidades](https://github.com/dymmond/lilya/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
+* Ajude os outros [reviews the pull requests](https://github.com/dymmond/lilya/pulls).
+* Ajude na documentação.
+* Utilize as discussões e participe ativamente nelas.
+* Torne-se um colaborador ajudando o Lilya a crescer e espalhar a palavra em empresas de todos os tamanhos.
+*
+## Reportar possíveis bugs e problemas
 
-## Reporting possible bugs and issues
+É natural que se possa encontrar algo que o Lilya deveria dar suporte ou até mesmo experimenciar algum tipo de comportamento inesperado que precise ser corrigido.
 
-It is natural that you might find something that Lilya should support or even experience some sorte of unexpected
-behaviour that needs addressing.
+A forma como gostamos de fazer as coisas é muito simples, as contribuições devem começar com uma [discussão](https://github.com/dymmond/lilya/discussions).
+Os possíveis bugs devem ser criados como "Potential Problem" nas discussões, os pedidos para novas functionalidades pode ser criados como "Ideas".
 
-The way we love doing things is very simple, contributions should start out with a
-[discussion](https://github.com/dymmond/lilya/discussions). The potential bugs shall be raised as "Potential Issue"
-in the discussions, the feature requests may be raised as "Ideas".
+Podemos então decidir se a discussão precisa ser escalada para um "Problema" ou não.
 
-We can then decide if the discussion needs to be escalated into an "Issue" or not.
+Ao reportar algo, deve sempre tentar:
+* Seja o mais descritivo possível
+* Forneça o máximo de evidências possível, algo como:
+    * Sistema operativo
+    * Versão do Python
+    * Dependências instaladas
+    * Pedaços de código
+    * *Tracebacks*
 
-When reporting something you should always try to:
+Evite colocar exemplos extremamente complexos de se perceber e ler.
+Simplifique os exemplos o máximo possível para torná-los claros e obter a ajuda necessária.
 
-* Be as more descriptive as possible
-* Provide as much evidence as you can, something like:
-    * OS platform
-    * Python version
-    * Installed dependencies
-    * Code snippets
-    * Tracebacks
+## Desenvolvimento
 
-Avoid putting examples extremely complex to understand and read. Simplify the examples as much as possible to make
-it clear to understand and get the required help.
+Para desenvolver para o Lilya, crie um fork do [repositório do Lilya](https://github.com/dymmond/lilya) no GitHub.
 
-## Development
-
-To develop for Lilya, create a fork of the [Lilya repository](https://github.com/dymmond/lilya) on GitHub.
-
-After, clone your fork with the follow command replacing `YOUR-USERNAME` wih your GitHub username:
+Depois, clone o seu fork com o seguinte comando, substituindo `NOME-DE-UTILIZADOR` pelo seu nome de utilizador do GitHub:
 
 ```shell
-$ git clone https://github.com/YOUR-USERNAME/lilya
+$ git clone https://github.com/NOME-DE-UTILIZADOR/lilya
 ```
 
-Lilya also uses [hatch](https://hatch.pypa.io/latest/) for its development, testing and release
-cycles.
+Lilya também utiliza o [hatch](https://hatch.pypa.io/latest/) para seus ciclos de desenvolvimento, teste e publicação.
 
-Please make sure you run:
+Certifique-se de executar:
 
 ```shell
 pip install hatch
 ```
 
-### Install the project dependencies
+### Instalar as dependências do projeto
 
-Not necessary because the dependencies are automatically installed by hatch.
-But if environments should be pre-initialized it can be done with `hatch env`
+Não é necessário, pois as dependências são instaladas automaticamente pelo hatch.
+Mas se os ambientes devem ser pré-inicializados, isso pode ser feito com `hatch env`
 
 ```shell
 $ cd lilya
@@ -67,201 +61,206 @@ $ hatch env create docs
 ```
 
 !!! Tip
-    This is the recommended way but if you still feel you want your own virtual environment and
-    all the packages installed there, you can always run `scripts/install`.
+    Esta é a forma recomendada, mas se ainda sentir que deseja ter o seu próprio ambiente virtual e
+    todas as bibliotecas instaladas lá, pode sempre executar `scripts/install`.
 
-### Enable pre-commit
+### Ativar o pre-commit
 
-The project comes with a pre-commit hook configuration. To enable it, just run inside the clone:
+O projeto vem com uma configuração do pre-commit. Para ativá-lo, basta executar dentro do clone:
 
 ```shell
 $ hatch run pre-commit install
 ```
 
-### Run the tests
+### Executar os testes
 
-To run the tests, use:
+Para executar os testes, utilize:
 
 ```shell
 $ hatch run test:test
 ```
 
-Because Lilya uses pytest, any additional arguments will be passed. More info within the
-[pytest documentation](https://docs.pytest.org/en/latest/how-to/usage.html)
+Porque o Lilya utiliza o pytest, quaisquer argumentos adicionais serão passados.
+Mais informações podem ser encontradas na [documentação do pytest](https://docs.pytest.org/en/latest/how-to/usage.html)
 
-For example, to run a single test_script:
+Por exemplo, para executar um único teste_script:
 
 ```shell
 $ hatch run test:test tests/test_encoders.py
 ```
 
-To run the linting, use:
+Para executar a verificação do lint, utilize:
 
 ```shell
 $ hatch run lint
 ```
 
-## Documentation
+## Documentação
 
-Improving the documentation is quite easy and it is placed inside the `lilya/docs` folder.
+Melhorar a documentação é bastante fácil e ela está localizada dentro da pasta `lilya/docs`.
 
-To build all the documentation:
+Para construir toda a documentação:
 
 ```shell
 $ hatch run docs:build
 ```
 
-### Docs live (serving the docs)
+### Documentação em tempo real (servir a documentação)
 
-During local development, there is a script that builds the site and checks for any changes, live-reloading:
+Durante o desenvolvimento local, há um script que constrói o site e verifica quaisquer alterações, recarregando em tempo real:
 
 ```shell
 $ hatch run docs:serve
 ```
 
-It will serve the documentation on `http://localhost:8000`.
+A documentação é servida no `http://localhost:8000`.
 
-If you wish to serve on a different port:
+Se desejar servir num porto diferente:
 
 ```shell
 $ hatch run docs:serve -p <PORT-NUMBER>
 ```
 
-That way, you can edit the documentation/source files and see the changes live.
+Desta forma, pode editar os ficheiros da documentação/fonte e ver as alterações em tempo real.
 
-!!! tip
-    Alternatively, you can perform the same steps that scripts does manually.
+!!! dica
+    Alternativamente, pode executar os mesmos passos que o script faz manualmente.
 
-    Go into the language directory, for the main docs in English it's at `docs/en/`:
+    Acesse à directoria do idioma. Para a documentação principal em inglês, a localização é `docs/en/`:
 
     ```console
     $ cd docs/en/
     ```
 
-    Then run `mkdocs` in that directory:
+    De seguida, execute o `mkdocs` nessa directoria:
 
     ```console
     $ mkdocs serve --dev-addr 8000
     ```
 
-### Docs Structure
+### Estrutura da Documentação
 
-The documentation uses <a href="https://www.mkdocs.org/" class="external-link" target="_blank">MkDocs</a>.
+A documentação utiliza o <a href="https://www.mkdocs.org/" class="external-link" target="_blank">MkDocs</a>.
 
-And there are extra tools/scripts in place to handle translations in `./scripts/docs.py`.
+E existem ferramentas/scripts adicionais para lidar com as traduções em `./scripts/docs.py`.
 
 !!! tip
-    You don't need to see the code in `./scripts/docs.py`, you just use it in the command line.
+    Não é necessário ver o código dentro de `./scripts/docs.py`, apenas utilize na linha de comando.
 
-All the documentation is in Markdown format in the directory `./docs/en/`.
+Toda a documentação está em formato Markdown na directoria `./docs/pt/`.
 
-Many of the tutorials have blocks of code.
+Muitos dos tutoriais têm blocos de código.
 
-In most of the cases, these blocks of code are actual complete applications that can be run as is.
+Na maioria dos casos, esses blocos de código são aplicações completas que podem ser executados tal e qual como estão.
 
-In fact, those blocks of code are not written inside the Markdown, they are Python files in the `./docs_src/` directory.
+Na realidade, esses blocos de código não são escritos dentro do Markdown, mas são ficheiros Python na directoria `./docs_src/`.
 
-And those Python files are included/injected in the documentation when generating the site.
+E esses ficheiros Python são incluídos/injetados na documentação a quando a geração gerar o site.
 
-### Translations
+### Traduções
 
-Help with translations is VERY MUCH appreciated! And it can't be done without the help from the community.
+A ajuda com as traduções é MUITO apreciada! E isso não pode ser feito sem a ajuda da comunidade.
 
-Here are the steps to help with translations.
+Aqui estão os passos para ajudar com as traduções.
 
 #### Tips and guidelines
 
-* Check the currently <a href="https://github.com/dymmond/lilya/pulls" class="external-link" target="_blank">existing pull requests</a> for your language. You can filter the pull requests by the ones with the label for your language. For example, for Spanish, the label is <a href="https://github.com/dymmond/lilya/pulls?q=is%3Aopen+sort%3Aupdated-desc+label%3Alang-es+label%3Aawaiting-review" class="external-link" target="_blank">`lang-es`</a>.
+* Verifique os <a href="https://github.com/dymmond/lilya/pulls" class="external-link" target="_blank">pedidos de pull existentes</a> para o seu idioma. Pode filtrar os pedidos de pull pelas que possuem a etiqueta do seu idioma. Por exemplo, para o espanhol, a etiqueta é <a href="https://github.com/dymmond/lilya/pulls?q=is%3Aopen+sort%3Aupdated-desc+label%3Alang-es+label%3Aawaiting-review" class="external-link" target="_blank">`lang-es`</a>.
 
-* Review those pull requests, requesting changes or approving them. For the languages I don't speak, I'll wait for several others to review the translation before merging.
-
-!!! tip
-    You can <a href="https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/commenting-on-a-pull-request" class="external-link" target="_blank">add comments with change suggestions</a> to existing pull requests.
-
-    Check the docs about <a href="https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-request-reviews" class="external-link" target="_blank">adding a pull request review</a> to approve it or request changes.
-
-* Check if there's a <a href="https://github.com/dymmond/lilya/discussions/categories/translations" class="external-link" target="_blank">GitHub Discussion</a> to coordinate translations for your language. You can subscribe to it, and when there's a new pull request to review, an automatic comment will be added to the discussion.
-
-* If you translate pages, add a single pull request per page translated. That will make it much easier for others to review it.
-
-* To check the 2-letter code for the language you want to translate, you can use the table <a href="https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes" class="external-link" target="_blank">List of ISO 639-1 codes</a>.
-
-#### Existing language
-
-Let's say you want to translate a page for a language that already has translations for some pages, like Spanish.
-
-In the case of Spanish, the 2-letter code is `es`. So, the directory for Spanish translations is located at `docs/es/`.
+* Analise essas solicitações de pull, pedidos alterações ou aprovando-os. Para os idiomas que não falo, aguardarei que outros analisem a tradução antes de fazer o merge.
 
 !!! tip
-    The main ("official") language is English, located at `docs/en/`.
+    Pode <a href="https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/commenting-on-a-pull-request" class="external-link" target="_blank">adicionar comentários com sugestões para alterações</a> a pull requests existentes.
 
-Now run the live server for the docs in Spanish:
+    Consulte a documentação sobre <a href="https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-request-reviews" class="external-link" target="_blank">adicionar uma revisão de pull request</a> para aprová-lo ou solicitar alterações.
+
+* Verifique se existe uma <a href="https://github.com/dymmond/lilya/discussions/categories/translations" class="external-link" target="_blank">Discussão no GitHub</a> para coordenar as traduções para o seu idioma. Pode-se subscrever nela e, quando houver um novo pull request para rever, um comentário automático será adicionado à discussão.
+
+* Se traduzir páginas, adicione num único pull request por página traduzida. Isso facilitará em muito a revisão por parte de outros.
+
+* Para verificar o código de duas letras para o idioma que deseja traduzir, pode utilizar a tabela <a href="https://pt.wikipedia.org/wiki/ISO_639-1" class="external-link" target="_blank">Lista de códigos ISO 639-1</a>.
+
+#### Idioma existente
+
+Vamos supor que quer traduzir uma página para um idioma que já possui traduções para algumas páginas, como o espanhol.
+
+No caso do espanhol, o código de duas letras é `es`. Portanto, a directoria para as traduções em espanhol está localizada em `docs/es/`.
+
+!!! dica
+    A língua principal ("oficial") é o Inglês, localizado em `docs/en/`.
+
+Agora execute o servidor em tempo real para a documentação em espanhol:
 
 ```shell
-// Use the command "live" and pass the language code as a CLI argument
+$ hatch run docs:serve_lang es
+```
+
+```shell
+// Utilize o comando "live" e passe o código do idioma como argumento da linha de comandos
 $ hatch run docs:serve_lang es
 ```
 
 !!! tip
-    Alternatively, you can perform the same steps that scripts does manually.
+    Alternativamente, você pode executar os mesmos passos que o script faz manualmente.
 
-    Go into the language directory, for the Spanish translations it's at `docs/es/`:
+    Acesse a directoria do idioma, para as traduções em espanhol está em `docs/es/`:
 
     ```console
     $ cd docs/es/
     ```
 
-    Then run `mkdocs` in that directory:
+    De seguida, execute o `mkdocs` nessa directoria:
 
     ```console
     $ mkdocs serve --dev-addr 8000
     ```
 
-Now you can go to <a href="http://127.0.0.1:8000" class="external-link" target="_blank">http://127.0.0.1:8000</a> and see your changes live.
 
-You will see that every language has all the pages. But some pages are not translated and have an info box at the top, about the missing translation.
+Agora pode aceder a <a href="http://127.0.0.1:8000" class="external-link" target="_blank">http://127.0.0.1:8000</a> e ver as suas alterações em tempo real.
 
-Now let's say that you want to add a translation for the section [Routing](routing.md){.internal-link target=_blank}.
+Vai verificar que cada idioma tem todas as páginas. No entanto, algumas páginas não estão traduzidas e têm uma caixa de informação no topo, sobre a tradução em falta.
 
-* Copy the file at:
+Agora, suponhamos que deseja adicionar uma tradução para a secção [Routing](routing.md){.internal-link target=_blank}.
+
+* Copie o ficheiro em:
 
 ```
 docs/en/docs/routing/routing.md
 ```
 
-* Paste it in exactly the same location but for the language you want to translate, e.g.:
+* Cole-o exatamente no mesmo local, mas para o idioma que deseja traduzir, por exemplo:
 
 ```
 docs/es/docs/routing/routing.md
 ```
 
 !!! tip
-    Notice that the only change in the path and file name is the language code, from `en` to `es`.
+    Repare que a única alteração no caminho e nome do ficheiro é o código do idioma, de `en` para `es`.
 
-If you go to your browser you will see that now the docs show your new section (the info box at the top is gone). 🎉
+Se aceder ao seu navegador, verá que agora os documentos mostram a sua nova secção (a caixa de informação no topo desapareceu). 🎉
 
-Now you can translate it all and see how it looks as you save the file.
+Agora pode traduzir tudo e ver como fica à medida que guarda o ficheiro.
 
-#### New Language
+#### Novo Idioma
 
-Let's say that you want to add translations for a language that is not yet translated, not even some pages.
+Vamos supor que deseja adicionar traduções para um idioma que ainda não foi traduzido, nem mesmo algumas páginas.
 
-Let's say you want to add translations for Creole, and it's not yet there in the docs.
+Vamos supor que quer adicionar traduções para o Crioulo, que ainda não está presente na documentação.
 
-Checking the link from above, the code for "Creole" is `ht`.
+Verificando o link acima, o código para "Crioulo" é `ht`.
 
-The next step is to run the script to generate a new translation directory:
+O próximo passo é executar o script para gerar uma nova directoria para a tradução:
 
 ```shell
-// Use the command new-lang, pass the language code as a CLI argument
+// Utilize o comando new-lang, passe o código do idioma como argumento da linha de comandos
 $ hatch run docs:new_lang ht
 
 Successfully initialized: docs/ht
 ```
 
-Now you can check in your code editor the newly created directory `docs/ht/`.
+Agora pode verificar no seu editor de código a directoria recém-criada `docs/ht`.
 
-That command created a file `docs/ht/mkdocs.yml` with a simple config that inherits everything from the `en` version:
+O comando criou um ficheiro `docs/ht/mkdocs.yml` com uma configuração simples que herda tudo da versão `en`:
 
 ```yaml
 INHERIT: ../en/mkdocs.yml
@@ -269,38 +268,38 @@ site_dir: '../../site_lang/ht'
 ```
 
 !!! tip
-    You could also simply create that file with those contents manually.
+    Também pode simplesmente criar esse ficheiro com esses conteúdos manualmente.
 
-That command also created a dummy file `docs/ht/index.md` for the main page, you can start by translating that one.
+O comando também criou um ficheiro fictício `docs/ht/index.md` para a página principal, pode começar por traduz esse.
 
-You can continue with the previous instructions for an "Existing Language" for that process.
+Pode continuar com as instruções anteriores para um "Idioma Existente" para esse processo.
 
-You can make the first pull request with those two files, `docs/ht/mkdocs.yml` and `docs/ht/index.md`. 🎉
+Pode fazer o primeiro pull request com esses dois ficheiros, `docs/ht/mkdocs.yml` e `docs/ht/index.md`. 🎉
 
-#### Preview the result
+#### Visualizar o resultado
 
-As already mentioned above, you can use the `./scripts/docs.py` with the `live` command to preview the results (or `mkdocs serve`).
+Como já mencionado anteriormente, pode utilizar o `./scripts/docs.py` com o comando `live` para visualizar os resultados (ou `mkdocs serve`).
 
-Once you are done, you can also test it all as it would look online, including all the other languages.
+Quando terminar, também pode testar tudo como se estivesse online, incluindo todos os outros idiomas.
 
-To do that, first build all the docs:
-
+Para fazer isso, primeiro construa toda a documentação:
 
 ```shell
-// Use the command "build-all", this will take a bit
+// Utilize o comando "build-all", isto vai demorar um pouco
 $ hatch run docs:build
 ```
+Também é possível recolher documentação para uma língua
 
-You can also collect documentation for one language
 
 ```shell
-// Use the command "build-lang", this will take a bit
+// Utilize o comando "build-lang", isto vai demorar um pouco
 $ hatch run docs:build_lang your_lang
 ```
 
-This builds all those independent MkDocs sites for each language, combines them, and generates the final output at `./site_lang/`.
+Isto constrói todos os sites independentes do MkDocs para cada idioma, combina-os e gera um *ouput* final localizado em `./site_lang/`.
 
-Then you can serve that with the command `serve`:
+De seguida, pode servir tudo com o comando `serve`:
+
 
 ```shell
 // Use the command "dev" after running "build-all" or "build-lang -l your_lang"
@@ -312,55 +311,54 @@ Make sure you run the build-all command first.
 Serving at: http://127.0.0.1:8000
 ```
 
-## Building Lilya
+## Construir o Lilya
 
-To build a package locally, run:
+Para construir um pacote localmente, execute:
 
 ```shell
 $ hatch build
 ```
 
-Alternatively running:
+Alternativamente, execute:
 
-```
+```shell
 $ hatch shell
 ```
 
-It will install the requirements and create a local build in your virtual environment.
+Vai instalar os requisitos e criar um *build* local no seu ambiente virtual.
 
-## Releasing
+## Lançamento
 
-*This section is for the maintainers of `Lilya`*.
+*Esta secção destina-se aos maintainers do `Lilya`*.
 
-### Building the Lilya for release
+### Construir o Lilya para publicação
 
-Before releasing a new package into production some considerations need to be taken into account.
+Antes de publicar um novo pacote em produção, algumas considerações precisam ser levadas em conta.
 
-* **Changelog**
-    * Like many projects, we follow the format from [keepchangelog](https://keepachangelog.com/en/1.0.0/).
-    * [Compare](https://github.com/dymmond/lilya/compare/) `main` with the release tag and list of the entries
-that are of interest to the users of the framework.
-        * What **must** go in the changelog? added, changed, removed or deprecated features and the bug fixes.
-        * What is **should not go** in the changelog? Documentation changes, tests or anything not specified in the
-point above.
-        * Make sure the order of the entries are sorted by importance.
-        * Keep it simple.
+* **Registo de Alterações**
+    * Tal como muitos projetos, seguimos o formato do [keepchangelog](https://keepachangelog.com/en/1.0.0/).
+    * [Comparar](https://github.com/dymmond/lilya/compare/) `main` com a tag de lançamento e listar as entradas
+que são de interesse para os utilizadores da framework.
+        * O que **deve** constar no registo de alterações? Funcionalidades adicionadas, alteradas, removidas ou depreciadas e correções de bugs.
+        * O que **não deve** constar no registo de alterações? Alterações na documentação, testes ou qualquer coisa não especificada no ponto acima.
+        * Certifique-se de que a ordem das entradas está ordenada por importância.
+        * Mantenha-o simples.
 
-* *Version bump*
-    * The version should be in `__init__.py` of the main package.
+* *Aumento de Versão*
+    * A versão deve estar em `__init__.py` do pacote principal.
 
-#### Releasing
+#### Publicação
 
-Once the `release` PR is merged, create a new [release](https://github.com/dymmond/lilya/releases/new)
-that includes:
+Depois de o PR de `release` ter sido *merged*, crie uma nova [publicação](https://github.com/dymmond/lilya/releases/new)
+que inclua:
 
-Example:
+Exemplo:
 
-There will be a release of the version `0.2.3`, this is what it should include.
+Haverá uma publicação da versão `0.2.3`, isto é o que deve incluir.
 
-* Release title: `Version 0.2.3`.
+* Título da publicação: `Version 0.2.3` (sempre em inglês).
 * Tag: `0.2.3`.
-* The description should be copied from the changelog.
+* A descrição deve ser copiada do changelog e novamente, em inglês.
 
-Once the release is created, it should automatically upload the new version to PyPI. If something
-does not work with PyPI the release can be done by running `scripts/release`.
+Depois de criar a publicação, ela deve fazer o upload automático da nova versão para o PyPI. Se algo
+não funcionar com o PyPI, o lançamento pode ser feito executando `scripts/release`.

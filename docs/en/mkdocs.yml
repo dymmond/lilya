@@ -3,7 +3,6 @@ site_description: The ASGI toolkit that delivers.
 site_url: https://lilya.dev
 theme:
   name: material
-  custom_dir: ../en/overrides
   language: en
   palette:
   - scheme: default
@@ -68,41 +67,45 @@ plugins:
           show_symbol_type_heading: true
           show_symbol_type_toc: true
 nav:
-- Introduction: index.md
-- Lilya:
-  - Applications: applications.md
-  - Settings: settings.md
-  - Routing: routing.md
-  - Controllers: controllers.md
-  - Requests: requests.md
-  - Responses: responses.md
-  - WebSockets: websockets.md
-  - Context: context.md
+- index.md
+- Resources:
+  - resources/index.md
+  - applications.md
+  - settings.md
+  - routing.md
+  - controllers.md
+  - requests.md
+  - responses.md
+  - websockets.md
+  - context.md
 - Features:
-  - Tasks: tasks.md
-  - Lifespan: lifespan.md
-  - Middleware: middleware.md
-  - Permissions: permissions.md
-  - Static Files: static-files.md
-  - Templates: templates.md
-  - Server Push: server-push.md
-  - Exceptions & Exception Handlers: exceptions.md
-  - WSGI Frameworks: wsgi.md
-  - Environments: environments.md
+  - features/index.md
+  - tasks.md
+  - lifespan.md
+  - middleware.md
+  - permissions.md
+  - static-files.md
+  - templates.md
+  - server-push.md
+  - exceptions.md
+  - wsgi.md
+  - environments.md
 - Clients:
+  - clients/index.md
   - Lilya Client:
-    - Intro: lilya-cli.md
-    - Application Discovery: directives/discovery.md
-    - Directives: directives/directives.md
-    - Custom Directives: directives/custom-directives.md
-    - Shell: directives/shell.md
-  - Test Client: test-client.md
+    - lilya-cli.md
+    - directives/discovery.md
+    - directives/directives.md
+    - directives/custom-directives.md
+    - directives/shell.md
+  - test-client.md
 - Deployment:
-  - Intro: deployment/intro.md
-  - Using docker: deployment/docker.md
-- Contributing: contributing.md
-- Sponsorship: sponsorship.md
-- Release Notes: release-notes.md
+  - deployment/index.md
+  - intro.md
+  - docker.md
+- contributing.md
+- sponsorship.md
+- release-notes.md
 markdown_extensions:
 - toc:
     permalink: true
@@ -122,3 +125,5 @@ extra:
     name: en - English
   - link: /pt/
     name: pt - português
+hooks:
+- ../../scripts/hooks.py

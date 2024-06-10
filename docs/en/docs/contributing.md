@@ -4,9 +4,9 @@ Thank you for showing interes in contributing to Lilya. There are many ways you 
 project.
 
 * Try Lilya and [report bugs and issues](https://github.com/dymmond/lilya/issues/new) you find.
-* [Implement new features](https://github.com/dymmond/lilya/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
-* Help othes by [reviewing pull requests](https://github.com/dymmond/lilya/pulls)
-* Help writting documentation
+* [Implement new features](https://github.com/dymmond/lilya/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
+* Help othes by [reviewing pull requests](https://github.com/dymmond/lilya/pulls).
+* Help writting documentation.
 * Use the discussions and actively participate on them.
 * Become an contributor by helping Lilya growing and spread the words across small, medium, large or any company
 size.

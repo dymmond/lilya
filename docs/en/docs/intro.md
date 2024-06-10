@@ -1,4 +1,4 @@
-# Introduction
+# Deployment
 
 Deploying an **Lilya** application is relatively easy.
 
