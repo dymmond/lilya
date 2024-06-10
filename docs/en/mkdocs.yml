@@ -3,7 +3,7 @@ site_description: The ASGI toolkit that delivers.
 site_url: https://lilya.dev
 theme:
   name: material
-  custom_dir: docs/overrides
+  custom_dir: ../en/overrides
   language: en
   palette:
   - scheme: default
@@ -120,3 +120,5 @@ extra:
   alternate:
   - link: /
     name: en - English
+  - link: /pt/
+    name: pt - português
