@@ -1,33 +1,29 @@
-# Lilya Client
+# Cliente Lilya
 
-Lilya comes with an **optional** internal client that offers some niceties for when you are
-in development mode or even when you want to run some custom *scripts* live with the use of
-[directives](./directives/directives.md).
+Lilya traz um cliente interno **opcional** que oferece algumas facilidades quando está em desenvolvimento
+ou até mesmo quando deseja executar alguns *scripts* personalizados com a utilização de [diretivas](./directives/directives.md).
 
-Directives are special pieces of code and logic that can be executed in any environment and in
-isolation. See it as come sort of command center.
+Diretivas são pedaços especiais de código e lógica que podem ser executados em qualquer ambiente e de forma isolada. Veja como uma espécie de centro de comando.
 
-Since **Lilya client is optional**, that also means to use it **you will need to install** the
-requirements.
+Como o **cliente Lilya é opcional**, isso também significa que para usá-lo **precisa de instalar** os requisitos.
 
 ```shell
 $ pip install lilya[cli]
 ```
 
-Lilya uses the `click` library for its own purposes.
+Lilya utiliza a biblioteca `click` como suporte.
 
-## How does it work
+## Como funciona
 
-Well, like any normal Python client, to access the best way of seeing what options are available
-to you is by running:
+Bem, como qualquer cliente Python normal, a melhor maneira de ver quais opções estão disponíveis é executar:
 
 ```shell
 $ lilya --help
 ```
 
-This display the internal directives that **every Lilya project has access to**.
+Isso mostrará as diretivas internas às quais **todos projetos Lilya têm acesso**.
 
-When running, it should display a message similar to this following:
+Ao executar, deve mostrar uma mensagem parecida com a seguinte:
 
 ```shell
 Usage: lilya [OPTIONS] COMMAND [ARGS]...
@@ -47,7 +43,7 @@ Usage: lilya [OPTIONS] COMMAND [ARGS]...
 
 Options:
   --app TEXT  Module path to the application to generate the migrations. In a
-              module:path formatyping.
+              module:path format.
   --n TEXT    The directive name to run.
   --help      Show this message and exit.
 
@@ -62,10 +58,9 @@ Commands:
   show_urls         Shows the information regarding the urls of a given...
 ```
 
-The `commands` are the simple commands you can use with the client. To access the options of
-each `command` you only need to do:
+Os `commands` são simples comandos que pode utilizar para interagir com o cliente. Para aceder as opções de cada `command` so precisa de:
 
-**Example**
+**Exemplo**
 
 ```shell
 Usage: lilya createproject [OPTIONS] NAME
@@ -86,5 +81,4 @@ Options:
   --help                         Show this message and exit.
 ```
 
-Check how you can leverage the [directives](./directives/directives.md) of Lilya to power your
-application.
+Veja como tirar proveito das [diretivas](./directives/directives.md) do Lilya.

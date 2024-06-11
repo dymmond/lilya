@@ -1,25 +1,20 @@
 # Middleware
 
-Lilya includes several middleware classes unique to the application but also allowing some other ways of designing
-them by using `protocols`.
+O Lilya inclui vários middlewares exclusivos da aplicação, mas também permite algumas maneiras de os criar utilizando `protocolos`.
 
-## Lilya middleware
+## Middleware Lilya
 
-The Lilya middleware is the classic already available way of declaring the middleware within an **Lilya**
-application.
+O middleware Lilya é a maneira clássica já disponível de declarar o middleware dentro de uma aplicação **Lilya**.
 
 ```python
 {!> ../../../docs_src/middleware/lilya_middleware.py !}
 ```
 
-## Lilya protocols
+## Protocolos Lilya
 
-Lilya protocols are not too different from the [Lilya middleware](#lilya-middleware). In fact,
-the name itself happens only because of the use of the
-<a href="https://peps.python.org/pep-0544/" target="_blank">python protocols</a>
-which forces a certain structure to happen.
+Os protocolos Lilya não são muito diferentes do [middleware Lilya](#middleware-lilya). Na verdade, o nome em si só existe por causa do uso dos [protocolos Python](https://peps.python.org/pep-0544/), que forçam uma certa estrutura.
 
-When designing a middleware, you can inherit and subclass the **MiddlewareProtocol** provided by Lilya.
+Ao criar um middleware, pode herdar o **MiddlewareProtocol** fornecido pelo Lilya.
 
 ```python
 {!> ../../../docs_src/middleware/protocols.py !}
@@ -27,53 +22,48 @@ When designing a middleware, you can inherit and subclass the **MiddlewareProtoc
 
 ### MiddlewareProtocol
 
-For those coming from a more enforced typed language like Java or C#, a protocol is the python equivalent to an
-interface.
+Para aqueles que estão habituados a linguagens de programação com forte enfase no *static typing*, como Java ou C#, um protocolo é o equivalente em Python a uma interface.
 
-The `MiddlewareProtocol` is simply an interface to build middlewares for **Lilya** by enforcing the implementation of
-the `__init__` and the `async def __call__`.
+O `MiddlewareProtocol` é simplesmente uma interface para construir middlewares para o **Lilya**, forçando a implementação dos métodos `__init__` e `async def __call__`.
 
-Enforcing this protocol also aligns with writing a [Pure ASGI Middleware](#pure-asgi-middleware).
+O uso desse protocolo também está alinhado com a criação de um [Middleware ASGI Puro](#middleware-asgi-puro).
 
-### Quick sample
+### Exemplo rápido
 
 ```python
 {!> ../../../docs_src/middleware/sample.py !}
 ```
 
-## Middleware and the application
+## Middleware e a aplicação
 
-Creating this type of middlewares will make sure the protocols are followed and therefore reducing development errors
-by removing common mistakes.
+A criação deste tipo de middleware garantirá que os protocolos sejam seguidos, reduzindo assim erros de desenvolvimento ao remover erros comuns.
 
-To add middlewares to the application is very simple.
+Para adicionar middlewares à aplicação é muito simples.
 
-=== "Application level"
+=== "Nível da aplicação"
 
     ```python
     {!> ../../../docs_src/middleware/adding_middleware.py !}
     ```
 
-=== "Any other level"
+=== "Qualquer outro nível"
 
     ```python
     {!> ../../../docs_src/middleware/any_other_level.py !}
     ```
 
-### Quick note
+### Nota rápida
 
 !!! Info
-    The middleware is not limited to `Lilya`, `ChildLilya`, `Include` and `Path`.
-    We simply choose `Path` as it looks simpler to read and understand.
+    O middleware não se limita ao `Lilya`, `ChildLilya`, `Include` e `Path`. Apenas foi escolhido o `Path` porque é mais simples de ler e perceber.
 
-## Pure ASGI Middleware
+## Middleware ASGI Puro
 
-Lilya follows the [ASGI spec](https://asgi.readthedocs.io/en/latest/).
-This capability allows for the implementation of ASGI middleware using the
-ASGI interface directly. This involves creating a chain of ASGI applications that call into the next one.
-Notably, this approach mirrors the implementation of middleware classes shipped with Lilya.
+O Lilya segue a especificação do [ASGI](https://asgi.readthedocs.io/en/latest/). Essa capacidade permite a implementação de middlewares ASGI utilizando a interface ASGI diretamente. Isso envolve a criação de uma cadeia de aplicações ASGI que chamam o seguinte.
 
-**Example of the most common approach**
+A abordagem espelha a implementação das classes middleware fornecidas pelo Lilya.
+
+**Exemplo da abordagem mais comum**
 
 ```python
 from lilya.types import ASGIApp, Scope, Receive, Send
@@ -87,29 +77,29 @@ class MyMiddleware:
         await self.app(scope, receive, send)
 ```
 
-When implementing a Pure ASGI middleware, it is like implementing an ASGI application, the first
-parameter **should always be an app** and the `__call__` should **always return the app**.
+Ao implementar um middleware ASGI Puro, é como implementar uma aplicação ASGI, o primeiro parâmetro **deve ser sempre uma aplicação**
+e o método `__call__` **deve retornar sempre a aplicação**.
 
 ## BaseAuthMiddleware
 
-This is a very special middleware and helps with any authentication middleware that can be used within
-an **Lilya** application but like everything else, you can design your own.
+Este é um middleware muito especial e ajuda qualquer middleware relacionado com autenticação que pode ser usado numa aplicação **Lilya**,
+mas, como tudo, também pode criar o seu próprio e ignorar isto.
 
-`BaseAuthMiddleware` is also a protocol that simply enforces the implementation of the `authenticate` method and
-assigning the result object into a `AuthResult` and make it available on every request.
+`BaseAuthMiddleware` é também um protocolo que simplesmente força a implementação do método `authenticate` e atribui o objeto de resultado a um `AuthResult`
+para torná-lo disponível em cada pedido.
 
-### Example of a JWT middleware class
+### Exemplo de uma classe de middleware JWT
 
 ```python title='/src/middleware/jwt.py'
 {!> ../../../docs_src/middleware/auth_middleware_example.py !}
 ```
 
-1. Import the `BaseAuthMiddleware` and `AuthResult` from `lilya.middleware.authentication`.
-2. Implement the `authenticate` and assign the `user` result to the `AuthResult`.
+1. Importe o `BaseAuthMiddleware` e `AuthResult` de `lilya.middleware.authentication`.
+2. Implemente o método `authenticate` e atribua o resultado `user` ao `AuthResult`.
 
-#### Import the middleware into a Lilya application
+#### Importe o middleware numa aplicação Lilya
 
-=== "From the application instance"
+=== "A partir da instância da aplicação"
 
     ```python
     from lilya import Lilya
@@ -120,7 +110,7 @@ assigning the result object into a `AuthResult` and make it available on every r
     app = Lilya(routes=[...], middleware=[DefineMiddleware(JWTAuthMiddleware)])
     ```
 
-=== "From the settings"
+=== "A partir das definições"
 
     ```python
     from dataclasses import dataclass
@@ -140,26 +130,23 @@ assigning the result object into a `AuthResult` and make it available on every r
                 DefineMiddleware(JWTAuthMiddleware)
             ]
 
-    # load the settings via LILYA_SETTINGS_MODULE=src.configs.live.AppSettings
+    # carregue as definições via LILYA_SETTINGS_MODULE=src.configs.live.AppSettings
     app = Lilya(routes=[...])
     ```
 
 !!! Tip
-    To know more about loading the settings and the available properties, have a look at the
-    [settings](./settings.md) docs.
+    Para saber mais sobre como carregar as definições e as propriedades disponíveis, consulte a documentação das [definições](./settings.md).
 
-## Middleware and the settings
+## Middleware e as definições
 
-One of the advantages of Lilya is leveraging the settings to make the codebase tidy, clean and easy to maintain.
-As mentioned in the [settings](./settings.md) document, the middleware is one of the properties available
-to use to start a Lilya application.
+Uma das vantagens do Lilya é aproveitar as definições para tornar o código organizado, limpo e fácil de manter.
+Conforme mencionado no documento de [definições](./settings.md), o middleware é uma das propriedades disponíveis para iniciar uma aplicação Lilya.
 
 ```python title='src/configs/live.py'
 {!> ../../../docs_src/middleware/settings.py !}
 ```
 
-**Start the application with the new settings**
-
+**Inicie a aplicação com as novas definições**
 
 ```shell
 LILYA_SETTINGS_MODULE=configs.live.AppSettings uvicorn src:app
@@ -171,31 +158,28 @@ INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 ```
 
-!!! attention
-    If `LILYA_SETTINGS_MODULE` is not specified as the module to be loaded, **Lilya** will load the default settings
-    but your middleware will not be initialized.
+!!! Warning
+    Se o `LILYA_SETTINGS_MODULE` não for especificado como o módulo a ser carregado, o **Lilya** carregará as definições padrão,
+    mas o seu middleware não será inicializado.
 
-### Important
+### Importante
 
-If you need to specify parameters in your middleware then you will need to wrap it in a
-`lilya.middleware.DefineMiddleware` object to do it so. See `GZipMiddleware` [example](#middleware-and-the-settings).
+Se precisar especificar parâmetros no seu middleware, será necessário encapsulá-lo num objeto `lilya.middleware.DefineMiddleware`.
+Veja o exemplo do `GZipMiddleware` [aqui](#middleware-e-as-definições).
 
-## Available middlewares
+## Middlewares disponíveis
 
-* `CSRFMiddleware` - Handles with the CSRF.
-* `CORSMiddleware` - Handles with the CORS.
-* `TrustedHostMiddleware` - Handles with the CORS if a given `allowed_hosts` is populated.
-* `GZipMiddleware` - Compression middleware `gzip`.
-* `HTTPSRedirectMiddleware` - Middleware that handles HTTPS redirects for your application. Very useful to be used
-for production or production like environments.
-* `SessionMiddleware` - Middleware that handles the sessions.
-* `WSGIMiddleware` - Allows to connect WSGI applications and run them inside Lilya. A [great example](./wsgi.md)
-how to use it is available.
+* `CSRFMiddleware` - Lida com CSRF.
+* `CORSMiddleware` - Lida com CORS.
+* `TrustedHostMiddleware` - Lida com CORS se um `allowed_hosts` específico estiver definido.
+* `GZipMiddleware` - Middleware de compressão `gzip`.
+* `HTTPSRedirectMiddleware` - Middleware que lida com redirecionamentos HTTPS para a sua aplicação. Muito útil para uso em ambientes de produção ou semelhantes a produção.
+* `SessionMiddleware` - Middleware que lida com sessões.
+* `WSGIMiddleware` - Permite conectar aplicações WSGI e executá-los dentro do Lilya. Um [ótimo exemplo](./wsgi.md) de como usá-lo está disponível.
 
 ### CSRFMiddleware
 
-The default parameters used by the CSRFMiddleware implementation are restrictive by default and Lilya allows some
-ways of using this middleware depending of the taste.
+Os parâmetros padrão usados na implementação do CSRFMiddleware são restritivos por defeito e o Lilya permite algumas maneiras de usar esse middleware, dependendo das preferências.
 
 ```python
 {!> ../../../docs_src/middleware/available/csrf.py !}
@@ -203,8 +187,7 @@ ways of using this middleware depending of the taste.
 
 ### CORSMiddleware
 
-The default parameters used by the CORSMiddleware implementation are restrictive by default and Lilya allows some
-ways of using this middleware depending of the taste.
+Os parâmetros padrão usados na implementação do CORSMiddleware são restritivos por defeito e o Lilya permite algumas maneiras de usar esse middleware, dependendo das preferências.
 
 ```python
 {!> ../../../docs_src/middleware/available/cors.py !}
@@ -212,7 +195,7 @@ ways of using this middleware depending of the taste.
 
 ### SessionMiddleware
 
-Adds signed cookie-based HTTP sessions. Session information is readable but not modifiable.
+Adiciona sessões HTTP baseadas em cookies assinados. As informações da sessão são legíveis, mas não modificáveis.
 
 ```python
 {!> ../../../docs_src/middleware/available/sessions.py !}
@@ -220,8 +203,7 @@ Adds signed cookie-based HTTP sessions. Session information is readable but not 
 
 ### HTTPSRedirectMiddleware
 
-Enforces that all incoming requests must either be https or wss. Any http os ws will be redirected to
-the secure schemes instead.
+Garante que todos os pedidos recebidas devem ser https ou wss. Qualquer pedido http ou ws será redirecionado para o formato seguro correspondente.
 
 ```python
 {!> ../../../docs_src/middleware/available/https.py !}
@@ -229,7 +211,7 @@ the secure schemes instead.
 
 ### TrustedHostMiddleware
 
-Enforces all requests to have a correct set `Host` header in order to protect against heost header attacks.
+Exige que todos os pedidos tenham um cabeçalho `Host` corretamente definido para proteção contra ataques *host header*.
 
 ```python
 {!> ../../../docs_src/middleware/available/trusted_hosts.py !}
@@ -237,7 +219,7 @@ Enforces all requests to have a correct set `Host` header in order to protect ag
 
 ### GZipMiddleware
 
-It handles GZip responses for any request that includes "gzip" in the Accept-Encoding header.
+Lida com respostas GZip para qualquer pedido que inclua "gzip" no cabeçalho Accept-Encoding.
 
 ```python
 {!> ../../../docs_src/middleware/available/gzip.py !}
@@ -245,57 +227,52 @@ It handles GZip responses for any request that includes "gzip" in the Accept-Enc
 
 ### WSGIMiddleware
 
-A middleware class in charge of converting a WSGI application into an ASGI one. There are some more examples
-in the [WSGI Frameworks](./wsgi.md) section.
+Uma classe de middleware responsável por converter uma aplicação WSGI numa aplicação ASGI. Existem mais exemplos na secção [Frameworks WSGI](./wsgi.md).
 
 ```python
 {!> ../../../docs_src/middleware/available/wsgi.py !}
 ```
 
-The `WSGIMiddleware` also allows to pass the `app` as a string `<dotted>.<path>` and this can make it
-easier for code organisation.
+O `WSGIMiddleware` também permite passar a `app` como uma string `<dotted>.<path>`, o que pode facilitar a organização do código.
 
-Let us assume the previous example of the `flask` app was inside `myapp/asgi_or_wsgi/apps`. Like this:
+Vamos supor que o exemplo anterior da aplicação `flask` estivesse dentro da `myapp/asgi_or_wsgi/apps`. Ficaria desta forma:
 
 ```python
 {!> ../../../docs_src/middleware/available/wsgi_str.py !}
 ```
 
-To call it inside the middleware is as simple as;
+Para chamá-lo dentro do middleware é tão simples quanto isto:
 
 ```python
 {!> ../../../docs_src/middleware/available/wsgi_import.py !}
 ```
 
-### Other middlewares
+### Outros middlewares
 
-You can build your own middlewares as explained above but also reuse middlewares directly for any other ASGI application if you wish.
-If the middlewares follow the [pure asgi](#pure-asgi-middleware) then the middlewares are 100% compatible.
+Pode desenhar os seus próprios middlewares conforme explicado acima, mas também reutilizar middlewares diretamente para qualquer outra aplicação ASGI, se assim o desejar.
+Se os middlewares seguirem a abordagem do [ASGI puro](#middleware-asgi-puro), eles serão 100% compatíveis.
 
 #### <a href="https://github.com/abersheeran/asgi-ratelimit">RateLimitMiddleware</a>
 
-A ASGI Middleware to rate limit and highly customizable.
+Um Middleware ASGI para limitar a taxa de pedidos e altamente personalizável.
 
 #### <a href="https://github.com/snok/asgi-correlation-id">CorrelationIdMiddleware</a>
 
-A middleware class for reading/generating request IDs and attaching them to application logs.
+Uma classe de middleware para ler/gerar IDs de pedido e anexá-los aos logs da aplicação.
 
 !!! Tip
-    For Lilya apps, just substitute FastAPI with Lilya in the examples given or implement
-    in the way Lilya shows in this document.
+    Para aplicações Lilya, substitua FastAPI por Lilya nos exemplos fornecidos ou implemente da maneira mostrada neste documento.
 
 #### <a href="https://github.com/steinnes/timing-asgi">TimingMiddleware</a>
 
-ASGI middleware to record and emit timing metrics (to something like statsd).
-This integration works using [EsmeraldTimming](https://github.com/dymmond/esmerald-timing).
+Middleware ASGI para registrar e emitir métricas de tempo (para algo como statsd).
 
+## Pontos importantes
 
-## Important points
-
-1. Lilya supports [Lilya middleware](#lilya-middleware) ([MiddlewareProtocol](#lilya-protocols)).
-2. A `MiddlewareProtocol` is simply an interface that enforces `__init__` and `async __call__` to be implemented.
-3. `app` is required parameter from any class inheriting from the `MiddlewareProtocol`.
-4. [Pure ASGI Middleware](#pure-asgi-middleware) is encouraged and the `MiddlewareProtocol` enforces that.
-1. Middleware classes can be added to any [layer of the application](#quick-note)
-2. All authentication middlewares must inherit from the BaseAuthMiddleware.
-3. You can load the **application middleware** in different ways.
+1. O Lilya oferece suporte ao [middleware Lilya](#middleware-lilya) ([MiddlewareProtocol](#protocolos-lilya)).
+2. `MiddlewareProtocol` é simplesmente uma interface que exige a implementação do `__init__` e `async __call__`.
+3. `app` é um parâmetro obrigatório para qualquer classe que herda do `MiddlewareProtocol`.
+4. É encorajado o uso de [Middleware ASGI Puro](#middleware-asgi-puro) e o `MiddlewareProtocol` exige isso.
+1. As classes middleware podem ser adicionadas em qualquer [camada da aplicação](#nota-rápida).
+2. Todos os middlewares de autenticação devem herdar do BaseAuthMiddleware.
+3. Pode carregar o **middleware da aplicação** de diferentes maneiras.

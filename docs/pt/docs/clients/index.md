@@ -1,4 +1,4 @@
-# Clients
+# Clientes
 
-Lilya has comes with [Directives](../directives/directives.md), a [test client](../test-client.md) and a
-[native client](../lilya-cli.md) powered by click.
+Lilya vem com [Diretivas](../directives/directives.md), um [cliente de teste](../test-client.md) e um
+[cliente nativo](../lilya-cli.md) com suporte do click.

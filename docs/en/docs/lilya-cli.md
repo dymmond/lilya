@@ -47,7 +47,7 @@ Usage: lilya [OPTIONS] COMMAND [ARGS]...
 
 Options:
   --app TEXT  Module path to the application to generate the migrations. In a
-              module:path formatyping.
+              module:path format.
   --n TEXT    The directive name to run.
   --help      Show this message and exit.
 

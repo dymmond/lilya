@@ -98,7 +98,7 @@ class DirectiveGroup(click.Group):
 @click.option(
     APP_PARAMETER,
     "path",
-    help="Module path to the application to generate the migrations. In a module:path formatyping.",
+    help="Module path to the application to generate the migrations. In a module:path format.",
 )
 @click.option("--n", "name", help="The directive name to run.")
 @click.pass_context
