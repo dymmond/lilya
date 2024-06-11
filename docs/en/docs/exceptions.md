@@ -7,7 +7,7 @@ Exception handlers are, as the name suggests, the handlers in case an exception 
 In every level the `exception_handler` parameter (among others) are available to be used and handle specific exeptions
 raised on each level.
 
-The exception handlers are read a python dictionary and you can pass the key as the exception itself or the `status_code`
+The exception handlers are in read a python dictionary and you can pass the key as the exception itself or the `status_code`
 that will always use the exception itself.
 
 ```python

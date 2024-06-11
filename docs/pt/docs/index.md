@@ -108,7 +108,7 @@ O Lilya também utiliza um [sistema de configurações nativo](./settings.md), o
 
 Bem, o Lilya faz muita magia interna por si. Se não declarar um `request`, não há problema, ela só será passada se estiver presente.
 
-Se tiver o parâmetro de caminho declarado na função também, o Lilya automaticamente procurará os parâmetros declarados e comparará com os parâmetros de caminho declarados no `Path` e os injetará para si.
+Se tiver o parâmetro de caminho declarado na função também, o Lilya automaticamente procurará os parâmetros declarados e comparará com os parâmetros de caminho declarados no `Path` e os injetará por si.
 
 Porreiro, não é? Isto é apenas a ponta do iceberg.
 

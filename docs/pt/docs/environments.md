@@ -1,42 +1,38 @@
-# Environments
+# Ambientes
 
-In a lot of projects, if not all of them, the environment variables are used for deployments
-or to simply not to expose the secrets in the codebase.
+Em muitos projetos, se não todos, as variáveis de ambiente são utilizadas para *deployments* ou para simplemente não
+expor qualquer informação secreta do código-fonte.
 
-There are many libraries you can use to make your life esier like `load_env`, for example.
+Existem muitas bibliotecas que pode utilizar para facilitar sua vida, como `load_env`, por exemplo.
 
-Although these libraries are powerful, they might lack in simplicity of use and to help you with
-that, Lilya is shipped with a `EnvironLoader` functionality.
+Embora essas bibliotecas sejam poderosas, elas podem ser carentes em simplicidade de utilização.
+Para ajudá-lo com isso, o Lilya fornece a funcionalidade `EnvironLoader`.
 
 ```python
 from lilya.environments import EnvironLoader
 ```
 
-## The `EnvironLoader`
+## O `EnvironLoader`
+# Ambientes
 
-This object is simply a wrapper on top of the already used [multidict](https://multidict.aio-libs.org/en/stable/)
-which does a lot of magic for us.
+Neste caso, este objeto é apenas um invólucro em cima do [multidict](https://multidict.aio-libs.org/en/stable/), que faz muita magia por nós.
 
-The purpose of the `EnvironLoader` is to make the process of loading and parsing simpler and direct
-for you without extra complications.
+O objetivo do `EnvironLoader` é tornar o processo de carregamento e análise mais simples e direto, sem complicações extras.
 
-## How to use it
+## Como utilizar
 
-The configurations of the application should be stored inside environment variables, for example,
-inside an `.env` file.
+As configurações da aplicação devem ser armazenadas em variáveis de ambiente, por exemplo, dentro de um ficheiro `.env`.
 
-A good example of this practice is the access to a specific database, you don't want to hard code
-the credentials directly!
+Um bom exemplo dessa prática é o acesso a uma base de dados específica onde não quer codificar as credenciais diretamente!
 
-**The `EnvironLoader` reads from the `.env` as well as from the system environments. See the [order of priority](#order-of-priority) for more details.**
+**O `EnvironLoader` lê tanto do ficheiro `.env` quanto das variáveis de ambiente do sistema. Consulte a [ordem de prioridade](#order-of-priority) para mais detalhes.**
 
-There are two ways of using the `EnvironLoader`.
+Existem duas formas de utilizar o `EnvironLoader`.
 
-* Via [`env()`](#via-env).
-* Via [direct access](#via-direct-access).
+* Através do [`env()`](#via-env).
+* Através do acesso direto.
 
-Let us assume we have an `.env` file containing the following values and store them in a [settings](./settings.md)
-object specific from Lilya.
+Vamos supor que temos um ficheiro `.env` que contém os seguintes valores e onde estão declarados num [settings](./settings.md) específico do Lilya.
 
 ```shell title=".env"
 DATABASE_NAME=mydb
@@ -47,37 +43,35 @@ DATABASE_PORT=5432
 API_KEY=XXXXX
 ```
 
-Let us see how we can use both approaches to extract the values.
+Vamos ver como podemos usar ambas as abordagens para extrair os valores.
 
 ### Via `env()`
 
-For those familiar with external libraries, this way follows the same principle. Very easy to understand and use.
+Para aqueles familiarizados com bibliotecas externas, este método segue o mesmo princípio. Muito fácil de perceber e usar.
 
 ```python
 {!> ../../../docs_src/environments/normal.py!}
 ```
 
-### Via direct access
+### Via Acesso direto
 
-With direct access is pretty much the same but without calling the `env()` function.
+Com o acesso direto é praticamente a mesma coisa, mas sem chamar a função `env()`.
 
 ```python
 {!> ../../../docs_src/environments/normal.py!}
 ```
+## Ordem de prioridade
 
-## Order of priority
+Existe uma ordem de prioridade na forma como o [EnvironLoader](#o-environloader) opera e lê os valores:
 
-There is an order of priority in how the [EnvironLoader](#the-environloader) operates and reads the values:
+* A partir de uma variável de ambiente.
+* A partir de um ficheiro `.env` declarado.
+* A partir do valor padrão fornecido no `loader`.
 
-* From an environment variable.
-* From an `.env` file declared.
-* From the default value given in `loader`.
+## Parâmetros
 
-## Parameters
-
-* **env_file** - A string path of the location `.env`.
-* **environ** - Optional dictionary containing specific environment variables. It defaults to
-`os.environ` if nothing is provided.
-* **prefix** - A string `prefix` to be concatenated to all the loaded environment variables.
-* **ignore_case** - Boolean flag indicating if an environment variable can be in lowercase. Defaults
-to false and internally transforms all the lowercase variables into uppercase().
+* **env_file** - Uma string com o caminho do ficheiro `.env`.
+* **environ** - Dicionário opcional que contém variáveis de ambiente específicas. Por defeito, utiliza `os.environ` se nada for fornecido.
+* **prefix** - Uma string `prefix` a ser concatenada em todas as variáveis de ambiente carregadas.
+* **ignore_case** - Sinalizador booleano que indica se uma variável de ambiente pode estar em minúsculas. Por defeito,
+é falso e transforma internamente todas as variáveis em minúsculas em maiúsculas.

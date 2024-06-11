@@ -1,158 +1,146 @@
 # Lifespan
 
-These are extremely common for the cases where you need to define logic that should be execute
-before the application starts and shuts down.
+Estes são extremamente comuns para os casos em que precisa definir a lógica que deve ser executada no início da aplicação e no encerramento.
 
-Before starting means the code (logic) will be executed **once** before starting receiving requests
-and the same is for the shutting down where the logic is also executed **once** after having managed,
-quite possibly, many requests.
+Antes de iniciar significa que o código (lógica) será executado **uma vez** antes de começar a receber pedidos e o mesmo ocorre no encerramento,
+onde a lógica também é executada **uma vez** após ter gerido, muito provavelmente, muitos pedidos.
 
-This can be particularly useful for setting up your application resources and cleaning them up.
-These cycles cover the **whole** application.
+Isso pode ser particularmente útil para configurar os recursos da sua aplicação e limpa-los. Esses ciclos abrangem toda a aplicação.
 
-## Types of events
+## Tipos de eventos
 
-Currently Lilya supports **on_startup**, **on_shutdown** and **lifespan**.
+Atualmente, o Lilya suporta **on_startup**, **on_shutdown** e **lifespan**.
 
-### Lilya on_startup and on_shutdown
+### Lilya on_startup e on_shutdown
 
-If you pass an `on_startup` and an `on_shutdown` parameters intead of the `lifespan`, Lilya
-will **automatically generate the async context manager** for you and pass it to the `lifespan`
-internally for you.
+Se passar os parâmetros `on_startup` e `on_shutdown` em vez do `lifespan`, o Lilya
+irá **gerar automaticamente o gestor de contexto assíncrono** por si e passá-lo para o `lifespan`
+internamente.
 
-**You can use on_startup/on_shutdown and lifespan but not both at the same time**.
+**Pode utilizar on_startup/on_shutdown e lifespan, mas não ambos ao mesmo tempo**.
 
-!!! Tip
-    The `shutdown` usually happens when you stop the application.
+!!! tip
+    O `shutdown` geralmente ocorre quando você para a aplicação.
 
-### Functions
+### Funções
 
-To define the functions to be used within the events, you can define a `def` or `async def`
-function. Lilya will know what to do with those and handle them for you.
+Para definir as funções a serem usadas nos eventos, pode definir uma função `def` ou `async def`.
+O Lilya saberá o que fazer com elas e as gerirá por si.
 
-## How to use
+## Como utilizar
 
-Using these events is actually pretty much clear and simply. As mentioned before, there are two ways:
+Utilizar esses eventos é bastante simples e claro. Como mencionado anteriormente, existem duas maneiras:
 
-1. Via [on_startup and on-shutdown](#on_startup-and-on_shutdown)
-2. Via [lifespan](#lifespan)
+1. Através do [on_startup e on_shutdown](#on_startup-e-on_shutdown)
+2. Através do [lifespan](#lifespan)
 
-Nothing like a use case to understand this better.
+Nada como um exemplo de utilização para entender melhor.
 
-Let us assume you want to add a database into your application and because this can be costly, you
-also do not want to do it for every request, you then want this on an application level to be done
-**on starting up** and close **on shutting down**.
+Vamos supor que queira adicionar uma base de dados à sua aplicação e, como isso pode ser caro,
+também não quer fazer isso para cada pedido mas sim num nível da aplicacional, ao iniciar e encerrar.
 
-Let us then see how that it would look like using the current available events.
+Vamos ver como é ficaria usando os eventos disponíveis actualmente.
 
-We will be using [Saffier](https://saffier.tarsild.io) as example as it is also supoprted by
-Lilya.
+Vamos utilizar o [Saffier](https://saffier.tarsild.io) como exemplo.
 
-### on_startup and on_shutdown
+### on_startup e on_shutdown
 
-Using the database use case defined above:
+Utilizando o caso de uso da base de dados definida acima:
 
 ```python
 {!> ../../../docs_src/events/start_shutdown.py !}
 ```
-
-As you can see, when the application is starting up, we declared the `database.connect()` to happen
-as well as the `database.disconnect()` on shutting down.
+Como pode ver, quando a aplicação está a iniciar, declaramos a `database.connect()`,
+assim como o `database.disconnect()` ao encerrar.
 
 ### Lifespan
 
-What happens if we use the [example above](#on_startup-and-on_shutdown) and convert it to a
-lifespan event?
+O que acontece se usarmos o [exemplo acima](#on_startup-e-on_shutdown) e o convertermos para um evento do tipo lifespan?
 
-Well, this one although is also very simple, the way is assembled is slighly different.
+Bem, este também é muito simples, mas a forma como é montado é ligeiramente diferente.
 
-To define the *startup* and *shutown* events, you will need a *context manager* to make it happen.
+Para definir os eventos de *início* e *encerramento*, precisa de um *gestor de contexto* para que isso aconteça.
 
-Let us see what does it mean in practical examples by changing the previous one to a `lifespan`.
-
-```python
-{!> ../../../docs_src/events/lifespan.py !}
-```
-
-This is quite something to unwrap here. What is actually happening?
-
-So, before you need to explicitly declare the `on_startup` and `on_shutdown` events in the
-corresponding parameters in the Lilya application but with the `lifespan` you do that in
-**one place only**.
-
-The first part before the `yield` will be executed **before the application starts** and
-the second part after the `yield` will be executed **after the application is finished**.
-
-The `lifespan` function takes an `app: Lilya` as a parameter because is then injected into
-the application and the framework will know what to do with it.
-
-### Async context manager
-
-As you can check, the [lifespan](#lifespan) functiom is decorated with an `@asynccontextmanager`.
-
-This is standard python for using a `decorator` and this one in particular converts the `lifespan`
-function into something called **async context manager**.
+Vamos ver o que isso significa em exemplos práticos, alterando o exemplo anterior para um `lifespan`.
 
 ```python
 {!> ../../../docs_src/events/lifespan.py !}
 ```
 
-In Python, a **context manager** is something that you can use with the `with` keyword. One widely
-used, for example, is with the `open()`.
+Isto é algo bastante complexo de compreender. O que está realmente a acontecer?
+
+Portanto, antes era necessário declarar explicitamente os eventos `on_startup` e `on_shutdown` nos parâmetros correspondentes na aplicação Lilya,
+mas com o `lifespan` isso é feito **apenas num lugar**.
+
+A primeira parte antes do `yield` será executada **antes da aplicação iniciar** e a segunda parte após o `yield` será executada **após a aplicação terminar**.
+
+A função `lifespan` recebe um parâmetro `app: Lilya` porque é injetada na aplicação e a framework saberá o que fazer com ela.
+
+### Gestor de contexto assíncrono
+
+Como pode verificar, a função [lifespan](#lifespan) está decorada com `@asynccontextmanager`.
+
+Isto é *standard* em Python para utilizar um `decorator` e este, em particular, converte a função `lifespan` em algo chamado **gestor de contexto assíncrono**.
+
+```python
+{!> ../../../docs_src/events/lifespan.py !}
+```
+
+Em Python, um **gestor de contexto** é algo que pode usar com a palavra-chave `with`. Um amplamente utilizado, por exemplo, é com o `open()`.
 
 ```python
 with open("file.txt", 'rb') file:
     file.read()
 ```
 
-When a context manager or async context manager is created like the example above, what it does it
-that before entering the `with` it will execute the code **before** the `yield` and when exiting
-the code block, it wille excute the code **after** the `yield`.
+Quando um gestor de contexto ou gestor de contexto assíncrono é criado como o exemplo acima,
+o que acontece é que antes de entrar no `with`, ele executará o código **antes** do `yield` e ao sair do bloco de código,
+ele executará o código **depois** do `yield`.
 
-The lifespan parameter of Lilya takes an **async context manager** which means we can ass our
-new `lifespan` async context manager directly to it.
+O parâmetro lifespan do Lilya aceita um **gestor de contexto assíncrono**,
+o que significa que podemos adicionar nosso novo gestor de contexto assíncrono `lifespan` diretamente.
 
-## Curiosity about async context managers
+## Curiosidade sobre gestores de contexto assíncronos
 
-This section is out of the scope of the lifespan and events of Lilya and it is
-**for curiosity only**. Please see the [lifespan](#lifespan) section as in the case of Lilya,
-the way of **declaring is different** and an `app: Lilya` parameter is **always required**.
+Esta secção está fora do âmbito do ciclo de vida e eventos do Lilya e é **apenas por curiosidade**.
+Por favor, consulte a secção [ciclo de vida](#lifespan) pois, no caso do Lilya, a forma de **declar é diferente**
+e um parâmetro `app: Lilya` é **sempre necessário**.
 
 ### General approach to async context managers
 
-In general when using an async context the principle is the same as a normal context manager with
-the key difference that we use `async` before the `with`.
+Em geral, ao usar um contexto assíncrono, o princípio é o mesmo que um gestor de contexto normal, com a diferença
+principal de que usamos `async` antes do `with`.
 
-Let use see an example still using the [Saffier](https://saffier.tarsild.io) ORM.
+Vamos ver um exemplo ainda usando o ORM [Saffier](https://saffier.tarsild.io).
 
 !!! Warning
-    Again, this is for general purposes, not for the use of the Lilya lifespan. That example
-    how to use it is described in the [lifespan](#lifespan) section.
+    Novamente, isso é para fins gerais, não para o uso do ciclo de vida do Lilya.
+    O exemplo de como usá-lo é descrito na seção [lifespan](#lifespan).
 
-#### Using functions
+#### Utilizando funções
 
 ```python
 {!> ../../../docs_src/events/curiosities/example.py !}
 ```
 
-As you can see, we used the `@asynccontextmanager` to transform our function into an `async`
-context manager and the `yield` is what manages the `enter` and `exit` behaviour.
+Como pode ver, utilizamos o `@asynccontextmanager` para transformar nossa função num gestor de contexto `async` e o `yield`
+é o responsável por gerir o comportamento de entrada e saída.
 
-#### Using Python classes
+#### Utilizando classes em Python
 
-What if we were to build one async context manager with Python classes? Well this is actually
-even better as you can "visually" see and understand the behaviour.
+E se construíssemos um gerenciador de contexto assíncrono com classes em Python?
+Bem, isso é ainda melhor, pois pode "visualmente" ver e perceber o comportamento.
 
-Let us get back to the same example with [Saffier](https://saffier.tarsild.io) ORM.
+Vamos voltar ao mesmo exemplo com o ORM [Saffier](https://saffier.tarsild.io).
 
 ```python
 {!> ../../../docs_src/events/curiosities/classes.py !}
 ```
 
-This example is actually very clear. The `aenter` is the equivalent to what happens before the
-`yield` in our previous example and the `aexit` is what happens after the `yield`.
+Este exemplo é bastante claro. O `aenter` é equivalente ao que acontece antes do `yield` no nosso exemplo anterior
+e o `aexit` é o que acontece após o `yield`.
 
-This time the `@asynccontextmanager` wasn't necessary to decorate the class. The behaviour
-implemented by that is done via `aenter` and `aexit`.
+Desta vez, não foi necessário decorar a classe com `@asynccontextmanager`.
+O comportamento implementado é feito através de `aenter` e `aexit`.
 
-Async context managers can be a powerful tool in your application.
+Os gestores de contexto assíncronos podem ser uma ferramenta poderosa na sua aplicação.

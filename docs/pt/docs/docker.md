@@ -1,52 +1,49 @@
-# Using docker
+# Utilizar o docker
 
-What is docker? Quoting them
+O que é o Docker? Citando-os
 
-> Docker is a set of platform as a service products that use OS-level virtualization to deliver software in packages
-called containers.
+> O Docker é um conjunto de produtos de plataforma como serviço que utilizam virtualização ao nível do sistema operativo
+> para fornecer software em pacotes chamados containers.
 
-## The conventional way
+## A forma convencional
 
-When you deploy usually you need to:
+Quando se faz um *deployment*, geralmente precisa-se de:
 
-* Decide how many environments you will deploy (testing, staging, production...)
-* Prepare the requirements.
-* Prepare possible environment variables.
-* Prepare secrets to be passed onto the application.
-* Possibly, prepare the database accesses via those same environment variables.
-* Orchestration.
+* Decidir quantos ambientes vai se implementar (teste, staging, produção...)
+* Preparar os requisitos.
+* Preparar possíveis variáveis de ambiente.
+* Preparar *secrets* para serem passados para a aplicação.
+* Possivelmente, preparar os acessos à base de dados através dessas mesmas variáveis de ambiente.
+* Orquestração.
 * ...
 
-And in the end, a lot of hope that everything will work flawlessly in every single environment as long as those are
-exactly the same.
+E no final, muita esperança de que tudo funcione perfeitamente em cada ambiente, desde que sejam exatamente iguais.
 
-**This is great but prompt to human mistakes**.
+**Isto é muito bom mas susceptível a erros humanos**.
 
-## The docker way
+## A abordagem do Docker
 
-Using docker you still need to think about infrastructure and resources for your application but reduces the
-fact that you need to install the same binaries in every single environment since it will be managed by a
-**container**.
+Ao utilizar o Docker, ainda é necessário pensar na infraestrutura e nos recursos para a aplicação, mas reduz a
+necessidade de instalar os mesmos binários em cada ambiente, uma vez que eles serão geridos por um **container**.
 
-Imagine a container as a zip file. You simply put together all that is needed for your Lilya to work in one place
-and "zip it" which in this case, you will "dockerize it". Which means in every single environment the binaries will
-be **exactly the same** and not reliant on humans reducing the complexity.
+Imagine um container como um ficheiro zip. Simplesmente reúne tudo o que é necessário para que o Lilya funcione num único
+lugar e "zipa" isso, o que neste caso significa "dockerizar" a aplicação.
+Isto significa que em cada ambiente os binários serão **exatamente os mesmos** e não dependerão de seres humanos, reduzindo a complexidade.
 
-## Lilya and docker example
+## Exemplo do Lilya e Docker
 
-Let's assume we want to deploy a simple **Lilya** application using docker. Assuming that external resources
-are already handled and managed by you.
+Vamos supor que queremos implantar uma aplicação simples do **Lilya** utilizando o Docker.
+Assumindo que os recursos externos já estão a ser tratados e geridos.
 
-Let's use:
+Vamos utilizar:
 
-* [Nginx configuration](#nginx) - Web server.
-* Supervisor - Process manager.
-* Lilya dockerized application.
+* [Configuração do Nginx](#nginx) - Servidor web.
+* Supervisor - Gestor de processos.
+* Aplicação Lilya dockerizada.
+**Suposições**:
 
-**Assumptions**:
-
-* All of configrations will be places in a folder called `/deployment`.
-* The application will have a simple folder structure
+* Todas as configurações serão colocadas numa pasta chamada `/deployment`.
+* A aplicação terá uma estrutura de pastas simples
 
     ```txt
     .
@@ -60,7 +57,7 @@ Let's use:
     └── requirements.txt
     ```
 
-* The requirements file
+* O ficheiro de requisitos
 
     ```txt
     lilya
@@ -69,11 +66,11 @@ Let's use:
     supervisor
     ```
 
-**As mentioned in these docs, we will be using uvicorn for our examples but you are free to use whatever you want**.
+**Como mencionado nestes documentos, estaremos a utilizar o uvicorn nos exemplos, mas é livre de usar o que quiser**
 
-### The application
+### A aplicação
 
-Let's start with a simple, single file application just to send an hello world.
+Vamos começar com uma aplicação simples, de um único ficheiro, apenas para enviar um hello word.
 
 ```python title='app/main.py'
 {!> ../../../docs_src/deployment/app.py !}
@@ -81,42 +78,40 @@ Let's start with a simple, single file application just to send an hello world.
 
 ### Nginx
 
-Nginx is a web server that can also be used as a reverse proxy, load balancer, mail proxy and HTTP cache.
+O Nginx é um servidor web que também pode ser usado como um *reverse proxy*, balanceador de carga, proxy de email e cache HTTP.
 
-You find more details about Nginx but exploring [their documentation](https://www.nginx.com/) and how to use it.
+Encontrará mais detalhes sobre o Nginx na [a documentação oficial](https://www.nginx.com/) e como utilizá-lo.
 
-Let's start by building our simple nginx application.
+Vamos começar a construir a nossa simples configuração nginx.
 
 ```nginx
 {!> ../../../docs_src/deployment/nginx.conf !}
 ```
-
-We have created a simple `nginx` configuration with some level of security to make sure we protect the application
-on every level.
+Criamos uma configuração simples do `nginx` com algum nível de segurança para garantir que protegemos a aplicação em todos os níveis.
 
 ### Supervisor
 
-Supervisor is a simple, yet powerful, process manager that allows to monitor and control a number of processes
-on a UNIX-like operating systems.
+O Supervisor é um gestor de processos simples, mas poderoso, que permite monitorizar e controlar vários processos em sistemas
+operativos semelhantes ao UNIX.
 
-[Their documentation](http://supervisord.org/) will help you to understand better how to use it.
+[A documentação deles](http://supervisord.org/) irá ajudá-lo a entender melhor como utilizá-lo.
 
-Now it is time to create a supervisor configuration.
+Agora é hora de criar uma configuração para o supervisor.
 
 ```ini
 {!> ../../../docs_src/deployment/supervisor.conf !}
 ```
 
-It looks complex and big but let's translate what this configuration is actually doing.
+Parece complexo e extenso, mas vamos traduzir o que esta configuração está realmente a fazer.
 
-1. Creates the initial configurations for the `supervisor` and `supervisord`.
-2. Declares instructions how to start the [nginx](#nginx).
-3. Declares the instrutions how to start the `uvicorn` and the lilya application.
+1. Cria as configurações iniciais para o `supervisor` e `supervisord`.
+2. Declara as instruções de como iniciar o [nginx](#nginx).
+3. Declara as instruções de como iniciar o `uvicorn` e a aplicação lilya.
 
 ### Dockefile
 
-The Dockerfile is where you place all the instructions needed to start your application once it is deployed,
-for example, start the [supervisor](#supervisor) which will then start all the processes declared inside.
+O ficheiro Dockerfile é onde se coloca todas as instruções necessárias para iniciar a aplicação assim que for construída,
+por exemplo, iniciar o [supervisor](#supervisor) que irá então iniciar todos os processos declarados na sua configuração.
 
 ```{ .dockerfile .annotate }
 # (1)
@@ -147,60 +142,56 @@ COPY deployment/supervisord.conf /etc/
 CMD ["/usr/bin/supervisord"]
 ```
 
-1. Start from an official python base image.
-2. Install the minimum requirements to run the nginx and the supervisor.
-3. Set the current working directory to `/src`.
+1. Comece a partir de uma imagem base oficial do Python.
+2. Instale os requisitos mínimos para executar o Nginx e o Supervisor.
+3. Defina a directoria atual como `/src`.
 
-    This is where you will be putting the `requirements.txt` and the `app` directory.
+    É aqui que irá colocar o `requirements.txt` e a directoria `app`.
 
-4. Copy the requirements for your project.
+4. Copie os requisitos para o seu projeto.
 
-    You should only copy the requirements and not the rest of the code and the reason for it is the **cache**
-    from docker. If the file doesn't change too often, then it will cache and the next time you need to rebuild
-    the image, it won't repeat the same steps all the time.
+    Você deve copiar apenas os requisitos e não o restante do código, e a razão para isso é o **cache** do Docker. Se o arquivo não mudar com muita frequência, ele será armazenado em cache e na próxima vez que você precisar reconstruir a imagem, ele não repetirá as mesmas etapas o tempo todo.
 
-5. Install the requirements.
+5. Instale os requisitos.
 
-    The `--no-cache-dir` is optional. You can simply add it to tell pip not to cache the packages locally.
+    O `--no-cache-dir` é opcional. Pode simplesmente adicioná-lo para informar o pip para não armazenar em cache os pacotes, localmente.
 
-    The `--upgrade` is to make sure that pip upgrades the current installed packages to the latest.
+    O `--upgrade` é para garantir que o pip atualiza os pacotes instalados para a versão mais recente.
 
-6. Copy the `./app` to the `/src` directory.
+6. Copie o `./app` para a directoria `/src`.
 
-    Also copies the necessary created `nginx.conf` and `supervisor.conf` previously created to the corresponding
-    system folders.
+    Também copie os ficheiros `nginx.conf` e `supervisor.conf` previamente criados para as respectivas pastas do sistema.
 
-7. Tells `supervisor` to start running. The system will be using the `supervisor.conf` file created and it will
-trigger the instructions declared like starting the nginx and uvicorn.
+7. Indique ao `supervisor` para começar a ser executado. O sistema usará o ficheiro `supervisor.conf` criado e acionará
+as instruções declaradas, como iniciar o Nginx e o Uvicorn.
+## Construir a imagem Docker
 
-## Build the docker image
-
-With the [Dockerfile](#dockefile) created it is now time to build the image.
+Com o [Dockerfile](#dockefile) criado, agora é hora de construir a imagem.
 
 ```shell
 $ docker build -t myapp-image .
 ```
 
-### Test the image locally
+### Testar a imagem localmente
 
-You can test your image locally before deploying and see if it works as you want.
+Pode testar a sua imagem localmente antes de implementar e verificar se funciona como desejado.
 
 ```shell
 $ docker run -d --name mycontainer -p 80:80 myapp-image
 ```
 
-### Verify it
+### Verificar
 
-After [building the image](#build-the-docker-image) and [start it locally](#test-the-image-locally) you can then
-check if it works as you need it to work.
+Após [construir a imagem](#construir-a-imagem-docker) e [iniciar localmente](#testar-a-imagem-localmente),
+pode então verificar se ela funciona como desejado.
 
-**Example**:
+**Examplo**:
 
 * [http://127.0.0.1/](http://127.0.0.1/)
 * [http://127.0.0.1/users/5?q=somequery](http://127.0.0.1/users/5?q=somequery)
 
-## Important
+## Importante
 
-It was given an example of how to build some files similar to the ones needed for a given deployment.
+Foi fornecido um exemplo de como construir alguns ficheiros semelhantes aos necessários para uma determinada implementação.
 
-**You should always check and change any of the examples to fit your needs and make sure it works for you**
+**Deve sempre verificar e alterar qualquer um dos exemplos para se adequar às suas necessidades e garantir que funcione para si**

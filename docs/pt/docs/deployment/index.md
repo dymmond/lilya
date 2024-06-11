@@ -1,4 +1,4 @@
 # Deployment
 
-All the necessary information to run a simple and yet effective deployment can be found in
-this section.
+Todas as informações necessárias para fazer um simples, contudo efectivo, *deployment* podem ser encontradas nesta
+secção.

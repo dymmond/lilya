@@ -1,55 +1,54 @@
 # Deployment
 
-Deploying an **Lilya** application is relatively easy.
+Fazer *deployment* de uma aplicação **Lilya** é relativamente fácil.
 
-## What is a deployment
+## O que é um deployment
 
-Deploying an application means to perform the necessary steps to make **your application available to others** to use
-outside of your local machine and/or development environment.
+Fazer *deploy* de uma aplicação significa pensar nos passos necessários para tornar a aplicação disponível para outros utilizarem
+fora da sua máquina local e/ou ambiente de desenvolvimento.
 
-Normally, deploying web APIs involves putting your code in remote machines with all the necessary requirements
-from memeory, CPU, storage to things like networking and all of that. It will depend on your needs.
+Normalmente, fazer *deploy* de APIs web envolve colocar o seu código em máquinas remotas com todos os requisitos necessários
+desde memória, CPU, armazenamento até aspetos como a rede. Depende das suas necessidades.
 
-## Strategies
+## Estratégias
 
-There are many ways of deploying an application. Every case is unique and it will depends on a lot of factors that
-sometimes is not even related with the application itself. For example, **funds**.
+Existem muitas formas de fazer *deploy* de uma aplicação. Cada caso é único e dependerá de muitos factores que
+às vezes não estão nem relacionados com a própria aplicação. Por exemplo, **fundos**.
 
-You could want to save money not **going to cloud** but that also means more personal maintenance of the infrastructure.
+Pode querer poupar dinheiro **não indo para uma solução cloud**, mas isso também significa mais manutenção pessoal da infraestrutura.
 
-You could also decide to go **cloud** and use an external provider such as **AWS**, **Azure**, **GCP** or even one that
-is very good and also affordable like **render.com** or **Heroku**. It is your choice really since it will depend on
-your needs.
+Também pode decidir ir para a **cloud** e usar um fornecedor externo como **AWS, Azure, GCP** ou até um que
+é muito bom e também acessível como **render.com** ou **Heroku**. A escolha é realmente sua, pois dependerá das suas necessidades.
 
-The goal is not to tall you what to do but to give you a simple example in the case you would like to use, for example,
-[docker](./docker.md) and the reason why it is very simple. **Every case is unique**.
+O objetivo não é dizer o que fazer, mas dar um exemplo simples no caso de querer usar, por exemplo,
+[docker](./docker.md) e a razão é muito simples. **Cada caso é único**.
 
 ## Lilya
 
-We decided that we did not want to interfere with the way the people do deployments neither suggest that there is only
-one way of doing it but we thought that would be very useful to have at least one example just to help out a bit and
-to unblock some potential ideas.
+Foi decidido que não iriamos interferir na forma como as pessoas fazem deploys nem sugerir que existe apenas
+uma maneira de o fazer, mas achámos que seria muito útil ter pelo menos um exemplo apenas para ajudar um pouco e
+desbloquear algumas potenciais ideias.
 
-We opted for using a standard, [docker](./docker.md).
+Optámos por usar um padrão, [docker](./docker.md).
 
-## Deploying using Pydantic
+## Deploying utilizando Pydantic
 
-Pydantic is fantastic handling with majority of the heavy lifting when it comes to read environment variables and
-assigning but there are some tricks to have in mind.
+O Pydantic é fantástico a lidar com a maior parte do trabalho pesado quando se trata de ler variáveis de ambiente e
+atribuir, mas há alguns truques a ter em mente.
 
-### Loading List, dicts and complex types
+### Carregar Listas, dicts e tipos complexos
 
-When loading those into your environment variables **it is imperative** that you understand that Pydantic reads them
-as a JSON like object.
+Ao carregar esses elementos nas variáveis de ambiente **é imperativo** que entenda que o Pydantic os lê
+como um objeto semelhante ao JSON.
 
-**Example**:
+**Examplo**:
 
 ```shell
 export ALLOWED_HOSTS="https://www.example.com,https://www.foobar.com"
 ```
 
-There are many ways of doing this but in the documentation of Pydantic (even a fix), they recommend to use the
-`parse_env` and handle the parsing there.
+Existem várias formas de fazer isso, mas na documentação do Pydantic (e até uma correção), eles recomendam usar o
+`parse_env` e tratar a análise lá.
 
 ```python
 from typing import ClassVar

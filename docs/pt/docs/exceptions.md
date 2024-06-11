@@ -1,61 +1,61 @@
-# Exceptions & Exception Handlers
+# Excepções & Exception Handlers
 
-Exception handlers are, as the name suggests, the handlers in case an exception of type X occurs.
+*Exception handlers* são, como o nome sugere, as funções que lidam com excepções do tipo X caso ocorram.
 
 ## Exception handlers
 
-In every level the `exception_handler` parameter (among others) are available to be used and handle specific exeptions
-raised on each level.
+Em cada nível o parâmetro `exception_handler` (entre outros) está disponível para ser utilizado e pronto a lidar com
+excepções espeíficas para cada nível.
 
-The exception handlers are read a python dictionary and you can pass the key as the exception itself or the `status_code`
-that will always use the exception itself.
+As *exception handlers* são declaras num dicionário python e pode passar como chave a excepção em si ou o `status_code`
+que vai sempre utilizar a excepção em si.
 
 ```python
 {!> ../../../docs_src/exception_handlers/precedent.py !}
 ```
 
-### What is happening
+### O que está a acontecer
 
-The application level contains an exception handler `handle_type_error` and the `handle_value_error` and that means that for
-every `HTTPException` and `ValueError` being raised in the application it will be handled by that function.
+O nível da aplicação contém um manipulador de excepções `handle_type_error` e handle_value_error e isso significa que para
+toda `HTTPException` e `ValueError` lançada na aplicação, será tratada por essa função.
 
-### Custom exception handlers
+### Exception handlers personalisadas
 
-We all know that Lilya handles really well the exceptions by design but sometimes we might also
-want to throw an error while doing some code logic that is not directly related with a `data` of
-an handler.
+Todos sabemos que Lilya lida muito bem com excepções por design, mas às vezes também podemos
+querer lançar um erro ao fazer alguma lógica de código que não está diretamente relacionada com um `data` de
+um *exception handler*.
 
-**Example**
+**Examplo**
 
 ```python
 {!> ../../../docs_src/exception_handlers/example.py !}
 ```
 
-This example is a not usual at all but it serves to show where an exception is raised.
+Este exemplo não é nada comum, mas serve para mostrar onde uma excepção é lançada.
 
-Lilya offers **one** out of the box **custom exception handlers**:
+Lilya oferece **um** *exception handler* personalizado **pronto a usar**:
 
-* **handle_value_error** - When you want the `ValueError` exception to be automatically parsed
-into a JSON.
+* **handle_value_error** - Quando se quer que a excepção `ValueError` seja automaticamente convertida
+num JSON.
 
 ```python
 from lilya._internal._exception_handlers import handle_value_error
 ```
 
-How it would look like the previous example using this custom exception handler?
+Como ficaria o exemplo anterior utilizando este *exception handler* personalizado?
 
 ```python
 {!> ../../../docs_src/exception_handlers/example_use.py !}
 ```
 
-## Using status codes
+## Uso dos status codes
 
-When declaring exception handlers, as mentioned before, you can use status codes instead of the
-exception itself. This allows and indicates how an exception must be handle when a specific `status_code`
-occurs.
+Ao declarar *exception handlers*, como mencionado anteriormente, pode-se usar *status codes* em vez da
+própria excepção. Isto permite e indica como uma excepção deve ser tratada quando ocorre um `status_code`
+específico.
 
-This can be very useful if you only want to narrow down to `status_code` approach instead of the whole
-`Exception` itself.
+Isto pode ser muito útil se apenas se quiser restringir à abordagem do `status_code` em vez da
+própria `Exception`.
 
 ```python
 {!> ../../../docs_src/exception_handlers/status_codes.py !}
@@ -63,13 +63,13 @@ This can be very useful if you only want to narrow down to `status_code` approac
 
 ## HTTPException
 
-The `HTTPException` class serves as a foundational class suitable for handling various exceptions.
-In the default `ExceptionMiddleware` implementation, plain-text HTTP responses are returned for any instance of `HTTPException`.
+A classe `HTTPException` serve como uma classe fundamental adequada para lidar com várias excepções.
+Na implementação padrão do `ExceptionMiddleware`, respostas HTTP no formato de texto simples são retornadas em qualquer instância de `HTTPException`.
 
 !!! Note
-    The proper usage dictates that you exclusively raise `HTTPException` within routing or endpoints.
-    Middleware and Permission classes, on the other hand, should simply return the appropriate responses directly.
+    O uso correto dita que se deve lançar o `HTTPException` exclusivamente dentro de rotas ou endpoints.
+    Middleware e Permissões, por outro lado, devem simplesmente retornar as respostas apropriadas diretamente.
 
 ## WebSocketException
 
-The `WebSocketException` class is designed for raising errors specifically within WebSocket endpoints.
+A classe `WebSocketException` é desenhada para lançar erros especificamente dentro de endpoints WebSocket.
