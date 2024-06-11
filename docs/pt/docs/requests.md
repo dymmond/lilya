@@ -1,33 +1,30 @@
-# Request
+# Requests
 
-Lilya brings the `Request` class object. This object is a nice interface between the incoming
-request and the ASGI scope.
+Lilya disponibiliza a classe `Request`. Este objeto é uma interface conveniente entre o pedido recebido e o âmbito ASGI.
 
-This means, you don't need to access directly the scope and extract all the information required
-for a `request` type of object.
+Isso significa que você não precisa aceder diretamente ao âmbito e extrair todas as informações necessárias para um objeto do tipo `request`.
 
 ```python
 from lilya.requests import Request
 ```
 
-## The `Request` class
+## A classe `Request`
 
-A `Request` instance receives a `scope`, a `receive` and a `send` parameter.
+Uma instância de `Request` recebe um parâmetro `scope`, um parâmetro `receive` e um parâmetro `send`.
 
 ```python
 {!> ../../../docs_src/requests/example.py !}
 ```
 
-The requests, as mentioned before, present an interface to the `scope`, which means if you use
-`requests['app']` or `requests['headers']` or `requests['path']` it will retrieve the same information
-as it was retrieving from the scope.
+Os pedidos, como mencionado anteriormente, apresentam uma interface para o `scope`, o que significa que se você usar
+`request['app']` ou `request['headers']` ou `request['path']`, irá obter as mesmas informações
+que estavam a ser obtidas no scope.
 
-### Note
+### Nota
 
-If there is not a need to access the request body, you can instantiate a request without
-providing a `receive` argument.
+Se não houver necessidade de aceder ao corpo do pedido, pode instanciar um pedido sem fornecer um argumento `receive`.
 
-**Example**
+**Exemplo**
 
 ```python
 from lilya.requests import Request
@@ -35,13 +32,13 @@ from lilya.requests import Request
 request = Request(scope)
 ```
 
-### Attributes
+### Atributos
 
-There are many available attributes that you can access within the request.
+Existem muitos atributos disponíveis que pode aceder dentro do request.
 
-#### Method
+#### Método
 
-The request method that is used to access.
+O método do pedido que é utilizado para aceder.
 
 ```python
 from lilya.requests import Request
@@ -61,9 +58,9 @@ request = Request(scope)
 request.url
 ```
 
-This property exposes all the components that can be parsed out of the URL.
+Esta propriedade expõe todos os componentes que podem ser extraídos da URL.
 
-**Example**
+**Exemplo**
 
 ```python
 from lilya.requests import Request
@@ -77,10 +74,10 @@ request.url.netloc
 request.url.query
 ```
 
-#### Header
+#### Cabeçalho
 
-Lilya uses the [multidict](https://multidict.aio-libs.org/en/stable/) for its headers and adds
-some extra flavours on the top of it.
+Lilya usa o [multidict](https://multidict.aio-libs.org/en/stable/) para os seus cabeçalhos (headers) e adiciona-lhe
+alguns recursos extra.
 
 ```python
 from lilya.requests import Request
@@ -90,10 +87,10 @@ request = Request(scope)
 request.headers['content-type']
 ```
 
-#### Query Params
+#### Parâmetros de Consulta
 
-Lilya uses the [multidict](https://multidict.aio-libs.org/en/stable/) for its query parameters and adds
-some extra flavours on the top of it.
+Lilya usa o [multidict](https://multidict.aio-libs.org/en/stable/) para os seus parâmetros de consulta (query params) e adiciona-lhe
+alguns recursos extra.
 
 ```python
 from lilya.requests import Request
@@ -103,9 +100,9 @@ request = Request(scope)
 request.query_params['search']
 ```
 
-#### Path Params
+#### Parâmetros de URL
 
-Extracted directly from the `scope` as a dictionary like python object
+Extraído diretamente do `scope` como um dicionário em Python.
 
 ```python
 from lilya.requests import Request
@@ -115,9 +112,9 @@ request = Request(scope)
 request.path_params['username']
 ```
 
-#### Client Address
+#### Endereço do Cliente
 
-The client's remote address is exposed as a dataclass `request.client`.
+O endereço remoto do cliente é exposto como uma classe de dados `request.client`.
 
 ```python
 from lilya.requests import Request
@@ -130,7 +127,7 @@ request.client.port
 
 #### Cookies
 
-Extracted directly from the headers and parsed as a dictionary like python object.
+Extraído diretamente dos cabeçalhos (headers) e analisado como um dicionário em Python.
 
 ```python
 from lilya.requests import Request
@@ -140,81 +137,81 @@ request = Request(scope)
 request.cookies.get('a-cookie')
 ```
 
-#### Body
+#### Corpo (body)
 
-Now here it is different. To extract and use the `body`, a `receive` must be passed into the
-request instance and it can be extracted in different ways.
+Aqui é diferente. Para extrair e usar o `body`, um argumento `send` deve ser passado para a
+instância do pedido e pode ser extraído de diferentes maneiras.
 
-##### As bytes
+##### Como bytes
 
 ```python
 from lilya.requests import Request
 
-request = Request(scope, receive)
+pedido = Request(scope, send)
 
 await request.body()
 ```
 
-##### As JSON
+##### Como JSON
 
 ```python
 from lilya.requests import Request
 
-request = Request(scope, receive)
+pedido = Request(scope, send)
 
 await request.json()
 ```
 
-##### As text
+##### Como texto
 
 ```python
 from lilya.requests import Request
 
-request = Request(scope, receive)
+pedido = Request(scope, send)
 
 await request.text()
 ```
 
-##### As form data or multipart form
+##### Como dados de formulário ou formulário multipart
 
 ```python
 from lilya.requests import Request
 
-request = Request(scope, receive)
+pedido = Request(scope, send)
 
 async with request.form() as form:
     ...
 ```
 
-##### As data
+##### Como dados
 
 ```python
 from lilya.requests import Request
 
-request = Request(scope, receive)
+pedido = Request(scope, send)
 
 await request.data()
 ```
 
-##### As a stream
+##### Como um stream
 
 ```python
 {!> ../../../docs_src/requests/stream.py !}
 ```
 
-When employing .stream(), byte chunks are furnished without the necessity of storing the entire body in memory.
-Subsequent calls to `.body()`, `.form()`, or `.json()` will result in an error.
+Ao usar `.stream()`, os fragmentos de bytes são fornecidos sem a necessidade de guardar todo o corpo em memória.
+Chamadas subsequentes a `.body()`, `.form()` ou `.json()` resultarão em erro.
 
-In specific situations, such as long-polling or streaming responses, it becomes crucial
-to determine whether the client has disconnected.
+Em situações específicas, como resposta de longa duração ou streaming, torna-se crucial
+determinar se o cliente foi desconectado.
 
-This status can be ascertained using the following:
-`disconnected = await request.is_disconnected().`
+Isso pode ser verificado utilizando o seguinte:
+`desconectado = await request.is_disconnected().`
 
 
-##### Request files
+##### Ficheiros de Request
 
-Typically, files are transmitted as multipart form data (multipart/form-data).
+Normalmente, os ficheiros são transmitidos como dados de formulário multipart (multipart/form-data).
 
 ```python
 from lilya.requests import Request
@@ -224,8 +221,8 @@ request = Request(scope, receive)
 request.form(max_files=1000, max_fields=1000)
 ```
 
-You have the flexibility to set the maximum number of fields or files using the `max_files`
-and `max_fields` parameters:
+Tem a flexibilidade de definir o número máximo de campos ou ficheiros usando os parâmetros `max_files`
+e `max_fields`:
 
 ```python
 async with request.form(max_files=1000, max_fields=1000):
@@ -233,38 +230,37 @@ async with request.form(max_files=1000, max_fields=1000):
 ```
 
 !!! warning
-    These limitations serve security purposes. Allowing an unlimited number of fields or files could
-    pose a risk of a denial-of-service attack, consuming excessive CPU and memory
-    resources by parsing numerous empty fields.
+    Estas limitações servem para fins de segurança. Permitir um número ilimitado de campos ou ficheiros poderia
+    representar um risco de ataque de *denial of service*, consumindo recursos excessivos de CPU e memória
+    ao analisar inúmeros campos vazios.
 
-When invoking async with `request.form() as form`, you obtain a `lilya.datastructures.FormData`,
-which is an immutable multidict containing both file uploads and text input.
+Ao utilizar `async with request.form() as form`, obtém um `lilya.datastructures.FormData`,
+que é um multidict imutável contendo tanto uploads de ficheiros quanto *input* de texto.
 
-File upload items are represented as instances of `lilya.datastructures.DataUpload`.
+Os itens de upload de ficheiros são representados como instâncias de `lilya.datastructures.DataUpload`.
 
 ###### DataUpload
 
-DataUpload has the following attributes:
+DataUpload possui os seguintes atributos:
 
-* **filename**: A `str` with the original file name that was uploaded or `None` if its not available (e.g. `profile.png`).
-* **file**: A `SpooledTemporaryFile` (a file-like object). This is the actual Python file that you can pass directly to other
-functions or libraries that expect a "file-like" object.
-* **headers**: A `Header` object. Often this will only be the `Content-Type` header, but if additional
-headers were included in the multipart field they will be included here. Note that these headers have no relationship with the headers in `Request.headers`.
-* **size**: An `int` with uploaded file's size in bytes. This value is calculated from request's contents, making it better choice to find uploaded file's size than `Content-Length` header. None if not set.
+* **filename**: Uma `str` com o nome original do ficheiro que foi enviado ou `None` se não estiver disponível (por exemplo, `profile.png`).
+* **file**: Um `SpooledTemporaryFile` (um objeto semelhante a um ficheiro). Este é o ficheiro Python real que pode passar diretamente para outras
+funções ou bibliotecas que esperam um objeto "semelhante a um ficheiro".
+* **headers**: Um objeto `Header`. Geralmente, isso será apenas o cabeçalho `Content-Type`, mas se houver cabeçalhos adicionais
+incluídos no campo multipart, serão incluídos aqui. Observe que esses cabeçalhos não têm relação com os cabeçalhos em `Request.headers`.
+* **size**: Um `int` com o tamanho do ficheiro enviado em bytes. Esse valor é calculado a partir do conteúdo do pedido, tornando-o uma escolha melhor para encontrar o tamanho do ficheiro enviado do que o cabeçalho `Content-Length`. Nenhum valor se não estiver definido.
 
+A classe `DataUpload` fornece vários métodos assíncronos que invocam as operações de ficheiro correspondentes usando o `SpooledTemporaryFile` interno:
 
-The `DataUpload` class provides several asynchronous methods that invoke the corresponding
-file operations using the internal `SpooledTemporaryFile`:
+* `async write(dados)`: Grava os dados especificados (em bytes) no ficheiro.
+* `async read(tamanho)`: Lê o número especificado de bytes (como um inteiro) do ficheiro.
+* `async seek(deslocamento)`: Posiciona o cursor do ficheiro na posição de bytes especificado (como um inteiro).
+Por exemplo, usando `await profile.seek(0)` moveria o cursor para o início do ficheiro.
+* `async close()`: Fecha o ficheiro.
 
-* `async write(data)`: Writes the specified data (in bytes) to the file.
-* `async read(size)`: Reads the specified number of bytes (as an integer) from the file.
-* `async seek(offset)`: Positions the file cursor at the byte offset specified (as an integer). For example, using await `profile.seek(0)` would move the cursor to the beginning of the file.
-* `async close()`: Closes the file.
+Como todos estes métodos são assíncronos, a palavra-chave `await` é necessária ao invocá-los.
 
-Since all these methods are asynchronous, the `await` keyword is necessary when invoking them.
-
-**Example**
+**Exemplo**
 
 ```python
 async with request.form() as form:
@@ -272,9 +268,9 @@ async with request.form() as form:
     contents = await form["upload_file"].read()
 ```
 
-#### Application
+#### Aplicação
 
-The Lilya application.
+A aplicação Lilya.
 
 ```python
 from lilya.requests import Request
@@ -284,10 +280,10 @@ request = Request(scope)
 request.app
 ```
 
-#### State
+#### Estado
 
-If you wish to include supplementary information with the request, you can achieve this by using
-the `request.state`.
+Se você deseja incluir informações adicionais com o pedido, pode faze-lo usando
+o `request.state`.
 
 ```python
 from lilya.requests import Request
