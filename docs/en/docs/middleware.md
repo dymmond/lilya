@@ -229,7 +229,7 @@ the secure schemes instead.
 
 ### TrustedHostMiddleware
 
-Enforces all requests to have a correct set `Host` header in order to protect against heost header attacks.
+Enforces all requests to have a correct set `Host` header in order to protect against host header attacks.
 
 ```python
 {!> ../../../docs_src/middleware/available/trusted_hosts.py !}
@@ -261,7 +261,7 @@ Let us assume the previous example of the `flask` app was inside `myapp/asgi_or_
 {!> ../../../docs_src/middleware/available/wsgi_str.py !}
 ```
 
-To call it inside the middleware is as simple as;
+To call it inside the middleware is as simple as:
 
 ```python
 {!> ../../../docs_src/middleware/available/wsgi_import.py !}
@@ -287,8 +287,6 @@ A middleware class for reading/generating request IDs and attaching them to appl
 #### <a href="https://github.com/steinnes/timing-asgi">TimingMiddleware</a>
 
 ASGI middleware to record and emit timing metrics (to something like statsd).
-This integration works using [EsmeraldTimming](https://github.com/dymmond/esmerald-timing).
-
 
 ## Important points
 

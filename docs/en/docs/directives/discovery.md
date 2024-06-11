@@ -85,7 +85,6 @@ This is the way that Lilya can `auto discover` your application.
     Flask has a similar pattern for the functions called `create_app`. Lilya doesn't use the
     `create_app`, instead uses the `get_application` or `get_app` as a pattern as it seems cleaner.
 
-
 ## Environment variables
 
 When using some of the custom directives or built-in directives with this method, Lilya
@@ -94,7 +93,7 @@ When using some of the custom directives or built-in directives with this method
 * **LILYA_DEFAULT_APP** - The Lilya application to run the directives against.
 
 The reason for this is because every Lilya application might differ in structure and design.
-Lilya not being opinionated in the way you should assemble, the application needs to know,
+Lilya not being opinionated in the way you should assemble, the application needs to know
 **at least where the entry-point is going be**.
 
 Also, gives a clean design for the time when it is needed to go to production as the procedure is

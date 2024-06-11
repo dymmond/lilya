@@ -253,7 +253,6 @@ functions or libraries that expect a "file-like" object.
 headers were included in the multipart field they will be included here. Note that these headers have no relationship with the headers in `Request.headers`.
 * **size**: An `int` with uploaded file's size in bytes. This value is calculated from request's contents, making it better choice to find uploaded file's size than `Content-Length` header. None if not set.
 
-
 The `DataUpload` class provides several asynchronous methods that invoke the corresponding
 file operations using the internal `SpooledTemporaryFile`:
 

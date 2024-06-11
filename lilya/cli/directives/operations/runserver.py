@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import os
 import sys
 from typing import TYPE_CHECKING, Any, cast
 
@@ -60,6 +63,9 @@ terminal = Terminal()
     help="Enable lifespan events.",
     show_default=True,
 )
+@click.option(
+    "--settings", type=str, help="Any custom settings to be initialised.", required=False
+)
 @click.command(name="runserver")
 def runserver(
     env: DirectiveEnv,
@@ -69,6 +75,7 @@ def runserver(
     debug: bool,
     log_level: str,
     lifespan: str,
+    settings: str | None = None,
 ) -> None:
     """Starts the Lilya development server.
 
@@ -90,17 +97,23 @@ def runserver(
         printer.write_error(error)
         sys.exit(1)
 
+    if settings is not None:
+        os.environ.setdefault("LILYA_SETTINGS_MODULE", settings)
+
     try:
         import uvicorn
     except ImportError:
         raise DirectiveError(detail="Uvicorn needs to be installed to run Lilya.") from None
 
     app = env.app
-    settings = app.settings
     message = terminal.write_info(
-        f"Starting {settings.environment} server @ {host}", colour=OutputColour.BRIGHT_CYAN
+        f"Starting {app.settings.environment} server @ {host}", colour=OutputColour.BRIGHT_CYAN
     )
     terminal.rule(message, align="center")
+
+    if settings is not None:
+        custom_message = f"'{os.environ.get('LIYA_SETTINGS_MODULE')}'"
+        terminal.rule(custom_message, align="center")
 
     if debug:
         app.debug = debug
