@@ -261,7 +261,7 @@ changed if the `response_class` parameter is set to something else.
 So, why is this `make_response` different from the other responses? Well, here its where Lilya shines.
 
 Lilya is pure Python, which means that it does not rely or depend on external libraries like Pydantic,
-msgspec, attrs or any other **but allows you to [build a custom encoder](#build-a-custom-encoder) that
+msgspec, attrs or any other **but allows** you to [build a custom encoder](#build-a-custom-encoder) that
 can later be used to serialise your response automatically and then passed to the `make_response`.
 
 Check the [build a custom encoder](#build-a-custom-encoder) and [custom encoders with make_response](#custom-encoders-and-the-make_response)

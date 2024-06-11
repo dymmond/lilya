@@ -1,28 +1,26 @@
 # Responses
 
-Lilya, by design, furnishes specific response classes that serve a dual purpose. They offer
-utility and are tasked with sending the appropriate ASGI messages through the `send` channel.
+O Lilya por defeito, fornece *responses* específicas que servem um propósito duplo.
+Elas oferecem utilidade e são responsáveis por enviar as mensagens ASGI apropriadas através do canal `send`.
 
-Lilya automatically includes the `Content-Length` and `Content-Type` headers.
+Lilya inclui automaticamente os cabeçalhos `Content-Length` e `Content-Type`.
 
-## How does it work
+## Como funciona
 
-There are a few ways of using the responses within a Lylia application.
+Existem algumas formas de usar as respostas numa aplicação Lylia.
 
-* You can [import the appropriate](#importing-the-appropriate-class) `response` class and use it directly.
-* You can [build the response](#build-the-response).
-* You can [delegate to Lilya](#delegate-to-lilya).
-* [Build a custom encoder](#build-a-custom-encoder) that will allow Lilya to automatically parse the response.
+* Pode [importar o response](#importando-a-classe-apropriada) apropriada e usá-la diretamente.
+* Pode [construir a resposta](#construindo-a-resposta).
+* Pode [delegar para o Lilya](#delegando-para-lilya).
+* [Construir um codificador personalizado](#construir-um-codificador-personalizado) que permitirá que Lilya analise automaticamente a resposta.
 
-## Available responses
+## Respostas disponíveis
 
-All the responses from Lilya inherit from the parent object `Response` and that same class can
-also be used directly.
+Todas as respostas do Lilya herdam do objeto `Response` e essa mesma classe também pode ser usada diretamente.
 
-All the responses are considered ASGI applications, which means you can treat them as such in
-your application if necessary.
+Todas as respostas são consideradas aplicações ASGI, o que significa que pode tratá-las como tal na sua aplicação, se necessário.
 
-**Example**
+**Exemplo**
 
 ```python
 from lilya.responses import PlaiText
@@ -42,16 +40,16 @@ async def asgi_app(scope: Scope, receive: Receive, send: Send):
 from lilya.responses import Response
 ```
 
-**Example**
+**Exemplo**
 
 ```python
 {!> ../../../docs_src/responses/response.py !}
 ```
 
-##### Set cookie
+##### Definir cookie
 
-Lilya provides the `set_cookie` that allows settings a cookie on a given response. All the responses
-available in Lilya have access to this functionality.
+Lilya fornece o `set_cookie` que permite definir um cookie numa determinada resposta. Todas as respostas
+disponíveis no Lilya têm acesso a essa funcionalidade.
 
 ```python
 from lilya.responses import Response
@@ -66,27 +64,27 @@ async def asgi_app(scope: Scope, receive: Receive, send: Send):
     await response(scope, receive, send)
 ```
 
-###### Parameters
+###### Parâmetros
 
-The available parameters of the `set_cookie` are as follow:
+Os parâmetros disponíveis do `set_cookie` são os seguintes:
 
-- `key` - A string representing the cookie's key.
-- `value` - A string representing the cookie's value.
-- `max_age` - An integer defining the cookie's lifetime in seconds.
-A negative value or 0 discards the cookie immediately. *(Optional)*
-- `expires` - Either an integer indicating the seconds until the cookie expires or a datetime. *(Optional)*
-- `path` - A string specifying the subset of routes to which the cookie applies. *(Optional)*
-- `domain` - A string specifying the valid domain for the cookie. *(Optional)*
-- `secure` - A boolean indicating that the cookie is sent to the server only if the request
-uses SSL and the HTTPS protocol. *(Optional)*
-- `httponly` - A boolean indicating that the cookie is inaccessible via JavaScript through Document.cookie,
-the XMLHttpRequest, or Request APIs. *(Optional)*
-- `samesite` - A string specifying the samesite strategy for the cookie, with valid values of `'lax'`, `'strict'`, and `'none'`.
-Defaults to 'lax'. *(Optional)*
+- `key` - Uma string que representa a chave da cookie.
+- `value` - Uma string que representa o valor da cookie.
+- `max_age` - Um número inteiro que define o tempo de vida útil da cookie em segundos.
+Um valor negativo ou 0 descarta a cookie imediatamente. *(Opcional)*
+- `expires` - Um número inteiro que indica os segundos até que a cookie expire ou um objeto datetime. *(Opcional)*
+- `path` - Uma string a especificar o subconjunto de rotas a que a cookie se aplica. *(Opcional)*
+- `domain` - Uma string a especificar o domínio válido para a cookie. *(Opcional)*
+- `secure` - Um booleano que indica que a cookie é enviada para o servidor apenas se o pedido
+usa SSL e o protocolo HTTPS. *(Opcional)*
+- `httponly` - Um booleano que indica que a cookie não é acessível via JavaScript por meio de Document.cookie,
+XMLHttpRequest ou APIs de pedido. *(Opcional)*
+- `samesite` - Uma string a especificar a estratégia samesite para a cookie, com valores válidos de `'lax'`, `'strict'` e `'none'`.
+Padrão é 'lax'. *(Opcional)*
 
-##### Delete cookie
+##### Excluir cookie
 
-In the same fashion as the [set cookie](#set-cookie), this function is available on every response provided by
+Da mesma forma que o [definir cookie](#definir-cookie), esta função está disponível em todas as respostas fornecidas pelo
 Lilya.
 
 ```python
@@ -102,23 +100,23 @@ async def asgi_app(scope: Scope, receive: Receive, send: Send):
     await response(scope, receive, send)
 ```
 
-###### Parameters
+###### Parâmetros
 
-The available parameters of the `set_cookie` are as follow:
+Os parâmetros disponíveis do `set_cookie` são os seguintes:
 
-- `key` - A string representing the cookie's key.
-- `path` - A string specifying the subset of routes to which the cookie applies. *(Optional)*
-- `domain` - A string specifying the valid domain for the cookie. *(Optional)*
+- `key` - Uma string que representa a chave da cookie.
+- `path` - Uma string a especificar o subconjunto de rotas a que a cookie se aplica. *(Opcional)*
+- `domain` - Uma string a especificar o domínio válido para a cookie. *(Opcional)*
 
 ### HTMLResponse
 
-Returning an `html` response.
+Retorna uma resposta `html`.
 
 ```python
 from lilya.responses import HTMLResponse
 ```
 
-**Example**
+**Exemplo**
 
 ```python
 {!> ../../../docs_src/responses/html.py !}
@@ -126,13 +124,13 @@ from lilya.responses import HTMLResponse
 
 ### Error
 
-Response that can be used when throwing a `500` error. Defaults to return an `html` response.
+Resposta que pode ser usada ao lançar um erro `500`. Padrão é retornar uma resposta `html`.
 
 ```python
 from lilya.responses import Error
 ```
 
-**Example**
+**Exemplo**
 
 ```python
 {!> ../../../docs_src/responses/error.py !}
@@ -140,13 +138,13 @@ from lilya.responses import Error
 
 ### PlainText
 
-Response that can be used to return `text/plain`.
+Resposta que pode ser usada para retornar `text/plain`.
 
 ```python
 from lilya.responses import PlainText
 ```
 
-**Example**
+**Exemplo**
 
 ```python
 {!> ../../../docs_src/responses/plain.py !}
@@ -154,13 +152,13 @@ from lilya.responses import PlainText
 
 ### JSONResponse
 
-Response that can be used to return `application/json`.
+Resposta que pode ser usada para retornar `application/json`.
 
 ```python
 from lilya.responses import JSONResponse
 ```
 
-**Example**
+**Exemplo**
 
 ```python
 {!> ../../../docs_src/responses/json.py !}
@@ -168,14 +166,14 @@ from lilya.responses import JSONResponse
 
 ### Ok
 
-Response that can be used to return `application/json` as well. You can see this as an
-alternative to `JSONResponse`.
+Resposta que pode ser usada para retornar `application/json` também. Pode ver isto como uma
+alternativa ao `JSONResponse`.
 
 ```python
 from lilya.responses import Ok
 ```
 
-**Example**
+**Exemplo**
 
 ```python
 {!> ../../../docs_src/responses/ok.py !}
@@ -183,13 +181,13 @@ from lilya.responses import Ok
 
 ### RedirectResponse
 
-Used for redirecting the responses.
+Usado para redirecionar as respostas.
 
 ```python
 from lilya.responses import RedirectResponse
 ```
 
-**Example**
+**Exemplo**
 
 ```python
 {!> ../../../docs_src/responses/redirect.py !}
@@ -201,7 +199,7 @@ from lilya.responses import RedirectResponse
 from lilya.responses import StreamingResponse
 ```
 
-**Example**
+**Exemplo**
 
 ```python
 {!> ../../../docs_src/responses/streaming.py !}
@@ -213,141 +211,140 @@ from lilya.responses import StreamingResponse
 from lilya.responses import FileResponse
 ```
 
-Streams a file asynchronously as the response, employing a distinct set of arguments for instantiation compared to other response types:
+Envia um ficheiro de forma assíncrona como resposta, empregando um conjunto distinto de argumentos para a instância em comparação com outros tipos de resposta:
 
-- `path` - The filepath to the file to stream.
-- `status_code` - The Status code to return.
-- `headers` - Custom headers to include, provided as a dictionary.
-- `media_type` - A string specifying the media type. If unspecified, the filename or path is used to deduce the media type.
-- `filename` - If specified, included in the response Content-Disposition.
-- `content_disposition_type` - Included in the response Content-Disposition. Can be set to `attachment` (default) or `inline`.
-- `background` - A [task](./tasks.md) instance.
+- `path` - O caminho do ficheiro a ser transmitido.
+- `status_code` - O código de status a ser retornado.
+- `headers` - Cabeçalhos personalizados a serem incluídos, fornecidos como um dicionário.
+- `media_type` - Uma string a especificar o tipo de mídia. Se não especificado, o nome do ficheiro ou caminho é usado para deduzir o tipo de mídia.
+- `filename` - Se especificado, incluído no Content-Disposition da resposta.
+- `content_disposition_type` - Incluído no Content-Disposition da resposta. Pode ser definido como `attachment` (padrão) ou `inline`.
+- `background` - Uma instância de [tarefa](./tasks.md).
 
-**Example**
+**Exemplo**
 
 ```python
 {!> ../../../docs_src/responses/file.py !}
 ```
 
-## Importing the appropriate class
+## Importando a classe apropriada
 
-This is the classic most used way of using the responses. The [available responses](#available-responses)
-contains a list of available responses of Lilya but you are also free to design your own and apply them.
+Esta é a forma clássica mais usada de usar as respostas. As [respostas disponíveis](#respostas-disponíveis)
+contêm uma lista de respostas disponíveis no Lilya, mas também é livre para criar as suas próprias e usá-las.
 
-**Example**
+**Exemplo**
 
 ```python
 {!> ../../../docs_src/responses/json.py !}
 ```
 
-## Build the Response
+## Construir a resposta
 
-This is where the things get great. Lilya provides a `make_response` function that automatically
-will build the response for you.
+Aqui é onde as coisas ficam ótimas. O Lilya fornece uma função `make_response` que automaticamente
+construirá a resposta.
 
 ```python
 from lilya.responses import make_response
 ```
 
-**Example**
+**Exemplo**
 
 ```python
 {!> ../../../docs_src/responses/make.py !}
 ```
 
-By default, the `make_response` returns a [JSONResponse](#jsonresponse) but that can be also
-changed if the `response_class` parameter is set to something else.
+Por defeito, o `make_response` retorna um [JSONResponse](#jsonresponse), mas isso também pode ser
+alterado se o parâmetro `response_class` for definido como outra coisa.
 
-So, why is this `make_response` different from the other responses? Well, here its where Lilya shines.
+Então, por que é que o `make_response` é diferente das outras respostas? Bem, aqui é onde Lilya brilha.
 
-Lilya is pure Python, which means that it does not rely or depend on external libraries like Pydantic,
-msgspec, attrs or any other **but allows you to [build a custom encoder](#build-a-custom-encoder) that
-can later be used to serialise your response automatically and then passed to the `make_response`.
+O Lilya é puramente Python, o que significa que não depende de bibliotecas externas como Pydantic,
+msgspec, attrs ou qualquer outra **mas permite** que se [construa um codificador personalizado](#construir-um-codificador-personalizado) que
+pode ser usado posteriormente para serializar a resposta automaticamente e depois passá-la para o `make_response`.
 
-Check the [build a custom encoder](#build-a-custom-encoder) and [custom encoders with make_response](#custom-encoders-and-the-make_response)
-for more details and how to leverage the power of Lilya.
+Verifique a secção [construir um codificador personalizado](#construir-um-codificador-personalizado) e [codificadores personalizados com make_response](#codificadores-personalizados-e-o-make_response)
+para mais detalhes e como aproveitar o poder do Lilya.
 
-## Delegate to Lilya
+## Delegar para Lilya
 
-Delegating to Lilya means that if no response is specified, Lilya will go through the internal
-`encoders` and will try to `jsonify` the response for you.
+Delegar para Lilya significa que, se nenhuma resposta for especificada, Lilya passará pelos
+`codificadores` internos e tentará `jsonificar` a resposta.
 
-Let us see an example.
+Vejamos um exemplo.
 
 ```python
 {!> ../../../docs_src/responses/delegate.py !}
 ```
 
-As you can see, no `response` was specified but instead a python `dict` was returned. What Lilya
-internally does is to *guess* and understand the type of response parse the result into `json`
-and returning a `JSONResponse` automatically,
+Como pode ver, nenhuma `resposta` foi especificada, mas em vez disso, um dicionário Python foi retornado. O que Lilya
+faz internamente é *adivinhar* e entender o tipo de resposta, analisar o resultado em `json`
+e retornar automaticamente um `JSONResponse`.
 
-If the type of response is not json serialisable, then a `ValueError` is raised.
+Se o tipo de resposta não for serializável em json, então um `ValueError` é lançado.
 
-Let us see some more examples.
+Vejamos mais alguns exemplos.
 
 ```python
 {!> ../../../docs_src/responses/delegate_examples.py !}
 ```
 
-And the list goes on and on. Lilya by design understands almost every single datastructure of Python
-by default, including `Enum`, `deque`, `dataclasses`, `PurePath`, `generators` and `tuple`.
+E a lista continua. O Lilya, por design, entende quase todas as estruturas de dados do Python
+por defeito, incluindo `Enum`, `deque`, `dataclasses`, `PurePath`, `generators` e `tuple`.
 
-### Default Encoders
+### Codificadores padrão
 
-In order to understand how to serialise a specific object into `json`, Lilya has some default
-encoders that evaluates when tries to *guess* the response type.
+Para entender como serializar um objeto específico em `json`, o Lilya possui alguns codificadores padrão que são avaliados quando tenta *adivinhar* o tipo de resposta.
 
-* `DataclassEncoder` - Serialises `dataclass` objects.
-* `EnumEncoder` - Serialises `Enum` objects.
-* `PurePathEncoder` - Serializes `PurePath` objects.
-* `PrimitiveEncoder` - Serializes python primitive types. `str, int, float and None`.
-* `DictEncoder` - Serializes `dict` types.
-* `StructureEncoder` - Serializes more complex data types. `list, set, frozenset, GeneratorType, tuple, deque`.
+* `DataclassEncoder` - Serializa objetos `dataclass`.
+* `EnumEncoder` - Serializa objetos `Enum`.
+* `PurePathEncoder` - Serializa objetos `PurePath`.
+* `PrimitiveEncoder` - Serializa tipos primitivos do Python. `str, int, float e None`.
+* `DictEncoder` - Serializa tipos `dict`.
+* `StructureEncoder` - Serializa tipos de dados mais complexos. `list, set, frozenset, GeneratorType, tuple, deque`.
 
-What a brand new encoder is needed and it is not natively supported by Lilya? Well, [building a custom encoder](#build-a-custom-encoder)
-is extremly easy and possible.
+E quando um novo codificador é necessário e não é suportado nativamente pelo Lilya? Bem, [construir um codificador personalizado](#construir-um-codificador-personalizado)
+é extremamente fácil e possível.
 
-## Build a custom encoder
+## Construir um codificador personalizado
 
-As mentioned before, Lilya has [default encoders](#default-encoders) that are used to transform a response
-into a `json` serialisable response.
+Como mencionado antes, o Lilya possui [codificadores padrão](#codificadores-padrão) que são usados para transformar uma resposta
+numa resposta serializável em `json`.
 
-To build a custom encoder you must use the `Encoder` class from Lilya and override the `serialize()` function
-where it applies the serialisation process of the encoder type.
+Para criar um codificador personalizado, deve usar a classe `Encoder` do Lilya e substituir a função `serialize()`
+onde ocorre o processo de serialização do tipo de codificador.
 
-Then you **must register the encoder** for Lilya to use it.
+Em seguida, **deve registrar o codificador** para que o Lilya o possa usar.
 
-When defining an encoder the `__type__` or `def is_type(self, value: Any) -> bool:`
-**must be declared or overridden**.
+Ao definir um codificador, o `__type__` ou `def is_type(self, value: Any) -> bool:`
+**deve ser declarado ou substituído**.
 
-When the `__type__` is properly declared, the default `is_type` will evaluate the object against the
-type and return `True` or `False`.
+Quando o `__type__` é declarado corretamente, o `is_type` padrão avaliará o objeto em relação ao
+tipo e retornará `True` ou `False`.
 
-This is used internally to understand the type of encoder that will be applied to a given object.
+Isto é usado internamente para perceber o tipo de codificador que será aplicado a um determinado objeto.
 
 !!! warning
-    If you are not able to provide the `__type__` for any reason and you just want to override the
-    default evaluation process, simple override the `is_type()` and apply your custom logic there.
+    Se não puder fornecer o `__type__` por qualquer motivo e quiser apenas substituir a
+    avaliação padrão, simplesmente substitua o `is_type()` e aplique sua lógica personalizada lá.
 
-    E.g.: In Python 3.8, for a Pydantic `BaseModel` if passed in the `__type__`, it will throw an
-    error due to Pydantic internals, so to workaround this issue, you can simply override the `is_type()`
-    and apply the logic that validates the type of the object and returns a boolean.
+    Por exemplo: No Python 3.8, para um modelo Pydantic `BaseModel` se passado no `__type__`, ele lançará um
+    erro devido a questões internas do Pydantic, então, para contornar esse problema, pode simplesmente substituir o `is_type()`
+    e aplicar a lógica que valida o tipo do objeto e retorna um booleano.
 
 ```python
 from lilya.encoders import Encoder, register_encoder
 ```
 
-**Example**
+**Exemplo**
 
-Create and register an encoder that handles `msgspec.Struct` types.
+Criar e registrar um codificador que lida com tipos `msgspec.Struct`.
 
 ```python
 {!> ../../../docs_src/responses/encoders/example.py !}
 ```
 
-Simple right? Because now the `MsgSpecEncoder` is registered, you can simply do this in your handlers
-and return **directly** the `msgspec.Struct` object type.
+Simples, certo? Porque agora o `MsgSpecEncoder` está registrado, pode simplesmente fazer isto nos handlers
+e retornar **diretamente** o tipo de objeto `msgspec.Struct`.
 
 ```python
 from msgspec import Struct
@@ -364,67 +361,64 @@ def msgspec_struct():
     return User(name="lilya", url="example@lilya.dev")
 ```
 
-### Design specific custom encoders
+### Criar codificadores personalizados específicos
 
-**Lilya being 100% pure python and not tight to any particular validation library** allows you to
-design custom encoders that are later used by Lilya responses.
+**Lilya sendo 100% Python puro e não vinculado a nenhuma biblioteca de validação específica** permite que
+crie codificadores personalizados que são posteriormente usados pelas respostas do Lilya.
 
-Ok, this sounds a bit confusing right? I bet it does so let us go slowly.
+Ok, isso parece um bocado confuso, certo? Aposto que sim, então vamos devagar.
 
-Imagine you want to use a particular validation library such as [Pydantic](https://pydantic.dev/),
-[msgspec](https://jcristharif.com/msgspec/) or even [attrs](https://www.attrs.org/en/stable/) or something
-else at your choice.
+Imagine que quer usar uma biblioteca de validação específica, como [Pydantic](https://pydantic.dev/),
+[msgspec](https://jcristharif.com/msgspec/) ou até mesmo [attrs](https://www.attrs.org/en/stable/) ou qualquer outra
+à sua escolha.
 
-You want to make sure that if you return a pydantic model or a msgspec Struct or even a `define` attr class.
+Quer ter certeza de que, se retornar um modelo Pydantic ou uma msgspec Struct ou até mesmo uma classe `define` attr.
 
-Let us see how it would look like for all of them.
+Vejamos como seria para cada um deles.
 
-**For Pydantic BaseModel**
+**Para Pydantic BaseModel**
 
 ```python
 {!> ../../../docs_src/responses/encoders/pydantic.py !}
 ```
 
-**For msgspec Struct**
+**Para msgspec Struct**
 
 ```python
 {!> ../../../docs_src/responses/encoders/example.py !}
 ```
 
-**For attrs**
+**Para attrs**
 
 ```python
 {!> ../../../docs_src/responses/encoders/attrs.py !}
 ```
 
-Easy and poweful, right? Yes.
+Fácil e poderoso, certo? Sim.
 
-Do you understand what does this mean? Means you can design **any encoder** at your choice using
-also any library of your choice as well.
+Entende o que isso significa? Significa que pode criar **qualquer codificador** à sua escolha usando
+também qualquer biblioteca à escolha.
 
-The flexibility of Lilya allows you to be free and for Lilya not to be tight to any particular
-library.
+A flexibilidade do Lilya permite que seja livre e para que o Lilya não esteja vinculado a nenhuma biblioteca específica.
 
-#### Custom encoders and responses
+#### Codificadores personalizados e respostas
 
-After the [custom encoders in the examples](#build-a-custom-encoder) are created, this allows to
-do something like this directly.
+Depois que os [codificadores personalizados nos exemplos](#construir-um-codificador-personalizado) forem criados, isto permite fazer algo diretamente assim.
 
 ```python
 {!> ../../../docs_src/responses/encoders/responses.py !}
 ```
 
-#### Custom encoders and the `make_response`
+#### Codificadores personalizados e o `make_response`
 
-Well, here its where the `make_response` helps you. The `make_response` will generate a `JSONResponse`
-by default and when you return a custom encoder type, there are some limitations to it.
+Bem, aqui é onde o `make_response` o ajuda. O `make_response` irá gerar um `JSONResponse`
+por defeito e quando retornar um tipo de codificador personalizado, existem algumas limitações para isso.
 
-For example, what if you want to return with a different `status_code`? Or even attach a [task](./tasks.md)
-to it?
+Por exemplo, e se quiser retornar com um `status_code` diferente? Ou até mesmo adicionar-lhe uma [tarefa](./tasks.md)?
 
-The custom encoder **does not handle** that for you but the `make_response` does!
+O codificador personalizado **não lida** com isso para si, mas o `make_response` lida!
 
-Let us see how it would look like now using the `make_response`.
+Vejamos como ficaria agora utilizando o `make_response`.
 
 ```python
 {!> ../../../docs_src/responses/encoders/make_response.py !}
