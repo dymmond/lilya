@@ -2,9 +2,6 @@
 
 Do you like **Lilya** and would like to help Lilya, other user and the author?
 
-## 🐦 Follow Lilya on Twitter
-
-
 ## ⭐ Star **Lilya** on GitHub
 
 Giving a star to Lilya is very simple and helps promoting the work across the developers around the world.

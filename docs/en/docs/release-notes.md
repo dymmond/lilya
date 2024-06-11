@@ -5,6 +5,16 @@ hide:
 
 # Release Notes
 
+## 0.7.4
+
+### Added
+
+- Translations to portuguese.
+
+### Fixed
+
+- Missing `settings` in the `runserver` directive.
+
 ## 0.7.3
 
 ### Fixed
