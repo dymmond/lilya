@@ -175,7 +175,7 @@ Veja o exemplo do `GZipMiddleware` [aqui](#middleware-e-as-definições).
 * `GZipMiddleware` - Middleware de compressão `gzip`.
 * `HTTPSRedirectMiddleware` - Middleware que lida com redirecionamentos HTTPS para a sua aplicação. Muito útil para uso em ambientes de produção ou semelhantes a produção.
 * `SessionMiddleware` - Middleware que lida com sessões.
-* `WSGIMiddleware` - Permite conectar aplicações WSGI e executá-los dentro do Lilya. Um [ótimo exemplo](./wsgi.md) de como usá-lo está disponível.
+* `WSGIMiddleware` - Permite ligar aplicações WSGI e executá-los dentro do Lilya. Um [ótimo exemplo](./wsgi.md) de como usá-lo está disponível.
 
 ### CSRFMiddleware
 

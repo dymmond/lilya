@@ -1,14 +1,14 @@
-# Server Push
+# Push do Servidor
 
-Lilya incorporates support for `HTTP/2` and `HTTP/3` server push,
-enabling the proactive delivery of resources to the client for accelerating page load times.
+Lilya incorpora o suporte para push do servidor em `HTTP/2` e `HTTP/3`,
+permitindo a entrega proativa de recursos ao cliente para acelerar o tempo de carregamento da página.
 
-## The method
+## O método
 
-This method is employed to initiate a server push for a resource.
-If server push functionality is not available, this method takes no action.
+Este método é usado para iniciar um push do servidor para um recurso.
+Se a funcionalidade de push do servidor não estiver disponível, este método não faz nada.
 
-- `path`: A string specifying the path of the resource.
+- `path`: Uma string especificando o caminho do recurso.
 
 ```python
 {!> ../../../docs_src/push/server.py !}

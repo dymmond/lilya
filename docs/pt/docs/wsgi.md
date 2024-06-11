@@ -1,83 +1,79 @@
-# WSGI frameworks
+# WSGI Frameworks
 
-Did you know because of the awesome work from [a2wsgi](https://github.com/abersheeran/a2wsgi) you can integrate any wsgi
-framework (Flask, Django...)?
+Sabia que graças ao incrível trabalho do [a2wsgi](https://github.com/abersheeran/a2wsgi) pode integrar qualquer framework WSGI (Flask, Django...)?
 
-Yes, that's right, you can now smoothly move to Lilya without rewriting your old applications from the scratch,
-actually, you can reuse them directly within Lilya, even another Lilya running inside another Lilya,
-a *Lilyaception*.
+Sim, é verdade, agora pode facilmente migrar para Lilya sem ter que reescrever as suas aplicações antigas, na realidade, pode
+reutilizá-las diretamente dentro de Lilya, até mesmo um Lilya que esteja a correr dentro de outro Lilya, um *Lilyaception*.
 
 ## WSGIMiddleware
 
-Using this middleware is very simple, let's use Flask as example since it is very fast to spin-up a Flask service
-compared to other giants like Django.
+Utilizar este middleware é bastante simples, vamos usar o Flask como exemplo, já que é muito rápido iniciar um serviço Flask em comparação com outros gigantes como Django.
 
-=== "Simple Routing"
+=== "Roteamento Simples"
 
-    ```python
-    {!> ../../../docs_src/wsgi/simple_routing.py!}
-    ```
+```python
+{!> ../../../docs_src/wsgi/simple_routing.py!}
+```
 
-=== "Nested Routing"
+=== "Roteamento *Nested*"
 
-    ```python
-    {!> ../../../docs_src/wsgi/nested_routing.py!}
-    ```
+```python
+{!> ../../../docs_src/wsgi/nested_routing.py!}
+```
 
-=== "Complex Routing"
+=== "Roteamento Complexo"
 
-    ```python
-    {!> ../../../docs_src/wsgi/complex_routing.py!}
-    ```
+```python
+{!> ../../../docs_src/wsgi/complex_routing.py!}
+```
 
-=== "Multiple Flask"
+=== "Vários Flask"
 
-    ```python
-    {!> ../../../docs_src/wsgi/multiple.py!}
-    ```
+```python
+{!> ../../../docs_src/wsgi/multiple.py!}
+```
 
 === "Lilya"
 
-    ```python
-    {!> ../../../docs_src/wsgi/lilya.py!}
-    ```
+```python
+{!> ../../../docs_src/wsgi/lilya.py!}
+```
 
 === "ChildLilya"
 
-    ```python
-    {!> ../../../docs_src/wsgi/childlilya.py!}
-    ```
+```python
+{!> ../../../docs_src/wsgi/childlilya.py!}
+```
 
-You already get the idea, the integrations are endeless!
+Já tem uma ideia, as integrações são infinitas!
 
-## Check it
+## Verifique
 
-With all of examples from before, you can now verify that the integrations are working.
+Com todos os exemplos anteriores, já pode verificar que as integrações estão a funcionar.
 
-The paths pointing to the `WSGIMiddleware` will be handled by Flask and the rest is handled by **Lilya**,
-including the Lilya inside another Lilya.
+Os caminhos que se referem ao `WSGIMiddleware` serão tratados pelo Flask e o resto será tratado pelo **Lilya**, incluindo Lilya dentro de outro Lilya.
 
-If you run the endpoint handled by Flask:
+Se executar o *endpoint* tratado pelo Flask:
 
-* `/flask` - From simple routing.
-* `/flask` - From nested routing.
-* `/internal/flask` and `/external/second/flask` - From complex routing.
-* `/flask` and `/second/flask` - From multiple flask apps.
-* `/lilya/flask` and `/lilya/second/flask` - From inside another Lilya
+* `/flask` - No roteamento simples.
+* `/flask` - No roteamento aninhado.
+* `/internal/flask` e `/external/second/flask` - No roteamento complexo.
+* `/flask` e `/second/flask` - A partir de várias aplicações Flask.
+* `/lilya/flask` e `/lilya/second/flask` - A partir de dentro de outro Lilya.
 
-You will see the response:
+Verá a resposta:
 
 ```shell
 Hello, Lilya from Flask!
 ```
 
-Accessing any `Lilya` endpoint:
+Ao aceder a qualquer endpoint do `Lilya`:
 
-* `/home/lilya` - From simple routing.
-* `/home/lilya` - From complex routing.
-* `/home/lilya` - From nested routing.
-* `/home/lilya` - From multiple flask apps.
-* `/lilya/home/lilya` - From inside another Lilya
+* `/home/lilya` - No roteamento simples.
+* `/home/lilya` - No roteamento complexo.
+* `/home/lilya` - No roteamento aninhado.
+* `/home/lilya` - A partir de várias aplicações Flask.
+* `/lilya/home/lilya` - A partir de dentro de outro Lilya.
 
 ```json
 {

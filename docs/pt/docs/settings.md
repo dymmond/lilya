@@ -110,7 +110,7 @@ e carrega-a em modo preguiçoso, tornando-a globalmente disponível.
 ## O settings_module
 
 Esta é uma ótima ferramenta para tornar suas aplicações Lilya 100% independentes e modulares.
-Existem casos em que simplesmente se deseja conectar uma aplicação Lilya existente a outra e essa mesma aplicação Lilya já possui configurações e padrões exclusivos.
+Existem casos em que simplesmente se deseja ligar uma aplicação Lilya existente a outra e essa mesma aplicação Lilya já possui configurações e padrões exclusivos.
 
 O `settings_moduke` é um parâmetro disponível em cada instância do `Lilya`, assim como no `ChildLilya`.
 

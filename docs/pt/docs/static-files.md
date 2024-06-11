@@ -1,14 +1,14 @@
 # StaticFiles
 
-Lilya provides a convenient `StaticFiles` class for serving files from a specified directory:
+Lilya fornece uma classe conveniente chamada `StaticFiles` para servir ficheiros de uma directoria especificada:
 
-## Parameters
+## Parâmetros
 
-- `directory` - A string or [os.PathLike][pathlike] indicating the directory path.
-- `packages` - A list of strings or list of tuples of strings representing Python packages.
-- `html` - Operate in HTML mode, automatically loading `index.html` for directories if it exists.
-- `check_dir` - Ensure that the directory exists upon instantiation. Defaults to `True`.
-- `follow_symlink` - A boolean indicating whether symbolic links for files and directories should be followed. Defaults to `False`.
+- `directory` - Uma string ou [os.PathLike][pathlike] indicando o caminho da directoria.
+- `packages` - Uma lista de strings ou lista de tuplos de strings que representem modulos Python.
+- `html` - Operar no modo HTML, carregando automaticamente o `index.html` para as directorias, se existir.
+- `check_dir` - Garantir que a directoria exista ao instanciar. Por defeito é `True`.
+- `follow_symlink` - Um booleano indicando se *symlinks* para ficheiros e diretorias devem ser seguidos. Por defeito é `False`.
 
 ```python
 from lilya.apps import Lilya
@@ -21,11 +21,11 @@ app = Lilya(routes=[
 ])
 ```
 
-For requests that do not match, static files will respond with "404 Not Found" or "405 Method Not Allowed" responses.
-In HTML mode, if a `404.html` file exists, it will be displayed as the 404 response.
+Para pedidos que não correspondem, os ficheiros estáticos responderão com respostas "404 Not Found" ou "405 Method Not Allowed".
+No modo HTML, se existir um ficheiro `404.html`, será exibido como resposta 404.
 
-The `packages` option allows inclusion of "static" directories from within a Python package.
-The Python "bootstrap4" package serves as an example.
+A opção `packages` permite a inclusão de directorias "static" dentro de um módulo
+O Python module "bootstrap4" segue como exemplo.
 
 ```python
 from lilya.apps import Lilya
@@ -38,7 +38,8 @@ app = Lilya(routes=[
 ])
 ```
 
-By default, `StaticFiles` looks for the `statics` directory in each package. You can modify the default directory by specifying a tuple of strings.
+Por defeito, o `StaticFiles` procura pela directoria `statics` em cada módulo. Pode modificar o valor por defeito da directoria indicando
+um tuplo de strings.
 
 ```python
 routes=[
@@ -46,6 +47,7 @@ routes=[
 ]
 ```
 
-While you may choose to include static files directly within the "static" directory, using Python packaging to include static files can be beneficial for bundling reusable components.
+Embora possa optar por incluir ficheiros estáticos diretamente na directoria "static", usar *packaging* Python para incluir ficheiros
+estáticos pode ser benéfico para agrupar componentes reutilizáveis.
 
 [pathlike]: https://docs.python.org/3/library/os.html#os.PathLike

@@ -203,10 +203,10 @@ Ao usar `.stream()`, os fragmentos de bytes são fornecidos sem a necessidade de
 Chamadas subsequentes a `.body()`, `.form()` ou `.json()` resultarão em erro.
 
 Em situações específicas, como resposta de longa duração ou streaming, torna-se crucial
-determinar se o cliente foi desconectado.
+determinar se o cliente foi desligado.
 
 Isso pode ser verificado utilizando o seguinte:
-`desconectado = await request.is_disconnected().`
+`desligado = await request.is_disconnected().`
 
 
 ##### Ficheiros de Request

@@ -1,108 +1,99 @@
 # Templates
 
-Lilya is not inherently tied to any specific templating engine, but Jinja2 stands out as an excellent choice
-due to its proven origins and widely adoption in the Python world.
+O Lilya não está intrinsecamente ligado a nenhum mecanismo de modelagem específico, mas o Jinja2 destaca'se como uma excelente escolha devido às suas origens comprovadas e ampla adoção no mundo Python.
 
 ## Jinja2Template
 
-This is what Lilya brings out of the box and allows serving HTML via the handlers.
+Isso é o que Lilya traz por defeito e permite servir HTML por meio dos *handlers*.
 
 ```python
 from lilya.templating import Jinja2Template
 ```
 
-### Parameters
+### Parâmetros
 
-- `directory`: A string, [os.Pathlike][pathlike], or a list of strings or [os.Pathlike][pathlike] indicating a directory path.
-- `env`: Any different `jinja2.Environment` instance *(Optional)*.
-- `**options`: Additional keyword arguments to pass to the Jinja2 environment.
+- `directory`: Uma string, [os.Pathlike][pathlike], ou uma lista de strings ou [os.Pathlike][pathlike] indicando um caminho para uma directoria.
+- `env`: Qualquer instância diferente de `jinja2.Environment` *(Opcional)*.
+- `**options`: Argumentos de palavra-chave adicionais para passar ao ambiente Jinja2.
 
-[pathlike]: https://docs.python.org/3/library/os.html#os.PathLike
+## Uso do Jinja2Template
 
-## Use of Jinja2Template
-
-Lilya brings a pre-configured `Jinja2Template` configuration that it will be probably what you will
-want to use. In case you want a different `jinja2.Enviroment`, that can be also passed when instantiating
-the `Jinja2Template`.
+O Lilya traz uma configuração pré-configurada do `Jinja2Template` que provavelmente será o que desejará usar. Caso queira um `jinja2.Enviroment` diferente,
+isso também pode ser passado ao instanciar o `Jinja2Template`.
 
 ```python
 {!> ../../../docs_src/templates/template.py !}
 ```
-### Templates response parameters
 
-The get_template_response function expects the following arguments:
+### Parâmetros de resposta dos modelos
 
-- `request`: (required): The HTTP request object.
-- `name`: (required): The name of the template to render.
+A função `get_template_response` espera os seguintes argumentos:
 
-Any additional arguments or keyword arguments provided will be passed directly to the template as context.
-This allows you to include dynamic data in the template rendering process.
-You can pass these arguments either as keyword arguments or positional arguments, depending on your preference.
+- `request`: (obrigatório): O objeto de *request* HTTP.
+- `name`: (obrigatório): O nome da template a ser renderizada.
+
+Quaisquer argumentos ou argumentos de palavra-chave adicionais fornecidos serão passados diretamente para a template como contexto.
+Isto permite incluir dados dinâmicos no processo de renderização da template. Pode passar esses argumentos como argumentos de palavra-chave ou argumentos posicionais, dependendo de sua preferência.
 
 !!! warning
-    It's imperative to include the incoming request instance as part of the template context.
+    É imperativo incluir a instância de *request* recebida como parte do contexto da template.
 
-The Jinja2 template context automatically incorporates a `url_for` function, allowing correct hyperlinking to other pages within the application.
+O contexto da template Jinja2 incorpora automaticamente uma função `url_for`, permitindo a criação correta de links para outras páginas dentro da aplicação.
 
-For instance, static files can be linked from within HTML templates:
+Por exemplo, ficheiros estáticos podem ser vinculados a partir de templates HTML:
 
 ```jinja
 {!> ../../../docs_src/_shared/jinja.html !}
 ```
 
-Should you wish to utilize [custom filters][jinja2], you will need to update the `env` property of `Jinja2Template`:
+Caso deseje utilizar [filtros personalizados][jinja2], será necessário atualizar a propriedade `env` do `Jinja2Template`:
 
 ```python
 {!> ../../../docs_src/templates/custom.py !}
 ```
 
-## The `jinja2.Environment`
+## O `jinja2.Environment`
 
-Lilya accepts a preconfigured [jinja2.Environment](https://jinja.palletsprojects.com/en/3.0.x/api/#api) instance by
-passing it inside the `env` attribute when instantiaing the `Jinja2Template`.
+Lilya aceita uma instância preconfigurada de [jinja2.Environment](https://jinja.palletsprojects.com/en/3.0.x/api/#api) passando-a dentro do atributo `env` ao instanciar o `Jinja2Template`.
 
 ```python
 {!> ../../../docs_src/templates/env.py !}
 ```
 
-## Context Processors
+## Processadores de Contexto
 
-A context processor is a function that returns a dictionary to be merged into a template context. Each function takes only one argument,
-`request`, and must return a dictionary to be added to the context.
+Um processador de contexto é uma função que retorna um dicionário a ser incorporado num contexto da template. Cada função recebe apenas um argumento, `request`,
+e deve retornar um dicionário a ser adicionado ao contexto.
 
-A typical use case for template processors is to enhance the template context with shared variables.
+Um caso de uso típico para processadores da template é aprimorar o contexto da template com variáveis compartilhadas.
 
 ```python
 {!> ../../../docs_src/templates/ctx.py !}
 ```
 
-### Registering Context Processors
+### Registrando Processadores de Contexto
 
-To register context processors, pass them to the `context_processors` argument of the `Jinja2Template` class.
+Para registrar processadores de contexto, passe-os para o argumento `context_processors` da classe `Jinja2Template`.
 
 ```python
 {!> ../../../docs_src/templates/ctx_register.py !}
 ```
 
-## Custom Jinja2 Environment
+## Ambiente Jinja2 Personalizado
 
-`Jinja2Template` accepts all options supported by the Jinja2 `Environment`.
-This grants greater control over the `Environment` instance created by Lilya.
+`Jinja2Template` aceita todas as opções suportadas pelo `Environment` do Jinja2. Isto concede um maior controlo sobre a instância de `Environment` criada pelo Lilya.
 
-For the list of options available to `Environment`, refer to the Jinja2 documentation
-[here](https://jinja.palletsprojects.com/en/3.0.x/api/#jinja2.Environment).
+Para a lista de opções disponíveis para `Environment`, consulte a documentação do Jinja2 [aqui](https://jinja.palletsprojects.com/en/3.0.x/api/#jinja2.Environment).
 
 ```python
 {!> ../../../docs_src/templates/custom_jinja.py !}
 ```
 
-## Asynchronous Template Rendering
+## Renderização da Template Assíncrona
 
-While Jinja2 supports asynchronous template rendering, it is advisable to avoid including logic in
-templates that trigger database lookups or other I/O operations.
+Embora o Jinja2 suporte a renderização assíncrona de templates, é aconselhável evitar a inclusão de lógica em templates que acionem consultas de base de dados ou outras operações de I/O.
 
-A recommended practice is to ensure that your endpoints handle all I/O operations.
-For instance, perform database queries within the view and include the final results in the context.
-This approach helps keep templates focused on presentation logic rather than I/O operations.
+Uma prática recomendada é garantir que os endpoints lidem com todas as operações de I/O. Por exemplo, execute consultas de base de dados dentro da *view* e inclua os resultados finais no contexto. Esta abordagem ajuda a manter as templates focados na lógica de apresentação, em vez de operações de I/O.
 
 [jinja2]: https://jinja.palletsprojects.com/en/3.0.x/api/?highlight=environment#writing-filters
+[pathlike]: https://docs.python.org/3/library/os.html#os.PathLike

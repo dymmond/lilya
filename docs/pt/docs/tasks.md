@@ -1,67 +1,66 @@
 # Tasks
 
-This can be useful for those operations that need to happen after the request without blocking the
-client (the client doesn't have to wait to complete) from receiving that same response.
+Isto pode ser útil para operações que precisam de acontecer após o pedido sem bloquear o
+cliente (o cliente não precisa esperar que complete) para receber a resposta.
 
-To associate a background task with a response, the task will execute only after the response has been dispatched,
-this means that a background task **must be attached** to a [Response](./responses.md).
+Para associar uma tarefa em segundo plano com uma resposta, a tarefa será executada somente após a resposta ter sido enviada,
+isto significa que uma tarefa em segundo plano **deve ser anexada** a uma [Resposta](./responses.md).
 
-Example:
+Exemplo:
 
-* Registering a user in the system and send an email confirming the registration.
-* Processing a file that can take "some time". Simply return a HTTP 202 and process the file in the
-background.
+* Registrar um utilizador no sistema e enviar um e-mail a confirmar o registro.
+* Processar um ficheiro que pode levar "algum tempo". Simplesmente retorna um HTTP 202 e processa o ficheiro em segundo plano.
 
-### Using a list
+### Usando uma lista
 
-Of course there is also the situation where more than one background task needs to happen.
+É claro que também há situações em que mais de uma tarefa em segundo plano pode acontecer.
 
 ```python
 {!> ../../../docs_src/background_tasks/via_list.py !}
 ```
 
-## Via response
+## Através da resposta
 
-Adding tasks via response will be probably the way you will be using more often and the reson being
-is that sometimes you will need some specific information that is only available inside your view.
+Adicionar tarefas através da resposta provavelmente será a maneira que usará com mais frequência e o motivo é
+que às vezes precisará de algumas informações específicas que só estão disponíveis dentro da sua *view*.
 
-### Using a single instance
+### Usando uma única instância
 
-In the same way you created a single background task for the handlers, in the response works in a
-similar way.
+Da mesma forma que criou uma única tarefa em segundo plano para os *handlers*, na resposta funciona de maneira
+semelhante.
 
-### Using a list
+### Usando uma lista
 
-The same happens when executing more than one background task and when more than one operation is
-needed.
+O mesmo acontece ao executar mais do que uma tarefa em segundo plano e quando mais do que uma operação é
+necessária.
 
 ```python
 {!> ../../../docs_src/background_tasks/response/via_list.py !}
 ```
 
-### Using the add_task
+### Usando o add_task
 
-Another way of adding multiple tasks is by using the `add_tasks` function provided by the
-`Tasks` object.
+Outra maneira de adicionar várias tarefas é utilizando a função `add_tasks` fornecida pelo
+objeto `Tasks`.
 
 ```python
 {!> ../../../docs_src/background_tasks/response/add_tasks.py !}
 ```
 
-The `.add_task()` receives as arguments:
+O `.add_task()` recebe como argumentos:
 
-* A task function to be run in the background (send_email_notification and write_in_file).
-* Any sequence of arguments that should be passed to the task function in order (email, message).
-* Any keyword arguments that should be passed to the task function.
+* Uma função de tarefa a ser executada em segundo plano (send_email_notification e write_in_file).
+* Qualquer sequência de argumentos que devem ser passados para a função de tarefa na ordem (email, message).
+* Quaisquer argumentos de palavra-chave que devem ser passados para a função de tarefa.
 
 
-## Technical information
+## Informações técnicas
 
-The class `Task` and `Tasks` come directly from `lilya.background` but the nature of the
-objects also allows the use of external libraries like [backgrounder](https://backgrounder.dymmond.com).
+As classes `Task` e `Tasks` derivam diretamente de `lilya.background`, mas a natureza dos
+objetos também permite o uso de bibliotecas externas como [backgrounder](https://backgrounder.dymmond.com).
 
-You can use `def` or `async def` functions when declaring those functionalities to be passed to
-the `Task` and Lilya will know how to handle those for you.
+Pode usar funções `def` ou `async def` ao declarar essas funcionalidades para serem passadas para
+o `Task` e o Lilya saberá como lidar com isso.
 
-The `Tasks` obejct also accepts the `as_group` parameter. This enables `anyio` to create a task
-group and run them.
+O objeto `Tasks` também aceita o parâmetro `as_group`. Isso permite que o `anyio` crie um grupo de tarefas
+e as execute.

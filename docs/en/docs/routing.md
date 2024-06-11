@@ -498,7 +498,7 @@ parent order where the order is:
 3. `InternalServerError : http_internal_server_error_handler`.
 4. `NotAuthorized: http_not_authorized_handler`.
 
-More than one exception handler can be added to each mapping.
+**More than one exception handler can be added to each mapping.**
 
 #### Permissions
 

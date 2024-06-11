@@ -1,133 +1,111 @@
 # Routing
 
-Lilya has a simple but highly effective routing system capable of handling from simple routes to the most
-complex.
+O Lilya possui um sistema de roteamento simples, mas altamente eficaz, capaz de lidar desde rotas simples até as mais complexas.
 
-Using  an enterprise application as example, the routing system surely will not be something simple with
-20 or 40 direct routes, maybe it will have 200 or 300 routes where those are split by responsabilities,
-components and packages and imported also inside complex design systems.
-Lilya handles with those cases without any kind of issues at all.
+Usando uma aplicação empresarial como exemplo, o sistema de roteamento certamente não será algo simples com 20 ou 40 rotas diretas,
+talvez tenha 200 ou 300 rotas onde essas são divididas por responsabilidades, componentes e pacotes e também importadas dentro de sistemas de design complexos.
+O Lilya lida com esses casos sem nenhum tipo de problema.
 
 ## Router
 
-The Router is the main object that links the whole Lilya to the [Path](#path),
-[WebSocketPath](#websocketpath) and [Include](#include).
+O Router é o objeto principal que liga todo o Lilya ao [Path](#path), [WebSocketPath](#websocketpath) e [Include](#include).
 
-## Router class
+## Classe Router
 
-The router class is composed by many attributes that are by default populated within the application but Lilya
-also allows to add extra [custom routers](#custom-router) as well but another way is to add a
-[ChildLilya](#child-lilya-application) application.
+A classe do router é composta por muitos atributos que são preenchidos por defeito dentro da aplicação, mas o Lilya também permite adicionar [routers personalizados](#custom-router) adicionais, bem como adicionar uma aplicação [ChildLilya](#child-lilya-application).
 
 ```python
 {!> ../../../docs_src/routing/router/router_class.py!}
 ```
 
-The main `Router` class is instantiated within the `Lilya` application with the given routes and the application
-starts.
+A classe principal `Router` é instanciada dentro da aplicação `Lilya` com as rotas fornecidas e a aplicação é iniciada.
 
-### Parameters
+### Parâmetros
 
-When creating a [Path](#path) or [WebSocketPath](#websocketpath) function handler, you have two ways
-of getting the path parameters.
+Ao criar um *handler* [Path](#path) ou [WebSocketPath](#websocketpath), tem duas maneiras de obter os parâmetros do caminho.
 
-* Lilya auto discovers and injects them for you.
-* You get them from the [request](./requests.md) object.
+* Lilya descobre e injeta automaticamente.
+* Obtém-nos directamente do objeto [request](./requests.md).
 
-#### Auto discovering the parameters
+#### Descobrindo automaticamente os parâmetros
 
-This is probably the easiest and simplest way.
+Esta é provavelmente a maneira mais fácil e simples.
 
 ```python
 {!> ../../../docs_src/routing/handlers/patch.py !}
 ```
 
-The `customer_id` declared in the `path` was also declared in the function handler allowing Lilya
-to inject the **values found by order from the path parameters** for you.
+O `customer_id` declarado no `path` também foi declarado no *handler*, permitindo que o Lilya injete os **valores encontrados por ordem dos parâmetros do caminho**.
 
-#### From the `request` path parameters.
+#### A partir dos parâmetros do caminho do `request`.
 
 ```python
 {!> ../../../docs_src/routing/handlers/request.py !}
 ```
 
-The `customer_id` declared in the `path` was obtained by accessing the `request` object.
+O `customer_id` declarado no `path` foi obtido acedendo ao objeto `request`.
 
-## Custom Router
+## Router Personalizado
 
-Let's assume there are specific **customer** submodules inside a `customers` dedicated file.
-There are two way of separating the routes within the application, using [Include](#include),
-a [ChildLilya](#childlilya-application) or by creating another router. Let's focus on the latter.
+Vamos supor que existam submódulos específicos de **clientes** dentro de um ficheiro dedicado `customers`.
+Existem duas maneiras de separar as rotas dentro da aplicação, utilizando [Include](#include), um [ChildLilya](#childlilya-application) ou criando outro router. Vamos focar neste último.
 
 ```python title="/application/apps/routers/customers.py"
 {!> ../../../docs_src/routing/router/customers.py!}
 ```
 
-Above you create the `/application/apps/routers/customers.py` with all the information you need. It does not need
-to be in one file, you can have a entirely seperate package just to manage the customer, it is up to you.
+Acima, cria o `/application/apps/routers/customers.py` com todas as informações necessárias. Não precisa estar num único ficheiro, pode ter um pacote completamente separado apenas para gerir o cliente.
 
-Now you need to add the new custom router into the main application.
+Agora precisa adicionar o novo router personalizado à aplicação principal.
 
 ```python title="/application/app.py"
 {!> ../../../docs_src/routing/router/app.py!}
 ```
 
-This simple and your router is added to the main **Lilya** application.
+Isto é simples e o router é adicionado à aplicação principal do **Lilya**.
 
-## ChildLilya Application
+## Aplicação ChildLilya
 
-What is this? We call it `ChildLilya` but in fact is simply Lilya but under a different name mostly for
-visualisation purposes and for the sake of organisation.
+O que é isto? Chamamos de `ChildLilya`, mas na verdade é apenas o Lilya, mas com um nome diferente, principalmente para fins de visualização e organização.
 
-!!! Check
-    Using `ChildLilya` or `Lilya` is exactly the same thing, it is only if you prefer to create a
-    `sub application` and you prefer to use a different class instead of `Lilya` to make it more organised.
+### Como funciona
 
-### How does it work
-
-Let's use the same example used in the [custom routers](#custom-router) with the customers specific routes and rules.
+Vamos usar o mesmo exemplo utilizado nos [routers personalizados](#custom-router) com as rotas e regras específicas dos clientes.
 
 ```python title="/application/apps/routers/customers.py"
 {!> ../../../docs_src/routing/router/childlilya/customers.py!}
 ```
 
-Since the `ChildLilya` is a representation of a [Lilya](./applications.md) class, we can pass
-the otherwise limited parameters in the [custom router](#custom-router) and all the parameters available to
-[Lilya](./applications.md).
+Como o `ChildLilya` é uma representação de uma classe [Lilya](./applications.md), podemos passar os parâmetros limitados do [router personalizado](#custom-router) e todos os parâmetros disponíveis no [Lilya](./applications.md).
 
-You can add as many `ChildLilya` as you desire, there are no limits.
+Pode adicionar quantos `ChildLilya` desejar, não há limites.
 
-**Now in the main application**:
+**Agora na aplicação principal**:
 
 ```python title="/application/app.py"
 {!> ../../../docs_src/routing/router/childlilya/app.py!}
 ```
 
-**Adding nested applications**
+**Adicionando aplicações *nested***
 
 ```python title="/application/app.py"
 {!> ../../../docs_src/routing/router/childlilya/nested.py!}
 ```
 
-The example above, it is showing that you could even add the same application within nested includes and for each
-include you can add specific unique [permissions](./permissions.md) and [middlewares](./middleware.md) which are available on each
-instance of the `Include`. The options are endeless.
+O exemplo acima mostra que pode até adicionar a mesma aplicação dentro de includes *nested* e para cada include, pode adicionar [permissões](./permissions.md) e [middlewares](./middleware.md) específicos, que estão disponíveis em cada instância do `Include`. As opções são infinitas.
 
 !!! Note
-    In terms of organisation, `ChildLilya` has a clean approach to the isolation of responsabilities and allow
-    treating every individual module separately and simply adding it in to the main application
-    in the form of [Include](#include).
+    Em termos de organização, o `ChildLilya` tem uma abordagem limpa para isolamento de responsabilidades e permite tratar cada módulo individualmente e simplesmente adicioná-lo à aplicação principal sobe a forma de [Include](#include).
 
 !!! Tip
-    Treat the `ChildLilya` as an independent `Lilya` instance.
+    Trate o `ChildLilya` como uma instância independente do `Lilya`.
 
 !!! Check
-    When adding a `ChildLilya` or `Lilya` application, don't forget to add the unique path to the base
-    `Include`, this way you can assure the routes are found properly.
+    Ao adicionar uma aplicação `ChildLilya` ou `Lilya`, não se esqueça de adicionar o caminho único para o [Include](#include) base, dessa forma pode garantir que as rotas sejam corretamente encontradas.
 
-## Utils
+## Utilitários
 
-The `Router` object has some available functionalities that can be useful.
+O objeto `Router` possui algumas funcionalidades disponíveis que podem ser úteis.
 
 ### add_route()
 
@@ -135,19 +113,16 @@ The `Router` object has some available functionalities that can be useful.
 {!> ../../../docs_src/routing/router/add_route.py!}
 ```
 
-#### Parameters
+#### Parâmetros
 
-* **path** - The path for the child lilya.
-* **name** - Name of the route.
-* **handler** - The function handler.
-* **methods** - The available http verbs for the path.
-* **include_in_schema** - If route should be added to the OpenAPI Schema
-* **permissions** - A list of [permissions](./permissions.md) to serve the application incoming
-requests (HTTP and Websockets).
-* **middleware** - A list of [middleware](./middleware.md)  to run for every request.
-* **exception handlers** - A dictionary of [exception types](./exceptions.md) (or custom exceptions) and the handler
-functions on an application top level. Exception handler callables should be of the form of
-`handler(request, exc) -> response` and may be be either standard functions, or async functions.
+* **path** - O caminho para o ChildLilya.
+* **name** - Nome da rota.
+* **handler** - O *handler*.
+* **methods** - Os verbos HTTP disponíveis para o caminho.
+* **include_in_schema** - Se a rota deve ser adicionada ao OpenAPI Schema (se tiver algum).
+* **permissions** - Uma lista de [permissões](./permissions.md) para atender aos pedidos de entrada da aplicação (HTTP e Websockets).
+* **middleware** - Uma lista de [middlewares](./middleware.md) para executar em cada pedido.
+* **exception handlers** - Um dicionário de tipos de [excepção](./exceptions.md) (ou excepções personalizadas) e os *handlers* no nível superior da aplicação. Os *exception handlers* devem ter a forma `handler(request, exc) -> response` e podem ser funções padrão ou funções assíncronas.
 
 ### add_websocket_route()
 
@@ -155,17 +130,14 @@ functions on an application top level. Exception handler callables should be of 
 {!> ../../../docs_src/routing/router/add_websocket_route.py!}
 ```
 
-#### Parameters
+#### Parâmetros
 
-* **path** - The path for the child lilya.
-* **name** - Name of the route.
-* **handler** - The function handler.
-* **permissions** - A list of [permissions](./permissions.md) to serve the application incoming
-requests (HTTP and Websockets).
-* **middleware** - A list of [middleware](./middleware.md)  to run for every request.
-* **exception handlers** - A dictionary of [exception types](./exceptions.md) (or custom exceptions) and the handler
-functions on an application top level. Exception handler callables should be of the form of
-`handler(request, exc) -> response` and may be be either standard functions, or async functions.
+* **path** - O caminho para o ChildLilya.
+* **name** - Nome da rota.
+* **handler** - O *handler*.
+* **permissions** - Uma lista de [permissões](./permissions.md) para atender aos pedidos de entrada da aplicação (HTTP e Websockets).
+* **middleware** - Uma lista de [middlewares](./middleware.md) para executar em cada pedido.
+* **exception handlers** - Um dicionário de tipos de [exceção](./exceptions.md) (ou exceções personalizadas) e os *handlers* no nível superior da aplicação. Os *exception handlers* devem ter a forma `handler(request, exc) -> response` e podem ser funções padrão ou funções assíncronas.
 
 ### add_child_lilya()
 
@@ -173,42 +145,35 @@ functions on an application top level. Exception handler callables should be of 
 {!> ../../../docs_src/routing/router/add_child_lilya.py!}
 ```
 
-#### Parameters
+#### Parâmetros
 
-* **path** - The path for the child lilya.
-* **child** - The [ChildLilya](#child-lilya-application) instance.
-* **name** - Name of the route.
-* **handler** - The function handler.
-* **permissions** - A list of [permissions](./permissions.md) to serve the application incoming
-requests (HTTP and Websockets).
-* **middleware** - A list of [middleware](./middleware.md)  to run for every request.
-* **exception handlers** - A dictionary of [exception types](./exceptions.md) (or custom exceptions) and the handler
-functions on an application top level. Exception handler callables should be of the form of
-`handler(request, exc) -> response` and may be be either standard functions, or async functions.
-* **include_in_schema** - Boolean if this ChildLilya should be included in the schema.
-* **deprecated** - Boolean if this ChildLilya should be marked as deprecated.
+* **path** - O caminho para o ChildLilya.
+* **child** - A instância [ChildLilya](#child-lilya-application).
+* **name** - Nome da rota.
+* **handler** - O *handler*.
+* **permissions** - Uma lista de [permissões](./permissions.md) para atender aos pedidos de entrada da aplicação (HTTP e Websockets).
+* **middleware** - Uma lista de [middlewares](./middleware.md) para executar em cada pedido.
+* **exception handlers** - Um dicionário de tipos de [exceção](./exceptions.md) (ou exceções personalizadas) e os *handlers* no nível superior da aplicação. Os *exception handlers* devem ter a forma `handler(request, exc) -> response` e podem ser funções padrão ou funções assíncronas.
+* **include_in_schema** - Booleano se este ChildLilya deve ser incluído no esquema.
+* **deprecated** - Booleano se este ChildLilya deve ser marcado como obsoleto.
 
 ## Path
 
-The object that connects and builds the application urls or paths. It maps the function handler
-with the application routing system
+O objeto que liga e constrói as URLs ou caminhos da aplicação. Ele mapeia o *handler* com o sistema de roteamento da aplicação.
 
-#### Parameters
+#### Parâmetros
 
-* **path** - The path for the child lilya.
-* **name** - Name of the route.
-* **handler** - The function handler.
-* **methods** - The available http verbs for the path.
-* **include_in_schema** - If route should be added to the OpenAPI Schema
-* **permissions** - A list of [permissions](./permissions.md) to serve the application incoming
-requests (HTTP and Websockets).
-* **middleware** - A list of [middleware](./middleware.md) to run for every request.
-* **exception handlers** - A dictionary of [exception types](./exceptions.md) (or custom exceptions) and the handler
-functions on an application top level. Exception handler callables should be of the form of
-`handler(request, exc) -> response` and may be be either standard functions, or async functions.
-* **deprecated** - Boolean if this ChildLilya should be marked as deprecated.
+* **path** - O caminho para o ChildLilya.
+* **name** - Nome da rota.
+* **handler** - O *handler*.
+* **methods** - Os verbos HTTP disponíveis para o caminho.
+* **include_in_schema** - Se a rota deve ser adicionada ao OpenAPI Schema.
+* **permissions** - Uma lista de [permissões](./permissions.md) para atender aos pedidos de entrada da aplicação (HTTP e Websockets).
+* **middleware** - Uma lista de [middlewares](./middleware.md) para executar em cada pedido.
+* **exception handlers** - Um dicionário de tipos de [exceção](./exceptions.md) (ou exceções personalizadas) e os *handlers* no nível superior da aplicação. Os *exception handlers* devem ter a forma `handler(request, exc) -> response` e podem ser funções padrão ou funções assíncronas.
+* **deprecated** - Booleano se este ChildLilya deve ser marcado como obsoleto.
 
-=== "In a nutshell"
+=== "Em poucas palavras"
 
     ```python
     {!> ../../../docs_src/routing/routes/gateway_nutshell.py!}
@@ -216,23 +181,20 @@ functions on an application top level. Exception handler callables should be of 
 
 ## WebSocketPath
 
-Same principle as [Path](#path) with one particularity. The websockets are `async`.
+O mesmo princípio do [Path](#path) com uma particularidade. Os websockets são `async`.
 
-#### Parameters
+#### Parâmetros
 
-* **path** - The path for the child lilya.
-* **name** - Name of the route.
-* **handler** - The function handler.
-* **include_in_schema** - If route should be added to the OpenAPI Schema
-* **permissions** - A list of [permissions](./permissions.md) to serve the application incoming
-requests (HTTP and Websockets).
-* **middleware** - A list of [middleware](./middleware.md) to run for every request.
-* **exception handlers** - A dictionary of [exception types](./exceptions.md) (or custom exceptions) and the handler
-functions on an application top level. Exception handler callables should be of the form of
-`handler(request, exc) -> response` and may be be either standard functions, or async functions.
-* **deprecated** - Boolean if this ChildLilya should be marked as deprecated.
+* **path** - O caminho para o ChildLilya.
+* **name** - Nome da rota.
+* **handler** - O *handler*.
+* **include_in_schema** - Se a rota deve ser adicionada ao OpenAPI Schema.
+* **permissions** - Uma lista de [permissões](./permissions.md) para atender aos pedidos de entrada da aplicação (HTTP e Websockets).
+* **middleware** - Uma lista de [middlewares](./middleware.md) para executar em cada pedido.
+* **exception handlers** - Um dicionário de tipos de [exceção](./exceptions.md) (ou exceções personalizadas) e os *handlers* no nível superior da aplicação. Os *exception handlers* devem ter a forma `handler(request, exc) -> response` e podem ser funções padrão ou funções assíncronas.
+* **deprecated** - Booleano se este ChildLilya deve ser marcado como obsoleto.
 
-=== "In a nutshell"
+=== "Em poucas palavras"
 
     ```python
     {!> ../../../docs_src/routing/routes/websocket_nutshell.py!}
@@ -240,69 +202,62 @@ functions on an application top level. Exception handler callables should be of 
 
 ## Include
 
-Includes are unique to Lilya, powerful and with more control and allows:
+Os Includes são exclusivos do Lilya, poderosos e com mais controlo, permitindo:
 
-1. Scalability without issues.
-2. Clean routing design.
-3. Separation of concerns.
-4. Separation of routes.
-5. Reduction of the level of imports needed through files.
-6. Less human lead bugs.
+1. Escalabilidade sem problemas.
+2. Design de roteamento limpo.
+3. *Separation of Concerns*.
+4. Separação de rotas.
+5. Redução do nível de importações necessárias através de ficheiros.
+6. Menos erros humanos.
 
 !!! Warning
-    Includes **DO NOT** take path parameters. E.g.: `Include('/include/{id:int}, routes=[...])`.
+    Os Includes **NÃO** aceitam parâmetros de caminho. Por exemplo: `Include('/include/{id:int}, routes=[...])`.
 
-### Include and application
+### Include e aplicação
 
-This is a very special object that allows the import of any routes from anywhere in the application.
-`Include` accepts the import via `namespace` or via `routes` list but not both.
+Este é um objeto muito especial que permite a importação de qualquer rota de qualquer lugar da aplicação.
+O `Include` aceita a importação via `namespace` ou via lista `routes`, mas não ambos.
 
-When using a `namespace`, the `Include` will look for the default `route_patterns` list in the imported
-namespace (object) unless a different `pattern` is specified.
+Ao usar um `namespace`, o `Include` procurará a lista padrão `route_patterns` no namespace (objeto) importado, a menos que um `pattern` diferente seja especificado.
 
-The patten only works if the imports are done via `namespace` and not via `routes` object.
+O padrão só funciona se as importações forem feitas via `namespace` e não via objeto `routes`.
 
-#### Parameters
+#### Parâmetros
 
-* **path** - The path for the child lilya.
-* **app** - An application can be anything that is treated as an ASGI application. The `app` can be
-an ASGI related app of a string `<dotted>.<module>` location of the app.
-* **routes** - A global `list` of lilya routes. Those routes may vary and those can
-be `Path`, `WebSocketPath` or even another `Include`.
-* **namespace** - A string with a qualified namespace from where the URLs should be loaded.
-* **pattern** - A string `pattern` information from where the urls shall be read from.
-* **name** - Name of the Include.
-* **permissions** - A list of [permissions](./permissions.md) to serve the application incoming
-requests (HTTP and Websockets).
-* **middleware** - A list of [middleware](./middleware.md) to run for every request.
-* **exception handlers** - A dictionary of [exception types](./exceptions.md) (or custom exceptions) and the handler
-functions on an application top level. Exception handler callables should be of the form of
-`handler(request, exc) -> response` and may be be either standard functions, or async functions.
-* **include_in_schema** - If route should be added to the OpenAPI Schema
-* **deprecated** - Boolean if this `Include` should be marked as deprecated.
+* **path** - O caminho para o ChildLilya.
+* **app** - Uma aplicação pode ser qualquer coisa tratada como uma aplicação ASGI. O `app` pode ser uma aplicação relacionada com ASGI ou uma string `<dotted>.<module>` com a localização da aplicação.
+* **routes** - Uma lista global de rotas Lilya. Essas rotas podem variar e podem ser `Path`, `WebSocketPath` ou até mesmo outro `Include`.
+* **namespace** - Uma string com um namespace qualificado de onde as URLs devem ser carregadas.
+* **pattern** - Uma string com informações de `pattern` de onde as URLs devem ser lidas.
+* **name** - Nome do Include.
+* **permissions** - Uma lista de [permissões](./permissions.md) para atender aos pedidos de entrada da aplicação (HTTP e Websockets).
+* **middleware** - Uma lista de [middlewares](./middleware.md) para executar em cada pedido.
+* **exception handlers** - Um dicionário de tipos de [exceção](./exceptions.md) (ou exceções personalizadas) e os *handlers* no nível superior da aplicação. Os *exception handlers* devem ter a forma `handler(request, exc) -> response` e podem ser funções padrão ou funções assíncronas.
+* **include_in_schema** - Se a rota deve ser adicionada ao OpenAPI Schema.
+* **deprecated** - Booleano se este `Include` deve ser marcado como obsoleto.
 
-=== "Importing using namespace"
+=== "Importando utilizando namespace"
 
     ```python title='myapp/urls.py'
     {!> ../../../docs_src/routing/routes/include/with_namespace.py!}
     ```
 
-=== "Importing using routes list"
+=== "Importando utilizando lista de rotas"
 
     ```python title='src/myapp/urls.py'
     {!> ../../../docs_src/routing/routes/include/routes_list.py!}
     ```
 
-=== "Import the app via string"
+=== "Importar a aplicação via string"
 
-    This is an alternative of loading the app via `string` import instead
-    of passing the object directly.
+    Esta é uma alternativa para carregar a aplicação via importação `string` em vez de passar o objeto diretamente.
 
     ```python title='src/myapp/urls.py'
     {!> ../../../docs_src/routing/routes/include/app_str.py!}
     ```
 
-#### Using a different pattern
+#### Usando um padrão diferente
 
 ```python title="src/myapp/accounts/controllers.py"
 {!> ../../../docs_src/routing/routes/include/views.py!}
@@ -312,19 +267,17 @@ functions on an application top level. Exception handler callables should be of 
 {!> ../../../docs_src/routing/routes/include/different_pattern.py!}
 ```
 
-=== "Importing using namespace"
+=== "Importando utilizando namespace"
 
     ```python title='src/myapp/urls.py'
     {!> ../../../docs_src/routing/routes/include/namespace.py!}
     ```
 
-#### Include and application instance
+#### Include e instância da aplicação
 
-The `Include` can be very helpful mostly when the goal is to avoid a lot of imports and massive list
-of objects to be passed into one single object. This can be particularly useful to make a clean start
-Lilya object as well.
+O `Include` pode ser muito útil, principalmente quando o objetivo é evitar muitas importações e uma lista massiva de objetos a serem passados para um único objeto. Isso pode ser especialmente útil para criar um objeto Lilya limpo.
 
-**Example**:
+**Exemplo**:
 
 ```python title='src/urls.py'
 {!> ../../../docs_src/routing/routes/include/app/urls.py!}
@@ -334,36 +287,34 @@ Lilya object as well.
 {!> ../../../docs_src/routing/routes/include/app/app.py!}
 ```
 
-## Nested Routes
+## Rotas *nested*
 
-When complexity increses and the level of routes increases as well, `Include` allows nested routes in a clean fashion.
+À medida que a complexidade aumenta e o nível de rotas também aumenta, o `Include` permite rotas *nested* de forma limpa.
 
-=== "Simple Nested"
+=== "*Nested* simples"
 
     ```python hl_lines="9"
     {!> ../../../docs_src/routing/routes/include/nested/simple.py!}
     ```
 
-=== "Complex Nested Routes"
+=== "Rotas *nested* complexas"
 
     ```python hl_lines="10-41"
     {!> ../../../docs_src/routing/routes/include/nested/complex.py!}
     ```
 
-`Include` supports as many nested routes with different paths and Includes as you
-desire to have. Once the application starts, the routes are assembled and it will immediatly available.
+`Include` suporta quantas rotas *nested* com caminhos e Includes diferentes desejar ter. Assim que a aplicação é iniciada, as rotas são montadas e imediatamente disponíveis.
 
-Nested routes also allows all the functionalities on each level, from middleware and permissions.
+Rotas *nested* também permitem todas as funcionalidades em cada nível, desde middlewares até permissões.
 
-### Application routes
+### Rotas da aplicação
 
-!!! warning
-    Be very careful when using the `Include` directly in the Lilya(routes[]), importing without a `path` may incur
-    in some routes not being properly mapped.
+!!! Warning
+    Tenha muito cuidado ao utilizar o `Include` diretamente no Lilya(routes[]), importar sem um `path` pode resultar nalgumas rotas não serem mapeadas corretamente.
 
-**Only applied to the application routes**:
+**Aplicável apenas às rotas da aplicação**:
 
-If you decide to do this:
+Se decidir fazer isso:
 
 ```python
 {!> ../../../docs_src/routing/routes/careful/example1.py!}
@@ -371,45 +322,39 @@ If you decide to do this:
 
 ## Host
 
-If you aim to utilize distinct routes for the same path contingent on the Host header, Lilya provides a solution.
+Se deseja utilizar rotas distintas para o mesmo caminho, dependendo do cabeçalho Host, o Lilya fornece uma solução.
 
-It's important to note that the port is disregarded from the Host header during matching. For instance,
-`Host(host='example.com:8081', ...)` will be processed regardless of whether the Host header contains a port
-different from 8081 (e.g., `example.com:8083`, `example.org`). Therefore, if the port is essential for `path_for`
-purposes, you can explicitly specify it.
+É importante observar que o porto é ignorado do cabeçalho Host durante a correspondência. Por exemplo,
+`Host(host='example.com:8081', ...)` será processado independentemente de o cabeçalho Host conter um porto diferente de 8081 (por exemplo, `example.com:8083`, `example.org`). Portanto, se o porto for essencial para fins de `path_for`, pode especificá-la explicitamente.
 
-There are multiple approaches to establish host-based routes for your application.
+Existem várias abordagens para estabelecer rotas baseadas em host para o sua aplicação.
 
 ```python
 {!> ../../../docs_src/routing/routes/host.py !}
 ```
 
-URL lookups can encompass host parameters, similar to how path parameters are included.
+As pesquisas de URL podem abranger parâmetros de host, assim como os parâmetros de caminho são incluídos.
 
 ```python
 {!> ../../../docs_src/routing/routes/host_encompass.py !}
 ```
+## Prioridade das Rotas
 
-## Routes priority
+As rotas da aplicação são simplesmente prioritizadas. Os caminhos de entrada são comparados com cada [Path](#path), [WebSocketPath](#websocketpath) e [Include](#include) ordenados.
 
-The [application routes](#application-routes) in simple terms are simply prioritised. The incoming paths are matched agains each [Path](#path),
-[WebSocketPath](#websocketpath) and [Include](#include) in order.
+Nos casos em que mais de um Path pode corresponder a um caminho de entrada, deve garantir que as rotas mais específicas sejam listadas antes dos casos gerais.
 
-In cases where more than one, let's say Path could match an incoming path, you should ensure that more specifc
-routes are listed before general cases.
-
-Example:
+Exemplo:
 
 ```python
-{!> ../../../docs_src/routing/routes/routes_priority.py !}
+{!> ../../../docs_src/routing/routes/routes_priority.py!}
 ```
 
-## Path parameters
+## Parâmetros de Caminho
 
-Paths can use templating style for path components. The path params are only applied to [Path](#path) and
-[WebSocketPath](#websocketpath) and **not applied** to [Include](#include).
+Os caminhos podem usar um estilo de *template* para os componentes do caminho. Os parâmetros de caminho são aplicados apenas a [Path](#path) e [WebSocketPath](#websocketpath) e **não são aplicados** ao [Include](#include).
 
-**Remember that there are [two ways of handling with the path parameters](#auto-discovering-the-parameters)**.
+**Lembre-se de que existem [duas maneiras de lidar com os parâmetros de caminho](#descobrindo-automaticamente-os-parâmetros)**.
 
 ```python
 async def customer(customer_id: Union[int, str]) -> None:
@@ -423,19 +368,18 @@ Path("/customers/{customer_id}/example", handler=customer)
 Path("/floating/{number:float}", handler=customer)
 ```
 
-By default this will capture characters up to the end of the path of the next `/` and it will become `/customers/{customer_id}/example`.
+Por defeito, isto capturará caracteres até o final do caminho do próximo `/` e se ficará `/customers/{customer_id}/example`.
 
-**Transformers** can be used to modify what is being captured and the type of what is being captured.
-Lilya provides some default path transformers.
+**Transformadores** podem ser usados para modificar o que está a ser capturado e o tipo do que está a ser capturado. O Lilya fornece alguns transformadores de caminho por defeito.
 
-* `str` returns a string, and is the default.
-* `int` returns a Python integer.
-* `float` returns a Python float.
-* `uuid` returns a Python `uuid.UUID` instance.
-* `path` returns the rest of the path, including any additional `/` characters.
-* `datetime` returns the datetime.
+* `str` retorna uma string e é o padrão.
+* `int` retorna um inteiro Python.
+* `float` retorna um float Python.
+* `uuid` retorna uma instância `uuid.UUID` Python.
+* `path` retorna o restante caminho, incluindo quaisquer caracteres `/` adicionais.
+* `datetime` retorna a data e hora.
 
-As per standard, the transformers are used by prefixing them with a colon:
+Conforme o padrão, os transformadores são usados prefixando-os com dois pontos:
 
 ```python
 Path('/customers/{customer_id:int}', handler=customer)
@@ -443,112 +387,102 @@ Path('/floating-point/{number:float}', handler=floating_point)
 Path('/uploaded/{rest_of_path:path}', handler=uploaded)
 ```
 
-### Custom transformers
+### Transformadores Personalizados
 
-If a need for a different transformer that is not defined or available, you can also create your own.
+Se houver a necessidade de um transformador diferente que não esteja definido ou disponível, também pode criar o seu.
 
 ```python
-{!> ../../../docs_src/routing/routes/transformer_example.py !}
+{!> ../../../docs_src/routing/routes/transformer_example.py!}
 ```
 
-With the custom transformer created you can now use it.
+Com o transformador personalizado criado, agora pode usá-lo.
 
 ```python
 Path('/network/{address:ipaddress}', handler=network)
 ```
 
-## Middleware, exception Handlers and permissions
+## Middlewares, Exception Handlers e Permissões
 
-### Examples
+### Exemplos
 
-The following examples are applied to [Path](#path), [WebSocketPath](#websocketpath)
-and [Include](#include).
+Os exemplos a seguir são aplicados à [Path](#path), [WebSocketPath](#websocketpath) e [Include](#include).
 
-We will be using Path for it can be replaced by any of the above as it is common among them.
+Usaremos o Path, pois pode ser substituído por qualquer um dos acima, visto que é comum entre eles.
 
-#### Middleware
+#### Middlewares
 
-As specified before, the [middleware](./middleware.md) of a Path are read from top down,
-from the parent to the very handler and the same is applied to [exception handlers](./exceptions.md),
-and [permissions](./permissions.md).
+Conforme especificado anteriormente, os [middlewares](./middleware.md) de um Path são lidos de cima para baixo, do pai até o próprio *handler*, e o mesmo é aplicado aos [*exception handlers*](./exceptions.md) e [permissões](./permissions.md).
 
 ```python
-{!> ../../../docs_src/routing/routes/middleware.py !}
+{!> ../../../docs_src/routing/routes/middleware.py!}
 ```
 
-The above example illustrates the various levels where a middleware can be implemented and because it follows an
-parent order, the order is:
+O exemplo acima ilustra os vários níveis em que um middleware pode ser implementado e, porque segue uma ordem de pai, a ordem é:
 
-1. Default application built-in middleware.
+1. Middlewares internos padrão da aplicação.
 2. `RequestLoggingMiddlewareProtocol`.
 3. `ExampleMiddleware`.
 
-**More than one middleware can be added to each list.**
+**Mais do que um middleware pode ser adicionado a cada lista.**
 
 #### Exception Handlers
 
 ```python
-{!> ../../../docs_src/routing/routes/exception_handlers.py !}
+{!> ../../../docs_src/routing/routes/exception_handlers.py!}
 ```
 
-The above example illustrates the various levels where the exception handlers can be implemented and follows a
-parent order where the order is:
+O exemplo acima ilustra os vários níveis em que os *exception handlers* podem ser implementados e segue uma ordem de pai, onde a ordem é:
 
-1. Default application built-in exception handlers.
-3. `InternalServerError : http_internal_server_error_handler`.
+1. *Exception handlers* internos padrão da aplicação.
+3. `InternalServerError: http_internal_server_error_handler`.
 4. `NotAuthorized: http_not_authorized_handler`.
 
-More than one exception handler can be added to each mapping.
+**Mais de um *handler* pode ser adicionado a cada mapeamento.**
 
-#### Permissions
+#### Permissões
 
-Permissions are a must in **every** application. More on [permissions](./permissions.md) and how
-to use them.
+Permissões são obrigatórias em **todas** as aplicações. Saiba mais sobre [permissões](./permissions.md) e como usá-las.
 
 ```python
-{!> ../../../docs_src/permissions/any_other_level.py !}
+{!> ../../../docs_src/permissions/any_other_level.py!}
 ```
 
-**More than one permission can be added to each list.**
+**Mais de uma permissão pode ser adicionada a cada lista.**
 
-## Reverse Path lookups
+## Pesquisa Reversa de Caminho
 
-Frequently, there is a need to generate the URL for a specific route, especially in scenarios where a redirect
-response is required.
+Frequentemente, há a necessidade de gerar o URL para uma rota específica, especialmente em cenários em que uma resposta de reencaminhamento é necessária.
 
 ```python
-{!> ../../../docs_src/routing/routes/lookup.py !}
+{!> ../../../docs_src/routing/routes/lookup.py!}
 ```
 
-The lookups also allow path parameters.
+As pesquisas também permitem parâmetros de caminho.
 
 ```python
-{!> ../../../docs_src/routing/routes/lookup_path.py !}
+{!> ../../../docs_src/routing/routes/lookup_path.py!}
 ```
 
-If an `Include` includes a name, subsequent submounts should employ a `{prefix}:{name}` format for reverse Path lookups.
+Se um `Include` incluir um nome, as submontagens subsequentes devem usar o formato `{prefix}:{name}` para pesquisas de caminho reverso.
 
-### Using the `reverse`
+### Usando o `reverse`
 
-This is an alternative for the reverse path lookup. It can be particularly useful if you want to
-reverse a path in testing or in isolation.
+Esta é uma alternativa para a pesquisa reversa de caminho. Pode ser particularmente útil se você quiser reverter um caminho em testes ou isoladamente.
 
+#### Parâmetros
 
-#### Parameters
+* **name** - O nome atribuído ao caminho.
+* **app** - Uma aplicação ASGI que contém as rotas. Útil para reverter caminhos em aplicações específicas e/ou testes. *(Opcional)*.
+* **path_params** - Um objeto semelhante a um dicionário contendo os parâmetros que devem ser passados num determinado caminho. *(Opcional)*.
 
-* **name** - The name given to the path.
-* **app** - An ASGI application containing the routes. Useful for reversing paths on specific applications and/or testing. *(Optional)*.
-* **path_params** - A dictionary like object containing the parameters that should be passed in a given path. *(Optional)*.
-
-Using the `reverse`, if no `app` parameter is specified, it will automatically default to the application or application router,
-which under normal circunstances, besides `testing`, it is the expected behaviour.
+Ao usar o `reverse`, se nenhum parâmetro `app` for especificado, será automaticamente definido como a aplicação ou roteador de aplicação, que em circunstâncias normais, para além de `testing`, é o comportamento esperado.
 
 ```python
-{!> ../../../docs_src/routing/routes/reverse.py !}
+{!> ../../../docs_src/routing/routes/reverse.py!}
 ```
 
-The reverse also allow path parameters.
+O `reverse` também permite parâmetros de caminho.
 
 ```python
-{!> ../../../docs_src/routing/routes/reverse_path.py !}
+{!> ../../../docs_src/routing/routes/reverse_path.py!}
 ```
