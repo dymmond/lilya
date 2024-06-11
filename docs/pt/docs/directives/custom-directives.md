@@ -1,134 +1,119 @@
-# Custom Directives
+# Directivas Personalizadas
 
-Having [built-in directives](./directives.md) from Lilya is great as it gives you a lot of
-niceties for your project but having **custom directives** is what really powers up your
-application and takes it to another level.
+Ter [directivas embutidas](./directives.md) do Lilya é ótimo, pois oferece muitas facilidades para o seu projecto, mas ter **directivas personalizadas** é o que realmente potencializa a sua aplicação e a eleva.
 
-{!> ../../../docs_src/_shared/autodiscovery.md !}
+## Importante
 
-## What is a custom directive?
+Antes de ler esta secção, deve familiarizar-se com as formas como o Lilya lida com a descoberta das aplicações.
 
-Before jumping into that, let us go back to the roots of python.
+Os seguintes exemplos e explicações irão utilizar a abordagem [--app e variáveis de ambiente](./discovery.md#environment-variables), mas a [descoberta automática](./discovery.md#auto-discovery) é igualmente válida e funciona da mesma forma.
 
-Python was and still is heavily used as a scripting language. The scripts are isolated pieces of
-code and logic that can run on every machine that has python installed and execute without too
-much trouble or hurdle.
+## O que é uma directiva personalizada?
 
-Quite simple, right?
+Antes de entrarmos nisso, vamos voltar às raízes do Python.
 
-So, what does this have to do with directives? Well, directives follow the same principle but
-applied to your own project. What if you could create your own structured scripts inside your
-project directly? What if you could build dependent or independent pieces of logic that could be
-run using your own Lilya application resources?
+O Python era e ainda é amplamente utilizado como uma linguagem de script. Os scripts são pedaços isolados de código e lógica que podem ser executados em qualquer máquina que tenha o Python instalado e executar sem muitos problemas ou obstáculos.
 
-This is what a directive is.
+Bastante simples, certo?
+
+Então, o que é isso tem a ver com directivas? Bem, as directivas seguem o mesmo princípio, mas aplicado ao seu próprio projecto. E se pudesse criar os seus próprios scripts estruturados dentro do seu projecto diretamente? E se pudesse construir pedaços de lógica dependentes ou independentes que pudessem ser executados usando os recursos da sua própria aplicação Lilya?
+
+Isso é o que é uma directiva.
 
 !!! Tip
-    If you are familiar with Django management commands, Lilya directives follow the same
-    principle. There is an [excelent article](https://simpleisbetterthancomplex.com/tutorial/2018/08/27/how-to-create-custom-django-management-commands.html)
-    about those if you want to get familiar with.
+    Se está familiarizado com os comandos de gestão do Django, as directivas do Lilya seguem o mesmo princípio. Há um [excelente artigo](https://simpleisbetterthancomplex.com/tutorial/2018/08/27/how-to-create-custom-django-management-commands.html) sobre isso se se quiser familiarizar.
 
+### Exemplos
 
-### Examples
+Imagine que precisa criar uma base de dados que conterá todas as informações sobre acessos de utilizadores específicos e gerirá as funções da sua aplicação.
 
-Imagine you need to deploy a database that will contain all the information about specific user
-accesses and will manage roles of your application.
+Agora, uma vez que essa base de dados é criada com sua aplicação, geralmente precisaria se conectar ao seu servidor de produção e configurar manualmente um utilizador ou executar um script ou comando específico para criar o mesmo superutilizador. Isso pode ser demorado e propenso a erros, certo?
 
-Now, once that database is deployed with your application, usually would would need somehow to
-connect to your production server and manually setup a user or run a specific script or command
-to create that same super user. This can be time consuming and prone to errors, right?
+Pode usar uma [directiva](#directive) para fazer esse mesmo trabalho por si.
 
-You can use a [directive](#directive) to do that same job for you.
+Ou e se precisar criar operações específicas para serem executadas em segundo plano por algumas operações que não requerem APIs, por exemplo, atualizar a função de um utilizador? As directivas resolvem esse problema também.
 
-Or what if you need to create specific operations to run in the background by some ops that
-does not require APIs, for example, update the role of a user? Directives solve that problem as
-well.
+Há um mundo de possibilidades do que se pode fazer com as directivas.
 
-There is a world of possibilities of what you can do with directives.
+## Directiva
 
-## Directive
+Esta é a classe principal para **cada directiva personalizada** que deseja implementar. Este é um objecto especial com algumas configurações padrão que pode usar.
 
-This is the main object class for **every single custom directive** you want to implement. This
-is a special object with some defaults that you can use.
+### Parâmetros
 
-### Parameters
+* **--directive** - O nome da directiva (o ficheiro onde a Directiva foi criada).
+Verifique [listar todas as directivas](./directives.md#listar-directivas-disponíveis) para obter mais detalhes sobre como obter os nomes.
 
-* **--directive** - The directive name (the file where the Directive was created).
-Check [list all directives](./directives.md#list-available-directives) for more details in obtaining
-the names.
+### Como executar
 
-### How to run
+A sintaxe é muito simples para uma directiva personalizada:
 
-The syntax is very simple for a custom directive:
-
-**With the --app parameter**
+**Com o parâmetro --app**
 
 ```shell
-$ lilya --app <LOCATION> run --directive <DIRECTIVE-NAME> <OPTIONS>
+$ lilya --app <LOCALIZAÇÃO> run --directive <DIRECTIVE-NAME> <OPTIONS>
 ```
 
-Example:
+Exemplo:
 
 ```shell
 lilya --app myproject.main:app run --directive mydirective --name lilya
 ```
 
-**With the LILYA_DEFAULT_APP environment variable set**
+**Com a variável de ambiente LILYA_DEFAULT_APP definida**
 
 ```shell
 $ export LILYA_DEFAULT_APP=myproject.main:app
 $ lilya run --directive <DIRECTIVE-NAME> <OPTIONS>
 ```
 
-Example:
+Exemplo:
 
 ```shell
 $ export LILYA_DEFAULT_APP=myproject.main:app
 $ lilya run --directive mydirective --name lilya
 ```
 
-The `run --directive` is **always** expecting the name of the file of your directive.
+O `run --directive` está **sempre** à espera do nome do ficheiro da directiva.
 
-For example, you created a `createsuperuser.py` file with your `Directive` logic. The `--directive`
-parameter will be `run --directive createsuperuser`.
+Por exemplo, criou um ficheiro `createsuperuser.py` com a lógica da `Directiva`. O parâmetro `--directive`
+será `run --directive createsuperuser`.
 
-Example:
+Exemplo:
 
 ```shell
 $ export LILYA_DEFAULT_APP=myproject.main:app
 $ lilya run --directive createsuperuser --email example@lilya.dev
 ```
 
-### How to create a directive
+### Como criar uma directiva
 
-To create a directive you **must inherit from the BaseDiretive** class and **must call `Directive`**
-to your object.
+Para criar uma directiva, **deve herdar da classe BaseDirective** e o nome do objecto **deve-se chamar `Directive`**.
 
 ```python
 from lilya.cli.base import BaseDirective
 ```
 
-**Create the Directive class**
+**Crie a classe Directiva**
 
 ```python hl_lines="4 7"
 {!> ../../../docs_src/directives/base.py !}
 ```
 
-Every single custom directive created **should be called Directive** and **must inherit** from the
-`BaseDiretive` class.
+Todas as directivas personalizadas criadas **devem ser chamadas de Directive** e **deve herdar** da classe
+`BaseDirective`.
 
-Internally `lilya` looks for a `Directive` object and verifies if is a subclass of `BaseDirective`.
-If one of this conditions fails, it will raise a `DirectiveError`.
+Internamente, o `lilya` procura por um objecto `Directive` e verifica se é uma subclasse de `BaseDirective`.
+Se uma dessas condições falhar, lançará um `DirectiveError`.
 
-### Where should directives be placed at?
+### Onde as directivas devem ser colocadas?
 
-All the custom directives created **must be** inside a `directives/operations` package in order to
-be discovered.
+Todas as directivas personalizadas criadas **devem estar** dentro de um módulo `directives/operations` para
+serem descobertas.
 
-The place for the `directives/operations` can be anywhere in your application and
-you can have **more than one** as well.
+O local para as `directives/operations` pode ser em qualquer lugar da aplicação e também pode ter **mais do que uma**.
 
-Example:
+Exemplo:
 
 ```shell hl_lines="10 16 22 36"
 .
@@ -176,64 +161,64 @@ Example:
     └── urls.py
 ```
 
-As you can see from the previous example, we have four directives:
+Como pode ver no exemplo anterior, temos quatro directivas:
 
-* **createsuperuser** - Inside `accounts/directives/operations`.
-* **run_payroll** - Inside `payroll/directives/operations`.
-* **createproduct** - Inside `products/directives/operations`.
-* **db_shell** - Inside `./directives/operations`.
+* **createsuperuser** - Dentro de `accounts/directives/operations`.
+* **run_payroll** - Dentro de `payroll/directives/operations`.
+* **createproduct** - Dentro de `products/directives/operations`.
+* **db_shell** - Dentro de `./directives/operations`.
 
-All of them, no matter where you put the directive, are inside a **directives/operations** where
-lilya always looks at.
+Todas elas, não importa onde coloque a directiva, estão dentro de um **directives/operations** onde
+o lilya vai sempre procurar.
 
-### Directive functions
+### Funções da directiva
 
 #### handle()
 
-The `Diretive` logic is implemented inside a `handle` function that can be either `sync` or
-`async`.
+A lógica da `Directiva` é implementada dentro de uma função `handle` que pode ser `síncrona` ou
+`assíncrona`.
 
-When calling a `Directive`, `lilya` will execute the `handle()` and run the all the logic.
+Ao chamar uma `Directiva`, o `lilya` executará o `handle()` e executará toda a lógica.
 
-=== "Sync"
+=== "Síncrona"
 
     ```python hl_lines="15"
     {!> ../../../docs_src/directives/sync_handler.py !}
     ```
 
-=== "Async"
+=== "Assíncrona"
 
     ```python hl_lines="15"
     {!> ../../../docs_src/directives/async_handler.py !}
     ```
 
-As you can see, Lilya Directives also allow `async` and `sync` type of functions. This can be
-particularly useful for when you need to run specific tasks in async mode, for example.
+Como pode ver, as Directivas do Lilya também permitem funções `assíncronas` e `síncronas`. Isto pode ser
+particularmente útil quando precisa executar tarefas específicas no modo assíncrono, por exemplo.
 
 #### add_arguments()
 
-This is the place where you add any argument needed to run your custom directive. The arguments
-are `argparse` related arguments so the syntax should be familiar.
+Este é o local onde adiciona qualquer argumento necessário para executar sua directiva personalizada. Os argumentos
+são argumentos relacionados ao `argparse`, portanto, a sintaxe deve ser familiar.
 
 ```python
 {!> ../../../docs_src/directives/arguments.py !}
 ```
 
-As you can see, the Directive has five parameters and all of them required.
+Como pode ver, a Directiva tem cinco parâmetros e todos eles são obrigatórios.
 
 ```shell
 lilya --app teste.main:app run --directive mydirective --first-name Lilya --last-name Toolkit --email example@lilya.dev --username lilya --password lilya
 
 ```
 
-## Help
+## Ajuda
 
-There are two helps in place for the directives. The one you run the lilya executor (run) and the
-one for the `directive`.
+Existem duas opções de ajuda para as directivas. Uma quando executa o executor do lilya (run) e
+outra para a `directive` em si.
 
 ### --help
 
-This command **is only used for the executor help**, for example:
+Este comando **é usado apenas para a ajuda do executor**, por exemplo:
 
 ```shell
 $ lilya run --help
@@ -241,26 +226,25 @@ $ lilya run --help
 
 ### -h
 
-This flag is used to access the `directive` help and not the `run`.
+Esta opção é usada para acessar a ajuda da `directive` e não do `run`.
 
 ```shell
 $ lilya run --directive mydirective -h
 ```
 
-### Notes
+### Observações
 
-The **only way to see the help of a directive** is via `-h`.
+A **única maneira de ver a ajuda de uma directiva** é através de `-h`.
 
-If `--help` is used, it will only show the help of the `run` and not the `directive` itself.
+Se o `--help` for usado, ele mostrará apenas a ajuda do `run` e não da `directive` em si.
 
-## Order of priority
+## Ordem de prioridade
 
-**This is very important to understand**.
+**Isso é muito importante perceber**.
 
-What happens if we have two custom directives with the same
-name?
+O que acontece se tivermos duas directivas personalizadas com o mesmo nome?
 
-Let us use the following structure as example:
+Vamos usar a seguinte estrutura como exemplo:
 
 ```shell hl_lines="10 32"
 .
@@ -304,101 +288,99 @@ Let us use the following structure as example:
     └── urls.py
 ```
 
-This example is simulating a structure of a lilya project with
-**two custom directives with the same name**.
+Este exemplo está a simular uma estrutura de um projecto Lilya com
+**duas directivas personalizadas com o mesmo nome**.
 
-The first directive is inside `./directives/operations/` and the second inside
+A primeira directiva está dentro de `./directives/operations/` e a segunda dentro de
 `./apps/accounts/directives/operations`.
 
-Lilya directives work on a **First Found First Executed** principle and that means if you have
-two custom directives with the same name, lilya will
-**execute the first found directive with that given name**.
+As directivas do Lilya funcionam com base no princípio de **Primeiro Encontrado, Primeiro Executado**, o que significa que se tiver
+duas directivas personalizadas com o mesmo nome, o lilya irá
+**executar a primeira directiva encontrada com aquele nome específico**.
 
-In other words, if you want to execute the `createsuperuser` from the `accounts`, the first found
-directive inside `./directives/operations/` **shall have a different name** or else it will execute
-it instead of the intended from `accounts`.
+Noutras palavras, se quiser executar o `createsuperuser` do `accounts`, a primeira directiva encontrada
+dentro de `./directives/operations/` **deve ter um nome diferente** ou então será executada
+em vez da pretendida em `accounts`.
 
-## Execution
+## Execução
 
-Lilya directives use the same events as the one passed in the application.
+As directivas do Lilya usam os mesmos eventos passados na aplicação.
 
-For example, if you want to execute database operations and the database connections should be
-established before hand, you can do in two ways:
+Por exemplo, se deseja executar operações de base de dados e as conecções de base de dados devem ser
+estabelecidas antecipadamente, pode fazer de duas maneiras:
 
-* Use [Lifespan](../lifespan.md) events and the directives will use them.
-* Establish the connections (open and close) inside the Directive directly.
+* Usar os eventos de [Lifespan](../lifespan.md) e as directivas os utilizarão.
+* Estabelecer as conecções (abrir e fechar) dentro da Directiva diretamente.
 
-The [pratical example](#a-practical-example) uses the [lifespan events](../lifespan.md) to
-execute the operations. This way you only need one place to manage the needed application events.
+O [exemplo prático](#um-exemplo-prático) usa os [eventos de lifespan](../lifespan.md) para
+executar as operações. Desta forma, só precisa de um lugar para gerir os eventos da aplicação necessários.
 
-## A practical example
+## Um exemplo prático
 
-Let us run an example of a custom directive for your application. Since we keep mentioning the
-`createsuperuser` often, let us then create that same directive and apply to our Lilya application.
+Vamos executar um exemplo de uma directiva personalizada para a sua aplicação. Como mencionamos o
+`createsuperuser` com frequência, vamos criar essa mesma directiva e aplicá-la à nossa aplicação Lilya.
 
-For this example we will be using [Saffier][saffier] as it will allow us to do a complete end-to-end directive
-using the `async` approach.
+Para este exemplo, usaremos o [Saffier][saffier], pois isso permitirá fazer uma directiva completa de ponta à ponta
+usando a abordagem `assíncrona`.
 
-This example is very simple in its own design.
+Este exemplo é muito simples.
 
-For production you should have your models inside a models dedicated place and your `registry`
-and `database` settings somewhere in your `settings` where you can access it anywhere in your code via
-[lilya settings](../settings.md), for example.
+Para produção, deve ter seus modelos num local dedicado e suas configurações de `registry`
+e `database` nalgum lugar do seu `settings` onde possa aceder em qualquer lugar do código por meio
+das [configurações do lilya](../settings.md), por exemplo.
 
-P.S.: For the registry and database strategy with [saffier][saffier], it is good to have a read
-the [tips and tricks](https://saffier.tarsild.io/tips-and-tricks/) with saffier.
+P.S.: Para a estratégia de registro e base de dados com [saffier][saffier], é bom ler
+as [dicas e truques](https://saffier.tarsild.io/tips-and-tricks/) com saffier.
 
-The design is up to you.
+O design fica ao seu critério.
 
-What we will be creating:
+O que vamos criar:
 
-* **myproject/main/main.py** - The entry-point for our Lilya application
-* **createsuperuser** - Our directive.
+* **myproject/main/main.py** - O ponto de entrada para nossa aplicação Lilya
+* **createsuperuser** - Nossa directiva.
 
-In the end we simply run the directive.
+No final, simplesmente executamos a directiva.
 
-We will be also using the [Saffier](https://saffier.tarsild.io) for the DB models as this will make the example simpler.
+Também usaremos o [Saffier](https://saffier.tarsild.io) para os modelos do base de dados, pois isso tornará o exemplo mais simples.
 
-### The application entrypoint
+### O ponto de entrada da aplicação
 
 ```python title="myproject/main.py"
 {!> ../../../docs_src/directives/example/app.py !}
 ```
 
-The connection string should be replaced with whatever is your detail.
+A string de conecção deve ser substituída pelo que for adequado para si.
 
-### The createsuperuser
+### O createsuperuser
 
-Now it is time to create the directive `createsuperuser`. As mentioned [above](#where-should-directives-be-placed-at),
-the directive shall be inside a `directives/operations` package.
-
+Agora é hora de criar a directiva `createsuperuser`. Como mencionado [acima](#onde-as-directivas-devem-ser-colocadas),
+a directiva deve estar dentro de um módulo `directives/operations`.
 
 ```python title="myproject/directives/operations/createsuperuser.py"
 {!> ../../../docs_src/directives/example/createsuperuser.py !}
 ```
 
-And this should be it. We now have a `createsuperuser` and an application and now we can run
-in the command line:
+E isso deve ser tudo. Agora temos um `createsuperuser` e uma aplicação e agora podemos executar no terminal:
 
-**Using the auto discover**
+**Usando a descoberta automática**
 
 ```shell
 $ lilya run --directive createsuperuser --first-name Lilya --last-name Framework --email example@lilya.dev --username lilya --password lilya
 ```
 
-**Using the --app or LILYA_DEFAULT_APP**
+**Usando o --app ou LILYA_DEFAULT_APP**
 
 ```shell
 $ lilya --app myproject.main:app run --directive createsuperuser --first-name Lilya --last-name Framework --email example@lilya.dev --username lilya --password lilya
 ```
 
-Or
+Ou
 
 ```shell
 $ export LILYA_DEFAULT_APP=myproject.main:app
 $ lilya run --directive createsuperuser --first-name Lilya --last-name Framework --email example@lilya.dev --username lilya --password lilya
 ```
 
-After the command is executed, you should be able to see the superuser created in your database.
+Após a execução do comando, deverá ver o superutilizador criado na sua base de dados.
 
 [saffier]: https://saffier.tarsild.io

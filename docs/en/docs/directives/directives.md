@@ -17,7 +17,7 @@ A lot of people cannot be bothered with running cookiecutters and go straight to
     provides some suggested options but it does not mean it should always be in that way. It simply serves as an
     option.
 
-Currently there are two built-in directives.
+Currently there are a few built-in directives.
 
 * [directives](#list-available-directives) - Lists all the available directives.
 * [createproject](#create-project) - Used to generate a scaffold for a project.

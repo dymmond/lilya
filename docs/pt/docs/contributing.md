@@ -1,6 +1,6 @@
 # Contribuir
 
-Obrigado por mostrar interesse em contribuir para o Lilya. Existem várias maneiras nas quais pode ajudar e contribuir para o projeto.
+Obrigado por mostrar interesse em contribuir para o Lilya. Existem várias maneiras nas quais pode ajudar e contribuir para o projecto.
 
 * Experimente o Lilya e [reporte os bugs e problemas](https://github.com/dymmond/lilya/issues/new) que encontrar.
 * [Implemente novas funcionalidades](https://github.com/dymmond/lilya/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
@@ -48,7 +48,7 @@ Certifique-se de executar:
 pip install hatch
 ```
 
-### Instalar as dependências do projeto
+### Instalar as dependências do projecto
 
 Não é necessário, pois as dependências são instaladas automaticamente pelo hatch.
 Mas se os ambientes devem ser pré-inicializados, isso pode ser feito com `hatch env`
@@ -66,7 +66,7 @@ $ hatch env create docs
 
 ### Ativar o pre-commit
 
-O projeto vem com uma configuração do pre-commit. Para ativá-lo, basta executar dentro do clone:
+O projecto vem com uma configuração do pre-commit. Para ativá-lo, basta executar dentro do clone:
 
 ```shell
 $ hatch run pre-commit install

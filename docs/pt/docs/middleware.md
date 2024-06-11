@@ -85,7 +85,7 @@ e o método `__call__` **deve retornar sempre a aplicação**.
 Este é um middleware muito especial e ajuda qualquer middleware relacionado com autenticação que pode ser usado numa aplicação **Lilya**,
 mas, como tudo, também pode criar o seu próprio e ignorar isto.
 
-`BaseAuthMiddleware` é também um protocolo que simplesmente força a implementação do método `authenticate` e atribui o objeto de resultado a um `AuthResult`
+`BaseAuthMiddleware` é também um protocolo que simplesmente força a implementação do método `authenticate` e atribui o objecto de resultado a um `AuthResult`
 para torná-lo disponível em cada pedido.
 
 ### Exemplo de uma classe de middleware JWT
@@ -164,7 +164,7 @@ INFO:     Application startup complete.
 
 ### Importante
 
-Se precisar especificar parâmetros no seu middleware, será necessário encapsulá-lo num objeto `lilya.middleware.DefineMiddleware`.
+Se precisar especificar parâmetros no seu middleware, será necessário encapsulá-lo num objecto `lilya.middleware.DefineMiddleware`.
 Veja o exemplo do `GZipMiddleware` [aqui](#middleware-e-as-definições).
 
 ## Middlewares disponíveis

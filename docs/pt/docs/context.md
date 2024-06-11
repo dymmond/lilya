@@ -1,6 +1,6 @@
 # Contexto
 
-O `Context` é um objeto único para o **Lilya**. O `context` é um parâmetro que pode ser usado **dentro dos *handlers*** e fornece informações adicionais que pode precisar por qualquer motivo específico.
+O `Context` é um objecto único para o **Lilya**. O `context` é um parâmetro que pode ser usado **dentro dos *handlers*** e fornece informações adicionais que pode precisar por qualquer motivo específico.
 
 A abordagem é muito parecida ao [Request](./requests.md) em termos de implementação, mas não é a mesma coise.
 Na realidade, um `context` contém também o 'request' e informações sobre o próprio *handler*.
@@ -21,7 +21,7 @@ Isto também significa que, quando um *handler* (visualização) é declarado, t
 {!> ../../../docs_src/context/app.py !}
 ```
 
-O `context` também fornece o acesso ao objeto [`request`](./requests.md), bem como às configurações da applicação e outras funções.
+O `context` também fornece o acesso ao objecto [`request`](./requests.md), bem como às configurações da applicação e outras funções.
 
 Isso significa que, se desejar passar um `request` e um `context`, na realidade só precisa do `context`, pois o pedido já está disponível internamente,
 mas mesmo assim, se desejar, pode passar ambos.
@@ -168,7 +168,7 @@ def home(context: Context):
 
 ## Métodos
 
-O `context` também fornece diferentes funções para manipular o objeto.
+O `context` também fornece diferentes funções para manipular o objecto.
 
 ### get_context_data
 

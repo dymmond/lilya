@@ -1,23 +1,22 @@
-# Test Client
+# Cliente de Teste
 
-Lilya comes with a test client for your application tests. It is not mandatory use it as every application and
-development team has its own way of testing it but just in case, it is provided.
+O Lilya vem com um cliente de teste para os testes da sua aplicação. Não é obrigatório usá-lo, pois cada aplicação e equipa de desenvolvimento tem sua própria maneira de testar, mas caso precise, está disponível.
 
-## Requirements
+## Requisitos
 
-This section requires the Lilya testing suite to be installed. You can do it so by running:
+Esta secção requer que a suíte de testes do Lilya esteja instalada. Pode fazer isso executando:
 
 ```shell
 $ pip install Lilya[test]
 ```
 
-## The test client
+## O cliente de teste
 
 ```python
 {!> ../../../docs_src/testclient/example1.py !}
 ```
 
-You can use any of the `httpx` standard API like authentication, session cookies and file uploads.
+Pode usar qualquer uma das APIs padrão do `httpx`, como autenticação, cookies de sessão e envio de ficheiros.
 
 ```python
 {!> ../../../docs_src/testclient/example2.py !}
@@ -29,32 +28,29 @@ You can use any of the `httpx` standard API like authentication, session cookies
 {!> ../../../docs_src/testclient/example3.py !}
 ```
 
-`httpx` is a great library created by the same author of `Starlette` and `Django Rest Framework`.
+`httpx` é uma ótima biblioteca criada pelo mesmo autor do `Starlette` e do `Django Rest Framework`.
 
 !!! Info
-    By default the TestClient raise any exceptions that occur in the application.
-    Occasionally you might want to test the content of 500 error responses, rather than allowing client to raise the
-    server exception. In this case you should use `client = TestClient(app, raise_server_exceptions=False)`.
+    Por defeito, o TestClient lança qualquer exceção que ocorra na aplicação.
+    Ocasionalmente, pode querer testar o conteúdo das respostas de erros 500, em vez de permitir que o cliente lance a exceção do servidor. Nesse caso, deve utilizar `client = TestClient(app, raise_server_exceptions=False)`.
 
-## Lifespan events
+## Eventos de ciclo de vida
 
 !!! Note
-    Lilya supports all the lifespan events available and therefore `on_startup`, `on_shutdown` and `lifespan` are
-    also supported by `TestClient` **but** if you need to test these you will need to run `TestClient`
-    as a context manager or otherwise the events will not be triggered when the `TestClient` is instantiated.
+    O Lilya suporta todos os eventos de ciclo de vida disponíveis e, portanto, `on_startup`, `on_shutdown` e `lifespan` também são suportados pelo `TestClient` **mas** se
+    precisar testá-los, precisará executar o `TestClient` como um gestor de contexto, caso contrário, os eventos não serão acionados quando o `TestClient` for instanciado.
 
-Lilya also brings a ready to use functionality to be used as context manager for your tests, the `create_client`.
+O Lilya também traz uma funcionalidade pronta a usar que pode ser utilizada como um gestor de contexto para testes, o `create_client`.
 
-### Context manager `create_client`
+### Gestor de contexto `create_client`
 
-This function is prepared to be used as a context manager for your tests and ready to use at any given time.
+Esta função está preparada para ser utilizada como um gestor de contexto para testes e está pronta para ser utilizada a qualquer momento.
 
 ```python
 {!> ../../../docs_src/testclient/example4.py !}
 ```
 
-The tests work with both `sync` and `async` functions.
+Os testes funcionam tanto com funções `sync` quanto `async`.
 
 !!! info
-    The example above is used to also show the tests can be as complex as you desire and it will work with the
-    context manager.
+    O exemplo acima também é usado para mostrar que os testes podem ser tão complexos quanto desejar e funcionarão com o gestor de contexto.

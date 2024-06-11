@@ -29,7 +29,7 @@ isso também pode ser passado ao instanciar o `Jinja2Template`.
 
 A função `get_template_response` espera os seguintes argumentos:
 
-- `request`: (obrigatório): O objeto de *request* HTTP.
+- `request`: (obrigatório): O objecto de *request* HTTP.
 - `name`: (obrigatório): O nome da template a ser renderizada.
 
 Quaisquer argumentos ou argumentos de palavra-chave adicionais fornecidos serão passados diretamente para a template como contexto.

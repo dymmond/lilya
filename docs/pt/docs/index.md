@@ -74,7 +74,7 @@ Se deseja apenas o toolkit/framework.
 $ pip install lilya
 ```
 
-Se desejar utilizar funcionalidades extras como a **shell** ou **diretivas** (geração do esqueleto do projeto para acelerar o desenvolvimento inicial).
+Se desejar utilizar funcionalidades extras como a **shell** ou **diretivas** (geração do esqueleto do projecto para acelerar o desenvolvimento inicial).
 
 ```shell
 $ pip install lilya[cli,ipython] # para a shell ipython

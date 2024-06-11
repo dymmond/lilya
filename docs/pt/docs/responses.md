@@ -16,7 +16,7 @@ Existem algumas formas de usar as respostas numa aplicação Lylia.
 
 ## Respostas disponíveis
 
-Todas as respostas do Lilya herdam do objeto `Response` e essa mesma classe também pode ser usada diretamente.
+Todas as respostas do Lilya herdam do objecto `Response` e essa mesma classe também pode ser usada diretamente.
 
 Todas as respostas são consideradas aplicações ASGI, o que significa que pode tratá-las como tal na sua aplicação, se necessário.
 
@@ -72,7 +72,7 @@ Os parâmetros disponíveis do `set_cookie` são os seguintes:
 - `value` - Uma string que representa o valor da cookie.
 - `max_age` - Um número inteiro que define o tempo de vida útil da cookie em segundos.
 Um valor negativo ou 0 descarta a cookie imediatamente. *(Opcional)*
-- `expires` - Um número inteiro que indica os segundos até que a cookie expire ou um objeto datetime. *(Opcional)*
+- `expires` - Um número inteiro que indica os segundos até que a cookie expire ou um objecto datetime. *(Opcional)*
 - `path` - Uma string a especificar o subconjunto de rotas a que a cookie se aplica. *(Opcional)*
 - `domain` - Uma string a especificar o domínio válido para a cookie. *(Opcional)*
 - `secure` - Um booleano que indica que a cookie é enviada para o servidor apenas se o pedido
@@ -293,11 +293,11 @@ por defeito, incluindo `Enum`, `deque`, `dataclasses`, `PurePath`, `generators` 
 
 ### Codificadores padrão
 
-Para entender como serializar um objeto específico em `json`, o Lilya possui alguns codificadores padrão que são avaliados quando tenta *adivinhar* o tipo de resposta.
+Para entender como serializar um objecto específico em `json`, o Lilya possui alguns codificadores padrão que são avaliados quando tenta *adivinhar* o tipo de resposta.
 
-* `DataclassEncoder` - Serializa objetos `dataclass`.
-* `EnumEncoder` - Serializa objetos `Enum`.
-* `PurePathEncoder` - Serializa objetos `PurePath`.
+* `DataclassEncoder` - Serializa objectos `dataclass`.
+* `EnumEncoder` - Serializa objectos `Enum`.
+* `PurePathEncoder` - Serializa objectos `PurePath`.
 * `PrimitiveEncoder` - Serializa tipos primitivos do Python. `str, int, float e None`.
 * `DictEncoder` - Serializa tipos `dict`.
 * `StructureEncoder` - Serializa tipos de dados mais complexos. `list, set, frozenset, GeneratorType, tuple, deque`.
@@ -318,10 +318,10 @@ Em seguida, **deve registrar o codificador** para que o Lilya o possa usar.
 Ao definir um codificador, o `__type__` ou `def is_type(self, value: Any) -> bool:`
 **deve ser declarado ou substituído**.
 
-Quando o `__type__` é declarado corretamente, o `is_type` padrão avaliará o objeto em relação ao
+Quando o `__type__` é declarado corretamente, o `is_type` padrão avaliará o objecto em relação ao
 tipo e retornará `True` ou `False`.
 
-Isto é usado internamente para perceber o tipo de codificador que será aplicado a um determinado objeto.
+Isto é usado internamente para perceber o tipo de codificador que será aplicado a um determinado objecto.
 
 !!! warning
     Se não puder fornecer o `__type__` por qualquer motivo e quiser apenas substituir a
@@ -329,7 +329,7 @@ Isto é usado internamente para perceber o tipo de codificador que será aplicad
 
     Por exemplo: No Python 3.8, para um modelo Pydantic `BaseModel` se passado no `__type__`, ele lançará um
     erro devido a questões internas do Pydantic, então, para contornar esse problema, pode simplesmente substituir o `is_type()`
-    e aplicar a lógica que valida o tipo do objeto e retorna um booleano.
+    e aplicar a lógica que valida o tipo do objecto e retorna um booleano.
 
 ```python
 from lilya.encoders import Encoder, register_encoder
@@ -344,7 +344,7 @@ Criar e registrar um codificador que lida com tipos `msgspec.Struct`.
 ```
 
 Simples, certo? Porque agora o `MsgSpecEncoder` está registrado, pode simplesmente fazer isto nos handlers
-e retornar **diretamente** o tipo de objeto `msgspec.Struct`.
+e retornar **diretamente** o tipo de objecto `msgspec.Struct`.
 
 ```python
 from msgspec import Struct

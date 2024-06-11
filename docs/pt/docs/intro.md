@@ -39,7 +39,7 @@ atribuir, mas há alguns truques a ter em mente.
 ### Carregar Listas, dicts e tipos complexos
 
 Ao carregar esses elementos nas variáveis de ambiente **é imperativo** que entenda que o Pydantic os lê
-como um objeto semelhante ao JSON.
+como um objecto semelhante ao JSON.
 
 **Examplo**:
 

@@ -1,8 +1,8 @@
 # Requests
 
-Lilya disponibiliza a classe `Request`. Este objeto é uma interface conveniente entre o pedido recebido e o âmbito ASGI.
+Lilya disponibiliza a classe `Request`. Este objecto é uma interface conveniente entre o pedido recebido e o âmbito ASGI.
 
-Isso significa que você não precisa aceder diretamente ao âmbito e extrair todas as informações necessárias para um objeto do tipo `request`.
+Isso significa que você não precisa aceder diretamente ao âmbito e extrair todas as informações necessárias para um objecto do tipo `request`.
 
 ```python
 from lilya.requests import Request
@@ -244,9 +244,9 @@ Os itens de upload de ficheiros são representados como instâncias de `lilya.da
 DataUpload possui os seguintes atributos:
 
 * **filename**: Uma `str` com o nome original do ficheiro que foi enviado ou `None` se não estiver disponível (por exemplo, `profile.png`).
-* **file**: Um `SpooledTemporaryFile` (um objeto semelhante a um ficheiro). Este é o ficheiro Python real que pode passar diretamente para outras
-funções ou bibliotecas que esperam um objeto "semelhante a um ficheiro".
-* **headers**: Um objeto `Header`. Geralmente, isso será apenas o cabeçalho `Content-Type`, mas se houver cabeçalhos adicionais
+* **file**: Um `SpooledTemporaryFile` (um objecto semelhante a um ficheiro). Este é o ficheiro Python real que pode passar diretamente para outras
+funções ou bibliotecas que esperam um objecto "semelhante a um ficheiro".
+* **headers**: Um objecto `Header`. Geralmente, isso será apenas o cabeçalho `Content-Type`, mas se houver cabeçalhos adicionais
 incluídos no campo multipart, serão incluídos aqui. Observe que esses cabeçalhos não têm relação com os cabeçalhos em `Request.headers`.
 * **size**: Um `int` com o tamanho do ficheiro enviado em bytes. Esse valor é calculado a partir do conteúdo do pedido, tornando-o uma escolha melhor para encontrar o tamanho do ficheiro enviado do que o cabeçalho `Content-Length`. Nenhum valor se não estiver definido.
 

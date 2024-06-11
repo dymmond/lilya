@@ -8,7 +8,7 @@ O Lilya lida com esses casos sem nenhum tipo de problema.
 
 ## Router
 
-O Router é o objeto principal que liga todo o Lilya ao [Path](#path), [WebSocketPath](#websocketpath) e [Include](#include).
+O Router é o objecto principal que liga todo o Lilya ao [Path](#path), [WebSocketPath](#websocketpath) e [Include](#include).
 
 ## Classe Router
 
@@ -25,7 +25,7 @@ A classe principal `Router` é instanciada dentro da aplicação `Lilya` com as 
 Ao criar um *handler* [Path](#path) ou [WebSocketPath](#websocketpath), tem duas maneiras de obter os parâmetros do caminho.
 
 * Lilya descobre e injeta automaticamente.
-* Obtém-nos directamente do objeto [request](./requests.md).
+* Obtém-nos directamente do objecto [request](./requests.md).
 
 #### Descobrindo automaticamente os parâmetros
 
@@ -43,7 +43,7 @@ O `customer_id` declarado no `path` também foi declarado no *handler*, permitin
 {!> ../../../docs_src/routing/handlers/request.py !}
 ```
 
-O `customer_id` declarado no `path` foi obtido acedendo ao objeto `request`.
+O `customer_id` declarado no `path` foi obtido acedendo ao objecto `request`.
 
 ## Router Personalizado
 
@@ -105,7 +105,7 @@ O exemplo acima mostra que pode até adicionar a mesma aplicação dentro de inc
 
 ## Utilitários
 
-O objeto `Router` possui algumas funcionalidades disponíveis que podem ser úteis.
+O objecto `Router` possui algumas funcionalidades disponíveis que podem ser úteis.
 
 ### add_route()
 
@@ -159,7 +159,7 @@ O objeto `Router` possui algumas funcionalidades disponíveis que podem ser úte
 
 ## Path
 
-O objeto que liga e constrói as URLs ou caminhos da aplicação. Ele mapeia o *handler* com o sistema de roteamento da aplicação.
+O objecto que liga e constrói as URLs ou caminhos da aplicação. Ele mapeia o *handler* com o sistema de roteamento da aplicação.
 
 #### Parâmetros
 
@@ -216,12 +216,12 @@ Os Includes são exclusivos do Lilya, poderosos e com mais controlo, permitindo:
 
 ### Include e aplicação
 
-Este é um objeto muito especial que permite a importação de qualquer rota de qualquer lugar da aplicação.
+Este é um objecto muito especial que permite a importação de qualquer rota de qualquer lugar da aplicação.
 O `Include` aceita a importação via `namespace` ou via lista `routes`, mas não ambos.
 
-Ao usar um `namespace`, o `Include` procurará a lista padrão `route_patterns` no namespace (objeto) importado, a menos que um `pattern` diferente seja especificado.
+Ao usar um `namespace`, o `Include` procurará a lista padrão `route_patterns` no namespace (objecto) importado, a menos que um `pattern` diferente seja especificado.
 
-O padrão só funciona se as importações forem feitas via `namespace` e não via objeto `routes`.
+O padrão só funciona se as importações forem feitas via `namespace` e não via objecto `routes`.
 
 #### Parâmetros
 
@@ -251,7 +251,7 @@ O padrão só funciona se as importações forem feitas via `namespace` e não v
 
 === "Importar a aplicação via string"
 
-    Esta é uma alternativa para carregar a aplicação via importação `string` em vez de passar o objeto diretamente.
+    Esta é uma alternativa para carregar a aplicação via importação `string` em vez de passar o objecto diretamente.
 
     ```python title='src/myapp/urls.py'
     {!> ../../../docs_src/routing/routes/include/app_str.py!}
@@ -275,7 +275,7 @@ O padrão só funciona se as importações forem feitas via `namespace` e não v
 
 #### Include e instância da aplicação
 
-O `Include` pode ser muito útil, principalmente quando o objetivo é evitar muitas importações e uma lista massiva de objetos a serem passados para um único objeto. Isso pode ser especialmente útil para criar um objeto Lilya limpo.
+O `Include` pode ser muito útil, principalmente quando o objetivo é evitar muitas importações e uma lista massiva de objectos a serem passados para um único objecto. Isso pode ser especialmente útil para criar um objecto Lilya limpo.
 
 **Exemplo**:
 
@@ -473,7 +473,7 @@ Esta é uma alternativa para a pesquisa reversa de caminho. Pode ser particularm
 
 * **name** - O nome atribuído ao caminho.
 * **app** - Uma aplicação ASGI que contém as rotas. Útil para reverter caminhos em aplicações específicas e/ou testes. *(Opcional)*.
-* **path_params** - Um objeto semelhante a um dicionário contendo os parâmetros que devem ser passados num determinado caminho. *(Opcional)*.
+* **path_params** - Um objecto semelhante a um dicionário contendo os parâmetros que devem ser passados num determinado caminho. *(Opcional)*.
 
 Ao usar o `reverse`, se nenhum parâmetro `app` for especificado, será automaticamente definido como a aplicação ou roteador de aplicação, que em circunstâncias normais, para além de `testing`, é o comportamento esperado.
 

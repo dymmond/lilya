@@ -1,8 +1,8 @@
 # Definições
 
-Em cada aplicação, surge a necessidade de definições específicas do projeto para garantir a sua singularidade.
+Em cada aplicação, surge a necessidade de definições específicas do projecto para garantir a sua singularidade.
 
-À medida que um projeto se torna mais complexo e as definições dispersam-se por todo o código-fonte,
+À medida que um projecto se torna mais complexo e as definições dispersam-se por todo o código-fonte,
 geri-las pode se tornar um desafio, levando a uma possível desordem.
 
 !!! warning
@@ -10,7 +10,7 @@ geri-las pode se tornar um desafio, levando a uma possível desordem.
 
 ## Como utilizar
 
-Existem duas formas de utilizar o objeto de configurações dentro de uma aplicação Lilya.
+Existem duas formas de utilizar o objecto de configurações dentro de uma aplicação Lilya.
 
 * Utilizando a variável de ambiente **LILYA_SETTINGS_MODULE**
 * Utilizando o atributo de instância **[settings_module](#o-settings_module)**.
@@ -20,7 +20,7 @@ Cada um deles tem casos de uso específicos, mas também trabalham juntos em per
 ## Definições e a aplicação
 
 Ao iniciar uma instância do Lilya, se nenhum parâmetro for fornecido, ela carregará automaticamente as configurações
-padrão do objeto de configurações do sistema, o `Settings`.
+padrão do objecto de configurações do sistema, o `Settings`.
 
 === "Sem parâmetros"
 
@@ -148,7 +148,7 @@ Como importar via string?
 
 Existe uma ordem de prioridade na qual o Lilya lê as suas configurações.
 
-Se um `settings_module` for passado para uma instância do Lilya, esse mesmo objeto tem prioridade acima de qualquer outra coisa. Vamos imaginar o seguinte:
+Se um `settings_module` for passado para uma instância do Lilya, esse mesmo objecto tem prioridade acima de qualquer outra coisa. Vamos imaginar o seguinte:
 
 * Uma aplicação Lilya com configurações normais.
 * Um `ChildLilya` com um conjunto específico de configurações exclusivas.
@@ -161,7 +161,7 @@ Se um `settings_module` for passado para uma instância do Lilya, esse mesmo obj
 
 No exemplo acima, nós:
 
-* Criámos um objeto de configurações derivado do `Settings` principal e passámos alguns valores predefinidos.
+* Criámos um objecto de configurações derivado do `Settings` principal e passámos alguns valores predefinidos.
 * Passámos o `ChildLilyaSettings` para a instância do `ChildLilya`.
 * Passámos o `ChildLilya` para a aplicação `Lilya`.
 
@@ -183,7 +183,7 @@ A beleza desta abordagem modular é o facto de tornar possível usar **ambas** a
 
 Vamos usar um exemplo em que:
 
-1. Criamos um objeto principal de definições do Lilya para ser usado pelo `LILYA_SETTINGS_MODULE`.
+1. Criamos um objecto principal de definições do Lilya para ser usado pelo `LILYA_SETTINGS_MODULE`.
 2. Criamos um `settings_module` para ser usado pela instância do Lilya.
 3. Iniciamos a aplicação utilizando ambos.
 
@@ -255,7 +255,7 @@ instanciação não significa que um funcionará com o outro.
 
 Quando instancia uma aplicação **ou passa parâmetros diretamente ou usa as definições ou uma combinação de ambos**.
 
-Passar parâmetros no objeto substituirá sempre os valores das definições padrão.
+Passar parâmetros no objecto substituirá sempre os valores das definições padrão.
 
 ```python
 from dataclasses import dataclass
@@ -295,14 +295,14 @@ A aplicação irá:
 2. Irá iniciar sem middlewares personalizados se o `HTTPSRedirectMiddleware` for substituído por `[]`.
 
 Embora tenha sido definido nas configurações para iniciar com `HTTPSRedirectMiddleware` e debug como `False`,
-uma vez que passa valores diferentes no momento de instanciar um objeto `Lilya`, esses valores tornar-se-ão os valores a serem usados.
+uma vez que passa valores diferentes no momento de instanciar um objecto `Lilya`, esses valores tornar-se-ão os valores a serem usados.
 
 **Declarar parâmetros na instância sempre terá precedência sobre os valores das configurações**.
 
 A razão pela qual deve usar as configurações é porque isso tornará o seu código-fonte mais organizado e mais fácil de manter.
 
 !!! Check
-    Quando se passa os valores via instanciação de um objeto Lilya e não via parâmetros, ao aceder os
+    Quando se passa os valores via instanciação de um objecto Lilya e não via parâmetros, ao aceder os
     valores através de `request.app.settings`, os valores **não estarão nas configurações** pois eles foram passados via
-    instanciação da aplicação e não via objeto de configurações. A forma de aceder a esses valores é, por exemplo, via `request.app.debug`
+    instanciação da aplicação e não via objecto de configurações. A forma de aceder a esses valores é, por exemplo, via `request.app.debug`
     diretamente.

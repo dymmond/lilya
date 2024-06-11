@@ -1,7 +1,6 @@
 # WebSocket
 
-Lilya provides a `WebSocket` class that serves a comparable function to an HTTP request but facilitates the exchange
-of data over a WebSocket, enabling both sending and receiving operations.
+O Lilya fornece uma classe `WebSocket` que desempenha uma função comparável a um pedido HTTP, mas facilita a troca de dados por meio de um WebSocket, permitindo operações de envio e recepção.
 
 ### WebSocket
 
@@ -9,17 +8,15 @@ of data over a WebSocket, enabling both sending and receiving operations.
 {!> ../../../docs_src/websockets/websocket.py !}
 ```
 
-WebSockets present a mapping interface, so you can use them in the same
-way as a `scope`.
+WebSockets apresentam uma interface de mapeamento, então pode usá-los da mesma forma que um `scope`.
 
-For instance: `websocket['path']` will return the ASGI path.
+Por exemplo: `websocket['path']` retornará o caminho ASGI.
 
 #### URL
 
-The websocket URL is accessed as `websocket.url`.
+O URL do WebSocket é acedida via `websocket.url`.
 
-Accessing the WebSocket URL is accomplished using `websocket.url`. This property, a subclass of `str`,
-not only represents the URL itself but also exposes all the individual components that can be extracted from the URL.
+O acesso ao URL do WebSocket é feito utilizando `websocket.url`. Esta propriedade, uma subclasse de `str`, não apenas representa o próprio URL, mas também expõe todos os componentes individuais que podem ser extraídos do URL.
 
 ```python
 from lilya.websockets import WebSocket
@@ -31,10 +28,9 @@ websocket.url.path
 websocket.url.port
 ```
 
-#### Header
+#### Cabeçalho
 
-Lilya uses the [multidict](https://multidict.aio-libs.org/en/stable/) for its headers and adds
-some extra flavours on the top of it.
+Lilya usa o [multidict](https://multidict.aio-libs.org/en/stable/) para os seus cabeçalhos (headers) e adiciona alguns extras em cima.
 
 ```python
 from lilya.websockets import WebSocket
@@ -44,10 +40,9 @@ websocket = WebSocket(scope, receive, send)
 websocket.headers['sec-websocket-version']
 ```
 
-#### Query Params
+#### Parâmetros de Consulta
 
-Lilya uses the [multidict](https://multidict.aio-libs.org/en/stable/) for its query parameters and adds
-some extra flavours on the top of it.
+Lilya usa o [multidict](https://multidict.aio-libs.org/en/stable/) para seus parâmetros de consulta (query params) e adiciona alguns extras em cima.
 
 ```python
 from lilya.websockets import WebSocket
@@ -57,9 +52,9 @@ websocket = WebSocket(scope, receive, send)
 websocket.query_params['search']
 ```
 
-#### Path Params
+#### Parâmetros de Caminho
 
-Extracted directly from the `scope` as a dictionary like python object
+Extraído diretamente do `scope` como um dicionário em Python.
 
 ```python
 from lilya.websockets import WebSocket
@@ -69,70 +64,70 @@ websocket = WebSocket(scope, receive, send)
 websocket.path_params['username']
 ```
 
-### Operations
+### Operações
 
-#### Accepting connection
+#### Aceitando conexão
 
 * `await websocket.accept(subprotocol=None, headers=None)`
 
-#### Sending data
+#### Enviando dados
 
 * `await websocket.send_text(data)`
 * `await websocket.send_bytes(data)`
 * `await websocket.send_json(data)`
 
-JSON messages are sent by default using text data frames.
-To send JSON over binary data frames, utilize `websocket.send_json(data, mode="binary")`.
+Mensagens JSON são enviadas por defeito utilizando *frames* de dados de texto.
+Para enviar JSON sobre *frames* de dados binários, utilize `websocket.send_json(data, mode="binary")`.
 
-#### Receiving data
+#### Recebendo dados
 
 * `await websocket.receive_text()`
 * `await websocket.receive_bytes()`
 * `await websocket.receive_json()`
 
 !!! warning
-    It's important to note that the operation may raise `lilya.websockets.WebSocketDisconnect()`.
+    É importante observar que a operação pode gerar `lilya.websockets.WebSocketDisconnect()`.
 
-JSON messages are automatically received over text data frames by default.
-To receive JSON over binary data frames, employ `websocket.receive_json(data, mode="binary")`.
+Mensagens JSON são automaticamente recebidas sobre *frames* de dados de texto por defeito.
+Para receber JSON sobre *frames* de dados binários, utilize `websocket.receive_json(data, mode="binary")`.
 
-#### Iterating data
+#### Iterando dados
 
 * `websocket.iter_text()`
 * `websocket.iter_bytes()`
 * `websocket.iter_json()`
 
-Much like `receive_text`, `receive_bytes`, and `receive_json`, this function returns an asynchronous iterator.
+Assim como `receive_text`, `receive_bytes` e `receive_json`, esta função retorna um iterador assíncrono.
 
 ```python
 {!> ../../../docs_src/websockets/example.py !}
 ```
 
-Upon the occurrence of `lilya.websockets.WebSocketDisconnect`, the iterator will terminate.
+Quando ocorre o `lilya.websockets.WebSocketDisconnect`, o iterador será encerrado.
 
-#### Closing the connection
+#### Fechando a conecção
 
 * `await websocket.close(code=1000, reason=None)`
 
-#### Sending and receiving messages
+#### Enviando e recebendo mensagens
 
-In cases where sending or receiving raw ASGI messages is required, it is advisable to utilize
-`websocket.send()` and `websocket.receive()` instead of directly employing the raw `send` and `receive` callables.
-This approach ensures proper upkeep of the WebSocket's internal state.
+Nos casos em que é necessário enviar ou receber mensagens ASGI brutas, é aconselhável utilizar
+`websocket.send()` e `websocket.receive()` em vez de empregar diretamente as chamadas brutas `send` e `receive`.
+Esta abordagem garante a manutenção adequada do estado interno do WebSocket.
 
 * `await websocket.send(message)`
 * `await websocket.receive()`
 
-#### Send Denial Response
+#### Enviar Resposta de Negação
 
-Should `websocket.close()` be invoked prior to `websocket.accept()`, the server will automatically
-dispatch an HTTP 403 error to the client.
+Caso `websocket.close()` seja invocado antes de `websocket.accept()`, o servidor automaticamente
+enviará um erro HTTP 403 para o cliente.
 
-For customized error responses, the `websocket.send_denial_response()` method can be employed.
-This method facilitates the transmission of the specified response before closing the connection.
+Para respostas de erro personalizadas (responses), o método `websocket.send_denial_response()` pode ser utilizado.
+Este método facilita a transmissão da resposta especificada antes de fechar a conecção.
 
 * `await websocket.send_denial_response(response)`
 
 !!! warning
-    This functionality relies on the ASGI server supporting the WebSocket Denial Response extension.
-    In the absence of support, attempting to use it will result in a `RuntimeError` being raised.
+    Essa funcionalidade depende do servidor ASGI suportar a extensão de *Denial Response* do WebSocket.
+    Na ausência de suporte, tentar utilizá-la resultará em `RuntimeError`.

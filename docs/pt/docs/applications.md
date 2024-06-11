@@ -58,7 +58,7 @@ deve indicar que todos os caminhos devem ser considerados obsoletos.
 
 ## Configurações da aplicação
 
-As configurações são outra forma de controlar os parâmetros passados para o objeto Lilya ao instanciar. Consulte as [configurações](./settings.md) para obter mais detalhes e como usá-las para potencializar sua aplicação.
+As configurações são outra forma de controlar os parâmetros passados para o objecto Lilya ao instanciar. Consulte as [configurações](./settings.md) para obter mais detalhes e como usá-las para potencializar sua aplicação.
 
 Para aceder às configurações da aplicação, existem diferentes formas:
 

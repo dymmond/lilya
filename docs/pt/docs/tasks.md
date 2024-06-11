@@ -41,7 +41,7 @@ necessária.
 ### Usando o add_task
 
 Outra maneira de adicionar várias tarefas é utilizando a função `add_tasks` fornecida pelo
-objeto `Tasks`.
+objecto `Tasks`.
 
 ```python
 {!> ../../../docs_src/background_tasks/response/add_tasks.py !}
@@ -57,10 +57,10 @@ O `.add_task()` recebe como argumentos:
 ## Informações técnicas
 
 As classes `Task` e `Tasks` derivam diretamente de `lilya.background`, mas a natureza dos
-objetos também permite o uso de bibliotecas externas como [backgrounder](https://backgrounder.dymmond.com).
+objectos também permite o uso de bibliotecas externas como [backgrounder](https://backgrounder.dymmond.com).
 
 Pode usar funções `def` ou `async def` ao declarar essas funcionalidades para serem passadas para
 o `Task` e o Lilya saberá como lidar com isso.
 
-O objeto `Tasks` também aceita o parâmetro `as_group`. Isso permite que o `anyio` crie um grupo de tarefas
+O objecto `Tasks` também aceita o parâmetro `as_group`. Isso permite que o `anyio` crie um grupo de tarefas
 e as execute.

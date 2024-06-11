@@ -1,40 +1,27 @@
-# Shell Support
+# Suporte de Shell
 
-This is a simple support for an interactive shell with Lilya. This directive simply loads some
-of the defaults such as `Path`, `Router`, `Include`, `WebSocketPth`, `settings` and saving you
-time every time you need to use an interactive shell to test some ad-hoc processes.
+Este é um suporte simples para uma shell interativa com o Lilya. Esta directiva simplesmente carrega algumas das configurações padrão, como `Path`, `Router`, `Include`, `WebSocketPth`, `settings` e economiza tempo sempre que precisa usar uma shell interativa para testar alguns processos ad-hoc.
 
-Lilya gives you that possibility completely out of the box and ready to use with your
-application.
+O Lilya oferece essa possibilidade pronta para usar com a aplicação.
 
-## Important
+## Importante
 
-Before reading this section, you should get familiar with the ways Lilya handles the discovery
-of the applications.
+Antes de ler esta secção, deve familiarizar-se com as formas como o Lilya lida com a descoberta das aplicações.
 
-The following examples and explanations will be using the [auto discovery](./discovery.md#auto-discovery)
-but [--app and environment variables](./discovery.md#environment-variables) approach but the
-is equally valid and works in the same way.
+Os seguintes exemplos e explicações irão utilizar a abordagem [--app e variáveis de ambiente](./discovery.md#environment-variables), mas a [descoberta automática](./discovery.md#auto-discovery) é igualmente válida e funciona da mesma forma.
 
-## How does it work
+## Como funciona
 
-Lilya ecosystem is complex internally but simpler to the user. Lilya will use the application
-discovery to understand some of your defaults and events and start the shell.
+O ecossistema do Lilya é complexo internamente, mas mais simples para o utilizador. O Lilya usará a descoberta da aplicação para entender algumas das suas configurações padrão e eventos e iniciar a shell.
 
-### Requirements
+### Requisitos
 
-To run any of the available shells you will need `ipython` or `ptpython` or both installed.
+Para executar qualquer um das shells disponíveis, precisará ter o `ipython` ou `ptpython` ou ambos instalados.
 
 **IPython**
 
 ```shell
 $ pip install ipython
-```
-
-or
-
-```shell
-$ pip install lilya[ipython]
 ```
 
 **PTPython**
@@ -43,29 +30,23 @@ $ pip install lilya[ipython]
 $ pip install ptpython
 ```
 
-or
+### Como chamá-lo
 
-```shell
-$ pip install lilya[ptpyton]
-```
+#### Com [descoberta automática](./discovery.md#auto-discovery)
 
-### How to call it
-
-#### With [auto discovery](./discovery.md#auto-discovery)
-
-**Default shell**
+**Shell padrão**
 
 ```shell
 $ lilya shell
 ```
 
-**PTPython shell**
+**Shell PTPython**
 
 ```shell
 $ lilya shell --kernel ptpython
 ```
 
-#### With [--app and environment variables](./discovery.md#environment-variables)
+#### Com [--app e variáveis de ambiente](./discovery.md#environment-variables)
 
 **--app**
 
@@ -73,35 +54,33 @@ $ lilya shell --kernel ptpython
 $ lilya --app myproject.main:app shell
 ```
 
-**Environment variables**
+**Variáveis de ambiente**
 
 ```shell
 $ export LILYA_DEFAULT_APP=--app myproject.main:app
 $ lilya shell --kernel ptpython
 ```
 
-#### If you want to use your custom Settings
+#### Se quiser usar as suas Configurações personalizadas
 
-Sometimes you want to use your application settings as well while loading the shell. You can see
-[more details](../settings.md) about the settings and [how to use them](../settings.md).
+Às vezes, pode desejar usar as configurações da sua aplicação ao carregar a shell. Pode ver [mais detalhes](../settings.md) sobre as configurações e [como usá-las](../settings.md).
 
 ```shell
 $ export LILYA_SETTINGS_MODULE=MyCustomSettings
 $ export LILYA_DEFAULT_APP=--app myproject.main:app
-$ lilya shell # default
-$ lilya shell --kernel ptpython # start with ptpython
+$ lilya shell # padrão
+$ lilya shell --kernel ptpython # iniciar com ptpython
 ```
 
-### How does it look like
+### Como fica
 
-Lilya doesn't want to load all python globals and locals for you. Instead loads all the
-essentials and some python packages automatically for you but you can still import others.
+O Lilya não carrega todas as variáveis globais e locais do Python por si. Em vez disso, carrega automaticamente os essenciais e algumas bibliotecas Python,
+mas também pode importar outras ainda.
 
-It looks like this:
+Fica assim:
 
-<img src="https://res.cloudinary.com/dymmond/image/upload/v1707906253/lilya/wlhsrvtrpvgdvvbl75fc.png" alt='Shell Example'>
+<img src="https://res.cloudinary.com/dymmond/image/upload/v1707906253/lilya/wlhsrvtrpvgdvvbl75fc.png" alt='Exemplo de Shell'>
 
-Of course the `LILYA-VERSION` is replaced automatically by the version you are using.
+É claro que o `LILYA-VERSION` é substituído automaticamente pela versão que está a utilizar.
 
-Pretty cool, right? Then it is a normal python shell where you can import whatever you want and
-need as per normal python shell interaction.
+Bem porreiro, não é? Então é uma shell Python normal onde pode importar o que quiser e precisar, como numa interação normal com a shell Python.

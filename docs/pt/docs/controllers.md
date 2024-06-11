@@ -1,6 +1,6 @@
 # Controladores
 
-Lilya adopta tanto a metodologia de programação funcional quanto a orientada a objetos (OOP). Dentro da framework Lilya,
+Lilya adopta tanto a metodologia de programação funcional quanto a orientada a objectos (OOP). Dentro da framework Lilya,
 o paradigma OOP é chamado de *controller*, uma nomenclatura inspirada noutras tecnologias notáveis.
 
 O `Controller` actua como o orquestrador para lidar com pedidos HTTP padrão e gerir sessões WebSocket.
@@ -12,7 +12,7 @@ parâmetros também funciona.
 
 ## A classe `Controller`
 
-Este objeto também serve como aplicação ASGI, o que significa que abraça a implementação interna
+Este objecto também serve como aplicação ASGI, o que significa que abraça a implementação interna
 do `__call__` e despacha os pedidos.
 
 Ele também é responsável por implementar apenas o despacho HTTP dos pedidos.

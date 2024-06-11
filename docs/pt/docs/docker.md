@@ -148,7 +148,7 @@ CMD ["/usr/bin/supervisord"]
 
     É aqui que irá colocar o `requirements.txt` e a directoria `app`.
 
-4. Copie os requisitos para o seu projeto.
+4. Copie os requisitos para o seu projecto.
 
     Você deve copiar apenas os requisitos e não o restante do código, e a razão para isso é o **cache** do Docker. Se o arquivo não mudar com muita frequência, ele será armazenado em cache e na próxima vez que você precisar reconstruir a imagem, ele não repetirá as mesmas etapas o tempo todo.
 

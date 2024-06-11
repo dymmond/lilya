@@ -15,7 +15,7 @@ from lilya.environments import EnvironLoader
 ## O `EnvironLoader`
 # Ambientes
 
-Neste caso, este objeto é apenas um invólucro em cima do [multidict](https://multidict.aio-libs.org/en/stable/), que faz muita magia por nós.
+Neste caso, este objecto é apenas um invólucro em cima do [multidict](https://multidict.aio-libs.org/en/stable/), que faz muita magia por nós.
 
 O objetivo do `EnvironLoader` é tornar o processo de carregamento e análise mais simples e direto, sem complicações extras.
 

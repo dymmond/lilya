@@ -1,109 +1,113 @@
-# Directives
+# Directivas
 
-What are these directives? In simple terms, those are special `command-line` scripts that run special
-pieces of code for **Lilya**.
+O que são essas directivas? Em termos simples, são scripts especiais de linha de comando que executam
+trechos de código especiais para o **Lilya**.
 
-{!> ../../../docs_src/_shared/autodiscovery.md !}
+## Importante
 
-## Built-in Lilya directives
+Antes de ler esta secção, deve familiarizar-se com as formas como o Lilya lida com a descoberta das aplicações.
 
-Starting a project can be troublesome for some people mostly because there questions about the structure of the files
-and folders and how to maintain the consistency.
+Os seguintes exemplos e explicações irão utilizar a abordagem [--app e variáveis de ambiente](./discovery.md#environment-variables), mas a [descoberta automática](./discovery.md#auto-discovery) é igualmente válida e funciona da mesma forma.
 
-A lot of people cannot be bothered with running cookiecutters and go straight to their own design.
+## Directivas incorporadas do Lilya
+
+Iniciar um projecto pode ser problemático para algumas pessoas, principalmente porque surgem dúvidas sobre a estrutura dos ficheiros
+e pastas e como manter a consistência.
+
+Muitas pessoas não se preocupam em executar geradores de código e vão diretos para o próprio design.
 
 !!! Check
-    **Lilya is in no way, shape or form opinionated about the application structure** of any application but it
-    provides some suggested options but it does not mean it should always be in that way. It simply serves as an
-    option.
+    **O Lilya não impõe de forma alguma uma estrutura aplicacional** para qualquer aplicação, mas
+    fornece algumas sugestões, mas isso não significa que deva sempre ser assim. Simplesmente serve como uma
+    opção.
 
-Currently there are two built-in directives.
+Atualmente, existem algumas directivas incorporadas.
 
-* [directives](#list-available-directives) - Lists all the available directives.
-* [createproject](#create-project) - Used to generate a scaffold for a project.
-* [createapp](#create-app) - Used to generate a scaffold for an application.
-* [createdeployment](#create-deployment) - Used to generate files for a deployment with docker, nginx, supervisor and gunicorn.
-* [show_urls](#show-urls) - Shows the information about the your lilya application.
-* [shell](./shell.md) - Starts the python interactive shell for your Lilya application.
+* [directives](#listar-directivas-disponíveis) - Lista todas as directivas disponíveis.
+* [createproject](#criar-projecto) - Usado para gerar uma estrutura básica para um projecto.
+* [createapp](#criar-aplicação) - Usado para gerar uma estrutura básica para uma aplicação.
+* [createdeploy](#criar-deploy) - Usado para gerar ficheiros para um deploy com docker, nginx, supervisor e gunicorn.
+* [show_urls](#mostrar-urls) - Mostra informações sobre a aplicação Lilya.
+* [shell](./shell.md) - Inicia o shell interativa do Python para a aplicação Lilya.
 
-### Help
+### Ajuda
 
-To the help of any directive, run `--help` in front of each one.
+Para obter ajuda sobre qualquer directiva, execute `--help` na frente de cada uma.
 
-Example:
+Exemplo:
 
 ```shell
 $ lilya runserver --help
 ```
 
-## Available Lilya Directives
+## Directivas do Lilya Disponíveis
 
-### List Available Directives
+### Listar Directivas Disponíveis
 
-This is the most simple directive to run and lists all the available directives from Lilya
-and with a flag `--app` shows also the available directives in your project.
+Esta é a directiva mais simples de executar e lista todas as directivas disponíveis do Lilya
+e com a flag `--app` também mostra as directivas disponíveis no seu projecto.
 
-**Only lilya directives**
+**Apenas directivas do Lilya**
 
 ```shell
 $ lilya directives
 ```
 
-**All the directives including your project**
+**Todas as directivas, incluindo o seu projecto**
 
 ```shell
 $ lilya --app myproject.main:app directives
 ```
 
-Or
+Ou
 
 ```shell
 $ export LILYA_DEFAULT_APP=myproject.main:app
 $ lilya directives
 ```
 
-### Create project
+### Criar Projeto
 
-This is a simple directive that generates a folder structure with some files for your Lilya project.
+Esta é uma directiva simples que gera uma estrutura de pastas com alguns ficheiros para o projecto Lilya.
 
-#### Parameters
+#### Parâmetros
 
-* **--with-deployment** - Flag indicating if the project generation should include deployment files.
+* **--with-deployment** - Flag indicando se a geração do projecto deve incluir ficheiros de deploy.
 
-    <sup>Default: `False`</sup>
+    <sup>Padrão: `False`</sup>
 
-* **--deployment-folder-name** - The custom name of the folder where the deployment files will be placed if `--with-deployment` is `True`.
+* **--deployment-folder-name** - O nome personalizado da pasta onde os ficheiros de deploy serão colocados se `--with-deployment` for `True`.
 
-    <sup>Default: `deployment/`</sup>
+    <sup>Padrão: `deployment/`</sup>
 
-* **--with-structure** - Creates a project with a given structure of folders and files.
-* **-v/--verbosity** - `1` for none and `2` displays all generated files.
+* **--with-structure** - Cria um projecto com uma estrutura de pastas e ficheiros específica.
+* **-v/--verbosity** - `1` para nenhum e `2` para mostrar todos os ficheiros gerados.
 
-    <sup>Default: `1`</sup>
+    <sup>Padrão: `1`</sup>
 
 ```shell
-$ lilya createproject <YOUR-PROJECT-NAME>
+$ lilya createproject <PROJECT-NAME>
 ```
 
-The directive will generate a tree of files and folders with some pre-populated files ready to be used.
+A directiva irá gerar uma árvore de ficheiros e pastas com alguns ficheiros pré-populados prontos para serem usados.
 
 !!! Note
-    By default, Lilya will generate a simple project structure wth the bare minimum unless `--with-structure` flag is specified
+    Por defeito, o Lilya irá gerar uma estrutura de projecto simples com o mínimo necessário, a menos que a flag `--with-structure` seja especificada.
 
-**Example**:
+**Exemplo**:
 
-Starting a project with some default and some structure.
+Iniciando um projecto com algumas opções padrão e uma estrutura específica.
 
 ```shell
-$ lilya createproject myproject --with-structure
+$ lilya createproject my_project --with-structure
 ```
 
-You should have a folder called `myproject` with a similar structure to this:
+Você deve ter uma pasta chamada `my_project` com uma estrutura semelhante a esta:
 
 ```shell
 .
 ├── Makefile
-├── myproject
+├── my_project
 │   ├── apps
 │   │   └── __init__.py
 │   ├── configs
@@ -129,155 +133,154 @@ You should have a folder called `myproject` with a similar structure to this:
 
 ```
 
-A lot of files generated right? Yes but those are actually quite simple but let's talk about what is happening there.
+Muitos ficheiros gerados, certo? Sim, mas na verdade eles são bastante simples, mas vamos falar sobre o que está a acontecer aqui.
 
-* **Makefile** - This is a special file provided by the directive that contains some useful commands to run your
-peoject locally, for example:
-    * `make run` - Starts your project with the development settings.
-    * `make test` - Runs your local tests with the testing settings.
-    * `make clean` - Removes all the `*.pyc` from your project.
-    * `make requirements` - Installs the mininum requirements from the `requirements` folder.
+* **Makefile** - Este é um ficheiro especial fornecido pela directiva que contém alguns comandos úteis para executar o
+projecto localmente, por exemplo:
+    * `make run` - Inicia o projecto com as configurações de desenvolvimento.
+    * `make test` - Executa os testes locais com as configurações de teste.
+    * `make clean` - Remove todos os `*.pyc` do projecto.
+    * `make requirements` - Instala os requisitos mínimos da pasta `requirements`.
 
     !!! Info
-        The tests are using [pytest](https://docs.pytest.org/) but you can change to whatever you want.
+        Os testes estão a utilizar o [pytest](https://docs.pytest.org/), mas pode trocar por qualquer outro que preferir.
 
-* **serve.py** - This file is simply a wrapper that is called by the `make run` and starts the local
-development. **This should not be used in production**.
-* **main.py** - The main file that builds the application path and adds it to the `$PYTHONPATH`. This file can also be
-used to add extra configurations as needed.
-* **urls.py** - Used as an *entry-point* for the application urls. This file is already being imported via
-**Include** inside the `main.py`.
+* **serve.py** - Este ficheiro é apenas um wrapper que é chamado pelo `make run` e inicia o desenvolvimento local.
+**Isto não deve ser usado em produção**.
+* **main.py** - O ficheiro principal que constrói o caminho da aplicação e adiciona-o à `$PYTHONPATH`. Este ficheiro também pode ser
+usado para adicionar configurações extra, se necessário.
+* **urls.py** - Usado como um *ponto de entrada* para os URLs da aplicação. Este ficheiro já está sendo importado via
+**Include** dentro do `main.py`.
 
 #### Apps
 
-##### What is an app in the Lilya context?
+##### O que é uma app no contexto do Lilya?
 
-An app is another way of saying that is a python module that contains your code and logic for the application.
+Um app é outra forma de dizer que é um módulo Python que contém código e lógica para a aplicação.
 
-As mentioned before, this is merely suggestive and in no way, shape or form consitutes as the unique way of
-building Lilya applications.
+Como mencionado anteriormente, isto é apenas uma sugestão e de forma alguma constitui a única maneira de
+construir aplicações Lilya.
 
-The `apps` is a way that can be used to **isolate** your apis from the rest of the structure. This folder is already
-added to the python path via `main.py`.
+A pasta `apps` é uma forma que pode ser usada para **isolar** as APIs do restante da estrutura. Esta pasta já está
+adicionada no caminho do Python via `main.py`.
 
-You can simply ignore this folder or used it as intended, **nothing is mandatory**, we simply believe that besides a
-clean code, a clean structure makes everything more pleasant to work and maintain.
+Pode simplesmente ignorar esta pasta ou usá-la como pretendido, **nada é obrigatório**, acreditamos apenas que, além de um
+código limpo, uma estrutura limpa torna tudo mais agradável de trabalhar e manter.
 
-> So, you are saying that we can use the apps to isolate the apis and we can ignore it or use it.
-Do you also provide any other directive that suggests how to design an app, just in case if we want?
+> Então, está a dizer que podemos usar os apps para isolar as APIs e podemos ignorá-los ou usá-los.
+Também existe alguma outra directiva que sugere como criar uma app, apenas no caso de querermos?
 
-**Actually, we do!** You can also use the [createapp](#create-app) directive to also generate a scaffold for an app.
+**Na verdade, sim!** Também pode usar a directiva [createapp](#criar-aplicação) para gerar uma estrutura básica para uma app.
 
-### Create app
+### Criar Aplicação
 
-This is another directive that allows you to generate a scaffold for a possible app to be used within Lilya.
+Esta é outra directiva que permite gerar uma estrutura básica para uma possível app a ser usada no Lilya.
 
-#### Parameters
+#### Parâmetros
 
-* **-v/--verbosity** - `1` for none and `2` displays all generated files.
+* **-v/--verbosity** - `1` para nenhum e `2` para exibir todos os ficheiros gerados.
 
-    <sup>Default: `1`</sup>
+    <sup>Padrão: `1`</sup>
 
 ```shell
-$ lilya createapp <YOUR-APP-NAME>
+$ lilya createapp <APP-NAME>
 ```
 
-**Example**:
+**Exemplo**:
 
-Using our previous example of [create project](#create-project), let's use the already created `myproject`.
+Usando o exemplo anterior de [criar um projecto](#criar-projecto), vamos usar o `my_project` já criado.
 
 ```shell
-$ cd myproject/apps/
+$ cd my_project/apps/
 $ lilya createapp accounts
 ```
 
-You should have a folder called `accounts` with a similar structure to this:
+Feve ter uma pasta chamada `accounts` com uma estrutura semelhante a esta:
 
 {!> ../../../docs_src/_shared/app_struct_example.md !}
 
-As you can see, `myproject/apps` contains an app called `accounts`.
+Como pode ver, `my_project/apps` contém uma app chamado `accounts`.
 
-By default, the `createapp` generates a python module with a `v1` sub-module that contains:
+Por defeito, o `createapp` gera um módulo Python com um submódulo `v1` que contém:
 
-* **schemas.py** - Empty file with a simple pydantic `BaseModel` import and where you can place any,
-as the import suggests, pydantic model to be used with the `accounts/v1`.
-* **urls.py** - You can place the urls of the views of your `accounts/v1`.
-* **controllers.py** - You can place all the handlers and views of your `accounts/v1`.
+* **schemas.py** - Ficheiro vazio com uma simples importação de `BaseModel` do Pydantic e onde você pode colocar qualquer,
+como o próprio import sugere, modelo Pydantic para ser usado com o `accounts/v1`.
+* **urls.py** - Pode colocar os URLs das views do seu `accounts/v1`.
+* **controllers.py** - Você pode colocar todos os *handlers* e views do `accounts/v1`.
 
-A **tests** file is also generated suggesting that you could also add some specific application tests there.
+Um ficheiro de **tests** também é gerado sugerindo que também pode adicionar alguns testes específicos da aplicação lá.
 
 !!! Check
-    Using a version like `v1` will make it clear which version of APIs should be developed within that same
-    module and for that reason a default `v1` is generated, but again, nothing is set in stone and you are free
-    to simply ignore this.
+    Usar uma versão como `v1` deixa claro qual é versão das APIs que deve ser desenvolvida dentro do mesmo
+    módulo e por esse motivo um `v1` padrão é gerado, mas novamente, nada é definitivo e é livre
+    para simplesmente ignorar isto.
 
-### After generation
+### Após a geração
 
-Once the project and apps are generated, executing `make run` will throw a `ImproperlyConfigured` exception. This
-is because the `urls.py` expects to be populated with application details.
+Depois que o projecto e as apps serem gerados, a execução do `make run` lançará uma excepção `ImproperlyConfigured`. Isto
+acontece porque o `urls.py` espera ser preenchido com os detalhes da aplicação.
 
-### Example
+### Exemplo
 
-Let's do an example using exactly what we previously generated and put the application up and running.
+Vamos fazer um exemplo usando exatamente o que geramos anteriormente e colocar o aplicação em funcionamento.
 
-**The current structure**:
+**A estrutura atual**:
 
 {!> ../../../docs_src/_shared/app_struct_example.md !}
 
-What are we going to do?
+O que vamos fazer?
 
-* Add a *view* to the accounts.
-* Add the path to the `urls` of the accounts.
-* Add the `accounts` urls to the application urls.
-* Start the application.
+* Adicionar uma *view* às accounts.
+* Adicionar o caminho para as `urls` das accounts.
+* Adicionar as urls das accounts às urls da aplicação.
+* Iniciar a aplicação.
 
-#### Create the view
+#### Criar a view
 
-```python title="myproject/apps/accounts/v1/controllers.py"
+```python title="my_project/apps/accounts/v1/controllers.py"
 {!> ../../../docs_src/management/views.py !}
 ```
 
-Create a view to return the message `Welcome home!`.
+Crie uma view para retornar a mensagem `Welcome home!`.
 
-#### Add the view to the urls
+#### Adicionar a view às urls
 
-Now it is time to add the newly created view to the urls of the accounts.
+Agora é hora de adicionar a view recém-criada às urls das accounts.
 
-```python title="myproject/apps/accounts/v1/urls.py"
+```python title="my_project/apps/accounts/v1/urls.py"
 {!> ../../../docs_src/management/urls.py !}
 ```
 
-#### Add the accounts urls to the application urls
+#### Adicionar as urls das accounts às urls do aplicação
 
-Now that we have created the views and the urls for the accounts, it is time to add the accounts to the application
-urls.
+Agora que criamos as views e as urls para as accounts, é hora de adicionar as accounts às urls da aplicação.
 
-Let's update the `myproject/urls.py`.
+Vamos atualizar o `my_project/urls.py`.
 
-```python title="myproject/urls.py"
+```python title="my_project/urls.py"
 {!> ../../../docs_src/management/app_urls.py !}
 ```
 
-And that is it! The application is assembled and you can now [start the application](#start-the-application).
+E é isto! A aplicação está montado e agora pode [iniciar a aplicação](#iniciar-o-aplicação).
 
-### Start the application
+### Iniciar a aplicação
 
-Remember that a `Makefile` that was also generated? Let's use it to start the application.
+Lembre-se de que um `Makefile` também foi gerado? Vamos usá-lo para iniciar a aplicação.
 
 ```shell
 make run
 ```
 
-What this command is actually doing is:
+O que esse comando está a fazer na verdade é:
 
 ```shell
-LILYA_SETTINGS_MODULE=myproject.configs.development.settings.DevelopmentAppSettings python -m myproject.serve
+LILYA_SETTINGS_MODULE=my_project.configs.development.settings.DevelopmentAppSettings python -m my_project.serve
 ```
 
-If you want another [settings](../settings.md#custom-settings) you can simply update the command to
-run with your custom settings.
+Se quiser usar outras [configurações](../settings.md#configurações-personalizadas), basta atualizar o comando para
+executar com suas configurações personalizadas.
 
-Once the application starts, you should have an output in the console similar to this:
+Assim que a aplicação iniciar, deve ter um *output* na consola semelhante a esta:
 
 ```shell
 INFO:     Uvicorn running on http://localhost:8000 (Press CTRL+C to quit)
@@ -287,124 +290,123 @@ INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 ```
 
-### Auto generated test files
+### Ficheiros de teste gerados automaticamente
 
-The test files generated are using the TestClient, so make sure you run:
+Os ficheiros de teste gerados estão usando o TestClient, portanto, certifique-se de executar:
 
 ```shell
 $ pip install lilya[full]
 ```
 
-Or you can skip this step if you don't want to use the TestClient at all.
+Ou você pode saltar esta etapa se não quiser usar o TestClient.
 
-### Create deployment
+### Criar Deploy
 
-This is another directive that allows you to generate a scaffold for a deployment using nginx, supervisor, gunicorn and docker.
+Esta é outra directiva que permite gerar uma estrutura básica para um deploy usando nginx, supervisor, gunicorn e docker.
 
 !!! Note
-    This generates a ready based files containing the minimum information need to speedup the deployment
-    process and can/should be adapted to your needs but at least 80% of the configurations are already
-    prepared for you.
+    Isso gera ficheiros prontos contendo as informações mínimas necessárias para acelerar o processo de deploy
+    e pode/devem ser adaptados às suas necessidades, mas pelo menos 80% das configurações já estão
+    preparadas.
 
-    The `Dockerfile` image comes with the minimum version of Python 3.12. It is recommended to update accordingly
-    if you have any restrictions.
+    A imagem `Dockerfile` vem com a versão mínima do Python 3.12. É recomendado atualizar de acordo
+    se tiver alguma restrição.
 
-There are two ways of generating the deployments. One with the [createproject](#create-project) and providing
-the necessary flags and the other one in isolation.
+Existem duas maneiras de gerar os deploys. Uma com o [createproject](#criar-projecto) e fornecendo
+as flags necessárias e a outra de forma isolada.
 
-**This directive is considered in isolation**.
+**Esta directiva é considerada de forma isolada**.
 
-#### Parameters
+#### Parâmetros
 
-* **--deployment-folder-name** - The custom name of the folder where the files will be placed.
+* **--deployment-folder-name** - O nome personalizado da pasta onde os ficheiros serão colocados.
 
-    <sup>Default: `deployment/`</sup>
+    <sup>Padrão: `deployment/`</sup>
 
-* **-v/--verbosity** - `1` for none and `2` displays all generated files.
+* **-v/--verbosity** - `1` para nenhum e `2` para exibir todos os ficheiros gerados.
 
-    <sup>Default: `1`</sup>
+    <sup>Padrão: `1`</sup>
 
-The default run and syntax is as follow:
-
-```shell
-$ lilya createdeployment <YOUR-PROJECT-NAME>
-```
-
-**Example**:
-
-Using our previous example of [create project](#create-project), let's use the already created `myproject`.
+A execução e sintaxe padrão são as seguintes:
 
 ```shell
-$ cd myproject/
-$ lilya createdeployment myproject
+$ lilya createdeploy <PROJECT-NAME>
 ```
 
-You should have a folder called `deployment` with a similar structure to this:
+**Exemplo**:
+
+Usando nosso exemplo anterior de [criar projecto](#criar-projecto), vamos usar o `my_project` já criado.
+
+```shell
+$ cd my_project/
+$ lilya createdeploy my_project
+```
+
+Deve ter uma pasta chamada `deployment` com uma estrutura semelhante a esta:
 
 {!> ../../../docs_src/_shared/deployment_struct_example.md !}
 
-As you can see, all of the minimum files for your project are generated inside a default `deployment/`
-folder and ready to be used saving you a tremendous amount of time.
+Como pode ver, todos os ficheiros mínimos para o seu projecto são gerados dentro de uma pasta padrão `deployment/`
+e prontos para serem usados, economizando uma quantidade enorme de tempo.
 
-But, what if you want to provide a different name for the deployment folder instead of `deployment/`?
+Mas e se quiser fornecer um nome diferente para a pasta de deploy em vez de `deployment/`?
 
-Well, thanks to the parameter `--deployment-folder-name` you can specify the name of the folder and
-that will also reflect in the files.
+Bem, graças ao parâmetro `--deployment-folder-name`, pode especificar o nome da pasta e
+isso também será refletido nos ficheiros.
 
-**Example**:
+**Exemplo**:
 
-Let us use `myproject` as an example and call the folder `deploy` instead of `deployment`.
+Vamos usar `my_project` como exemplo e chamar a pasta de `deploy` em vez de `deployment`.
 
 ```shell
-$ lilya createdeployment myproject --deployment-folder-name deploy
+$ lilya createdeploy my_project --deployment-folder-name deploy
 ```
 
-Once the directive runs, You should have a folder called `deploy` with a similar structure to this:
+Depois que a directiva for executada, deve ter uma pasta chamada `deploy` com uma estrutura semelhante a esta:
 
 {!> ../../../docs_src/_shared/deploy_struct_example.md !}
 
-#### Run the Dockerfile
+#### Executar o Dockerfile
 
-Since everything is already provided and your changes into the files are reflected, for example,
-making sure the requirements are installed inside the docker image, you can run the docker build
-for that same image directly from yhr project root.
+Como tudo já está fornecido e as suas alterações nos ficheiros são refletidas, por exemplo, ao garantir que os requisitos
+são instalados dentro da imagem Docker, pode executar a construção da imagem Docker directamente a partir da raiz do projecto.
 
-**Example**
+**Exemplo**
 
-Using the `myproject` example, it would be something like this:
+Usando o exemplo `myproject`, seria algo assim:
 
 ```shell
 $ docker build -t myorg/myproject:latest -f deployment/docker/Dockerfile .
 ```
 
 !!! Tip
-    If you are not familiar with Docker, it is highly recommended to
-    [read the official documentation](https://docs.docker.com/) and get yourself familiar with it.
+    Se não está familiarizado com o Docker, é altamente recomendado
+    [ler a documentação oficial](https://docs.docker.com/) e de se familiarizar com ele.
 
-This should trigger the whole process of your `Dockerfile` and install everything accordingly.
+Isto deve iniciar todo o processo do `Dockerfile` e instalar tudo conforme necessário.
 
 !!! Warning
-    If you don't want the same locations for the generated files, you can simply move them to any
-    place at your discretion and update the files accordingly to reflect your custom settings.
+    Se não deseja os mesmos locais para os ficheiros gerados, pode simplesmente movê-los para qualquer
+    lugar à sua escolha e atualizar os ficheiros de acordo para refletir suas configurações personalizadas.
 
-### Show URLs
+### Mostrar URLs
 
-This is another built-in Lilya application and it simply to show the information about the
-URLs of your application via command line.
+Esta é outra aplicação integrada do Lilya e serve para mostrar as informações sobre as
+URLs da sua aplicação via linha de comandos.
 
-This command can be run like this:
+Este comando pode ser executado da seguinte forma:
 
-!!! tip
-    Lilya before trying anything, will try to go through some defaults and try to find a Lilya application
-    automatically for you. If that is not found, you can then follow the next following instructions.
+!!! Tip
+    O Lilya, antes de tentar qualquer coisa, tentará percorrer algumas configurações padrão e tentar encontrar uma aplicação Lilya
+    automaticamente. Se não for encontrado, pode seguir as próximas instruções.
 
-**Using the --app parameter**
+**Usando o parâmetro --app**
 
 ```shell
 $ lilya --app myproject.main:app show_urls
 ```
 
-**Using the LILYA_DEFAULT_APP environment variable already exported**:
+**Usando a variável de ambiente LILYA_DEFAULT_APP já exportada**:
 
 ```shell
 $ lilya myproject.main:app show_urls
@@ -412,83 +414,83 @@ $ lilya myproject.main:app show_urls
 
 ### Runserver
 
-This is an extremly powerfull directive and **it should only be used for development** purposes.
+Esta é uma directiva extremamente poderosa e **deve ser usada apenas para fins de desenvolvimento**.
 
-This directive helps you starting your local development in a simple way, very similar to the
-`runserver` from Django, actually, since it was inspired by it, the same name was kept.
+Esta directiva ajuda a iniciar o desenvolvimento local de uma maneira simples, muito semelhante ao
+`runserver` do Django, na verdade, como foi inspirado nele, o mesmo nome foi mantido.
 
-!!! Danger
-    To use this directive, `uvicorn` must be installed.
+!!! Perigo
+    Para usar esta directiva, o `uvicorn` deve estar instalado.
 
-#### Parameters
+#### Parâmetros
 
-* **-p/--port** - The port where the server should start.
+* **-p/--port** - O porto em que o servidor deve iniciar.
 
-    <sup>Default: `8000`</sup>
+    <sup>Padrão: `8000`</sup>
 
-* **-r/--reload** - Reload server on file changes.
+* **-r/--reload** - Recarregar o servidor quando houver alterações nos ficheiros.
 
-    <sup>Default: `True`</sup>
+    <sup>Padrão: `True`</sup>
 
-* **--host** - Server host. Tipically `localhost`.
+* **--host** - Host do servidor. Tipicamente `localhost`.
 
-    <sup>Default: `localhost`</sup>
+    <sup>Padrão: `localhost`</sup>
 
-* **--debug** - Start the application in debug mode.
+* **--debug** - Iniciar o aplicação no modo de depuração.
 
-    <sup>Default: `True`</sup>
+    <sup>Padrão: `True`</sup>
 
-* **--log-level** - What log level should uvicorn run.
+* **--log-level** - Nível de log que o uvicorn deve usar.
 
-    <sup>Default: `debug`</sup>
+    <sup>Padrão: `debug`</sup>
 
-* **--lifespan** - Enable lifespan events. Options: `on`, `off`, `auto`.
+* **--lifespan** - Habilitar eventos de ciclo de vida. Opções: `on`, `off`, `auto`.
 
-    <sup>Default: `on`</sup>
+    <sup>Padrão: `on`</sup>
 
-* **--settings** - Start the server with specific settings. This is an alternative to
-[LILYA_SETTINGS_MODULE][settings_module] way of starting.
+* **--settings** - Iniciar o servidor com configurações específicas. Esta é uma alternativa ao
+modo de iniciar com [LILYA_SETTINGS_MODULE][settings_module].
 
-    <sup>Default: `None`</sup>
+    <sup>Padrão: `None`</sup>
 
-##### How to use it
+##### Como usar
 
-Runserver has some defaults and those are the ones tipically used for development but let us run
-some of the options to see how it would look like.
+O Runserver possui algumas configurações padrão que são tipicamente usadas para desenvolvimento, mas vamos executar
+algumas das opções para ver como ficaria.
 
 !!! Warning
-    The following examples and explanations will be using the [auto discovery](./discovery.md#auto-discovery)
-    approach but the [--app and environment variables](./discovery.md#environment-variables)
-    is equally valid and works in the same way.
+    Os exemplos e explicações a seguir usarão a abordagem de [descoberta automática](./discovery.md#auto-discovery),
+    mas o uso de [--app e variáveis de ambiente](./discovery.md#environment-variables)
+    é igualmente válido e funciona da mesma maneira.
 
-###### Run on a different port
+###### Executar em uma porta diferente
 
 ```shell
 $ lilya runserver -p 8001
 ```
 
-###### Run on a different host
+###### Executar em um host diferente
 
-Although it will still be localhost, we just run againt the IP directly.
+Embora ainda seja localhost, executamos diretamente com o IP.
 
 ```shell
 $ lilya runserver --host 127.0.0.1
 ```
 
-###### Run with a different lifespan
+###### Executar com um ciclo de vida diferente
 
 ```shell
 $ lilya runserver --lifespan auto
 ```
 
-###### Run with different settings
+###### Executar com configurações diferentes
 
-As mentioned before, this is an alternative to the [LILYA_SETTINGS_MODULE][settings_module]
-approach and **it should only be used for development purposes**.
+Como mencionado anteriormente, esta é uma alternativa ao [LILYA_SETTINGS_MODULE][settings_module]
+e **deve ser usada apenas para fins de desenvolvimento**.
 
-Use one or the other.
+Use um ou outro.
 
-Let us assume the following structure of files and folders that will contain different settings.
+Vamos assumir a seguinte estrutura de ficheiros e pastas que conterão configurações diferentes.
 
 ```shell hl_lines="9 10 13" title="myproject"
 .
@@ -511,47 +513,46 @@ Let us assume the following structure of files and folders that will contain dif
     └── urls.py
 ```
 
-As you can see, we have three different types of settings:
+Como pode ver, temos três tipos diferentes de configurações:
 
-* **development**
-* **testing**
-* **production settings**
+* **development** (desenvolvimento)
+* **testing** (teste)
+* **production settings** (configurações de produção)
 
-**Run with development settings**
+**Executar com configurações de desenvolvimento**
 
 ```shell
 $ lilya runserver --settings src.configs.development.settings.DevelopmentAppSettings
 ```
 
-Running with [LILYA_SETTINGS_MODULE][settings_module] would be:
+Executar com [LILYA_SETTINGS_MODULE][settings_module] seria:
 
 ```shell
 $ LILYA_SETTINGS_MODULE=src.configs.development.settings.DevelopmentAppSettings lilya runserver
 ```
 
-**Run with testing settings**
+**Executar com configurações de teste**
 
 ```shell
 $ lilya runserver --settings src.configs.testing.settings.TestingAppSettings
 ```
 
-Running with [LILYA_SETTINGS_MODULE][settings_module] would be:
+Executar com [LILYA_SETTINGS_MODULE][settings_module] seria:
 
 ```shell
 $ LILYA_SETTINGS_MODULE=src.configs.testing.settings.TestingAppSettings lilya runserver
 ```
 
-**Run with production settings**
+**Executar com configurações de produção**
 
 ```shell
 $ lilya runserver --settings src.configs.settings.AppSettings
 ```
 
-Running with [LILYA_SETTINGS_MODULE][settings_module] would be:
+Executar com [LILYA_SETTINGS_MODULE][settings_module] seria:
 
 ```shell
 $ LILYA_SETTINGS_MODULE=src.configs.settings.AppSettings lilya runserver
 ```
-
 
 [settings_module]: ../settings.md#settings-config-and-lilya-settings-module
