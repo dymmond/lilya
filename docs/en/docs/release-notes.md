@@ -9,14 +9,14 @@ hide:
 
 ### Added
 
-- Allow path parameters to also be defined with `<>` as alternative to `{}`
+- Allow path parameters to also be defined with `<>` as alternative to `{}`.
 
 #### Example
 
 ```python
 from lilya.routing import Path
 
-Path("<age:int>", ...)
+Path("/<age:int>", ...)
 ```
 
 ## 0.7.4
