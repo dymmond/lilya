@@ -5,6 +5,20 @@ hide:
 
 # Release Notes
 
+## 0.7.5
+
+### Added
+
+- Allow path parameters to also be defined with `<>` as alternative to `{}`
+
+#### Example
+
+```python
+from lilya.routing import Path
+
+Path("<age:int>", ...)
+```
+
 ## 0.7.4
 
 ### Added
