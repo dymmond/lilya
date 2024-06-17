@@ -123,8 +123,8 @@ app = Router(
             routes=[
                 Path("/", handler=users),
                 Path("/me", handler=user_me),
-                Path("/{username>", handler=user),
-                Path("/{username>:disable", handler=disable_user, methods=["PUT"]),
+                Path("/<username>", handler=user),
+                Path("/<username>:disable", handler=disable_user, methods=["PUT"]),
                 Path("/nomatch", handler=user_no_match),
             ],
         ),
