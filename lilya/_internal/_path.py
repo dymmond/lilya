@@ -13,8 +13,6 @@ from lilya.types import Scope
 
 T = TypeVar("T")
 
-PATH_REGEX = re.compile("{([a-zA-Z_][a-zA-Z0-9_]*)(:[a-zA-Z_][a-zA-Z0-9_]*)?}")
-
 PathParameter = namedtuple("PathParameter", ["name", "type"])
 
 
@@ -114,7 +112,7 @@ def generate_regex_and_format(
     path_regex, path_format, param_convertors, index = "^", "", {}, 0  # type: ignore
     duplicate_params: set[str] = set()
 
-    for match in re.finditer(r"{([a-zA-Z_]\w*)(:[a-zA-Z_]\w*)?}", path):
+    for match in re.finditer(r"[\{\<]([a-zA-Z_]\w*)(:[a-zA-Z_]\w*)?[\}\>]", path):
         param_name, convertor_type = match.groups("str")
         convertor_type = convertor_type.lstrip(":")
 
