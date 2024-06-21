@@ -203,7 +203,7 @@ $ hatch run docs:serve_lang es
 !!! tip
     Alternativamente, você pode executar os mesmos passos que o script faz manualmente.
 
-    Acesse a directoria do idioma, para as traduções em espanhol está em `docs/es/`:
+    Aceda à directoria do idioma, para as traduções em espanhol está em `docs/es/`:
 
     ```console
     $ cd docs/es/
