@@ -32,9 +32,8 @@ def test_xframe_options_same_origin_responses(test_client_factory):
         middleware=[DefineMiddleware(XFrameOptionsMiddleware)],
     )
 
-    breakpoint()
     client = test_client_factory(app)
 
     response = client.get("/")
 
-    assert response.headers["x-frame-options"] == "DENY"
+    assert response.headers["x-frame-options"] == "SAMEORIGIN"
