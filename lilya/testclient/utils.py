@@ -18,7 +18,7 @@ P = ParamSpec("P")
 
 class override_settings:
     """
-    A context manager that allows overriding Django settings temporarily.
+    A context manager that allows overriding Lilya settings temporarily.
 
     Usage:
     ```
