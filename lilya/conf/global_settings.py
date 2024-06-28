@@ -134,7 +134,7 @@ class Settings(_Internal):
     ] = False
 
     x_frame_options: Annotated[
-        str,
+        str | None,
         Doc(
             """
             Set the X-Frame-Options HTTP header in HTTP responses.
