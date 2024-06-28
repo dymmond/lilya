@@ -191,6 +191,8 @@ for production or production like environments.
 * `SessionMiddleware` - Middleware that handles the sessions.
 * `WSGIMiddleware` - Allows to connect WSGI applications and run them inside Lilya. A [great example](./wsgi.md)
 how to use it is available.
+* `XFrameOptionsMiddleware` - Middleware that handles specifically against clickjacking.
+* `SecurityMiddleware` - Provides several security enhancements to the request/response cycle and adds security headers to the response.
 
 ### CSRFMiddleware
 
@@ -265,6 +267,27 @@ To call it inside the middleware is as simple as:
 
 ```python
 {!> ../../../docs_src/middleware/available/wsgi_import.py !}
+```
+
+### XFrameOptionsMiddleware
+
+The clickjacking middleware that provides easy-to-use protection against clickjacking.
+This type of attack occurs when a malicious site tricks a user into clicking on a concealed element of another site which they have loaded in a hidden frame or iframe.
+
+This middleware reads the value `x_frame_options` from the [settings](./settings.md) and defaults to `DENY`.
+
+This also adds the `X-Frame-Options` to the response headers.
+
+```python
+{!> ../../../docs_src/middleware/available/clickjacking.py !}
+```
+
+### SecurityMiddleware
+
+Provides several security enhancements to the request/response cycle and adds security headers to the response.
+
+```python
+{!> ../../../docs_src/middleware/available/security.py !}
 ```
 
 ### Other middlewares

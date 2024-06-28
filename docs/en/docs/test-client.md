@@ -58,3 +58,72 @@ The tests work with both `sync` and `async` functions.
 !!! info
     The example above is used to also show the tests can be as complex as you desire and it will work with the
     context manager.
+
+## override_settings
+
+This is a special decorator from Lilya and serves as the helper for your tests when you need to update/change
+the settings for a given test temporarily to test any scenario that requires specific settings to have different values.
+
+The `override_settings` acts as a normal function decorator or as a context manager.
+
+The settings you can override are the ones declared in the [settings](./settings.md).
+
+```python
+from lilya.testclient import override_settings
+```
+
+Let us see an example.
+
+```python
+from lilya.apps import Lilya
+from lilya.middleware import DefineMiddleware
+from lilya.middleware.clickjacking import XFrameOptionsMiddleware
+from lilya.responses import PlainText
+from lilya.routing import Path
+from lilya.testclient.utils import override_settings
+
+
+@override_settings(x_frame_options="SAMEORIGIN")
+def test_xframe_options_same_origin_responses(test_client_factory):
+    def homepage():
+        return PlainText("Ok", status_code=200)
+
+    app = Lilya(
+        routes=[Path("/", handler=homepage)],
+        middleware=[DefineMiddleware(XFrameOptionsMiddleware)],
+    )
+
+    client = test_client_factory(app)
+
+    response = client.get("/")
+
+    assert response.headers["x-frame-options"] == "SAMEORIGIN"
+```
+
+Or as context manager.
+
+```python
+from lilya.apps import Lilya
+from lilya.middleware import DefineMiddleware
+from lilya.middleware.clickjacking import XFrameOptionsMiddleware
+from lilya.responses import PlainText
+from lilya.routing import Path
+from lilya.testclient.utils import override_settings
+
+
+def test_xframe_options_same_origin_responses(test_client_factory):
+    def homepage():
+        return PlainText("Ok", status_code=200)
+
+    with override_settings(x_frame_options="SAMEORIGIN"):
+        app = Lilya(
+            routes=[Path("/", handler=homepage)],
+            middleware=[DefineMiddleware(XFrameOptionsMiddleware)],
+        )
+
+        client = test_client_factory(app)
+
+        response = client.get("/")
+
+        assert response.headers["x-frame-options"] == "SAMEORIGIN"
+```

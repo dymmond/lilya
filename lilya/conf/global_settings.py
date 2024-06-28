@@ -133,6 +133,21 @@ class Settings(_Internal):
         ),
     ] = False
 
+    x_frame_options: Annotated[
+        str,
+        Doc(
+            """
+            Set the X-Frame-Options HTTP header in HTTP responses.
+
+            To enable the response to be loaded on a frame within the same site, set
+            x_frame_options to 'SAMEORIGIN'.
+
+            This flag is to be used when `XFrameOptionsMiddleware` is added to the
+            application.
+            """
+        ),
+    ] = None
+
     @property
     def routes(self) -> list[Any]:
         """
