@@ -184,6 +184,15 @@ class Connection(Mapping[str, Any]):
         """
         self.scope["session"] = None
 
+    def is_secure(self) -> bool:
+        """
+        Check if the connection is secure (HTTPS).
+
+        Returns:
+            bool: True if the connection is secure (HTTPS), False otherwise.
+        """
+        return self.url.is_secure
+
     def path_for(self, name: str, /, **path_params: Any) -> URL:
         router: Router = self.scope["router"]
         url_path = router.path_for(name, **path_params)
