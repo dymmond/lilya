@@ -176,6 +176,8 @@ Veja o exemplo do `GZipMiddleware` [aqui](#middleware-e-as-definições).
 * `HTTPSRedirectMiddleware` - Middleware que lida com redirecionamentos HTTPS para a sua aplicação. Muito útil para uso em ambientes de produção ou semelhantes a produção.
 * `SessionMiddleware` - Middleware que lida com sessões.
 * `WSGIMiddleware` - Permite ligar aplicações WSGI e executá-los dentro do Lilya. Um [ótimo exemplo](./wsgi.md) de como usá-lo está disponível.
+* `XFrameOptionsMiddleware` - Middleware que lida especificamente contra clickjacking.
+* `SecurityMiddleware` - Fornece várias melhorias de segurança ao ciclo de pedido/resposta e adiciona cabeçalhos de segurança à resposta.
 
 ### CSRFMiddleware
 
@@ -258,6 +260,14 @@ Ele também adiciona o cabeçalho `X-Frame-Options` às respostas.
 
 ```python
 {!> ../../../docs_src/middleware/available/clickjacking.py !}
+```
+
+### SecurityMiddleware
+
+Fornece várias melhorias de segurança no ciclo de pedido/resposta e adiciona cabeçalhos de segurança à resposta.
+
+```python
+{!> ../../../docs_src/middleware/available/security.py !}
 ```
 
 ### Outros middlewares
