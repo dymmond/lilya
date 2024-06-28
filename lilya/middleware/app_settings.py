@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from lilya.conf import reload_settings, settings
+from lilya.conf import __lazy_settings__, settings
 from lilya.conf.context_vars import get_override_settings
 from lilya.protocols.middleware import MiddlewareProtocol
 from lilya.types import ASGIApp, Receive, Scope, Send
@@ -31,6 +31,5 @@ class ApplicationSettingsMiddleware(MiddlewareProtocol):
             settings.configure(app.settings)
         else:
             if not get_override_settings():
-                app_settings = reload_settings()
-                settings.configure(app_settings())
+                settings.configure(__lazy_settings__._wrapped)
         await self.app(scope, receive, send)
