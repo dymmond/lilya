@@ -7,7 +7,7 @@ from typing_extensions import Annotated, Doc
 
 from lilya._internal._module_loading import import_string
 from lilya._utils import is_class_and_subclass
-from lilya.conf import reload_settings, settings as lilya_settings
+from lilya.conf import _lazy_settings, settings as lilya_settings
 from lilya.conf.exceptions import FieldException
 from lilya.conf.global_settings import Settings
 from lilya.datastructures import State, URLPath
@@ -830,8 +830,7 @@ class Lilya:
         Making sure the global settings remain as is
         after the request is done.
         """
-        settings = reload_settings()
-        lilya_settings.configure(settings())
+        lilya_settings.configure(_lazy_settings._wrapped)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         scope["app"] = self
