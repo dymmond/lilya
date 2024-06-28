@@ -5,6 +5,18 @@ hide:
 
 # Release Notes
 
+## 0.8.0
+
+### Added
+
+- `XFrameOptionsMiddleware` to handle with options headers.
+- `SecurityMiddleware` adding various security headers to the request/response lifecycle.
+- `override_settings` as new decorator that allows to override the Lilya settings in any given test.
+
+### Fixed
+
+- Missing status `HTTP_301_MOVED_PERMANENTLY` from the list of available status.
+
 ## 0.7.5
 
 ### Added
