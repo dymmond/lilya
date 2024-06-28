@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from functools import lru_cache
 from typing import Any, Callable, Mapping
 
 from lilya import status
@@ -8,6 +9,7 @@ from lilya._internal._exception_handlers import (
     StatusHandlers,
     wrap_app_handling_exceptions,
 )
+from lilya.datastructures import ScopeHandler
 from lilya.enums import ScopeType
 from lilya.exceptions import HTTPException, WebSocketException
 from lilya.protocols.middleware import MiddlewareProtocol
@@ -15,6 +17,23 @@ from lilya.requests import Request
 from lilya.responses import PlainText, Response
 from lilya.types import ASGIApp, Receive, Scope, Send
 from lilya.websockets import WebSocket
+
+
+@lru_cache(maxsize=1200)
+def _get_connection(scope_handler: ScopeHandler) -> Request | WebSocket:
+    """
+    Get the appropriate connection object based on the ASGI scope type.
+
+    Args:
+        scope (Scope): ASGI scope.
+
+    Returns:
+        Union[Request, WebSocket]: Connection object.
+
+    """
+    if scope_handler.scope["type"] == ScopeType.HTTP:
+        return Request(scope_handler.scope, scope_handler.receive, scope_handler.send)
+    return WebSocket(scope_handler.scope, scope_handler.receive, scope_handler.send)
 
 
 class ExceptionMiddleware(MiddlewareProtocol):
@@ -104,23 +123,9 @@ class ExceptionMiddleware(MiddlewareProtocol):
             self._status_handlers,
         )
 
-        connection = self._get_connection(scope, receive, send)
+        scope_handler = ScopeHandler(scope, receive, send)
+        connection = _get_connection(scope_handler)
         await wrap_app_handling_exceptions(self.app, connection)(scope, receive, send)
-
-    def _get_connection(self, scope: Scope, receive: Receive, send: Send) -> Request | WebSocket:
-        """
-        Get the appropriate connection object based on the ASGI scope type.
-
-        Args:
-            scope (Scope): ASGI scope.
-
-        Returns:
-            Union[Request, WebSocket]: Connection object.
-
-        """
-        if scope["type"] == ScopeType.HTTP:
-            return Request(scope, receive, send)
-        return WebSocket(scope, receive, send)
 
     def http_exception(self, request: Request, exc: Exception) -> Response:
         """

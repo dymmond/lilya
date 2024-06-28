@@ -24,7 +24,7 @@ from lilya._internal._urls import include
 from lilya.compat import is_async_callable
 from lilya.conf import settings
 from lilya.conf.global_settings import Settings
-from lilya.datastructures import URL, Header, URLPath
+from lilya.datastructures import URL, Header, ScopeHandler, URLPath
 from lilya.enums import EventType, HTTPMethod, Match, ScopeType
 from lilya.exceptions import HTTPException, ImproperlyConfigured
 from lilya.middleware.base import DefineMiddleware
@@ -37,7 +37,7 @@ from lilya.websockets import WebSocket, WebSocketClose
 T = TypeVar("T")
 
 
-class PathHandler:
+class PathHandler(ScopeHandler):
     """
     Represents a route handler that handles incoming requests.
 
@@ -55,20 +55,8 @@ class PathHandler:
     """
 
     def __init__(self, child_scope: Scope, scope: Scope, receive: Receive, send: Send) -> None:
+        super().__init__(scope=scope, receive=receive, send=send)
         self.child_scope = child_scope
-        self.scope = scope
-        self.receive = receive
-        self.send = send
-
-    def __hash__(self) -> int:
-        values: dict[str, Any] = {}
-        for key, value in self.__dict__.items():
-            values[key] = None
-            if isinstance(value, (list, set)):
-                values[key] = tuple(value)
-            else:
-                values[key] = value
-        return hash((type(self),) + tuple(values))
 
 
 class NoMatchFound(Exception):
