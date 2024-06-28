@@ -70,4 +70,4 @@ class LilyaLazySettings(LazyObject):
 
 
 settings: type[Settings] = LilyaLazySettings()  # type: ignore
-_lazy_settings: type[Settings] = LilyaLazySettings()  # type: ignore
+__lazy_settings__: type[Settings] = LilyaLazySettings()  # type: ignore
