@@ -247,6 +247,19 @@ Para chamá-lo dentro do middleware é tão simples quanto isto:
 {!> ../../../docs_src/middleware/available/wsgi_import.py !}
 ```
 
+### XFrameOptionsMiddleware
+
+O middleware de clickjacking fornece proteção fácil de usar contra ataques de clickjacking.
+Este tipo de ataque ocorre quando um site malicioso engana um utilizador para clicar num elemento oculto de outro site que eles carregaram num iframe oculto.
+
+Este middleware lê o valor `x_frame_options` das [configurações](./settings.md) e tem como valor padrão `DENY`.
+
+Ele também adiciona o cabeçalho `X-Frame-Options` às respostas.
+
+```python
+{!> ../../../docs_src/middleware/available/clickjacking.py !}
+```
+
 ### Outros middlewares
 
 Pode desenhar os seus próprios middlewares conforme explicado acima, mas também reutilizar middlewares diretamente para qualquer outra aplicação ASGI, se assim o desejar.
