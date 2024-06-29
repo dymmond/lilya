@@ -18,6 +18,10 @@ site/
 site_lang/
 target/
 
+# C extensions
+*.so
+*.orig
+
 # files
 **/*.so
 **/*.sqlite
