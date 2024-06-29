@@ -5,11 +5,9 @@ build-backend = "hatchling.build"
 [project]
 name = "lilya"
 description = "Yet another ASGI toolkit that delivers"
-long_description = "Yet another ASGI toolkit that delivers"
 readme = "README.md"
 requires-python = ">=3.8"
 dynamic = ['version']
-license = "MIT"
 authors = [{ name = "Tiago Silva", email = "tiago.arasilva@gmail.com" }]
 classifiers = [
     "Intended Audience :: Information Technology",

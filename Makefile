@@ -2,23 +2,22 @@
 
 
 cyt:
-	cython lilya/apps.pyx
-	cython lilya/exceptions.pyx
-	cython lilya/background.pyx
-	cython lilya/concurrency.pyx
-	cython lilya/context.pyx
-	cython lilya/controllers.pyx
-	cython lilya/exceptions.pyx
-	cython lilya/datastructures.pyx
-	cython lilya/encoders.pyx
-	cython lilya/requests.pyx
-	cython lilya/responses.pyx
-	cython lilya/routing.pyx
-	cython lilya/transformers.pyx
-	cython lilya/websockets.pyx
+	# cython lilya/apps.py
+	cython lilya/exceptions.py
+	# cython lilya/background.py
+	# cython lilya/concurrency.py
+	# cython lilya/context.py
+	# cython lilya/controllers.py
+	# cython lilya/datastructures.py
+	# cython lilya/encoders.py
+	# cython lilya/requests.py
+	# cython lilya/responses.py
+	# cython lilya/routing.py
+	# cython lilya/transformers.py
+	# cython lilya/websockets.py
 
 compile: cyt
-	python3 setup.py build_ext --inplace
+	python setup.py build_ext --inplace
 
 
 clean:
@@ -29,4 +28,4 @@ clean:
 
 
 buildext:
-	python3 setup.py build_ext --inplace
+	python setup.py build_ext --inplace

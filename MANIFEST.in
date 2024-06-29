@@ -1,0 +1,6 @@
+include LICENSE
+include README.md
+recursive-include lilya *.pyx *.pxd *.pxi *.pyi *.py *.c *.h
+
+# Stubs
+include lilya/py.typed

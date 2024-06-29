@@ -17,6 +17,7 @@ results/
 site/
 site_lang/
 target/
+lilya/*.c
 
 # C extensions
 *.so
