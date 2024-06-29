@@ -4,6 +4,7 @@ import functools
 import inspect
 import re
 import traceback
+from functools import lru_cache
 from typing import Any, Awaitable, Callable, Mapping, Sequence, TypeVar, cast
 
 from typing_extensions import Annotated, Doc
@@ -23,7 +24,7 @@ from lilya._internal._urls import include
 from lilya.compat import is_async_callable
 from lilya.conf import settings
 from lilya.conf.global_settings import Settings
-from lilya.datastructures import URL, Header, URLPath
+from lilya.datastructures import URL, Header, ScopeHandler, URLPath
 from lilya.enums import EventType, HTTPMethod, Match, ScopeType
 from lilya.exceptions import HTTPException, ImproperlyConfigured
 from lilya.middleware.base import DefineMiddleware
@@ -34,6 +35,28 @@ from lilya.types import ASGIApp, ExceptionHandler, Lifespan, Receive, Scope, Sen
 from lilya.websockets import WebSocket, WebSocketClose
 
 T = TypeVar("T")
+
+
+class PathHandler(ScopeHandler):
+    """
+    Represents a route handler that handles incoming requests.
+
+    Args:
+        child_scope (Scope): The child scope of the handler.
+        scope (Scope): The scope of the handler.
+        receive (Receive): The receive function for handling incoming messages.
+        send (Send): The send function for sending messages.
+
+    Attributes:
+        child_scope (Scope): The child scope of the handler.
+        scope (Scope): The scope of the handler.
+        receive (Receive): The receive function for handling incoming messages.
+        send (Send): The send function for sending messages.
+    """
+
+    def __init__(self, child_scope: Scope, scope: Scope, receive: Receive, send: Send) -> None:
+        super().__init__(scope=scope, receive=receive, send=send)
+        self.child_scope = child_scope
 
 
 class NoMatchFound(Exception):
@@ -1290,9 +1313,8 @@ class Router:
             else:
                 handler()
 
-    async def handle_route(
-        self, route: BasePath, child_scope: Scope, scope: Scope, receive: Receive, send: Send
-    ) -> None:
+    @lru_cache(maxsize=1200)  # noqa
+    async def handle_route(self, route: BasePath, path_handler: PathHandler) -> None:
         """
         Handle a route match.
 
@@ -1303,8 +1325,8 @@ class Router:
             receive (Receive): The ASGI receive channel.
             send (Send): The ASGI send channel.
         """
-        scope.update(child_scope)
-        await route.handle_dispatch(scope, receive, send)  # type: ignore
+        path_handler.scope.update(path_handler.child_scope)
+        await route.handle_dispatch(path_handler.scope, path_handler.receive, path_handler.send)  # type: ignore
 
     async def handle_partial(
         self, route: BasePath, partial_scope: Scope, scope: Scope, receive: Receive, send: Send
@@ -1398,7 +1420,10 @@ class Router:
         for route in self.routes:
             match, child_scope = route.search(scope)
             if match == Match.FULL:
-                await self.handle_route(route, child_scope, scope, receive, send)
+                path_handler = PathHandler(
+                    child_scope=child_scope, scope=scope, receive=receive, send=send
+                )
+                await self.handle_route(route, path_handler=path_handler)
                 return
             elif match == Match.PARTIAL and partial is None:
                 partial = route

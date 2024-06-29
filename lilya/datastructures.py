@@ -23,7 +23,7 @@ from anyio.to_thread import run_sync
 from multidict import CIMultiDict, MultiDict as BaseMultiDict, MultiDictProxy, MultiMapping
 
 from lilya.enums import DefaultPort, HTTPType, ScopeType, WebsocketType
-from lilya.types import Scope
+from lilya.types import Receive, Scope, Send
 
 T = TypeVar("T")
 
@@ -739,3 +739,34 @@ class FormData(ImmutableMultiDict[Any]):
         for _, value in self.multi_items():
             if isinstance(value, DataUpload):
                 await value.close()
+
+
+class ScopeHandler:
+    """
+    Represents a route handler that handles incoming requests.
+
+    Args:
+        scope (Scope): The scope of the handler.
+        receive (Receive): The receive function for handling incoming messages.
+        send (Send): The send function for sending messages.
+
+    Attributes:
+        scope (Scope): The scope of the handler.
+        receive (Receive): The receive function for handling incoming messages.
+        send (Send): The send function for sending messages.
+    """
+
+    def __init__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        self.scope = scope
+        self.receive = receive
+        self.send = send
+
+    def __hash__(self) -> int:
+        values: dict[str, Any] = {}
+        for key, value in self.__dict__.items():
+            values[key] = None
+            if isinstance(value, (list, set)):
+                values[key] = tuple(value)
+            else:
+                values[key] = value
+        return hash((type(self),) + tuple(values))
