@@ -209,6 +209,9 @@ context = '${CONTEXT}'
 source = ["tests", "lilya"]
 # omit = []
 
+[tool.setuptools]
+packages = ["lilya"]
+
 [[tool.mypy.overrides]]
 module = ["multipart.*", "mako.*", "nest_asyncio.*", "uvicorn.*"]
 ignore_missing_imports = true
