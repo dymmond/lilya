@@ -1,6 +1,8 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+# requires = ["hatchling"]
+# build-backend = "hatchling.build"
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "lilya"
@@ -113,6 +115,8 @@ docs = [
 [tool.hatch.version]
 path = "lilya/__init__.py"
 
+[tool.setuptools.dynamic]
+version = { attr = "lilya.__version__" }
 
 [tool.hatch.envs.default]
 dependencies = [
