@@ -25,9 +25,9 @@ def user_in_request(request: Request):
 
 app = Lilya(
     routes=[
-        Path("/", welcome),
         Path("/{user}", user),
         Path("/in-request/{user}", user_in_request),
+        Path("/", welcome),
     ]
 )
 
