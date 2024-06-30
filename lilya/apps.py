@@ -7,7 +7,7 @@ from typing_extensions import Annotated, Doc
 
 from lilya._internal._module_loading import import_string
 from lilya._utils import is_class_and_subclass
-from lilya.conf import reload_settings, settings as lilya_settings
+from lilya.conf import __lazy_settings__, settings as lilya_settings
 from lilya.conf.exceptions import FieldException
 from lilya.conf.global_settings import Settings
 from lilya.datastructures import State, URLPath
@@ -402,13 +402,13 @@ class Lilya:
             routes=routes,
             redirect_slashes=redirect_slashes,
             permissions=self.custom_permissions,
-            on_startup=self.__load_settings_value("on_startup", on_startup),
-            on_shutdown=self.__load_settings_value("on_shutdown", on_shutdown),
-            lifespan=self.__load_settings_value("lifespan", lifespan),
+            on_startup=on_startup,
+            on_shutdown=on_shutdown,
+            lifespan=lifespan,
             include_in_schema=include_in_schema,
             settings_module=self.settings,
         )
-        self.__set_settings_app(self.settings, self)
+        # self.__set_settings_app(self.settings, self)
 
     @property
     def routes(self) -> list[BasePath]:
@@ -830,8 +830,7 @@ class Lilya:
         Making sure the global settings remain as is
         after the request is done.
         """
-        settings = reload_settings()
-        lilya_settings.configure(settings())
+        lilya_settings.configure(__lazy_settings__._wrapped)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         scope["app"] = self
@@ -839,7 +838,7 @@ class Lilya:
         if self.middleware_stack is None:
             self.middleware_stack = self.build_middleware_stack()
         await self.middleware_stack(scope, receive, send)
-        await self._globalise_settings()
+        # await self._globalise_settings()
 
 
 class ChildLilya(Lilya):
