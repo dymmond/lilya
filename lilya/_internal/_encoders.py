@@ -99,7 +99,6 @@ def json_encoder(value: Any) -> Any:
 
     Parameters:
     value (Any): The value to encode.
-    encoder_types (List[Type[EncoderType]]): A list of encoder type classes to use for encoding.
 
     Returns:
     Any: The JSON-compatible encoded value.
@@ -109,12 +108,8 @@ def json_encoder(value: Any) -> Any:
     """
 
     for encoder in ENCODER_TYPES:
-        try:
-            if encoder.is_type(value):
-                return encoder.serialize(value)
-        except (TypeError, AttributeError):
-            # Log the exception if necessary for debugging
-            continue
+        if encoder.is_type(value):
+            return encoder.serialize(value)
 
     # If no encoder was found, raise a ValueError
     raise ValueError(f"Object of type '{type(value).__name__}' is not JSON serializable.")
