@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from functools import cached_property
 from typing import Any, Awaitable, Callable, Mapping, Sequence, cast
 
 from typing_extensions import Annotated, Doc
@@ -453,7 +454,7 @@ class Lilya:
             return getattr(global_settings, value, None)
         return setting_value
 
-    @property
+    @cached_property
     def settings(self) -> Settings:
         """
         Returns the Lilya settings object for easy access.
@@ -838,7 +839,7 @@ class Lilya:
         if self.middleware_stack is None:
             self.middleware_stack = self.build_middleware_stack()
         await self.middleware_stack(scope, receive, send)
-        # await self._globalise_settings()
+        await self._globalise_settings()
 
 
 class ChildLilya(Lilya):
