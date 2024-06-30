@@ -19,6 +19,21 @@ jobs:
       - name: "Install dependencies"
         if: steps.cache.outputs.cache-hit != 'true'
         run: pip install hatch
+      - name: "Run the compilation"
+        run: |
+          pip install cython
+          make clean
+
+          cython lilya/apps.py
+          cython lilya/exceptions.py
+          cython lilya/context.py
+          cython lilya/controllers.py
+          cython lilya/datastructures.py
+          cython lilya/encoders.py
+          cython lilya/routing.py
+          cython lilya/transformers.py
+          cython lilya/websockets.py
+
       - name: "Build package"
         run: "hatch run build_with_check"
       - name: "Publish to PyPI"
