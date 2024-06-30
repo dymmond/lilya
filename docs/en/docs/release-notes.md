@@ -5,6 +5,18 @@ hide:
 
 # Release Notes
 
+## 0.8.1
+
+### Changed
+
+- Removed unused middleware.
+- Updated AppSettingsMiddleware for lazy loading
+- Updated `globalise_settings`.
+
+### Fixed
+
+- Performance issues caused by `AppSettingsModule`.
+
 ## 0.8.0
 
 ### Added
