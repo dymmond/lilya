@@ -54,5 +54,18 @@ jobs:
         run: "hatch run lint"
       - name: "Run typing checks"
         run: "hatch run test:check_types"
+      - name: "Run the compilation"
+        run: |
+          make clean
+
+          cython lilya/apps.py
+          cython lilya/exceptions.py
+          cython lilya/context.py
+          cython lilya/controllers.py
+          cython lilya/datastructures.py
+          cython lilya/encoders.py
+          cython lilya/routing.py
+          cython lilya/transformers.py
+          cython lilya/websockets.py
       - name: "Run tests"
         run: "hatch run test:test"

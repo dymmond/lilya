@@ -15,7 +15,7 @@ class LilyaException(Exception):
 
     def __repr__(self) -> str:  # pragma: no cover
         if self.detail:
-            return f"{self.__class__.__name__} - {self.detail}"
+            return f"{self.__class__.__name__} - {self.detail}".encode("latin-1").decode("latin-1")
         return self.__class__.__name__
 
     def __str__(self) -> str:
@@ -45,11 +45,13 @@ class HTTPException(LilyaException):
         self.extra = extra
 
     def __str__(self) -> str:
-        return f"{self.status_code}: {self.detail}"
+        return f"{self.status_code}: {self.detail}".encode("latin-1").decode("latin-1")
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
-        return f"{class_name}(status_code={self.status_code!r}, detail={self.detail!r})"
+        return f"{class_name}(status_code={self.status_code!r}, detail={self.detail!r})".encode(
+            "latin-1"
+        ).decode("latin-1")
 
 
 class WebSocketException(Exception):
@@ -58,11 +60,13 @@ class WebSocketException(Exception):
         self.reason = reason or ""
 
     def __str__(self) -> str:
-        return f"{self.code}: {self.reason}"
+        return f"{self.code}: {self.reason}".encode("latin-1").decode("latin-1")
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
-        return f"{class_name}(code={self.code!r}, reason={self.reason!r})"
+        return f"{class_name}(code={self.code!r}, reason={self.reason!r})".encode(
+            "latin-1"
+        ).decode("latin-1")
 
 
 class ImproperlyConfigured(HTTPException, ValueError):

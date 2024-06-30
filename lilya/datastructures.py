@@ -90,7 +90,7 @@ class MultiDict(BaseMultiDict, MultiMixin[T], Generic[T]):
         Visual representation of the object sorted by keys.
         """
         items = sorted(self.items())
-        return f"{self.__class__.__name__}({items!r})"
+        return f"{self.__class__.__name__}({items!r})".encode("latin-1").decode("latin-1")
 
 
 class ImmutableMultiDict(MultiDictProxy[T], MultiMixin[T], Generic[T]):
@@ -119,7 +119,7 @@ class ImmutableMultiDict(MultiDictProxy[T], MultiMixin[T], Generic[T]):
         Visual representation of the object sorted by keys.
         """
         items = sorted(self.items())
-        return f"{self.__class__.__name__}({items!r})"
+        return f"{self.__class__.__name__}({items!r})".encode("latin-1").decode("latin-1")
 
 
 class FormMultiDict(ImmutableMultiDict[Any]):
@@ -203,7 +203,7 @@ class Header(MultiDict, CIMultiDict):  # type: ignore
         class_name = self.__class__.__name__
         as_dict = dict(self.items())
         if len(as_dict) == len(self):
-            return f"{class_name}({as_dict!r})"
+            return f"{class_name}({as_dict!r})".encode("latin-1").decode("latin-1")
         return class_name
 
 
@@ -559,7 +559,7 @@ class URL:
         url = str(self)
         if self.password:
             url = str(self.replace(password="***********"))
-        return f"{self.__class__.__name__}({repr(url)})"
+        return f"{self.__class__.__name__}({repr(url)})".encode("latin-1").decode("latin-1")
 
 
 class URLPath(str):
@@ -605,7 +605,7 @@ class Secret:
         return self.value
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}('***********')"
+        return f"{self.__class__.__name__}('***********')".encode("latin-1").decode("latin-1")
 
     def __bool__(self) -> bool:
         return bool(self.value)
@@ -639,7 +639,7 @@ class QueryParam(ImmutableMultiDict[Any]):
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
         query_string = str(self)
-        return f"{class_name}({query_string!r})"
+        return f"{class_name}({query_string!r})".encode("latin-1").decode("latin-1")
 
 
 class DataUpload:
@@ -691,10 +691,14 @@ class DataUpload:
 
     def __repr__(self) -> str:
         return (
-            f"{self.__class__.__name__}("
-            f"filename={self.filename!r}, "
-            f"size={self.size!r}, "
-            f"headers={self.headers!r})"
+            (
+                f"{self.__class__.__name__}("
+                f"filename={self.filename!r}, "
+                f"size={self.size!r}, "
+                f"headers={self.headers!r})"
+            )
+            .encode("latin-1")
+            .decode("latin-1")
         )
 
 

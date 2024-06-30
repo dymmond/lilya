@@ -487,7 +487,11 @@ class Path(BaseHandler, BasePath):
 
     def __repr__(self) -> str:
         methods = sorted(self.methods or [])
-        return f"{self.__class__.__name__}(path={self.path!r}, name={self.name!r}, methods={methods!r})"
+        return f"{self.__class__.__name__}(path={self.path!r}, name={self.name!r}, methods={methods!r})".encode(
+            "latin-1"
+        ).decode(
+            "latin-1"
+        )
 
 
 class WebSocketPath(BaseHandler, BasePath):
@@ -689,7 +693,9 @@ class WebSocketPath(BaseHandler, BasePath):
             raise NoMatchFound(name, path_params)
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(path={self.path!r}, name={self.name!r})"
+        return f"{self.__class__.__name__}(path={self.path!r}, name={self.name!r})".encode(
+            "latin-1"
+        ).decode("latin-1")
 
 
 class Include(BasePath):
@@ -952,7 +958,11 @@ class Include(BasePath):
 
     def __repr__(self) -> str:
         name = self.name or ""
-        return f"{self.__class__.__name__}(path={self.path!r}, name={name!r}, app={self.app!r})"
+        return f"{self.__class__.__name__}(path={self.path!r}, name={name!r}, app={self.app!r})".encode(
+            "latin-1"
+        ).decode(
+            "latin-1"
+        )
 
 
 class Host(BasePath):
@@ -1161,7 +1171,11 @@ class Host(BasePath):
 
     def __repr__(self) -> str:
         name = self.name or ""
-        return f"{self.__class__.__name__}(host={self.host!r}, name={name!r}, app={self.app!r})"
+        return f"{self.__class__.__name__}(host={self.host!r}, name={name!r}, app={self.app!r})".encode(
+            "latin-1"
+        ).decode(
+            "latin-1"
+        )
 
 
 class Router:

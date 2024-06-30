@@ -235,7 +235,11 @@ class Response:
             await self.background()
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(media_type={self.media_type}, status_code={self.status_code}, charset={self.charset})"
+        return f"{self.__class__.__name__}(media_type={self.media_type}, status_code={self.status_code}, charset={self.charset})".encode(
+            "latin-1"
+        ).decode(
+            "latin-1"
+        )
 
 
 class HTMLResponse(Response):

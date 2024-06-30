@@ -28,5 +28,7 @@ if [ -d '.ruff_cache' ] ; then
     rm -r .ruff_cache
 fi
 
+make clean
+
 find lilya -type f -name "*.py[co]" -delete
 find lilya -type d -name __pycache__ -delete

@@ -331,4 +331,4 @@ class Request(Connection):
             await self._send({"type": "http.response.push", "path": path, "headers": raw_headers})
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}()"
+        return f"{self.__class__.__name__}()".encode("latin-1").decode("latin-1")
