@@ -408,7 +408,7 @@ class Lilya:
             include_in_schema=include_in_schema,
             settings_module=self.settings,
         )
-        # self.__set_settings_app(self.settings, self)
+        self.__set_settings_app(self.settings, self)
 
     @property
     def routes(self) -> list[BasePath]:

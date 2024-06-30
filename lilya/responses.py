@@ -78,7 +78,7 @@ class Response:
         """
         if content is None or content is NoReturn or not content:
             return b""
-        if isinstance(content, bytes):
+        if isinstance(content, (bytes, memoryview)):
             return content
         return content.encode(self.charset)  # type: ignore
 
