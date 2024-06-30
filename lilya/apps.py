@@ -13,7 +13,6 @@ from lilya.conf.exceptions import FieldException
 from lilya.conf.global_settings import Settings
 from lilya.datastructures import State, URLPath
 from lilya.middleware.app_settings import ApplicationSettingsMiddleware
-from lilya.middleware.asyncexit import AsyncExitStackMiddleware
 from lilya.middleware.base import DefineMiddleware
 from lilya.middleware.exceptions import ExceptionMiddleware
 from lilya.middleware.server_error import ServerErrorMiddleware
@@ -492,7 +491,6 @@ class Lilya:
             *self.custom_middleware,
             DefineMiddleware(ApplicationSettingsMiddleware),
             DefineMiddleware(ExceptionMiddleware, handlers=exception_handlers, debug=self.debug),
-            DefineMiddleware(AsyncExitStackMiddleware),
         ]
 
         app = self.router
