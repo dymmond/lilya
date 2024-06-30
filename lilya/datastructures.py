@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from abc import ABC
 from copy import copy
-from dataclasses import asdict, dataclass
 from functools import lru_cache
 from http.cookies import SimpleCookie
 from typing import (
@@ -591,7 +590,6 @@ class URLPath(str):
         return URL(scheme=scheme, netloc=netloc, path=path)
 
 
-@dataclass
 class Secret:
     """
     Holds the information about a string secret.
@@ -599,7 +597,8 @@ class Secret:
     in stack traces.
     """
 
-    value: str = None
+    def __init__(self, value: str = None) -> None:
+        self.value = value
 
     def __str__(self) -> str:
         return self.value
@@ -698,27 +697,40 @@ class DataUpload:
         )
 
 
-@dataclass
 class Cookie:
-    key: str
-    value: str | None = None
-    max_age: int | None = None
-    expires: int | None = None
-    path: str = "/"
-    domain: str | None = None
-    secure: bool | None = None
-    httponly: bool | None = None
-    samesite: Literal["lax", "strict", "none"] = "lax"
-    description: str | None = None
+
+    def __init__(
+        self,
+        key: str,
+        value: str | None = None,
+        max_age: int | None = None,
+        expires: int | None = None,
+        path: str = "/",
+        domain: str | None = None,
+        secure: bool | None = None,
+        httponly: bool | None = None,
+        samesite: Literal["lax", "strict", "none"] = "lax",
+        description: str | None = None,
+    ) -> None:
+        self.key = key
+        self.value = value
+        self.max_age = max_age
+        self.expires = expires
+        self.path = path
+        self.domain = domain
+        self.secure = secure
+        self.httponly = httponly
+        self.samesite = samesite
+        self.description = description
 
     def to_header(self, **kwargs: Any) -> str:
         simple_cookie: SimpleCookie = SimpleCookie()
         simple_cookie[self.key] = self.value or ""
         if self.max_age:
             simple_cookie[self.key]["max-age"] = self.max_age
-        cookie_dict = asdict(self)
+        cookie_dict = dict(self.__dict__)
         for key in ["expires", "path", "domain", "secure", "httponly", "samesite"]:
-            if cookie_dict[key] is not None:
+            if self.__dict__[key] is not None:
                 simple_cookie[self.key][key] = cookie_dict[key]
         return simple_cookie.output(**kwargs).strip()
 
