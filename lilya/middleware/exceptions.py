@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from functools import lru_cache
 from typing import Any, Callable, Mapping
 
 from lilya import status
@@ -19,7 +18,6 @@ from lilya.types import ASGIApp, Receive, Scope, Send
 from lilya.websockets import WebSocket
 
 
-@lru_cache(maxsize=1200)
 def _get_connection(scope_handler: ScopeHandler) -> Request | WebSocket:
     """
     Get the appropriate connection object based on the ASGI scope type.

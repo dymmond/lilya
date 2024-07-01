@@ -4,7 +4,6 @@ import functools
 import inspect
 import re
 import traceback
-from functools import lru_cache
 from typing import Any, Awaitable, Callable, Mapping, Sequence, TypeVar, cast
 
 from typing_extensions import Annotated, Doc
@@ -121,7 +120,6 @@ class BasePath:
             return
 
         scope.update(child_scope)
-
         await self.handle_dispatch(scope, receive, send)  # type: ignore
 
     async def handle_not_found(self, scope: Scope, receive: Receive, send: Send) -> None:
@@ -1313,7 +1311,6 @@ class Router:
             else:
                 handler()
 
-    @lru_cache(maxsize=1200)  # noqa
     async def handle_route(self, route: BasePath, path_handler: PathHandler) -> None:
         """
         Handle a route match.

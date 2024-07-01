@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from functools import lru_cache
 from json import loads
 from typing import Dict, Type, cast
 
@@ -46,7 +45,6 @@ def _lookup_exception_handler(
     return None
 
 
-@lru_cache(maxsize=1200)
 def wrap_app_handling_exceptions(app: ASGIApp, conn: Request | WebSocket) -> ASGIApp:
     """
     Wraps an ASGI application, handling exceptions and applying exception handlers.
