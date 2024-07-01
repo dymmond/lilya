@@ -5,6 +5,14 @@ hide:
 
 # Release Notes
 
+### 0.8.3
+
+### Changed
+
+- Internal app generator simple now returns async examples by default.
+- Update encoding to be `utf-8` by default.
+
+
 ## 0.8.2
 
 This was supposed to in the version 0.8.1
