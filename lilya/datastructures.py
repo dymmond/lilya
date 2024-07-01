@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from abc import ABC
 from copy import copy
-from functools import lru_cache
 from http.cookies import SimpleCookie
 from typing import (
     Any,
@@ -276,7 +275,6 @@ class URL:
         return instance
 
     @classmethod
-    @lru_cache
     def __create_from_kwargs__(cls, **kwargs: Any) -> URL:
         """
         Creates a new URL instance from keyword arguments.
@@ -296,7 +294,6 @@ class URL:
         return instance
 
     @classmethod
-    @lru_cache
     def __create__(cls, url: str | SplitResult | None = None) -> URL:
         """
         Creates a new URL instance.
