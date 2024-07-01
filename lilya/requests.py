@@ -327,7 +327,7 @@ class Request(Connection):
             raw_headers: list[tuple[bytes, bytes]] = []
             for name in SERVER_PUSH_HEADERS:
                 for value in self.headers.getlist(name):
-                    raw_headers.append((name.encode("latin-1"), value.encode("latin-1")))
+                    raw_headers.append((name.encode("utf-8"), value.encode("utf-8")))
             await self._send({"type": "http.response.push", "path": path, "headers": raw_headers})
 
     def __repr__(self) -> str:

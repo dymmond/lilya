@@ -107,7 +107,7 @@ class Response:
                 headers.setdefault("content-type", content_type)
 
         raw_headers = [
-            (name.encode("latin-1"), f"{value}".encode(errors="surrogateescape"))
+            (name.encode("utf-8"), f"{value}".encode(errors="surrogateescape"))
             for name, value in headers.items()
         ]
         self.raw_headers = raw_headers
@@ -173,7 +173,7 @@ class Response:
             ], "samesite must be either 'strict', 'lax' or 'none'"
             cookie[key]["samesite"] = samesite
         cookie_val = cookie.output(header="").strip()
-        self.headers.add("set-cookie", cookie_val.encode("latin-1"))
+        self.headers.add("set-cookie", cookie_val.encode("utf-8"))
 
     def delete_cookie(
         self,
@@ -212,11 +212,9 @@ class Response:
 
         for name, value in list(self.headers.multi_items()):
             if not isinstance(value, bytes):
-                headers.append(
-                    (name.encode("latin-1"), f"{value}".encode(errors="surrogateescape"))
-                )
+                headers.append((name.encode("utf-8"), f"{value}".encode(errors="surrogateescape")))
             else:
-                headers.append((name.encode("latin-1"), value))
+                headers.append((name.encode("utf-8"), value))
         return headers
 
     def message(self, prefix: str) -> dict[str, Any]:
