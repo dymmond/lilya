@@ -163,13 +163,13 @@ class Header(MultiDict, CIMultiDict):  # type: ignore
 
         if isinstance(value, dict):
             for k, v in value.items():
-                key = k.decode("latin-1") if isinstance(k, bytes) else k
-                value = v.decode("latin-1") if isinstance(v, bytes) else v
+                key = k.decode("utf-8") if isinstance(k, bytes) else k
+                value = v.decode("utf-8") if isinstance(v, bytes) else v
                 headers.append((key, value))
         if isinstance(value, list):
             for k, v in value:
-                key = k.decode("latin-1") if isinstance(k, bytes) else k
-                value = v.decode("latin-1") if isinstance(v, bytes) else v
+                key = k.decode("utf-8") if isinstance(k, bytes) else k
+                value = v.decode("utf-8") if isinstance(v, bytes) else v
                 headers.append((key, value))
 
         return headers
@@ -347,7 +347,7 @@ class URL:
         host_header = None
         for key, value in scope["headers"]:
             if key == b"host":
-                host_header = value.decode("latin-1")
+                host_header = value.decode("utf-8")
                 break
 
         if host_header is not None:
@@ -625,7 +625,7 @@ class QueryParam(ImmutableMultiDict[Any]):
         if isinstance(value, str):  # type: ignore
             super().__init__(parse_qsl(value, keep_blank_values=True))  # type: ignore
         elif isinstance(value, bytes):  # type: ignore
-            super().__init__(parse_qsl(value.decode("latin-1"), keep_blank_values=True))  # type: ignore
+            super().__init__(parse_qsl(value.decode("utf-8"), keep_blank_values=True))  # type: ignore
         else:
             super().__init__(*args)
 

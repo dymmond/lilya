@@ -52,7 +52,7 @@ def _user_safe_decode(src: bytes, codec: str) -> str:
     try:
         return src.decode(codec)
     except (UnicodeDecodeError, LookupError):
-        return src.decode("latin-1")
+        return src.decode("utf-8")
 
 
 class MultiPartException(Exception):
@@ -172,8 +172,8 @@ class FormParser:
                 elif message_type == FormMessage.FIELD_DATA:
                     field_value += message_bytes
                 elif message_type == FormMessage.FIELD_END:
-                    name = unquote_plus(field_name.decode("latin-1"))
-                    value = unquote_plus(field_value.decode("latin-1"))
+                    name = unquote_plus(field_name.decode("utf-8"))
+                    value = unquote_plus(field_value.decode("utf-8"))
                     items.append((name, value))
 
         return FormData(items)
@@ -434,7 +434,7 @@ class MultiPartParser:
             params (Any): Parameters from the Content-Type header.
         """
         charset = params.get(b"charset", "utf-8")
-        self._charset = charset.decode("latin-1") if isinstance(charset, bytes) else charset
+        self._charset = charset.decode("utf-8") if isinstance(charset, bytes) else charset
 
     def _get_multipart_boundary(self, params: dict[bytes, bytes]) -> bytes:
         """
