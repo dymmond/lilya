@@ -5,6 +5,14 @@ hide:
 
 # Release Notes
 
+## 0.8.2
+
+This was supposed to in the version 0.8.1
+
+### Fixed
+
+- LRU caching affecting connections from request.
+
 ## 0.8.1
 
 ### Changed
