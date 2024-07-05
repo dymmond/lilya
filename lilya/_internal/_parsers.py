@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import http.cookies
 from dataclasses import dataclass, field
-from functools import lru_cache
 from tempfile import SpooledTemporaryFile
 from typing import Any, AsyncGenerator, BinaryIO, Callable, cast
 from urllib.parse import unquote, unquote_plus
@@ -18,7 +17,6 @@ except ModuleNotFoundError:  # pragma: nocover
     multipart = None
 
 
-@lru_cache(1024)
 def cookie_parser(cookie_string: str | bytes) -> dict[str, str]:
     """
     Parses a `Cookie` HTTP header into a dictionary of key/value pairs.
