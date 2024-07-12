@@ -5,11 +5,11 @@ hide:
 
 # Release Notes
 
-### 0.9.0
+## 0.9.0
 
 ### Added
 
-- The new possibility of decalring routes using lilya as decorator.
+- The new possibility of declaring routes using lilya as decorator.
 
 #### Example
 
@@ -37,7 +37,7 @@ async def user_in_request(request: Request):
     return Ok({"message": f"Welcome to Lilya, {user}"})
 ```
 
-### 0.8.3
+## 0.8.3
 
 ### Changed
 
