@@ -29,6 +29,7 @@ LifespanEvent = Sequence[Callable[[], Any]]
 HTTPExceptionHandler = Callable[[Any, Exception], Union[Any, Awaitable[Any]]]
 WebSocketExceptionHandler = Callable[[Any, Exception], Awaitable[None]]
 ExceptionHandler = Union[HTTPExceptionHandler, WebSocketExceptionHandler]
+CallableDecorator = TypeVar("CallableDecorator", bound=Callable[..., Any])
 
 
 class Empty: ...

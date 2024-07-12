@@ -6,7 +6,7 @@ from lilya.compat import is_async_callable
 from lilya.types import ASGIApp, Lifespan, LifespanEvent, Receive, Scope, Send
 
 if TYPE_CHECKING:
-    from lilya.routing import Router
+    from lilya.routing import BaseRouter
 
 T = TypeVar("T")
 
@@ -46,7 +46,7 @@ class AyncLifespanContextManager:  # pragma: no cover
 
 
 class AsyncLifespan:
-    def __init__(self, router: Router):
+    def __init__(self, router: BaseRouter):
         self.router = router
 
     async def __aenter__(self) -> None:
