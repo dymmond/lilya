@@ -106,8 +106,16 @@ feeling.
 A Lilya also uses a [native settings system](./settings.md) which is something that can be extremely useful
 for any application.
 
+### The normal way
+
 ```python
 {!> ../../../docs_src/quickstart/app.py !}
+```
+
+### Using Lilya to decorate
+
+```python
+{!> ../../../docs_src/quickstart/decorator.py !}
 ```
 
 Is this simple. Although there is a lot to unwrap here. Did you notice the path `/{user}` not only

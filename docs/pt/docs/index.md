@@ -100,8 +100,16 @@ Se está familiarizado com outras frameworks e toolkits Python, o Lilya proporci
 
 O Lilya também utiliza um [sistema de configurações nativo](./settings.md), o que pode ser extremamente útil para qualquer aplicação.
 
+### A forma normal
+
 ```python
 {!> ../../../docs_src/quickstart/app.py !}
+```
+
+### Utilizando o Lilya *decorators*
+
+```python
+{!> ../../../docs_src/quickstart/decorator.py !}
 ```
 
 É muito simples. Embora haja muito a perceber aqui. Reparou no caminho `/{user}` que não apenas não requer que um `request` seja declarado, mas em vez disso, recebe um `user: str`?

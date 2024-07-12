@@ -31,6 +31,11 @@ async def generic():
     return Response("Generic route", media_type="text/plain")
 
 
+@app.route("/params/{name}/<age:int>", methods=["GET", "POST"])
+async def params(name: str, age: int):
+    return Response(f"Name {name} with age {age}", media_type="text/plain")
+
+
 @pytest.fixture
 def client(test_client_factory: typing.Callable[..., TestClient]):
     with test_client_factory(app) as client:
@@ -60,3 +65,11 @@ def test_decorators(client: TestClient):
 
     response = client.get("/generic")
     assert response.status_code == 405
+
+    response = client.get("/params/John/20")
+    assert response.status_code == 200
+    assert response.text == "Name John with age 20"
+
+    response = client.post("/params/John/20")
+    assert response.status_code == 200
+    assert response.text == "Name John with age 20"
