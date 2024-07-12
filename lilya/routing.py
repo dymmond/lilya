@@ -30,7 +30,14 @@ from lilya.middleware.base import DefineMiddleware
 from lilya.permissions.base import DefinePermission
 from lilya.requests import Request
 from lilya.responses import PlainText, RedirectResponse, Response
-from lilya.types import ASGIApp, ExceptionHandler, Lifespan, Receive, Scope, Send
+from lilya.types import (
+    ASGIApp,
+    ExceptionHandler,
+    Lifespan,
+    Receive,
+    Scope,
+    Send,
+)
 from lilya.websockets import WebSocket, WebSocketClose
 
 T = TypeVar("T")
@@ -1162,9 +1169,9 @@ class Host(BasePath):
         return f"{self.__class__.__name__}(host={self.host!r}, name={name!r}, app={self.app!r})"
 
 
-class Router:
+class BaseRouter:
     """
-    A Lilya router object.
+    A Lilya base router object.
     """
 
     __slots__ = (
@@ -1581,3 +1588,406 @@ class Router:
             await self.lifespan(scope, receive, send)
             return
         await self.middleware_stack(scope, receive, send)
+
+
+class Router(BaseRouter):
+    """
+    Contains all the needed base routing system and adds the ability to use decorators.
+    """
+
+    def get(
+        self,
+        path: str,
+        name: str | None = None,
+        middleware: Sequence[DefineMiddleware] | None = None,
+        permissions: Sequence[DefinePermission] | None = None,
+        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        include_in_schema: bool = True,
+    ) -> Callable[..., Any]:
+        """
+        Decorator for defining a GET route.
+
+        Args:
+            path (str): The URL path pattern for the route.
+            methods (list[str] | None, optional): The HTTP methods allowed for the route. Defaults to None.
+            name (str | None, optional): The name of the route. Defaults to None.
+            middleware (Sequence[DefineMiddleware] | None, optional): The middleware functions to apply to the route. Defaults to None.
+            permissions (Sequence[DefinePermission] | None, optional): The permissions required for the route. Defaults to None.
+            exception_handlers (Mapping[Any, ExceptionHandler] | None, optional): The exception handlers for the route. Defaults to None.
+            include_in_schema (bool, optional): Whether to include the route in the API schema. Defaults to True.
+
+        Returns:
+            Callable[..., Any]: The decorated function.
+        """
+
+        def wrapper(func: Callable) -> Callable:
+            self.add_route(
+                path=path,
+                handler=func,
+                methods=["GET"],
+                name=name,
+                middleware=middleware,
+                permissions=permissions,
+                exception_handlers=exception_handlers,
+                include_in_schema=include_in_schema,
+            )
+            return func
+
+        return wrapper
+
+    def head(
+        self,
+        path: str,
+        name: str | None = None,
+        middleware: Sequence[DefineMiddleware] | None = None,
+        permissions: Sequence[DefinePermission] | None = None,
+        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        include_in_schema: bool = True,
+    ) -> Callable[..., Any]:
+        """
+        Decorator for defining a HEAD route.
+
+        Args:
+            path (str): The URL path pattern for the route.
+            methods (list[str] | None, optional): The HTTP methods allowed for the route. Defaults to None.
+            name (str | None, optional): The name of the route. Defaults to None.
+            middleware (Sequence[DefineMiddleware] | None, optional): The middleware functions to apply to the route. Defaults to None.
+            permissions (Sequence[DefinePermission] | None, optional): The permissions required for the route. Defaults to None.
+            exception_handlers (Mapping[Any, ExceptionHandler] | None, optional): The exception handlers for the route. Defaults to None.
+            include_in_schema (bool, optional): Whether to include the route in the API schema. Defaults to True.
+
+        Returns:
+            Callable[..., Any]: The decorated function.
+        """
+
+        def wrapper(func: Callable) -> Callable:
+            self.add_route(
+                path=path,
+                handler=func,
+                methods=["HEAD"],
+                name=name,
+                middleware=middleware,
+                permissions=permissions,
+                exception_handlers=exception_handlers,
+                include_in_schema=include_in_schema,
+            )
+            return func
+
+        return wrapper
+
+    def post(
+        self,
+        path: str,
+        name: str | None = None,
+        middleware: Sequence[DefineMiddleware] | None = None,
+        permissions: Sequence[DefinePermission] | None = None,
+        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        include_in_schema: bool = True,
+    ) -> Callable[..., Any]:
+        """
+        Decorator for defining a POST route.
+
+        Args:
+            path (str): The URL path pattern for the route.
+            methods (list[str] | None, optional): The HTTP methods allowed for the route. Defaults to None.
+            name (str | None, optional): The name of the route. Defaults to None.
+            middleware (Sequence[DefineMiddleware] | None, optional): The middleware functions to apply to the route. Defaults to None.
+            permissions (Sequence[DefinePermission] | None, optional): The permissions required for the route. Defaults to None.
+            exception_handlers (Mapping[Any, ExceptionHandler] | None, optional): The exception handlers for the route. Defaults to None.
+            include_in_schema (bool, optional): Whether to include the route in the API schema. Defaults to True.
+
+        Returns:
+            Callable[..., Any]: The decorated function.
+        """
+
+        def wrapper(func: Callable) -> Callable:
+            self.add_route(
+                path=path,
+                handler=func,
+                methods=["POST"],
+                name=name,
+                middleware=middleware,
+                permissions=permissions,
+                exception_handlers=exception_handlers,
+                include_in_schema=include_in_schema,
+            )
+            return func
+
+        return wrapper
+
+    def put(
+        self,
+        path: str,
+        name: str | None = None,
+        middleware: Sequence[DefineMiddleware] | None = None,
+        permissions: Sequence[DefinePermission] | None = None,
+        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        include_in_schema: bool = True,
+    ) -> Callable[..., Any]:
+        """
+        Decorator for defining a PUT route.
+
+        Args:
+            path (str): The URL path pattern for the route.
+            methods (list[str] | None, optional): The HTTP methods allowed for the route. Defaults to None.
+            name (str | None, optional): The name of the route. Defaults to None.
+            middleware (Sequence[DefineMiddleware] | None, optional): The middleware functions to apply to the route. Defaults to None.
+            permissions (Sequence[DefinePermission] | None, optional): The permissions required for the route. Defaults to None.
+            exception_handlers (Mapping[Any, ExceptionHandler] | None, optional): The exception handlers for the route. Defaults to None.
+            include_in_schema (bool, optional): Whether to include the route in the API schema. Defaults to True.
+
+        Returns:
+            Callable[..., Any]: The decorated function.
+        """
+
+        def wrapper(func: Callable) -> Callable:
+            self.add_route(
+                path=path,
+                handler=func,
+                methods=["PUT"],
+                name=name,
+                middleware=middleware,
+                permissions=permissions,
+                exception_handlers=exception_handlers,
+                include_in_schema=include_in_schema,
+            )
+            return func
+
+        return wrapper
+
+    def patch(
+        self,
+        path: str,
+        name: str | None = None,
+        middleware: Sequence[DefineMiddleware] | None = None,
+        permissions: Sequence[DefinePermission] | None = None,
+        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        include_in_schema: bool = True,
+    ) -> Callable[..., Any]:
+        """
+        Decorator for defining a PATCH route.
+
+        Args:
+            path (str): The URL path pattern for the route.
+            methods (list[str] | None, optional): The HTTP methods allowed for the route. Defaults to None.
+            name (str | None, optional): The name of the route. Defaults to None.
+            middleware (Sequence[DefineMiddleware] | None, optional): The middleware functions to apply to the route. Defaults to None.
+            permissions (Sequence[DefinePermission] | None, optional): The permissions required for the route. Defaults to None.
+            exception_handlers (Mapping[Any, ExceptionHandler] | None, optional): The exception handlers for the route. Defaults to None.
+            include_in_schema (bool, optional): Whether to include the route in the API schema. Defaults to True.
+
+        Returns:
+            Callable[..., Any]: The decorated function.
+        """
+
+        def wrapper(func: Callable) -> Callable:
+            self.add_route(
+                path=path,
+                handler=func,
+                methods=["PATCH"],
+                name=name,
+                middleware=middleware,
+                permissions=permissions,
+                exception_handlers=exception_handlers,
+                include_in_schema=include_in_schema,
+            )
+            return func
+
+        return wrapper
+
+    def delete(
+        self,
+        path: str,
+        name: str | None = None,
+        middleware: Sequence[DefineMiddleware] | None = None,
+        permissions: Sequence[DefinePermission] | None = None,
+        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        include_in_schema: bool = True,
+    ) -> Callable[..., Any]:
+        """
+        Decorator for defining a DELETE route.
+
+        Args:
+            path (str): The URL path pattern for the route.
+            methods (list[str] | None, optional): The HTTP methods allowed for the route. Defaults to None.
+            name (str | None, optional): The name of the route. Defaults to None.
+            middleware (Sequence[DefineMiddleware] | None, optional): The middleware functions to apply to the route. Defaults to None.
+            permissions (Sequence[DefinePermission] | None, optional): The permissions required for the route. Defaults to None.
+            exception_handlers (Mapping[Any, ExceptionHandler] | None, optional): The exception handlers for the route. Defaults to None.
+            include_in_schema (bool, optional): Whether to include the route in the API schema. Defaults to True.
+
+        Returns:
+            Callable[..., Any]: The decorated function.
+        """
+
+        def wrapper(func: Callable) -> Callable:
+            self.add_route(
+                path=path,
+                handler=func,
+                methods=["DELETE"],
+                name=name,
+                middleware=middleware,
+                permissions=permissions,
+                exception_handlers=exception_handlers,
+                include_in_schema=include_in_schema,
+            )
+            return func
+
+        return wrapper
+
+    def trace(
+        self,
+        path: str,
+        name: str | None = None,
+        middleware: Sequence[DefineMiddleware] | None = None,
+        permissions: Sequence[DefinePermission] | None = None,
+        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        include_in_schema: bool = True,
+    ) -> Callable[..., Any]:
+        """
+        Decorator for defining a TRACE route.
+
+        Args:
+            path (str): The URL path pattern for the route.
+            methods (list[str] | None, optional): The HTTP methods allowed for the route. Defaults to None.
+            name (str | None, optional): The name of the route. Defaults to None.
+            middleware (Sequence[DefineMiddleware] | None, optional): The middleware functions to apply to the route. Defaults to None.
+            permissions (Sequence[DefinePermission] | None, optional): The permissions required for the route. Defaults to None.
+            exception_handlers (Mapping[Any, ExceptionHandler] | None, optional): The exception handlers for the route. Defaults to None.
+            include_in_schema (bool, optional): Whether to include the route in the API schema. Defaults to True.
+
+        Returns:
+            Callable[..., Any]: The decorated function.
+        """
+
+        def wrapper(func: Callable) -> Callable:
+            self.add_route(
+                path=path,
+                handler=func,
+                methods=["TRACE"],
+                name=name,
+                middleware=middleware,
+                permissions=permissions,
+                exception_handlers=exception_handlers,
+                include_in_schema=include_in_schema,
+            )
+            return func
+
+        return wrapper
+
+    def options(
+        self,
+        path: str,
+        name: str | None = None,
+        middleware: Sequence[DefineMiddleware] | None = None,
+        permissions: Sequence[DefinePermission] | None = None,
+        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        include_in_schema: bool = True,
+    ) -> Callable[..., Any]:
+        """
+        Decorator for defining a OPTIONS route.
+
+        Args:
+            path (str): The URL path pattern for the route.
+            methods (list[str] | None, optional): The HTTP methods allowed for the route. Defaults to None.
+            name (str | None, optional): The name of the route. Defaults to None.
+            middleware (Sequence[DefineMiddleware] | None, optional): The middleware functions to apply to the route. Defaults to None.
+            permissions (Sequence[DefinePermission] | None, optional): The permissions required for the route. Defaults to None.
+            exception_handlers (Mapping[Any, ExceptionHandler] | None, optional): The exception handlers for the route. Defaults to None.
+            include_in_schema (bool, optional): Whether to include the route in the API schema. Defaults to True.
+
+        Returns:
+            Callable[..., Any]: The decorated function.
+        """
+
+        def wrapper(func: Callable) -> Callable:
+            self.add_route(
+                path=path,
+                handler=func,
+                methods=["OPTIONS"],
+                name=name,
+                middleware=middleware,
+                permissions=permissions,
+                exception_handlers=exception_handlers,
+                include_in_schema=include_in_schema,
+            )
+            return func
+
+        return wrapper
+
+    def route(
+        self,
+        path: str,
+        methods: list[str],
+        name: str | None = None,
+        middleware: Sequence[DefineMiddleware] | None = None,
+        permissions: Sequence[DefinePermission] | None = None,
+        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        include_in_schema: bool = True,
+    ) -> Callable[..., Any]:
+        """
+        Decorator for defining a generic route.
+
+        Args:
+            path (str): The URL path pattern for the route.
+            methods (list[str] | None, optional): The HTTP methods allowed for the route. Defaults to None.
+            name (str | None, optional): The name of the route. Defaults to None.
+            middleware (Sequence[DefineMiddleware] | None, optional): The middleware functions to apply to the route. Defaults to None.
+            permissions (Sequence[DefinePermission] | None, optional): The permissions required for the route. Defaults to None.
+            exception_handlers (Mapping[Any, ExceptionHandler] | None, optional): The exception handlers for the route. Defaults to None.
+            include_in_schema (bool, optional): Whether to include the route in the API schema. Defaults to True.
+
+        Returns:
+            Callable[..., Any]: The decorated function.
+        """
+
+        def wrapper(func: Callable) -> Callable:
+            self.add_route(
+                path=path,
+                handler=func,
+                methods=methods,
+                name=name,
+                middleware=middleware,
+                permissions=permissions,
+                exception_handlers=exception_handlers,
+                include_in_schema=include_in_schema,
+            )
+            return func
+
+        return wrapper
+
+    def websocket(
+        self,
+        path: str,
+        name: str | None = None,
+        middleware: Sequence[DefineMiddleware] | None = None,
+        permissions: Sequence[DefinePermission] | None = None,
+        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+    ) -> Callable[..., Any]:
+        """
+        Decorator for defining a WebSocket route.
+
+        Args:
+            path (str): The URL path for the WebSocket route.
+            name (str, optional): The name of the route. Defaults to None.
+            middleware (Sequence[DefineMiddleware], optional): The middleware to apply to the route. Defaults to None.
+            permissions (Sequence[DefinePermission], optional): The permissions required for the route. Defaults to None.
+            exception_handlers (Mapping[Any, ExceptionHandler], optional): The exception handlers for the route. Defaults to None.
+
+        Returns:
+            Callable[..., Any]: The decorated function.
+
+        """
+
+        def wrapper(func: Callable) -> Callable:
+            self.add_websocket_route(
+                path=path,
+                handler=func,
+                name=name,
+                middleware=middleware,
+                permissions=permissions,
+                exception_handlers=exception_handlers,
+            )
+            return func
+
+        return wrapper
