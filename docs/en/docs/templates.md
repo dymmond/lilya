@@ -14,7 +14,7 @@ from lilya.templating import Jinja2Template
 ### Parameters
 
 - `directory`: A string, [os.Pathlike][pathlike], or a list of strings or [os.Pathlike][pathlike] indicating a directory path.
-- `env`: Any different `jinja2.Environment` instance *(Optional)*.
+- `env`: Any different `jinja2.Environment` instance _(Optional)_.
 - `**options`: Additional keyword arguments to pass to the Jinja2 environment.
 
 [pathlike]: https://docs.python.org/3/library/os.html#os.PathLike
@@ -28,15 +28,25 @@ the `Jinja2Template`.
 ```python
 {!> ../../../docs_src/templates/template.py !}
 ```
+
 ### Templates response parameters
 
 The get_template_response function expects the following arguments:
 
-- `request`: (required): The HTTP request object.
-- `name`: (required): The name of the template to render.
+- `request` (required): The HTTP request object.
+- `name` (required): The name of the template to render.
+- `context` (optional): A dictionary allowing you to include dynamic data in the template rendering process.
 
-Any additional arguments or keyword arguments provided will be passed directly to the template as context.
-This allows you to include dynamic data in the template rendering process.
+
+Any additional arguments or keyword arguments provided will be passed directly to `TemplateResponse`.
+
+### Optional Arguments
+
+- `status_code` (int, optional): The status code of the response. Defaults to 200.
+- `background` (BackgroundTask, optional): An instance of BackgroundTask. Defaults to None.
+- `headers` (dict[str, Any], optional): A dictionary of response headers. Defaults to None.
+- `media_type` (str, optional): The media type of the response. Defaults to "text/html".
+
 You can pass these arguments either as keyword arguments or positional arguments, depending on your preference.
 
 !!! warning
