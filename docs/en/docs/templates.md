@@ -13,9 +13,9 @@ from lilya.templating import Jinja2Template
 
 ### Parameters
 
--   `directory`: A string, [os.Pathlike][pathlike], or a list of strings or [os.Pathlike][pathlike] indicating a directory path.
--   `env`: Any different `jinja2.Environment` instance _(Optional)_.
--   `**options`: Additional keyword arguments to pass to the Jinja2 environment.
+- `directory`: A string, [os.Pathlike][pathlike], or a list of strings or [os.Pathlike][pathlike] indicating a directory path.
+- `env`: Any different `jinja2.Environment` instance _(Optional)_.
+- `**options`: Additional keyword arguments to pass to the Jinja2 environment.
 
 [pathlike]: https://docs.python.org/3/library/os.html#os.PathLike
 
@@ -47,12 +47,10 @@ Any additional arguments or keyword arguments provided will be passed directly t
 - `headers` (dict[str, Any], optional): A dictionary of response headers. Defaults to None.
 - `media_type` (str, optional): The media type of the response. Defaults to "text/html".
 
-       
-
 You can pass these arguments either as keyword arguments or positional arguments, depending on your preference.
 
 !!! warning
-It's imperative to include the incoming request instance as part of the template context.
+    It's imperative to include the incoming request instance as part of the template context.
 
 The Jinja2 template context automatically incorporates a `url_for` function, allowing correct hyperlinking to other pages within the application.
 
