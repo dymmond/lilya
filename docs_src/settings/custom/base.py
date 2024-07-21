@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from lilya.conf import Settings
+from lilya.conf.global_settings import Settings
 from lilya.middleware import DefineMiddleware
 from lilya.middleware.httpsredirect import HTTPSRedirectMiddleware
 
