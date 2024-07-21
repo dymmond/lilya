@@ -1,7 +1,8 @@
-from dataclasses import dataclass
-from typing import List
+from __future__ import annotations
 
-from lilya.conf import Settings
+from dataclasses import dataclass
+
+from lilya.conf.global_settings import Settings
 from lilya.middleware import DefineMiddleware
 from lilya.middleware.compression import GZipMiddleware
 from lilya.middleware.httpsredirect import HTTPSRedirectMiddleware
@@ -10,7 +11,7 @@ from lilya.middleware.httpsredirect import HTTPSRedirectMiddleware
 @dataclass
 class AppSettings(Settings):
     @property
-    def middleware(self) -> List[DefineMiddleware]:
+    def middleware(self) -> list[DefineMiddleware]:
         """
         All the middlewares to be added when the application starts.
         """

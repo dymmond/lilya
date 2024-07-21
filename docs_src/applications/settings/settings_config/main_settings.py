@@ -1,7 +1,8 @@
-from dataclasses import dataclass
-from typing import List
+from __future__ import annotations
 
-from lilya.conf import Settings
+from dataclasses import dataclass
+
+from lilya.conf.global_settings import Settings
 from lilya.exceptions import PermissionDenied
 from lilya.permissions import DefinePermission
 from lilya.protocols.permissions import PermissionProtocol
@@ -28,5 +29,5 @@ class AppSettings(Settings):
     secret_key: str = "main secret key"
 
     @property
-    def permissions(self) -> List[DefinePermission]:
+    def permissions(self) -> list[DefinePermission]:
         return [DefinePermission(AllowAccess)]
