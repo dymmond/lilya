@@ -126,7 +126,7 @@ assigning the result object into a `AuthResult` and make it available on every r
     from dataclasses import dataclass
     from typing import List
 
-    from lilya.conf import Settings
+    from lilya.conf.global_settings import Settings
     from lilya.middleware import DefineMiddleware
     from .middleware.jwt import JWTAuthMiddleware
 

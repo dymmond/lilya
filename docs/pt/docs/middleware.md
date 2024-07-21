@@ -116,7 +116,7 @@ para torná-lo disponível em cada pedido.
     from dataclasses import dataclass
     from typing import List
 
-    from lilya.conf import Settings
+    from lilya.conf.global_settings import Settings
     from lilya.middleware import DefineMiddleware
     from .middleware.jwt import JWTAuthMiddleware
 

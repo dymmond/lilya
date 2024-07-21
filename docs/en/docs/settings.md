@@ -274,7 +274,7 @@ Passing parameters in the object will always override the values from the defaul
 ```python
 from dataclasses import dataclass
 
-from lilya.conf import Settings
+from lilya.conf.global_settings import Settings
 from lilya.middleware.httpsredirect import HTTPSRedirectMiddleware
 from lilya.middleware import DefineMiddleware
 

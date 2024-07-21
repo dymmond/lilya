@@ -260,7 +260,7 @@ Passar parâmetros no objecto substituirá sempre os valores das definições pa
 ```python
 from dataclasses import dataclass
 
-from lilya.conf import Settings
+from lilya.conf.global_settings import Settings
 from lilya.middleware.httpsredirect import HTTPSRedirectMiddleware
 from lilya.middleware import DefineMiddleware
 
