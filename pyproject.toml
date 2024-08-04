@@ -146,7 +146,7 @@ new_lang = "hatch run docs:update_languages; scripts/docs.py new-lang --lang {ar
 
 
 [tool.hatch.envs.test]
-features = ['testing']
+features = ['testing', "cli"]
 template = "test"
 installer = "pip"
 
