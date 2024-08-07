@@ -20,6 +20,7 @@ class CORSMiddleware(MiddlewareProtocol):
         allow_headers: Sequence[str] | None = None,
         allow_credentials: bool = False,
         allow_origin_regex: str | None = None,
+        allow_private_networks: bool = False,
         expose_headers: Sequence[str] | None = None,
         max_age: int = 600,
     ) -> None:
@@ -53,7 +54,7 @@ class CORSMiddleware(MiddlewareProtocol):
         preflight_explicit_allow_origin = not allow_all_origins or allow_credentials
 
         simple_headers = self.get_simple_headers(
-            allow_all_origins, allow_credentials, expose_headers
+            allow_all_origins, allow_credentials, expose_headers, allow_private_networks
         )
 
         allow_headers = sorted(HeaderEnum.to_set() | set(allow_headers))
@@ -64,6 +65,7 @@ class CORSMiddleware(MiddlewareProtocol):
             allow_all_headers,
             allow_headers,
             allow_credentials,
+            allow_private_networks,
         )
 
         self.app = app
@@ -76,6 +78,7 @@ class CORSMiddleware(MiddlewareProtocol):
         self.allow_origin_regex = compiled_allow_origin_regex
         self.simple_headers = simple_headers
         self.preflight_headers = preflight_headers
+        self.allow_private_networks = allow_private_networks
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -100,6 +103,11 @@ class CORSMiddleware(MiddlewareProtocol):
 
         if method == "OPTIONS" and "access-control-request-method" in headers:
             response = self.preflight_response(request_headers=headers)
+            await response(scope, receive, send)
+            return
+
+        if method == "OPTIONS" and "access-control-request-private-network" in headers:
+            response = self.preflight_private_network_response(request_headers=headers)
             await response(scope, receive, send)
             return
 
@@ -163,6 +171,47 @@ class CORSMiddleware(MiddlewareProtocol):
 
         return PlainText("OK", status_code=200, headers=headers)
 
+    def preflight_private_network_response(self, request_headers: Header) -> Response:
+        """
+        Process the preflight request for private network access.
+        This feature is not part of the CORS specification but is useful for the new browsers
+        that enforce the private network access policy.
+
+        By the time of this implementation, this specific functionality got inspired by great
+        developers thinking about the future of the web and the security of the users.
+
+        More information about the private network access policy can be found at:
+
+            1. https://developer.chrome.com/blog/private-network-access-preflight/
+            2. https://documentation.alphasoftware.com/documentation/pages/Guides/Mobile%20and%20Web%20Components/UX/Properties/Advanced/CORS%20allow%20private%20network.xml#:~:text=Enables%20cross%20origin%20requests%20from,(e.g.%20behind%20a%20firewall).
+
+        This will be rolled out on Chromium based browsers such as Google Chrome, Microsoft Edge, Brave and others.
+
+        Args:
+            request_headers (Header): The headers of the request.
+
+        Returns:
+            Response: The response to the preflight request.
+        """
+        requested_origin = request_headers["origin"]
+        requested_private_network = request_headers["access-control-request-private-network"]
+
+        headers = dict(self.preflight_headers)
+        errors = []
+
+        if not self.validate_origin(origin=requested_origin):
+            errors.append("origin")
+
+        if requested_private_network == "true" and not self.allow_private_networks:
+            errors.append("private-network")
+
+        if errors:
+            failure_text = "Disallowed PNA " + ", ".join(errors)
+            return PlainText(failure_text, status_code=400, headers=headers)
+
+        headers["Access-Control-Allow-Origin"] = requested_origin
+        return PlainText("OK", status_code=200, headers=headers)
+
     async def simple_response(
         self, scope: Scope, receive: Receive, send: Send, request_headers: Header
     ) -> None:
@@ -223,7 +272,10 @@ class CORSMiddleware(MiddlewareProtocol):
 
     @staticmethod
     def get_simple_headers(
-        allow_all_origins: bool, allow_credentials: bool, expose_headers: Sequence[str]
+        allow_all_origins: bool,
+        allow_credentials: bool,
+        expose_headers: Sequence[str],
+        allow_private_networks: bool,
     ) -> dict:
         """
         Get headers for simple (non-preflight) responses.
@@ -244,6 +296,8 @@ class CORSMiddleware(MiddlewareProtocol):
             simple_headers["Access-Control-Allow-Credentials"] = "true"
         if expose_headers:
             simple_headers["Access-Control-Expose-Headers"] = ", ".join(expose_headers)
+        if allow_private_networks:
+            simple_headers["Access-Control-Allow-Private-Network"] = "true"
 
         return simple_headers
 
@@ -255,6 +309,7 @@ class CORSMiddleware(MiddlewareProtocol):
         allow_all_headers: bool,
         allow_headers: Sequence[str],
         allow_credentials: bool,
+        allow_private_networks: bool,
     ) -> dict[str, Any]:
         """
         Get headers for preflight responses.
@@ -277,6 +332,8 @@ class CORSMiddleware(MiddlewareProtocol):
             preflight_headers["Access-Control-Allow-Origin"] = "*"
         if allow_credentials:
             preflight_headers["Access-Control-Allow-Credentials"] = "true"
+        if allow_private_networks:
+            preflight_headers["Access-Control-Allow-Private-Network"] = "true"
         if allow_all_headers:
             preflight_headers["Access-Control-Allow-Headers"] = "*"
         elif allow_headers:
