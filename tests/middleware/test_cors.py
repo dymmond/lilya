@@ -75,7 +75,7 @@ def test_cors_allow_all(
     }
     response = client.options("/", headers=headers)
     assert response.status_code == 200
-    assert response.text == "OK"
+    assert response.text == "Allowed"
     assert response.headers["access-control-allow-origin"] == "https://example.org"
     assert response.headers["access-control-allow-private-network"] == "true"
 

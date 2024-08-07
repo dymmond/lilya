@@ -206,11 +206,11 @@ class CORSMiddleware(MiddlewareProtocol):
             errors.append("private-network")
 
         if errors:
-            failure_text = "Disallowed PNA " + ", ".join(errors)
-            return PlainText(failure_text, status_code=400, headers=headers)
+            message = "Disallowed Private Network Access " + ", ".join(errors)
+            return PlainText(message, status_code=400, headers=headers)
 
         headers["Access-Control-Allow-Origin"] = requested_origin
-        return PlainText("OK", status_code=200, headers=headers)
+        return PlainText("Allowed", status_code=200, headers=headers)
 
     async def simple_response(
         self, scope: Scope, receive: Receive, send: Send, request_headers: Header
