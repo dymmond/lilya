@@ -5,6 +5,17 @@ hide:
 
 # Release Notes
 
+## 0.9.1
+
+### Added
+
+- CORSMiddleware now supports the `allow_private_networks` boolean parameter. This prepares
+for what is coming for Chromium based browsers.
+
+### Changed
+
+- Internal testing for Edgy with the new drivers.
+
 ## 0.9.0
 
 ### Added
