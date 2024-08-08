@@ -28,6 +28,7 @@ def test_cors_allow_all(
                 allow_methods=["*"],
                 expose_headers=["X-Status"],
                 allow_credentials=True,
+                allow_private_networks=True,
             )
         ],
     )
@@ -46,6 +47,7 @@ def test_cors_allow_all(
     assert response.headers["access-control-allow-origin"] == "https://example.org"
     assert response.headers["access-control-allow-headers"] == "X-Example"
     assert response.headers["access-control-allow-credentials"] == "true"
+    assert response.headers["access-control-allow-private-network"] == "true"
     assert response.headers["vary"] == "Origin"
 
     # Test standard response
@@ -65,6 +67,17 @@ def test_cors_allow_all(
     assert response.headers["access-control-allow-origin"] == "https://example.org"
     assert response.headers["access-control-expose-headers"] == "X-Status"
     assert response.headers["access-control-allow-credentials"] == "true"
+
+    # Test pre-flight response
+    headers = {
+        "Origin": "https://example.org",
+        "Access-Control-Request-Private-Network": "true",
+    }
+    response = client.options("/", headers=headers)
+    assert response.status_code == 200
+    assert response.text == "Allowed"
+    assert response.headers["access-control-allow-origin"] == "https://example.org"
+    assert response.headers["access-control-allow-private-network"] == "true"
 
     # Test non-CORS response
     response = client.get("/")
@@ -533,3 +546,49 @@ def test_cors_allowed_origin_does_not_leak_between_credentialed_requests(
     response = client.get("/", headers={"Origin": "https://someplace.org"})
     assert response.headers["access-control-allow-origin"] == "*"
     assert "access-control-allow-credentials" not in response.headers
+
+
+def test_cors_allow_all_except_private_network(
+    test_client_factory: TestClientFactory,
+) -> None:
+    def homepage():
+        return PlainText("Homepage", status_code=200)
+
+    app = Lilya(
+        routes=[Path("/", handler=homepage)],
+        middleware=[
+            DefineMiddleware(
+                CORSMiddleware,
+                allow_origins=["*"],
+                allow_headers=["*"],
+                allow_methods=["*"],
+                expose_headers=["X-Status"],
+                allow_credentials=True,
+            )
+        ],
+    )
+
+    client = test_client_factory(app)
+
+    headers = {
+        "Origin": "https://foo.bar.org",
+        "Access-Control-Request-Method": "GET",
+        "Access-Control-Request-Headers": "X-Example",
+    }
+    response = client.options("/", headers=headers)
+    assert response.status_code == 200
+    assert response.text == "OK"
+    assert response.headers["access-control-allow-origin"] == "https://foo.bar.org"
+    assert response.headers["access-control-allow-headers"] == "X-Example"
+    assert response.headers["access-control-allow-credentials"] == "true"
+    assert "access-control-allow-private-network" not in response.headers
+    assert response.headers["vary"] == "Origin"
+
+    headers = {"Origin": "https://foo.bar.org"}
+    response = client.get("/", headers=headers)
+    assert response.status_code == 200
+    assert response.text == "Homepage"
+    assert response.headers["access-control-allow-origin"] == "*"
+    assert response.headers["access-control-expose-headers"] == "X-Status"
+    assert response.headers["access-control-allow-credentials"] == "true"
+    assert "access-control-allow-private-network" not in response.headers
