@@ -1991,3 +1991,7 @@ class Router(BaseRouter):
             return func
 
         return wrapper
+
+
+# Declare an alias for the Path
+RoutePath = Path
