@@ -1,6 +1,7 @@
 import os
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncIterator, Callable
+from typing import Callable
 
 import anyio
 import httpx

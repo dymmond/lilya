@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import sys
-from typing import Any, Callable, Iterator
+from collections.abc import Iterator
+from typing import Any, Callable
 
 from lilya.types import ASGIApp
 

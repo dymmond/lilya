@@ -1,5 +1,6 @@
 import functools
-from typing import Any, AsyncIterator, Awaitable, Callable, Iterable, TypeVar
+from collections.abc import AsyncIterator, Awaitable, Iterable
+from typing import Any, Callable, TypeVar
 
 import anyio.to_thread
 from anyio import create_task_group, get_cancelled_exc_class, to_thread

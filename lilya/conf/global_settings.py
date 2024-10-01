@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Sequence
+from typing import TYPE_CHECKING, Annotated, Any, Callable, ClassVar
 
 from dymmond_settings import Settings as BaseSettings
 from dymmond_settings.enums import EnvironmentType
-from typing_extensions import Annotated, Doc
+from typing_extensions import Doc
 
 from lilya import __version__
 from lilya.types import ApplicationType, ASGIApp, ExceptionHandler
@@ -248,14 +249,12 @@ class Settings(_Internal):
             permissions=[DefinePermission(AllowAccess)],
         )
 
+
         @dataclass
         class AppSettings(Settings):
-
             @property
             def permissions(self) -> Sequence[DefinePermission]:
-                return [
-                    DefineMiddleware(AllowAccess)
-                ]
+                return [DefineMiddleware(AllowAccess)]
         ```
         """
         return []
@@ -299,7 +298,6 @@ class Settings(_Internal):
 
         @dataclass
         class AppSettings(Settings):
-
             @property
             def exception_handler(self) -> Union[ExceptionHandler, Dict[Any, Any]]:
                 return {
@@ -338,13 +336,12 @@ class Settings(_Internal):
             data = await request.json()
             ...
 
+
         @dataclass
         class AppSettings(Settings):
-
             @property
             def on_startup(self) -> Sequence[Callable[[], Any]]:
                 return [database.connect]
-
         ```
         """
         return None
@@ -377,13 +374,12 @@ class Settings(_Internal):
             data = await request.json()
             ...
 
+
         @dataclass
         class AppSettings(Settings):
-
             @property
             def on_shutdown(self) -> Sequence[Callable[[], Any]]:
                 return [database.disconnect]
-
         ```
         """
         return None

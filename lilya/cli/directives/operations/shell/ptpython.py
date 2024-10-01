@@ -46,9 +46,7 @@ def get_ptpython(app: typing.Any, options: typing.Any = None) -> typing.Any:
                 )
 
     except (ModuleNotFoundError, ImportError):
-        error = (
-            "You must have PTPython installed to run this. Run `pip install ptpython`"
-        )
+        error = "You must have PTPython installed to run this. Run `pip install ptpython`"
         printer.write_error(error)
         sys.exit(1)
 

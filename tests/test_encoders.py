@@ -154,7 +154,6 @@ def test_dict_response():
     ids=["list", "set", "frozenset", "tuple", "deque"],
 )
 def test_structure_responses(value):
-
     def home():
         return value
 

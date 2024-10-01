@@ -11,12 +11,12 @@ async def homepage():
 
 async def me():
     username = "John Doe"
-    return Ok({"message": "Hello, %s!" % username})
+    return Ok({"message": f"Hello, {username}!"})
 
 
 def user(request: Request):
     username = request.path_params["username"]
-    return Ok({"message": "Hello, %s!" % username})
+    return Ok({"message": f"Hello, {username}!"})
 
 
 async def websocket_endpoint(websocket: WebSocket):

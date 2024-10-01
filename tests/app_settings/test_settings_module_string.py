@@ -16,7 +16,6 @@ class ChildSettings(DisableOpenAPI):
 
 
 def test_child_lilya_independent_settings(test_client_factory):
-
     child = ChildLilya(
         routes=[],
         settings_module="tests.app_settings.test_settings_module_string.ChildSettings",

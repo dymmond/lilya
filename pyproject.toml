@@ -131,7 +131,7 @@ clean_pyc = "find . -type f -name \"*.pyc\" -delete"
 clean_pyi = "find . -type f -name \"*.pyi\" -delete"
 clean_pycache = "find . -type d -name \"*__pycache__*\" -delete"
 build_with_check = "hatch build; twine check dist/*"
-lint = "ruff check --fix --line-length 99  lilya tests {args}; hatch run test:check_types"
+lint = "hatch run test:check_types"
 
 [tool.hatch.envs.docs]
 features = ["all", "docs"]
@@ -180,7 +180,14 @@ strict_optional = false
 disable_error_code = "attr-defined,has-type,override,misc,safe-super"
 exclude = ["lilya/compat.py"]
 
+[tool.ruff]
+line-length = 99
+fix = true
+
+exclude = ["docs_src/"]
+
 [tool.ruff.lint]
+
 select = [
     "E",  # pycodestyle errors
     "W",  # pycodestyle warnings
@@ -199,7 +206,11 @@ ignore = [
     "UP006",
 ]
 
-exclude = ["docs_src/"]
+
+[tool.ruff.lint.pycodestyle]
+max-line-length = 99
+# max-doc-length = 120
+
 
 [tool.ruff.lint.isort]
 combine-as-imports = true

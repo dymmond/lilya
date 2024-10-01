@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import contextlib
 import math
+from collections.abc import Generator, MutableMapping, Sequence
 from concurrent.futures import Future
-from typing import Any, Generator, Literal, MutableMapping, Sequence, cast
+from typing import Any, Literal, cast
 from urllib.parse import urljoin
 
 import anyio

@@ -4,9 +4,10 @@ import functools
 import inspect
 import re
 import traceback
-from typing import Any, Awaitable, Callable, Mapping, Sequence, TypeVar, cast
+from collections.abc import Awaitable, Mapping, Sequence
+from typing import Annotated, Any, Callable, TypeVar, cast
 
-from typing_extensions import Annotated, Doc
+from typing_extensions import Doc
 
 from lilya import status
 from lilya._internal._events import AsyncLifespan, handle_lifespan_events
@@ -256,7 +257,7 @@ class Path(BaseHandler, BasePath):
     ```python
     from lilya.routing import Path
 
-    Path('/home', callable=..., name="home")
+    Path("/home", callable=..., name="home")
     ```
     """
 

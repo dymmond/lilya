@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import json
-from typing import Any, AsyncIterator, Iterable, cast
+from collections.abc import AsyncIterator, Iterable
+from typing import Any, cast
 
 from lilya._internal._connection import Connection
 from lilya.enums import Event, MessageMode, ScopeType, WebSocketState

@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import http.cookies
+from collections.abc import AsyncGenerator
 from dataclasses import dataclass, field
 from functools import lru_cache
 from tempfile import SpooledTemporaryFile
-from typing import Any, AsyncGenerator, BinaryIO, Callable, cast
+from typing import Any, BinaryIO, Callable, cast
 from urllib.parse import unquote, unquote_plus
 
 from lilya.datastructures import DataUpload, FormData, Header

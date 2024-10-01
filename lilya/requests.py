@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import json
-from typing import Any, AsyncGenerator, Dict, Tuple, cast
+from collections.abc import AsyncGenerator
+from typing import Any, cast
 
 import anyio
 
@@ -117,7 +118,7 @@ class Request(Connection):
             content_type_header = self.headers.get("Content-type", "")
             content_type, opts = parse_options_header(content_type_header)
             self._media = dict(opts, content_type=content_type)  # type: ignore
-        return cast(Dict[str, Any], self._media)
+        return cast(dict[str, Any], self._media)
 
     @property
     def charset(self) -> str:
@@ -140,7 +141,7 @@ class Request(Connection):
         if self._content_type is Empty:
             content_type = self.headers.get("Content-Type", "")
             self._content_type, _ = parse_options_header(content_type)
-        return cast(Tuple[str, Dict[str, str]], self._content_type.decode(self.charset))
+        return cast(tuple[str, dict[str, str]], self._content_type.decode(self.charset))
 
     async def stream(self) -> AsyncGenerator[bytes, None]:
         """

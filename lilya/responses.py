@@ -6,19 +6,15 @@ import json
 import os
 import stat
 import typing
+from collections.abc import AsyncIterable, Awaitable, Iterable, Mapping, Sequence
 from datetime import datetime
 from email.utils import format_datetime, formatdate
 from mimetypes import guess_type
 from typing import (
     Any,
-    AsyncIterable,
-    Awaitable,
     Callable,
-    Iterable,
     Literal,
-    Mapping,
     NoReturn,
-    Sequence,
     Union,
 )
 from urllib.parse import quote

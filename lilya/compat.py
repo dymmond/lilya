@@ -3,9 +3,10 @@ from __future__ import annotations
 import asyncio
 import functools
 import hashlib
+from collections.abc import Awaitable, Generator
 from concurrent import futures
 from concurrent.futures import Future
-from typing import Any, Awaitable, Generator, Generic, Protocol, TypeVar
+from typing import Any, Generic, Protocol, TypeVar
 
 from lilya._internal._urls import reverse as reverse
 

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import io
+from collections.abc import Sequence
 from types import GeneratorType
-from typing import Any, Sequence, cast
+from typing import Any, cast
 from urllib.parse import unquote
 
 import anyio

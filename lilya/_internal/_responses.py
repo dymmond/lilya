@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import inspect
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, cast
+from collections.abc import Awaitable
+from typing import TYPE_CHECKING, Any, Callable, cast
 
 from lilya._internal._encoders import json_encoder
 from lilya._internal._exception_handlers import wrap_app_handling_exceptions

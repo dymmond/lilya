@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any
+from typing import Annotated, Any
 
-from typing_extensions import Annotated, Doc
+from typing_extensions import Doc
 
 from lilya._internal._connection import Connection
 from lilya.enums import ScopeType

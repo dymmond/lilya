@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import sys
+from collections.abc import Awaitable, Mapping, Sequence
 from functools import cached_property
-from typing import Any, Awaitable, Callable, Mapping, Sequence, cast
+from typing import Annotated, Any, Callable, cast
 
-from typing_extensions import Annotated, Doc
+from typing_extensions import Doc
 
 from lilya._internal._module_loading import import_string
 from lilya._utils import is_class_and_subclass
@@ -43,7 +44,6 @@ P = ParamSpec("P")
 
 
 class BaseLilya:
-
     def __init__(
         self,
         debug: Annotated[bool, Doc("Enable or disable debug mode. Defaults to False.")] = False,
@@ -631,8 +631,10 @@ class BaseLilya:
         ```python
         from lilya.apps import Lilya
 
+
         async def hello():
             return "Hello, World!"
+
 
         app = Lilya()
         app.add_route(path="/hello", handler=hello)
@@ -720,6 +722,7 @@ class BaseLilya:
             assert data
             await websocket.send_json({"data": "lilya"})
             await websocket.close()
+
 
         app = Lilya()
         app.add_websocket_route(path="/ws", handler=websocket_route)
@@ -1211,6 +1214,6 @@ class ChildLilya(Lilya):
     from lilya.routing import Include
 
 
-    app = Lilya(routes=[Include('/child', app=ChildLilya(...))])
+    app = Lilya(routes=[Include("/child", app=ChildLilya(...))])
     ```
     """
