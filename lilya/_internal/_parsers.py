@@ -144,7 +144,7 @@ class FormParser:
         Note:
             The parser utilizes a dictionary of callbacks to process different stages of parsing.
         """
-        callbacks: dict[str, Any] = {
+        callbacks: Any = {
             "on_field_start": self.on_field_start,
             "on_field_name": self.on_field_name,
             "on_field_data": self.on_field_data,
@@ -483,7 +483,7 @@ class MultiPartParser:
         Returns:
             multipart.MultipartParser: Created multipart parser.
         """
-        return multipart.MultipartParser(boundary, callbacks)
+        return multipart.MultipartParser(boundary, cast(Any, callbacks))
 
     async def _write_file_data(self) -> None:
         """
