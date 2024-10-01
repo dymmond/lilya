@@ -93,7 +93,9 @@ class EnvironLoader(MultiDict):
         try:
             super().__delitem__(__key)
         except KeyError:
-            raise OSError(f"Attempting to delete '{__key}'. Value does not exist.") from None
+            raise OSError(
+                f"Attempting to delete '{__key}'. Value does not exist."
+            ) from None
 
     def multi_items(self) -> Generator[tuple[str, T], None, None]:
         """Get all keys and values, including duplicates."""

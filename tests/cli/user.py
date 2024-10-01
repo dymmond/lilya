@@ -5,7 +5,7 @@ import pytest
 
 from lilya.conf import settings
 
-database, models = settings.registry
+models = settings.registry
 pytestmark = pytest.mark.anyio
 
 

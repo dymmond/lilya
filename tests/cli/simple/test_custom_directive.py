@@ -7,7 +7,7 @@ from lilya.conf import settings
 from tests.cli.user import User
 from tests.cli.utils import run_cmd
 
-database, models = settings.registry
+models = settings.registry
 pytestmark = pytest.mark.anyio
 
 
@@ -51,14 +51,14 @@ async def create_test_database():
         await models.create_all()
         yield
         await models.drop_all()
-    except Exception:
+    except ConnectionRefusedError:
         pytest.skip("No database available")
 
 
 @pytest.fixture(autouse=True)
 async def rollback_transactions():
-    with database.force_rollback(False):
-        async with database:
+    with models.database.force_rollback(False):
+        async with models:
             yield
 
 
