@@ -144,7 +144,7 @@ class FormParser:
         Note:
             The parser utilizes a dictionary of callbacks to process different stages of parsing.
         """
-        callbacks = {
+        callbacks: dict[str, Any] = {
             "on_field_start": self.on_field_start,
             "on_field_name": self.on_field_name,
             "on_field_data": self.on_field_data,

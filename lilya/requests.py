@@ -66,7 +66,7 @@ class Request(Connection):
         self._is_disconnected = False
         self._media = Empty
         self._json = Empty
-        self._content_type = Empty
+        self._content_type: bytes | type[Empty] = Empty
         self._body = Empty
 
     def _assert_multipart(self) -> None:
@@ -128,7 +128,7 @@ class Request(Connection):
         return cast(str, self.media.get("charset", "utf-8"))
 
     @property
-    def content_type(self) -> tuple[str, dict[str, str]]:
+    def content_type(self) -> str:
         """
         Get the content type of the request.
 
@@ -141,7 +141,7 @@ class Request(Connection):
         if self._content_type is Empty:
             content_type = self.headers.get("Content-Type", "")
             self._content_type, _ = parse_options_header(content_type)
-        return cast(tuple[str, dict[str, str]], self._content_type.decode(self.charset))
+        return cast(bytes, self._content_type).decode(self.charset)
 
     async def stream(self) -> AsyncGenerator[bytes, None]:
         """
@@ -216,7 +216,7 @@ class Request(Connection):
             if self.content_type in (MediaType.MULTIPART, MediaType.URLENCODED):
                 return await self.form()
             if self.content_type == MediaType.JSON:
-                return await self.json()  # type: ignore
+                return await self.json()
         except ValueError as e:
             if raise_exception:
                 raise e
