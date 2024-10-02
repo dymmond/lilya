@@ -28,7 +28,6 @@ class Encoder(Generic[T]):
 
 
 class DataclassEncoder(Encoder[Any]):
-
     def is_type(self, value: Any) -> bool:
         return cast(bool, is_dataclass(value))
 
@@ -77,20 +76,28 @@ class StructureEncoder(Encoder[Any]):
         return serialized_objects
 
 
-ENCODER_TYPES: set[Encoder] = {
-    DataclassEncoder(),
-    EnumEncoder(),
-    PurePathEncoder(),
-    PrimitiveEncoder(),
-    DictEncoder(),
-    StructureEncoder(),
-}
+ENCODER_TYPES: deque[Encoder] = deque(
+    [
+        DataclassEncoder(),
+        EnumEncoder(),
+        PurePathEncoder(),
+        PrimitiveEncoder(),
+        DictEncoder(),
+        StructureEncoder(),
+    ]
+)
 
 
 def register_encoder(encoder: Encoder[Any] | type[Encoder[Any]]) -> None:
     if is_class_and_subclass(encoder, Encoder):
         encoder = encoder()  # type: ignore
-    ENCODER_TYPES.add(cast(Encoder[Any], encoder))
+    remove_elements: list[Encoder] = []
+    for value in ENCODER_TYPES:
+        if value.__class__ == encoder.__class__:
+            remove_elements.append(value)
+    for element in remove_elements:
+        ENCODER_TYPES.remove(element)
+    ENCODER_TYPES.appendleft(cast(Encoder[Any], encoder))
 
 
 def json_encoder(value: Any) -> Any:

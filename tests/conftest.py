@@ -29,7 +29,6 @@ else:  # pragma: no cover
     dont_run = False
 
     class PydanticEncoder(Encoder):
-
         def is_type(self, value: Any) -> bool:
             return isinstance(value, BaseModel)
 
@@ -50,7 +49,6 @@ register_encoder(MsgSpecEncoder())
 
 
 class AttrsEncoder(Encoder):
-
     def is_type(self, value: Any) -> bool:
         return has(value)
 

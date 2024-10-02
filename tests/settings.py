@@ -4,7 +4,7 @@ import os
 from dataclasses import dataclass
 from functools import cached_property
 
-from edgy import Database, Registry
+from edgy import Registry
 
 from lilya.conf.enums import EnvironmentType
 from lilya.conf.global_settings import Settings
@@ -20,6 +20,5 @@ class TestSettings(Settings):
     environment: str = EnvironmentType.TESTING.value
 
     @cached_property
-    def registry(self) -> tuple[Database, Registry]:
-        database = Database(TEST_DATABASE_URL)
-        return database, Registry(database=database)
+    def registry(self) -> Registry:
+        return Registry(TEST_DATABASE_URL)

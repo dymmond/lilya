@@ -7,7 +7,7 @@ name = "lilya"
 description = "Yet another ASGI toolkit that delivers"
 long_description = "Yet another ASGI toolkit that delivers"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dynamic = ['version']
 license = "MIT"
 authors = [{ name = "Tiago Silva", email = "tiago.arasilva@gmail.com" }]
@@ -131,7 +131,7 @@ clean_pyc = "find . -type f -name \"*.pyc\" -delete"
 clean_pyi = "find . -type f -name \"*.pyi\" -delete"
 clean_pycache = "find . -type d -name \"*__pycache__*\" -delete"
 build_with_check = "hatch build; twine check dist/*"
-lint = "ruff check --fix --line-length 99  lilya tests {args}; hatch run test:check_types"
+lint = "hatch fmt --check && hatch run test:check_types"
 
 [tool.hatch.envs.docs]
 features = ["all", "docs"]
@@ -153,8 +153,8 @@ installer = "pip"
 
 [tool.hatch.envs.test.scripts]
 # needs docker services running
-test = "LILYA_SETTINGS_MODULE='tests.settings.TestSettings' pytest {args} --disable-pytest-warnings"
-test_man = "LILYA_SETTINGS_MODULE='tests.settings.TestSettings' pytest {args} --disable-pytest-warnings -s -vv"
+test = "LILYA_SETTINGS_MODULE='tests.settings.TestSettings' pytest {args}"
+test_man = "LILYA_SETTINGS_MODULE='tests.settings.TestSettings' pytest {args} -s -vv"
 coverage = "LILYA_SETTINGS_MODULE='tests.settings.TestSettings' pytest --cov=lilya --cov=tests --cov-report=term-missing:skip-covered --cov-report=html tests {args}"
 check_types = "mypy -p lilya --show-traceback"
 
@@ -180,7 +180,14 @@ strict_optional = false
 disable_error_code = "attr-defined,has-type,override,misc,safe-super"
 exclude = ["lilya/compat.py"]
 
+[tool.ruff]
+line-length = 99
+fix = true
+
+exclude = ["docs_src/"]
+
 [tool.ruff.lint]
+
 select = [
     "E",  # pycodestyle errors
     "W",  # pycodestyle warnings
@@ -199,7 +206,11 @@ ignore = [
     "UP006",
 ]
 
-exclude = ["docs_src/"]
+
+[tool.ruff.lint.pycodestyle]
+max-line-length = 99
+# max-doc-length = 120
+
 
 [tool.ruff.lint.isort]
 combine-as-imports = true

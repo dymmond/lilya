@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import copy
 import warnings
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Annotated, Any
 
-from typing_extensions import Annotated, Doc
+from typing_extensions import Doc
 
 from lilya.datastructures import URL
 from lilya.types import Scope
@@ -38,8 +38,7 @@ class Context:
     from lilya.context import Context
 
 
-    async def home(context: Context) -> None:
-        ...
+    async def home(context: Context) -> None: ...
     ```
     """
 

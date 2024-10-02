@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import re
 from collections import namedtuple
-from typing import Any, Iterable, Pattern, TypeVar, cast
+from collections.abc import Iterable
+from re import Pattern
+from typing import Any, TypeVar, cast
 
 from lilya._internal._path_transformers import (
     TRANSFORMER_PYTHON_TYPES,

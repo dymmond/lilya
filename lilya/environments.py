@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import os
 import warnings
+from collections.abc import Generator
 from pathlib import Path
-from typing import Any, Callable, Generator, TypeVar, cast as tcast
+from typing import Any, Callable, TypeVar, cast as tcast
 
 from multidict import MultiDict
 
-from lilya.exceptions import EnvironmentError
+from lilya.exceptions import EnvError
 from lilya.types import Empty
 
 Cast = Callable[..., Any]
@@ -16,7 +17,6 @@ T = TypeVar("T")
 
 
 class BooleanParser:
-
     def __init__(self, key: str, value: Any) -> None:
         self._value = value
         self._key = key
@@ -80,23 +80,21 @@ class EnvironLoader(MultiDict):
 
     def __setitem__(self, __key: str, __value: str) -> None:
         if __key in self.__read__:
-            raise EnvironmentError(
+            raise EnvError(
                 f"Cannot set environment variable '{__key}'. Value has already been read."
             )
         self.update(__key=__value)
 
     def __delitem__(self, __key: str) -> None:
         if __key in self.__read__:
-            raise EnvironmentError(
+            raise EnvError(
                 f"Cannot delete environment variable '{__key}'. Value has already been read."
             )
 
         try:
             super().__delitem__(__key)
         except KeyError:
-            raise EnvironmentError(
-                f"Attempting to delete '{__key}'. Value does not exist."
-            ) from None
+            raise EnvError(f"Attempting to delete '{__key}'. Value does not exist.") from None
 
     def multi_items(self) -> Generator[tuple[str, T], None, None]:
         """Get all keys and values, including duplicates."""

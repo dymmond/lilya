@@ -5,7 +5,7 @@ Cases adapted from Starlette implementation
 from __future__ import annotations
 
 import sys
-from typing import Any, Dict
+from typing import Any
 
 import anyio
 import pytest
@@ -19,7 +19,7 @@ from lilya.testclient import create_client
 from lilya.types import Message, Scope
 
 
-class ForceMultipartDict(Dict[Any, Any]):
+class ForceMultipartDict(dict[Any, Any]):
     def __bool__(self) -> bool:
         return True
 

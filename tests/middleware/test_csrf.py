@@ -98,10 +98,13 @@ def test_websocket_ignored() -> None:
         await websocket.send_json({"data": "123"})
         await websocket.close()
 
-    with create_client(
-        routes=[WebSocketPath(path="/", handler=websocket_handler)],
-        middleware=[DefineMiddleware(CSRFMiddleware, secret=get_random_secret_key())],
-    ) as client, client.websocket_connect("/") as ws:
+    with (
+        create_client(
+            routes=[WebSocketPath(path="/", handler=websocket_handler)],
+            middleware=[DefineMiddleware(CSRFMiddleware, secret=get_random_secret_key())],
+        ) as client,
+        client.websocket_connect("/") as ws,
+    ):
         response = ws.receive_json()
         assert response is not None
 

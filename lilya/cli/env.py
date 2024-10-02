@@ -9,6 +9,7 @@ from pathlib import Path
 from lilya.apps import ChildLilya, Lilya
 from lilya.cli.constants import DISCOVERY_FILES, DISCOVERY_FUNCTIONS, LILYA_DISCOVER_APP
 from lilya.cli.terminal import Print
+from lilya.exceptions import EnvError
 
 printer = Print()
 
@@ -60,7 +61,7 @@ class DirectiveEnv:
 
     def import_app_from_string(cls, path: str | None = None) -> Scaffold:
         if path is None:
-            raise OSError(
+            raise EnvError(
                 "Path cannot be None. Set env `LILYA_DEFAULT_APP` or use `--app` instead."
             )
         module_str_path, app_name = path.split(":")
@@ -132,5 +133,5 @@ class DirectiveEnv:
             break
 
         if not scaffold:
-            raise OSError("Could not find a Lilya application.")
+            raise EnvError("Could not find a Lilya application.")
         return scaffold

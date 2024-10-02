@@ -1,17 +1,14 @@
 from __future__ import annotations
 
 from abc import ABC
+from collections.abc import Generator, Iterable, Mapping, Sequence
 from copy import copy
 from http.cookies import SimpleCookie
 from typing import (
     Any,
     BinaryIO,
-    Generator,
     Generic,
-    Iterable,
     Literal,
-    Mapping,
-    Sequence,
     TypeVar,
     cast,
 )
@@ -695,7 +692,6 @@ class DataUpload:
 
 
 class Cookie:
-
     def __init__(
         self,
         key: str,

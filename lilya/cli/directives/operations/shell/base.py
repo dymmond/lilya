@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import select
 import sys
-from typing import Any, Callable, Sequence
+from collections.abc import Sequence
+from typing import Any, Callable
 
 import click
 import nest_asyncio

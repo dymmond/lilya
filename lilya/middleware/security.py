@@ -24,7 +24,12 @@ def parse_content_policy(policy: dict[str, str | list[str]] | str) -> str:
         >>> parse_policy("default-src 'self'; img-src https://example.com")
         "default-src 'self'; img-src https://example.com"
 
-        >>> parse_policy({"default-src": "'self'", "img-src": ["https://example.com", "https://another.com"]})
+        >>> parse_policy(
+        ...     {
+        ...         "default-src": "'self'",
+        ...         "img-src": ["https://example.com", "https://another.com"],
+        ...     }
+        ... )
         "default-src 'self'; img-src https://example.com https://another.com"
     """
     # If the input policy is a string, parse it into a dictionary

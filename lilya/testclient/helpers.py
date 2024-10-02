@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Literal, Mapping, Sequence, cast
+from collections.abc import Mapping, Sequence
+from typing import Any, Callable, Literal, cast
 
 import httpx
 
@@ -42,7 +43,7 @@ def create_client(
 
 
     with create_client(routes=...) as client:
-        response = client.get('/')
+        response = client.get("/")
     ```
     """
     return TestClient(

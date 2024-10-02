@@ -8,7 +8,7 @@ from typing_extensions import assert_type
 
 from lilya.datastructures import URL, Secret
 from lilya.environments import EnvironLoader
-from lilya.exceptions import EnvironmentError
+from lilya.exceptions import EnvError
 
 
 def test_load_types_string():
@@ -139,12 +139,10 @@ def test_environ():
     assert loader["TESTING"] is True
     assert "GONE" not in loader
 
-    with pytest.raises(EnvironmentError):
+    with pytest.raises(EnvError):
         loader["TESTING"] = "False"
 
-    with pytest.raises(
-        EnvironmentError, match="Attempting to delete 'GONE'. Value does not exist."
-    ):
+    with pytest.raises(EnvError, match="Attempting to delete 'GONE'. Value does not exist."):
         del loader["GONE"]
 
     loader = EnvironLoader()

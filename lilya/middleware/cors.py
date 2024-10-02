@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import functools
 import re
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from lilya.datastructures import Header
 from lilya.enums import HeaderEnum, HTTPCorsEnum

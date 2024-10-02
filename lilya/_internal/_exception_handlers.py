@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from json import loads
-from typing import Dict, Type, cast
+from typing import cast
 
 from lilya import status
 from lilya.compat import is_async_callable
@@ -22,8 +22,8 @@ from lilya.types import (
 )
 from lilya.websockets import WebSocket
 
-ExceptionHandlers = Dict[Type[Exception], ExceptionHandler]
-StatusHandlers = Dict[int, ExceptionHandler]
+ExceptionHandlers = dict[type[Exception], ExceptionHandler]
+StatusHandlers = dict[int, ExceptionHandler]
 
 
 def _lookup_exception_handler(

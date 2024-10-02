@@ -72,7 +72,9 @@ def run(env: DirectiveEnv, directive: str, directive_args: Any) -> None:
     ## Check if application is up and execute any event
     # Shutting down after
     lifespan = generate_lifespan_events(
-        env.app.router.on_startup, env.app.router.on_shutdown, env.app.router.lifespan_context  # type: ignore
+        env.app.router.on_startup,
+        env.app.router.on_shutdown,
+        env.app.router.lifespan_context,
     )
     run_sync(execute_lifespan(env.app, lifespan, directive, program_name, position))
 

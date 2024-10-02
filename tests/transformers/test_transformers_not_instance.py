@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import ipaddress
+from collections.abc import Iterator
 from datetime import datetime
-from typing import Callable, Iterator
+from typing import Callable
 
 import pytest
 

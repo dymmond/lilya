@@ -100,7 +100,6 @@ def test_exception_handling_with_include(exc_to_raise: Exception, expected_layer
         return handler
 
     class ControllerWithHandler(Controller):
-
         def get(self) -> None:
             raise exc_to_raise
 
@@ -164,7 +163,6 @@ def test_exception_handling_with_include_exception_handler(
         return handler
 
     class ControllerWithHandler(Controller):
-
         def get(self) -> None:
             raise exc_to_raise
 
@@ -229,7 +227,6 @@ def test_exception_handling_with_gateway_exception_handler(
         return handler
 
     class ControllerWithHandler(Controller):
-
         def get(self) -> None:
             raise exc_to_raise
 
@@ -290,7 +287,6 @@ def test_exception_handling_with_child_lilya(exc_to_raise: Exception, expected_l
         return handler
 
     class ControllerWithHandler(Controller):
-
         def get(self) -> None:
             raise exc_to_raise
 

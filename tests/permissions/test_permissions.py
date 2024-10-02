@@ -66,7 +66,6 @@ def test_add_permission_allowing_access(test_client_factory):
         ],
         permissions=[DefinePermission(AllowAccess)],
     ) as client:
-
         headers = {"allow-admin": "true"}
         response = client.get("/", headers=headers)
         assert response.status_code == 200
@@ -106,7 +105,6 @@ def test_add_permission_on_path(test_client_factory):
             ),
         ],
     ) as client:
-
         headers = {"allow-admin": "true"}
         response = client.get("/", headers=headers)
         assert response.status_code == 200
@@ -130,7 +128,6 @@ def test_add_permission_on_include(test_client_factory):
             ),
         ],
     ) as client:
-
         headers = {"allow-admin": "true"}
         response = client.get("/include", headers=headers)
         assert response.status_code == 200
@@ -169,7 +166,6 @@ def test_add_permission_on_include_raw_permission(test_client_factory):
             ),
         ],
     ) as client:
-
         headers = {"allow-admin": "true"}
         response = client.get("/include", headers=headers)
         assert response.status_code == 200
@@ -200,7 +196,6 @@ def test_nested_apps_permissions(test_client_factory):
             ),
         ]
     ) as client:
-
         headers = {"allow-admin": "true"}
         response = client.get("/include", headers=headers)
         assert response.status_code == 200

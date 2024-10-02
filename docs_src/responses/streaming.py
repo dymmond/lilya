@@ -1,4 +1,4 @@
-from typing import Generator
+from collections.abc import Generator
 
 from lilya.apps import Lilya
 from lilya.responses import StreamingResponse

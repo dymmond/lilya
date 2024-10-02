@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from lilya.compat import is_async_callable
 from lilya.types import ASGIApp, Lifespan, LifespanEvent, Receive, Scope, Send
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 
-class AyncLifespanContextManager:  # pragma: no cover
+class AsyncLifespanContextManager:  # pragma: no cover
     """
     Manages and handles the on_startup and on_shutdown events
     in a Lilya way.
@@ -45,6 +45,9 @@ class AyncLifespanContextManager:  # pragma: no cover
                 handler()
 
 
+AyncLifespanContextManager = AsyncLifespanContextManager
+
+
 class AsyncLifespan:
     def __init__(self, router: BaseRouter):
         self.router = router
@@ -63,9 +66,12 @@ def handle_lifespan_events(
     on_startup: LifespanEvent | None = None,
     on_shutdown: LifespanEvent | None = None,
     lifespan: Lifespan[Any] | None = None,
-) -> AyncLifespanContextManager | Any | None:  # pragma: no cover
+) -> Lifespan[Any] | None:  # pragma: no cover
     if on_startup or on_shutdown:
-        return AyncLifespanContextManager(on_startup=on_startup, on_shutdown=on_shutdown)
+        return cast(
+            Lifespan[Any],
+            AsyncLifespanContextManager(on_startup=on_startup, on_shutdown=on_shutdown),
+        )
     elif lifespan:
         return lifespan
     return None
@@ -75,7 +81,9 @@ def generate_lifespan_events(
     on_startup: LifespanEvent | None = None,
     on_shutdown: LifespanEvent | None = None,
     lifespan: Lifespan[Any] | None = None,
-) -> Any:  # pragma: no cover
+) -> Lifespan[Any]:  # pragma: no cover
     if lifespan:
         return lifespan
-    return AyncLifespanContextManager(on_startup=on_startup, on_shutdown=on_shutdown)
+    return cast(
+        Lifespan[Any], AsyncLifespanContextManager(on_startup=on_startup, on_shutdown=on_shutdown)
+    )

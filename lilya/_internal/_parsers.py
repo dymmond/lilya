@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import http.cookies
+from collections.abc import AsyncGenerator
 from dataclasses import dataclass, field
 from functools import lru_cache
 from tempfile import SpooledTemporaryFile
-from typing import Any, AsyncGenerator, BinaryIO, Callable, cast
+from typing import Any, BinaryIO, Callable, cast
 from urllib.parse import unquote, unquote_plus
 
 from lilya.datastructures import DataUpload, FormData, Header
@@ -143,7 +144,7 @@ class FormParser:
         Note:
             The parser utilizes a dictionary of callbacks to process different stages of parsing.
         """
-        callbacks = {
+        callbacks: Any = {
             "on_field_start": self.on_field_start,
             "on_field_name": self.on_field_name,
             "on_field_data": self.on_field_data,
@@ -482,7 +483,7 @@ class MultiPartParser:
         Returns:
             multipart.MultipartParser: Created multipart parser.
         """
-        return multipart.MultipartParser(boundary, callbacks)
+        return multipart.MultipartParser(boundary, cast(Any, callbacks))
 
     async def _write_file_data(self) -> None:
         """
