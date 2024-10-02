@@ -9,7 +9,7 @@ hide:
 
 ### Changed
 
-- Rename EnvironmentException to EnvException (but keep old name).
+- Rename EnvironmentException to EnvException (but keep old name as alias).
 - Drop support for python<3.9.
 - `ENCODER_TYPES` are now ordered and new encoders are prepend.
 
