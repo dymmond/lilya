@@ -28,6 +28,7 @@ from lilya.cli.directives.operations import (
 from lilya.cli.directives.operations._constants import LILYA_SETTINGS_MODULE
 from lilya.cli.env import DirectiveEnv
 from lilya.cli.terminal.print import Print
+from lilya.exceptions import EnvError
 
 T = TypeVar("T")
 
@@ -87,7 +88,7 @@ class DirectiveGroup(click.Group):
                 directive = DirectiveEnv()
                 app_env = directive.load_from_env(path=path)
                 ctx.obj = app_env
-            except OSError as e:
+            except EnvError as e:
                 if not any(value in sys.argv for value in IGNORE_DIRECTIVES):
                     printer.write_error(str(e))
                     sys.exit(1)

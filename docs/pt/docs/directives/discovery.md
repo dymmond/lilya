@@ -59,7 +59,7 @@ Quando nenhum `--app` ou nenhuma variável de ambiente `LILYA_DEFAULT_APP` é fo
     * **application.py**
 
     !!! Warning
-        **Se nenhum desses ficheiros for encontrado**, o Lilya irá verificar **apenas para os primeiros nós filhos** e repetir o mesmo processo. Se nenhum ficheiro for encontrado, lançará uma excepção `EnvironmentError`.
+        **Se nenhum desses ficheiros for encontrado**, o Lilya irá verificar **apenas para os primeiros nós filhos** e repetir o mesmo processo. Se nenhum ficheiro for encontrado, lançará uma excepção `EnvError`.
 
 * Uma vez que um desses ficheiros é encontrado, o Lilya analisará o tipo de objectos contidos no módulo e verificará se algum deles é um tipo válido `Lilya` e o retornará.
 

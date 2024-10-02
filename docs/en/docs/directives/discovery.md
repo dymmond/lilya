@@ -68,7 +68,7 @@ When no `--app` or no `LILYA_DEFAULT_APP` environment variable is provided, Lily
 
     !!! Warning
         **If none of these files are found**, Lilya will look **at the first children nodes, only**,
-        and repeats the same process. If no files are found then throws an `EnvironmentError`
+        and repeats the same process. If no files are found then throws an `EnvError`
         exception.
 
 * Once one of those files is found, Lilya will analise the type of objects contained in the
