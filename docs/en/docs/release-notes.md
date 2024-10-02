@@ -5,6 +5,15 @@ hide:
 
 # Release Notes
 
+## Unreleased
+
+### Changed
+
+- Rename EnvironmentException to EnvException (but keep old name).
+- Drop support for python<3.9.
+- `ENCODER_TYPES` are now ordered and new encoders are prepend.
+
+
 ## 0.9.1
 
 ### Added
