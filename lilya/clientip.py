@@ -7,7 +7,7 @@ from typing import cast
 from lilya.datastructures import ALL, Header
 from lilya.types import Scope
 
-_forwarded_regex = re.compile(r'for="?([^";, ]+)$', re.IGNORECASE)
+_forwarded_regex = re.compile(r'for="?([^";, ]+)', re.IGNORECASE)
 _http_x_forwarded_regex = re.compile(r'[ "]*([^";, ]+)')
 _ip6_port_cleanup_regex = re.compile(r"(?<=\]):[0-9]+$")
 _ip4_port_cleanup_regex = re.compile(r":[0-9]+$")

@@ -27,7 +27,7 @@ def test_clientip_none(test_client_factory: TestClientFactory):
 
     client = test_client_factory(app)
     client.get("/")
-    client.get("/", headers={"forwarded": "for=8.193.38.176,for=8.193.38.177"})
+    client.get("/", headers={"forwarded": "for=8.193.38.177,for=8.193.38.176"})
 
 
 def test_clientip_all(test_client_factory: TestClientFactory):
@@ -41,7 +41,7 @@ def test_clientip_all(test_client_factory: TestClientFactory):
     )
 
     client = test_client_factory(app)
-    client.get("/", headers={"forwarded": "for=8.193.38.176,for=8.193.38.177"})
+    client.get("/", headers={"forwarded": "for=8.193.38.177,for=8.193.38.176"})
 
 
 def test_clientip_ip(test_client_factory: TestClientFactory):
@@ -55,4 +55,4 @@ def test_clientip_ip(test_client_factory: TestClientFactory):
     )
 
     client = test_client_factory(app)
-    client.get("/", headers={"forwarded": "for=8.193.38.176,for=8.193.38.177"})
+    client.get("/", headers={"forwarded": "for=8.193.38.177,for=8.193.38.176"})
