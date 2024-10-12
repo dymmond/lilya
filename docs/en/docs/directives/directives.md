@@ -102,7 +102,7 @@ You should have a folder called `myproject` with a similar structure to this:
 
 ```shell
 .
-├── Makefile
+├── Taskfile.yaml
 ├── myproject
 │   ├── apps
 │   │   └── __init__.py
@@ -131,7 +131,7 @@ You should have a folder called `myproject` with a similar structure to this:
 
 A lot of files generated right? Yes but those are actually quite simple but let's talk about what is happening there.
 
-* **Makefile** - This is a special file provided by the directive that contains some useful commands to run your
+* **Taskfile.yaml** - This is a special file provided by the directive that contains some useful commands to run your
 peoject locally, for example:
     * `make run` - Starts your project with the development settings.
     * `make test` - Runs your local tests with the testing settings.
@@ -262,7 +262,7 @@ And that is it! The application is assembled and you can now [start the applicat
 
 ### Start the application
 
-Remember that a `Makefile` that was also generated? Let's use it to start the application.
+Remember that a `Taskfile.yaml` that was also generated? Let's use it to start the application.
 
 ```shell
 make run
@@ -492,7 +492,7 @@ Let us assume the following structure of files and folders that will contain dif
 
 ```shell hl_lines="9 10 13" title="myproject"
 .
-├── Makefile
+├── Taskfile.yaml
 └── src
     ├── __init__.py
     ├── configs
