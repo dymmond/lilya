@@ -152,11 +152,18 @@ installer = "pip"
 
 [tool.hatch.envs.test.scripts]
 # needs docker services running
-test = "LILYA_SETTINGS_MODULE='tests.settings.TestSettings' pytest {args}"
-test_man = "LILYA_SETTINGS_MODULE='tests.settings.TestSettings' pytest {args} -s -vv"
-coverage = "LILYA_SETTINGS_MODULE='tests.settings.TestSettings' pytest --cov=lilya --cov=tests --cov-report=term-missing:skip-covered --cov-report=html tests {args}"
-check_types = "mypy -p lilya --show-traceback"
+test = "hatch test -- {args}"
+test_man = "hatch test -- {args} -s -vv"
+coverage = "hatch test -- --cov=lilya --cov=tests --cov-report=term-missing:skip-covered --cov-report=html tests {args}"
+check_types = "mypy -p lilya"
 
+[tool.hatch.envs.hatch-test]
+features = ['testing', "cli"]
+template = "test"
+installer = "pip"
+
+[tool.hatch.envs.hatch-test.env-vars]
+LILYA_SETTINGS_MODULE = "tests.settings.TestSettings"
 
 [project.scripts]
 lilya = "lilya.__main__:run_cli"
