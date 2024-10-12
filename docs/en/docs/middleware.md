@@ -290,6 +290,25 @@ Provides several security enhancements to the request/response cycle and adds se
 {!> ../../../docs_src/middleware/available/security.py !}
 ```
 
+### ClientIPMiddleware
+
+Parses the client ip and add it in the request scope at two places: headers ("x-real-ip") and the request scope directly ("real-clientip").
+
+```python
+{!> ../../../docs_src/middleware/available/clientip.py !}
+```
+
+There are two special "ip"s: "*" and "unix"
+
+The first one is a match all and implies all proxies are trustworthy,
+the second one applies when a unix socket is used or no client ip address was found.
+
+!!! Note
+    If you don't want to use the middleware you can use: `get_ip` from `lilya.clientip` directly.
+
+!!! Note
+    It is currently not possible to simulate a client ip address in lilyas TestClient. So you may want to use the Forwarded header and trust "unix" for tests.
+
 ### Other middlewares
 
 You can build your own middlewares as explained above but also reuse middlewares directly for any other ASGI application if you wish.
