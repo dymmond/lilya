@@ -106,7 +106,7 @@ Você deve ter uma pasta chamada `my_project` com uma estrutura semelhante a est
 
 ```shell
 .
-├── Makefile
+├── Taskfile.yaml
 ├── my_project
 │   ├── apps
 │   │   └── __init__.py
@@ -135,7 +135,7 @@ Você deve ter uma pasta chamada `my_project` com uma estrutura semelhante a est
 
 Muitos ficheiros gerados, certo? Sim, mas na verdade eles são bastante simples, mas vamos falar sobre o que está a acontecer aqui.
 
-* **Makefile** - Este é um ficheiro especial fornecido pela directiva que contém alguns comandos úteis para executar o
+* **Taskfile.yaml** - Este é um ficheiro especial fornecido pela directiva que contém alguns comandos úteis para executar o
 projecto localmente, por exemplo:
     * `make run` - Inicia o projecto com as configurações de desenvolvimento.
     * `make test` - Executa os testes locais com as configurações de teste.
@@ -265,7 +265,7 @@ E é isto! A aplicação está montado e agora pode [iniciar a aplicação](#ini
 
 ### Iniciar a aplicação
 
-Lembre-se de que um `Makefile` também foi gerado? Vamos usá-lo para iniciar a aplicação.
+Lembre-se de que um `Taskfile.yaml` também foi gerado? Vamos usá-lo para iniciar a aplicação.
 
 ```shell
 make run
@@ -494,7 +494,7 @@ Vamos assumir a seguinte estrutura de ficheiros e pastas que conterão configura
 
 ```shell hl_lines="9 10 13" title="myproject"
 .
-├── Makefile
+├── Taskfile.yaml
 └── src
     ├── __init__.py
     ├── configs

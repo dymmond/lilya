@@ -22,7 +22,7 @@ Imagine a seguinte estrutura de pastas e ficheiros:
 
 ```shell hl_lines="20" title="myproject"
 .
-├── Makefile
+├── Taskfile.yaml
 └── myproject
     ├── __init__.py
     ├── apps
@@ -116,7 +116,7 @@ Vamos ver novamente a estrutura, caso já se tenha esquecido.
 
 ```shell hl_lines="20" title="myproject"
 .
-├── Makefile
+├── Taskfile.yaml
 └── src
     ├── __init__.py
     ├── apps
