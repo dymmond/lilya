@@ -328,6 +328,31 @@ $ hatch shell
 
 It will install the requirements and create a local build in your virtual environment.
 
+## TaskFile
+
+Esmerald also embraces the [TaskFile](https://taskfile.dev/installation/) instead of the Makefile which is only available, fully, for *NIX users.
+
+The reason for also allowing the task file to exist its because we also understand that contributors
+might enjoy it a bit more than using the hatch syntax.
+
+All the commands presented above are also presented in the `TaskFile` and after you install it and
+get familiar with it, you can run in the command line:
+
+```shell
+$ task
+```
+
+This will list all available commands that you can use. Let us see how you could run a manual test
+using a task.
+
+```shell
+$ task test_man ARGS=tests/permissions/
+```
+
+!!! Warning
+    TaskFile is used by Esmerald but this does not mean that in the future we might decide to stop
+    supporting it for a better alternative.
+
 ## Releasing
 
 *This section is for the maintainers of `Lilya`*.
