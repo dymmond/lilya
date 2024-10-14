@@ -137,15 +137,15 @@ Muitos ficheiros gerados, certo? Sim, mas na verdade eles são bastante simples,
 
 * **Taskfile.yaml** - Este é um ficheiro especial fornecido pela directiva que contém alguns comandos úteis para executar o
 projecto localmente, por exemplo:
-    * `make run` - Inicia o projecto com as configurações de desenvolvimento.
+    * `task run` - Inicia o projecto com as configurações de desenvolvimento.
     * `make test` - Executa os testes locais com as configurações de teste.
-    * `make clean` - Remove todos os `*.pyc` do projecto.
-    * `make requirements` - Instala os requisitos mínimos da pasta `requirements`.
+    * `task clean` - Remove todos os `*.pyc` do projecto.
+    * `task requirements` - Instala os requisitos mínimos da pasta `requirements`.
 
     !!! Info
         Os testes estão a utilizar o [pytest](https://docs.pytest.org/), mas pode trocar por qualquer outro que preferir.
 
-* **serve.py** - Este ficheiro é apenas um wrapper que é chamado pelo `make run` e inicia o desenvolvimento local.
+* **serve.py** - Este ficheiro é apenas um wrapper que é chamado pelo `task run` e inicia o desenvolvimento local.
 **Isto não deve ser usado em produção**.
 * **main.py** - O ficheiro principal que constrói o caminho da aplicação e adiciona-o à `$PYTHONPATH`. Este ficheiro também pode ser
 usado para adicionar configurações extra, se necessário.
@@ -217,7 +217,7 @@ Um ficheiro de **tests** também é gerado sugerindo que também pode adicionar 
 
 ### Após a geração
 
-Depois que o projecto e as apps serem gerados, a execução do `make run` lançará uma excepção `ImproperlyConfigured`. Isto
+Depois que o projecto e as apps serem gerados, a execução do `task run` lançará uma excepção `ImproperlyConfigured`. Isto
 acontece porque o `urls.py` espera ser preenchido com os detalhes da aplicação.
 
 ### Exemplo
@@ -268,7 +268,7 @@ E é isto! A aplicação está montado e agora pode [iniciar a aplicação](#ini
 Lembre-se de que um `Taskfile.yaml` também foi gerado? Vamos usá-lo para iniciar a aplicação.
 
 ```shell
-make run
+task run
 ```
 
 O que esse comando está a fazer na verdade é:
