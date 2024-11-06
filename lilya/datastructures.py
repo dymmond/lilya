@@ -21,7 +21,7 @@ class invertedset(frozenset):
     Inverts a collection
     """
 
-    def __contains__(self, item) -> bool:
+    def __contains__(self, item: Any) -> bool:
         return not super().__contains__(item)
 
 
