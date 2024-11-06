@@ -4,14 +4,7 @@ from abc import ABC
 from collections.abc import Generator, Iterable, Mapping, Sequence
 from copy import copy
 from http.cookies import SimpleCookie
-from typing import (
-    Any,
-    BinaryIO,
-    Generic,
-    Literal,
-    TypeVar,
-    cast,
-)
+from typing import Any, BinaryIO, Final, Generic, Literal, TypeVar, cast
 from urllib.parse import SplitResult, parse_qsl, urlencode, urlsplit, urlunsplit
 
 from anyio.to_thread import run_sync
@@ -21,6 +14,18 @@ from lilya.enums import DefaultPort, HTTPType, ScopeType, WebsocketType
 from lilya.types import Receive, Scope, Send
 
 T = TypeVar("T")
+
+
+class invertedset(frozenset):
+    """
+    Inverts a collection
+    """
+
+    def __contains__(self, item: Any) -> bool:
+        return not super().__contains__(item)
+
+
+ALL: Final = invertedset()
 
 
 class MultiMixin(Generic[T], MultiMapping[T], ABC):
@@ -147,7 +152,7 @@ class Header(MultiDict, CIMultiDict):  # type: ignore
 
         assert isinstance(
             value, (dict, list)
-        ), "The headers must be in the format of a list of tuples or dicttionary."
+        ), "The headers must be in the format of a list of tuples or dictionary."
 
         headers: list[tuple[str, Any]] = self.parse_headers(value)
         super().__init__(headers)
