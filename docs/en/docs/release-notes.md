@@ -5,6 +5,16 @@ hide:
 
 # Release Notes
 
+## 0.10.1
+
+### Added
+
+- New `ClientIPMiddleware` added allowing retrieving IP information directly.
+
+### Changed
+
+- The Lilya directives now use [Taskfile](https://taskfile.dev) when generating a project.
+
 ## 0.10.0
 
 ### Changed
