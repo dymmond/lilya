@@ -111,7 +111,8 @@ def runserver(
     
     app = env.app
     message = terminal.write_info(
-        f"Starting {server_environment}server @ {host} server @ {host}", colour=OutputColour.BRIGHT_CYAN
+        f"Starting {server_environment}server @ {host} server @ {host}",
+        colour=OutputColour.BRIGHT_CYAN
     )
     terminal.rule(message, align="center")
 
