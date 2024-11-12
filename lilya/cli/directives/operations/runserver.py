@@ -10,8 +10,6 @@ from lilya.cli.env import DirectiveEnv
 from lilya.cli.exceptions import DirectiveError
 from lilya.cli.terminal import OutputColour, Print, Terminal
 
-if TYPE_CHECKING:
-    pass
 
 printer = Print()
 terminal = Terminal()
@@ -105,14 +103,20 @@ def runserver(
     except ImportError:
         raise DirectiveError(detail="Uvicorn needs to be installed to run Lilya.") from None
 
+    server_environment: str = ""
+    if os.environ.get("LILYA_SETTINGS_MODULE"):
+        from lilya.conf import settings as lilya_settings
+        
+        server_environment = f"{lilya_settings.environment} "
+    
     app = env.app
     message = terminal.write_info(
-        f"Starting {app.settings.environment} server @ {host}", colour=OutputColour.BRIGHT_CYAN
+        f"Starting {server_environment}server @ {host} server @ {host}", colour=OutputColour.BRIGHT_CYAN
     )
     terminal.rule(message, align="center")
 
-    if settings is not None:
-        custom_message = f"'{os.environ.get('LIYA_SETTINGS_MODULE')}'"
+    if os.environ.get("LILYA_SETTINGS_MODULE"):
+        custom_message = f"'{os.environ.get('LILYA_SETTINGS_MODULE')}'"
         terminal.rule(custom_message, align="center")
 
     if debug:
