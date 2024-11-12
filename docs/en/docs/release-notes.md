@@ -5,6 +5,16 @@ hide:
 
 # Release Notes
 
+## 0.10.2
+
+### Changed
+
+- Lilya is now BSD-3 licence compliant to protect the developers and mantainers.
+
+### Fixed
+
+- `runserver` was not being application agnostic.
+
 ## 0.10.1
 
 ### Added
