@@ -4,10 +4,8 @@ import copy
 import warnings
 from typing import TYPE_CHECKING, Annotated, Any
 
-from typing_extensions import Doc
-
 from lilya.datastructures import URL
-from lilya.types import Scope
+from lilya.types import Doc, Scope
 
 if TYPE_CHECKING:
     from lilya.requests import Request

@@ -5,8 +5,6 @@ from collections.abc import Awaitable, Mapping, Sequence
 from functools import cached_property
 from typing import Annotated, Any, Callable, cast
 
-from typing_extensions import Doc
-
 from lilya._internal._module_loading import import_string
 from lilya._utils import is_class_and_subclass
 from lilya.conf import __lazy_settings__, settings as lilya_settings
@@ -27,6 +25,7 @@ from lilya.types import (
     ApplicationType,
     ASGIApp,
     CallableDecorator,
+    Doc,
     ExceptionHandler,
     Lifespan,
     Receive,

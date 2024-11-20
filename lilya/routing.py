@@ -7,8 +7,6 @@ import traceback
 from collections.abc import Awaitable, Mapping, Sequence
 from typing import Annotated, Any, Callable, TypeVar, cast
 
-from typing_extensions import Doc
-
 from lilya import status
 from lilya._internal._events import AsyncLifespan, handle_lifespan_events
 from lilya._internal._module_loading import import_string
@@ -31,14 +29,7 @@ from lilya.middleware.base import DefineMiddleware
 from lilya.permissions.base import DefinePermission
 from lilya.requests import Request
 from lilya.responses import PlainText, RedirectResponse, Response
-from lilya.types import (
-    ASGIApp,
-    ExceptionHandler,
-    Lifespan,
-    Receive,
-    Scope,
-    Send,
-)
+from lilya.types import ASGIApp, Doc, ExceptionHandler, Lifespan, Receive, Scope, Send
 from lilya.websockets import WebSocket, WebSocketClose
 
 T = TypeVar("T")

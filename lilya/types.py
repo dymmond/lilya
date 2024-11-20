@@ -7,6 +7,16 @@ from typing import (
     Union,
 )
 
+try:
+    from typing_extensions import Doc
+except ModuleNotFoundError:
+    # stub
+
+    class Doc:
+        def __init__(self, documentation, /) -> None:
+            self.documentation = documentation
+
+
 ApplicationType = TypeVar("ApplicationType")
 
 Scope = MutableMapping[str, Any]
