@@ -15,8 +15,13 @@ try:
     import python_multipart as multipart
     from python_multipart.multipart import parse_options_header
 except ModuleNotFoundError:  # pragma: nocover
-    parse_options_header = None
-    multipart = None
+    # old import name
+    try:
+        import multipart  # type: ignore[no-redef]
+        from multipart.multipart import parse_options_header  # type: ignore[no-redef]
+    except ModuleNotFoundError:  # pragma: nocover
+        parse_options_header = None
+        multipart = None
 
 
 @lru_cache(1024)
