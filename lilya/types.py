@@ -12,8 +12,8 @@ try:
 except ModuleNotFoundError:
     # stub
 
-    class Doc:
-        def __init__(self, documentation, /) -> None:
+    class Doc:  # type: ignore[no-redef]
+        def __init__(self, documentation: str, /) -> None:
             self.documentation = documentation
 
 
