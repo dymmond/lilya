@@ -1,8 +1,7 @@
-from collections.abc import Awaitable, Mapping, MutableMapping, Sequence
+from collections.abc import Awaitable, Callable, Mapping, MutableMapping, Sequence
 from contextlib import AbstractAsyncContextManager
 from typing import (
     Any,
-    Callable,
     TypeVar,
     Union,
 )

@@ -5,6 +5,7 @@ import functools
 import json
 import typing
 import uuid
+from collections.abc import Callable
 
 import pytest
 
@@ -162,7 +163,7 @@ app = Router(
 
 
 @pytest.fixture
-def client(test_client_factory: typing.Callable[..., TestClient]):
+def client(test_client_factory: Callable[..., TestClient]):
     with test_client_factory(app) as client:
         yield client
 
@@ -403,7 +404,7 @@ def test_router_add_websocket_path(client):
         assert text == "Hello, test!"
 
 
-def test_router_middleware(test_client_factory: typing.Callable[..., TestClient]):
+def test_router_middleware(test_client_factory: Callable[..., TestClient]):
     class CustomDefineMiddleware:
         def __init__(self, app: ASGIApp) -> None:
             self.app = app
@@ -718,7 +719,7 @@ def test_lifespan_async(test_client_factory):
     assert shutdown_complete
 
 
-def test_lifespan_assertation_error(test_client_factory: typing.Callable[..., TestClient]):
+def test_lifespan_assertation_error(test_client_factory: Callable[..., TestClient]):
     lifespan_called = False
     startup_called = False
     shutdown_called = False
@@ -743,7 +744,7 @@ def test_lifespan_assertation_error(test_client_factory: typing.Callable[..., Te
         Router(on_startup=[run_startup], on_shutdown=[run_shutdown], lifespan=lifespan)
 
 
-def test_lifespan_with_on_events(test_client_factory: typing.Callable[..., TestClient]):
+def test_lifespan_with_on_events(test_client_factory: Callable[..., TestClient]):
     lifespan_called = False
     startup_called = False
     shutdown_called = False
@@ -1025,7 +1026,7 @@ mounted_app_with_middleware = Lilya(
     ],
 )
 def test_base_path_middleware(
-    test_client_factory: typing.Callable[..., TestClient],
+    test_client_factory: Callable[..., TestClient],
     app: Lilya,
 ) -> None:
     test_client = test_client_factory(app)
@@ -1053,7 +1054,7 @@ def test_mount_asgi_app_with_middleware_path_for() -> None:
 
 
 def test_add_path_to_app_after_mount(
-    test_client_factory: typing.Callable[..., TestClient],
+    test_client_factory: Callable[..., TestClient],
 ) -> None:
     """Checks that Include will pick up routes
     added to the underlying app after it is mounted
@@ -1084,7 +1085,7 @@ def test_exception_on_mounted_apps(test_client_factory):
 
 
 def test_mounted_middleware_does_not_catch_exception(
-    test_client_factory: typing.Callable[..., TestClient],
+    test_client_factory: Callable[..., TestClient],
 ) -> None:
     def exc(request: Request) -> Response:
         raise HTTPException(status_code=403, detail="auth")
@@ -1138,7 +1139,7 @@ def test_mounted_middleware_does_not_catch_exception(
 
 
 def test_websocket_path_middleware(
-    test_client_factory: typing.Callable[..., TestClient],
+    test_client_factory: Callable[..., TestClient],
 ):
     async def websocket_handler(session: WebSocket):
         await session.accept()
@@ -1282,7 +1283,7 @@ echo_paths_routes = [
 ]
 
 
-def test_paths_with_root_path(test_client_factory: typing.Callable[..., TestClient]):
+def test_paths_with_root_path(test_client_factory: Callable[..., TestClient]):
     app = Lilya(routes=echo_paths_routes)
     client = test_client_factory(app, base_url="https://www.example.org/", root_path="/root")
     response = client.get("/root/path")
@@ -1313,7 +1314,7 @@ def user_param(name: str, age: int):
     return f"{name}, {age}"
 
 
-def test_automatic_params_path(test_client_factory: typing.Callable[..., TestClient]):
+def test_automatic_params_path(test_client_factory: Callable[..., TestClient]):
     app = Lilya(routes=[Path("/user-params/{name}/{age}", user_param)])
     client = test_client_factory(app)
 

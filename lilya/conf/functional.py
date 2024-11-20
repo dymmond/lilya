@@ -1,6 +1,7 @@
 import copy
 import operator
-from typing import Any, Callable, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 empty = object()
 RT = TypeVar("RT")  # return type

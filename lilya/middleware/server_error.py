@@ -3,7 +3,8 @@ from __future__ import annotations
 import html
 import inspect
 import traceback
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from lilya import status
 from lilya.compat import is_async_callable

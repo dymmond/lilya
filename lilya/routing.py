@@ -4,8 +4,8 @@ import functools
 import inspect
 import re
 import traceback
-from collections.abc import Awaitable, Mapping, Sequence
-from typing import Annotated, Any, Callable, TypeVar, cast
+from collections.abc import Awaitable, Callable, Mapping, Sequence
+from typing import Annotated, Any, TypeVar, cast
 
 from lilya import status
 from lilya._internal._events import AsyncLifespan, handle_lifespan_events

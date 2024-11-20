@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import typing
+from collections.abc import Callable
 from contextlib import nullcontext as does_not_raise
 from pathlib import Path
 
@@ -16,7 +17,7 @@ from lilya.routing import Include
 from lilya.testclient import TestClient
 from lilya.types import ASGIApp, Receive, Scope, Send
 
-TestClientFactory = typing.Callable[..., TestClient]
+TestClientFactory = Callable[..., TestClient]
 
 
 class ForceMultipartDict(typing.Dict[typing.Any, typing.Any]):
