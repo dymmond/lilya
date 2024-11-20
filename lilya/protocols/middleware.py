@@ -7,9 +7,7 @@ if sys.version_info >= (3, 10):  # pragma: no cover
 else:  # pragma: no cover
     from typing_extensions import ParamSpec
 
-from typing import runtime_checkable
-
-from typing_extensions import Protocol
+from typing import Protocol, runtime_checkable
 
 from lilya.types import ASGIApp, Receive, Scope, Send
 

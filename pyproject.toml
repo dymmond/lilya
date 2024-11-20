@@ -41,7 +41,7 @@ dependencies = [
     "anyio>=3.4.0,<5",
     "dymmond-settings>=1.0.5",
     "multidict>=6.0.4,<7.0.0",
-    "typing_extensions>=3.10.0; python_version < '3.10'",
+    "typing_extensions>=3.10.0",
 ]
 keywords = ["lilya"]
 
@@ -147,7 +147,6 @@ new_lang = "hatch run docs:update_languages; scripts/docs.py new-lang --lang {ar
 
 [tool.hatch.envs.test]
 features = ['testing', "cli"]
-template = "test"
 installer = "pip"
 
 [tool.hatch.envs.test.scripts]
