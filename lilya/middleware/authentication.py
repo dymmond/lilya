@@ -4,12 +4,10 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Annotated, Any
 
-from typing_extensions import Doc
-
 from lilya._internal._connection import Connection
 from lilya.enums import ScopeType
 from lilya.protocols.middleware import MiddlewareProtocol
-from lilya.types import ASGIApp, Receive, Scope, Send
+from lilya.types import ASGIApp, Doc, Receive, Scope, Send
 
 
 @dataclass

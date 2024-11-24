@@ -283,7 +283,7 @@ def test_multipart_request_mixed_files_and_data(
     client = test_client_factory(app)
     response = client.post(
         "/",
-        data=(
+        content=(
             # data
             b"--a7f7ac8d4e2e437c877bb7b8d7cc549c\r\n"  # type: ignore
             b'Content-Disposition: form-data; name="field0"\r\n\r\n'
@@ -321,7 +321,7 @@ def test_multipart_request_with_charset_for_filename(
     client = test_client_factory(app)
     response = client.post(
         "/",
-        data=(
+        content=(
             # file
             b"--a7f7ac8d4e2e437c877bb7b8d7cc549c\r\n"  # type: ignore
             b'Content-Disposition: form-data; name="file"; filename="\xe6\x96\x87\xe6\x9b\xb8.txt"\r\n'  # noqa: E501
@@ -351,7 +351,7 @@ def test_multipart_request_without_charset_for_filename(
     client = test_client_factory(app)
     response = client.post(
         "/",
-        data=(
+        content=(
             # file
             b"--a7f7ac8d4e2e437c877bb7b8d7cc549c\r\n"  # type: ignore
             b'Content-Disposition: form-data; name="file"; filename="\xe7\x94\xbb\xe5\x83\x8f.jpg"\r\n'  # noqa: E501
@@ -379,7 +379,7 @@ def test_multipart_request_with_encoded_value(
     client = test_client_factory(app)
     response = client.post(
         "/",
-        data=(
+        content=(
             b"--20b303e711c4ab8c443184ac833ab00f\r\n"  # type: ignore
             b"Content-Disposition: form-data; "
             b'name="value"\r\n\r\n'
@@ -463,7 +463,7 @@ def test_missing_boundary_parameter(
     with expectation:
         res = client.post(
             "/",
-            data=(
+            content=(
                 # file
                 b'Content-Disposition: form-data; name="file"; filename="\xe6\x96\x87\xe6\x9b\xb8.txt"\r\n'  # type: ignore # noqa: E501
                 b"Content-Type: text/plain\r\n\r\n"
@@ -491,7 +491,7 @@ def test_missing_name_parameter_on_content_disposition(
     with expectation:
         res = client.post(
             "/",
-            data=(
+            content=(
                 # data
                 b"--a7f7ac8d4e2e437c877bb7b8d7cc549c\r\n"  # type: ignore
                 b'Content-Disposition: form-data; ="field0"\r\n\r\n'
@@ -525,7 +525,7 @@ def test_too_many_fields_raise(
     with expectation:
         res = client.post(
             "/",
-            data=data,  # type: ignore
+            content=data,  # type: ignore
             headers={"Content-Type": ("multipart/form-data; boundary=B")},
         )
         assert res.status_code == 400
@@ -556,7 +556,7 @@ def test_too_many_files_raise(
     with expectation:
         res = client.post(
             "/",
-            data=data,  # type: ignore
+            content=data,  # type: ignore
             headers={"Content-Type": ("multipart/form-data; boundary=B")},
         )
         assert res.status_code == 400
@@ -587,7 +587,7 @@ def test_too_many_files_single_field_raise(
     with expectation:
         res = client.post(
             "/",
-            data=data,  # type: ignore
+            content=data,  # type: ignore
             headers={"Content-Type": ("multipart/form-data; boundary=B")},
         )
         assert res.status_code == 400
@@ -619,7 +619,7 @@ def test_too_many_files_and_fields_raise(
     with expectation:
         res = client.post(
             "/",
-            data=data,  # type: ignore
+            content=data,  # type: ignore
             headers={"Content-Type": ("multipart/form-data; boundary=B")},
         )
         assert res.status_code == 400
@@ -649,7 +649,7 @@ def test_max_fields_is_customizable_low_raises(
     with expectation:
         res = client.post(
             "/",
-            data=data,  # type: ignore
+            content=data,  # type: ignore
             headers={"Content-Type": ("multipart/form-data; boundary=B")},
         )
         assert res.status_code == 400
@@ -683,7 +683,7 @@ def test_max_files_is_customizable_low_raises(
     with expectation:
         res = client.post(
             "/",
-            data=data,  # type: ignore
+            content=data,  # type: ignore
             headers={"Content-Type": ("multipart/form-data; boundary=B")},
         )
         assert res.status_code == 400
@@ -706,7 +706,7 @@ def test_max_fields_is_customizable_high(
     data += b"--B--\r\n"
     res = client.post(
         "/",
-        data=data,  # type: ignore
+        content=data,  # type: ignore
         headers={"Content-Type": ("multipart/form-data; boundary=B")},
     )
     assert res.status_code == 200

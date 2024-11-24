@@ -6,10 +6,9 @@ from typing import TYPE_CHECKING, Annotated, Any, Callable, ClassVar
 
 from dymmond_settings import Settings as BaseSettings
 from dymmond_settings.enums import EnvironmentType
-from typing_extensions import Doc
 
 from lilya import __version__
-from lilya.types import ApplicationType, ASGIApp, ExceptionHandler
+from lilya.types import ApplicationType, ASGIApp, Doc, ExceptionHandler
 
 if TYPE_CHECKING:
     from lilya.middleware.base import DefineMiddleware

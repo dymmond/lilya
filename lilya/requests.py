@@ -21,9 +21,13 @@ from lilya.exceptions import HTTPException
 from lilya.types import Empty, Message, Receive, Scope, Send
 
 try:
-    from multipart.multipart import parse_options_header
+    from python_multipart.multipart import parse_options_header
 except ModuleNotFoundError:  # pragma: nocover
-    parse_options_header = None
+    # old import name
+    try:
+        from multipart.multipart import parse_options_header  # type: ignore[no-redef]
+    except ModuleNotFoundError:  # pragma: nocover
+        parse_options_header = None
 
 
 class Request(Connection):

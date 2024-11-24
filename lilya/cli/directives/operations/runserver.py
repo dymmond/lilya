@@ -2,14 +2,13 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any, cast
 
 import click
 
 from lilya.cli.env import DirectiveEnv
 from lilya.cli.exceptions import DirectiveError
 from lilya.cli.terminal import OutputColour, Print, Terminal
-
 
 printer = Print()
 terminal = Terminal()
@@ -106,9 +105,9 @@ def runserver(
     server_environment: str = ""
     if os.environ.get("LILYA_SETTINGS_MODULE"):
         from lilya.conf import settings as lilya_settings
-        
+
         server_environment = f"{lilya_settings.environment} "
-    
+
     app = env.app
     message = terminal.write_info(
         f"Starting {server_environment}server @ {host} server @ {host}",

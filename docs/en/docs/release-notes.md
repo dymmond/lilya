@@ -5,6 +5,13 @@ hide:
 
 # Release Notes
 
+## Unreleased
+
+### Fixed
+
+- `typing_extensions` errors on python >= 3.10.
+- Address deprecation warnings in tests.
+
 ## 0.10.2
 
 ### Changed
