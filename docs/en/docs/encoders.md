@@ -50,27 +50,30 @@ encoders that evaluates when tries to *guess* the response type.
 * `EnumEncoder` - Serialises `Enum` objects.
 * `PurePathEncoder` - Serializes `PurePath` objects.
 * `DateEncoder` - Serializes date and datetime objects.
-* `StructureEncoder` - Serializes more complex data types. `set, frozenset, GeneratorType, tuple, deque`.
+* `StructureEncoder` - Serializes more complex data types which implement `Iterable`.
 
 What a brand new encoder is needed and it is not natively supported by Lilya? Well, [building a custom encoder](#build-a-custom-encoder)
 is extremly easy and possible.
 
+All of the default encoders are also implementing the molding protocol.
+
 ## Build a custom encoder
 
 As mentioned before, Lilya has [default encoders](#default-encoders) that are used to transform a response
-into a `json` serialisable response.
+into a `json` serializable response.
 
-To build a custom encoder you must implement the `EncoderProtocol`. You can use the `Encoder` helper class from Lilya for that and override the `serialize()` function
+To build a custom encoder you must implement the `EncoderProtocol` or `MoldingProtocol`.
+You can use the `Encoder` helper class from Lilya for that and provide the `serialize()` and/or `encode` function
 where it applies the serialisation process of the encoder type.
 If the encoder should also be able to deserialize a value in an provided object, you need additionally the method:
-`encode` and maybe the method `is_type_structure` (you can use the `MoldingProtocol` for type checks).
+`encode` and maybe the method `is_type_structure`.
 
 Then you **must register the encoder** for Lilya to use it.
 
 When defining an encoder the `def is_type(self, value: Any) -> bool:` or (Encoder helper class only)`__type__`
 **must be declared or overridden**.
 
-When in an Encoder subclass the `__type__` is properly declared, the default `is_type` and `is_type_structure` will evaluate the object against the
+When in an Encoder subclass the `__type__` is properly declared, the default `is_type` and `is_type_structure` (MoldingProtocol) will evaluate the object against the
 type and return `True` or `False`. `__type__` can be a single type or a tuple of types.
 
 This is used internally to understand the type of encoder that will be applied to a given object.
@@ -156,6 +159,10 @@ also any library of your choice as well.
 
 The flexibility of Lilya allows you to be free and for Lilya not to be tight to any particular
 library.
+
+!!! Tip
+    You can replace other Encoders by providing a name attribute.
+    By default all encoders use their class-name as name.
 
 #### Custom encoders and responses
 

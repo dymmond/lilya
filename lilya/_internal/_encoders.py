@@ -141,7 +141,7 @@ class DateEncoder(Encoder):
 
 
 class StructureEncoder(Encoder):
-    name: str
+    name: str = "StructureEncoder"
     __type__ = Iterable
 
     def is_type_structure(self, value: Any) -> bool:
@@ -310,6 +310,7 @@ def apply_structure(
                 if encoder.is_type(value):
                     return value
                 return encoder.encode(structure, value)
+        return value
     else:
         token = ENCODER_TYPES.set(with_encoders)
         try:

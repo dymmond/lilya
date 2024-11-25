@@ -16,7 +16,6 @@ from typing import (
     Literal,
     NoReturn,
     Union,
-    cast,
 )
 from urllib.parse import quote
 
@@ -28,7 +27,7 @@ from lilya.background import Task
 from lilya.compat import md5_hexdigest
 from lilya.concurrency import iterate_in_threadpool
 from lilya.datastructures import URL, Header
-from lilya.encoders import ENCODER_TYPES, Encoder, EncoderProtocol, json_encode
+from lilya.encoders import ENCODER_TYPES, Encoder, json_encode
 from lilya.enums import Event, HTTPMethod, MediaType
 from lilya.types import Receive, Scope, Send
 
@@ -476,22 +475,16 @@ def make_response(
     headers: Mapping[str, str] | None = None,
     background: Task | None = None,
     encoders: Sequence[Encoder] | None = None,
+    json_encode_extra_kwargs: dict | None = None,
 ) -> Response:
     """
     Build JSON responses from a given content and
     providing extra parameters.
     """
-    app = (
-        json_encode(
-            content,
-            with_encoders=cast(
-                Union[Sequence[EncoderProtocol], None],
-                None if encoders is None else (*encoders, *ENCODER_TYPES.get()),
-            ),
-        )
-        if content is not None
-        else None
-    )
+    _json_encode_kwargs: dict[str, Any] = json_encode_extra_kwargs or {}
+    if encoders is not None:
+        _json_encode_kwargs["with_encoders"] = (*encoders, *ENCODER_TYPES.get())
+    app = json_encode(content, **_json_encode_kwargs) if content is not None else None
 
     return response_class(
         content=app,
