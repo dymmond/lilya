@@ -11,5 +11,6 @@ class Foo:
 
 simplified = json_encode(Foo(a=3, b=5))
 # dict {"a": 3, "b": 5}
-apply_structure(Foo, simplified)
+foo = apply_structure(Foo, simplified)
 # now a Foo object again
+assert foo == Foo(a=3, b=5)

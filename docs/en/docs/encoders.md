@@ -19,12 +19,7 @@ types to json.
 By default only a simplification is done, therefore the json string is deserialized again so a simple datastructure is returned.
 
 ``` python
-from lilya.encoders import json_encode
-
-json_string = json_encode({"hello": "world"}, post_transform_fn=None)
-# or
-json_string = json_encode({"hello": "world"}, post_transform_fn=lambda x: x)
-
+{!> ../../../docs_src/encoders/direct_usage.py !}
 ```
 
 ### apply_structure
@@ -95,7 +90,7 @@ from lilya.encoders import Encoder, register_encoder
 Create and register an encoder that handles `msgspec.Struct` types.
 
 ```python
-{!> ../../../docs_src/responses/encoders/msgspec.py !}
+{!> ../../../docs_src/encoders/msgspec.py !}
 ```
 
 Simple right? Because now the `MsgSpecEncoder` is registered, you can simply do this in your handlers
@@ -143,7 +138,7 @@ Nothing required anymore. Works out of the box thanks to the ModelDumpEncoder. B
 **For msgspec Struct**
 
 ```python
-{!> ../../../docs_src/encoders/example.py !}
+{!> ../../../docs_src/encoders/msgspec.py !}
 ```
 
 **For attrs**
@@ -187,4 +182,21 @@ Let us see how it would look like now using the `make_response`.
 
 ```python
 {!> ../../../docs_src/encoders/make_response.py !}
+```
+
+
+## Use with custom json encoder
+
+Sometimes you want speed and replace the default json encoder for e.g. orjson.
+This is no problem
+
+
+``` python
+{!> ../../../docs_src/encoders/direct_usage_orjson.py !}
+```
+
+or the `make_response` example with orjson
+
+``` python
+{!> ../../../docs_src/encoders/make_response_orjson.py !}
 ```
