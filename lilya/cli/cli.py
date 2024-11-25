@@ -4,8 +4,9 @@ import inspect
 import os
 import sys
 import typing
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable, TypeVar
+from typing import TypeVar
 
 import click
 

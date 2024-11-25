@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import os
 import warnings
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from pathlib import Path
-from typing import Any, Callable, TypeVar, cast as tcast
+from typing import Any, TypeVar, cast as tcast
 
 from multidict import MultiDict
 

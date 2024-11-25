@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import inspect
 import json
-from collections.abc import Coroutine, Generator
-from typing import Any, Callable, cast
+from collections.abc import Callable, Coroutine, Generator
+from typing import Any, cast
 
 from lilya import status
 from lilya._internal._responses import BaseHandler

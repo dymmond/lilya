@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
-from typing import Any, Callable
+from collections.abc import Callable, Mapping
+from typing import Any
 
 from lilya import status
 from lilya._internal._exception_handlers import (

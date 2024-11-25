@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import typing
+from collections.abc import Callable
 
 import pytest
 
@@ -37,7 +37,7 @@ async def params(name: str, age: int):
 
 
 @pytest.fixture
-def client(test_client_factory: typing.Callable[..., TestClient]):
+def client(test_client_factory: Callable[..., TestClient]):
     with test_client_factory(app) as client:
         yield client
 

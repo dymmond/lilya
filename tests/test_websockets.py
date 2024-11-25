@@ -1,6 +1,6 @@
 import sys
-from collections.abc import MutableMapping
-from typing import Any, Callable
+from collections.abc import Callable, MutableMapping
+from typing import Any
 
 import anyio
 import pytest

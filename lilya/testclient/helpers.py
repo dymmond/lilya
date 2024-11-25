@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
-from typing import Any, Callable, Literal, cast
+from collections.abc import Callable, Mapping, Sequence
+from typing import Any, Literal, cast
 
 import httpx
 

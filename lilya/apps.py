@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import sys
-from collections.abc import Awaitable, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from functools import cached_property
-from typing import Annotated, Any, Callable, cast
+from typing import Annotated, Any, cast
 
 from lilya._internal._module_loading import import_string
 from lilya._utils import is_class_and_subclass
