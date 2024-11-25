@@ -79,7 +79,7 @@ class NamedTupleEncoder(EncoderProtocol, MoldingProtocol):
         return isinstance(value, tuple) and hasattr(value, "_asdict")
 
     def is_type_structure(self, value: Any) -> bool:
-        return issubclass(value, tuple) and hasattr(value, "_asdict")
+        return isclass(value) and issubclass(value, tuple) and hasattr(value, "_asdict")
 
     def serialize(self, obj: Any) -> dict:
         return cast(dict, obj._asdict())
