@@ -177,8 +177,14 @@ def register_encoder(encoder: EncoderProtocol | type[EncoderProtocol]) -> None:
     if not isinstance(encoder, EncoderProtocol):
         raise RuntimeError(f'"{encoder}" is not implementing the EncoderProtocol.')
 
+    encoder_types = ENCODER_TYPES.get()
+    if not isinstance(encoder_types, deque):
+        raise TypeError(
+            'For registering a new encoder a "deque" is required as set "ENCODER_TYPES" value.'
+            f"Found: {encoder_types!r}"
+        )
+
     encoder_name = get_encoder_name(encoder)
-    encoder_types = cast(deque[EncoderProtocol], ENCODER_TYPES.get())
 
     remove_elements: list[EncoderProtocol] = []
     for value in encoder_types:
@@ -227,6 +233,15 @@ def json_encode(
 
     Parameters:
     value (Any): The value to encode.
+    json_encode_fn (Callable): The callable used for encoding the object as json.
+                                   Must support the default keyword argument.
+                                   By default: json.dumps
+    post_transform_fn (Callable): The callable used for post-transforming the json-string.
+                                               Can be None to simply return a json string.
+                                               By default: json.loads, for compatibility reasons,
+                                               so a simplified structure is returned.
+    with_encoders (Sequence[EncoderProtocol]): Overwrite the used encoders for this call only
+                                               by providing an own Sequence of encoders.
 
     Returns:
     Any: The JSON-compatible encoded value.
@@ -235,7 +250,10 @@ def json_encode(
     ValueError: If the value is not serializable by any provided encoder type.
     """
     if with_encoders is None:
-        return post_transform_fn(json_encode_fn(value, default=json_encode_default))
+        result = json_encode_fn(value, default=json_encode_default)
+        if post_transform_fn is None:
+            return result
+        return post_transform_fn(result)
     else:
         token = ENCODER_TYPES.set(with_encoders)
         try:
@@ -257,7 +275,16 @@ def apply_structure(
     with_encoders: Sequence[EncoderProtocol] | None = None,
 ) -> Any:
     """
-    Apply structure to value
+    Apply structure to value. Decoding for e.g. input parameters
+
+    Parameters:
+    structure (Any): The structure to apply on the value.
+    value (Any): The value to encode.
+
+    Keyword-only
+    with_encoders (Sequence[EncoderProtocol]): Overwrite the used encoders for this call only
+                                               by providing an own Sequence of encoders.
+                                               Note: only encoders with `encode` function and `is_structure_type`.
 
     Raises:
     ValueError: If the value is not serializable by any provided encoder type.
