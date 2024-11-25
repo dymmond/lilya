@@ -48,6 +48,18 @@ class FooModel(BaseModel):
     a: int
 
 
+class FooSimple:
+    # Credits to tarsil for this test
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+    def model_dump(self) -> dict[str, str]:
+        return self.__dict__
+
+    def __eq__(self, other):
+        return isinstance(other, type(self)) and other.name == self.name
+
+
 @pytest.mark.parametrize(
     "json_encode_kwargs", [{}, {"json_encode_fn": orjson.dumps, "post_transform_fn": orjson.loads}]
 )
@@ -60,6 +72,7 @@ class FooModel(BaseModel):
         FooDataclass(a=1),
         FooModel(a=1),
         {"a": 5},
+        FooSimple(name="hello"),
     ],
 )
 def test_idempotence(value, json_encode_kwargs):
