@@ -78,3 +78,7 @@ class FooSimple:
 def test_idempotence(value, json_encode_kwargs):
     value_type = type(value)
     assert apply_structure(value_type, json_encode(value, **json_encode_kwargs)) == value
+
+
+def test_not_crash_on_strings():
+    apply_structure("test", {})
