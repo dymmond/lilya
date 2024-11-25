@@ -8,7 +8,6 @@ from pydantic import BaseModel
 
 from lilya.routing import Path
 from lilya.testclient import create_client
-from tests.conftest import dont_run
 
 
 @dataclass
@@ -38,7 +37,6 @@ def base_model() -> User:
     return User(name="lilya", age=24)
 
 
-@pytest.mark.skipif(dont_run, reason="Python 3.8 internals")
 def test_pydantic_custom_response():
     with create_client(routes=[Path("/", base_model)]) as client:
         response = client.get("/")
@@ -51,7 +49,6 @@ def base_model_list() -> User:
     return [User(name="lilya", age=24)]
 
 
-@pytest.mark.skipif(dont_run, reason="Python 3.8 internals")
 def test_pydantic_custom_response_list():
     with create_client(routes=[Path("/", base_model_list)]) as client:
         response = client.get("/")

@@ -21,13 +21,12 @@ from urllib.parse import quote
 import anyio
 
 from lilya import status
-from lilya._internal._encoders import json_encoder
 from lilya._internal._helpers import HeaderHelper
 from lilya.background import Task
 from lilya.compat import md5_hexdigest
 from lilya.concurrency import iterate_in_threadpool
 from lilya.datastructures import URL, Header
-from lilya.encoders import Encoder, register_encoder
+from lilya.encoders import ENCODER_TYPES, Encoder, json_encode
 from lilya.enums import Event, HTTPMethod, MediaType
 from lilya.types import Receive, Scope, Send
 
@@ -50,7 +49,7 @@ class Response:
         cookies: Mapping[str, str] | Any | None = None,
         media_type: str | None = None,
         background: Task | None = None,
-        encoders: Sequence[Encoder[Any]] | Sequence[type[Encoder[Any]]] | None = None,
+        encoders: Sequence[Encoder] | Sequence[type[Encoder]] | None = None,
     ) -> None:
         if status_code is not None:
             self.status_code = status_code
@@ -59,9 +58,6 @@ class Response:
         self.background = background
         self.cookies = cookies
         self.encoders = encoders or []
-
-        for encoder in self.encoders:
-            register_encoder(encoder)
 
         self.body = self.make_response(content)
         self.raw_headers: list[Any] = []
@@ -253,7 +249,7 @@ class JSONResponse(Response):
         headers: Mapping[str, str] | None = None,
         media_type: str | None = None,
         background: Task | None = None,
-        encoders: Sequence[Encoder[Any]] | Sequence[type[Encoder[Any]]] | None = None,
+        encoders: Sequence[Encoder] | Sequence[type[Encoder]] | None = None,
     ) -> None:
         super().__init__(
             content=content,
@@ -285,7 +281,7 @@ class RedirectResponse(Response):
         status_code: int = status.HTTP_307_TEMPORARY_REDIRECT,
         headers: Mapping[str, str] | None = None,
         background: Task | None = None,
-        encoders: Sequence[Encoder[Any]] | Sequence[type[Encoder[Any]]] | None = None,
+        encoders: Sequence[Encoder] | Sequence[type[Encoder]] | None = None,
     ) -> None:
         super().__init__(
             content=b"",
@@ -307,11 +303,9 @@ class StreamingResponse(Response):
         headers: Mapping[str, str] | None = None,
         media_type: str | None = None,
         background: Task | None = None,
-        encoders: Sequence[Encoder[Any]] | Sequence[type[Encoder[Any]]] | None = None,
+        encoders: Sequence[Encoder] | Sequence[type[Encoder]] | None = None,
     ) -> None:
         self.encoders = encoders or []
-        for encoder in self.encoders:
-            register_encoder(encoder)
 
         if isinstance(content, AsyncIterable):
             self.body_iterator = content
@@ -366,7 +360,7 @@ class FileResponse(Response):
         stat_result: os.stat_result | None = None,
         method: str | None = None,
         content_disposition_type: str = "attachment",
-        encoders: Sequence[Encoder[Any]] | Sequence[type[Encoder[Any]]] | None = None,
+        encoders: Sequence[Encoder] | Sequence[type[Encoder]] | None = None,
     ) -> None:
         self.path = path
         self.status_code = status_code
@@ -378,9 +372,6 @@ class FileResponse(Response):
         self.background = background
 
         self.encoders = encoders or []
-        for encoder in self.encoders:
-            register_encoder(encoder)
-
         self.make_headers(headers)
 
         if self.filename is not None:
@@ -449,7 +440,7 @@ class TemplateResponse(HTMLResponse):
         background: Task | None = None,
         headers: dict[str, Any] | None = None,
         media_type: MediaType | str = MediaType.HTML,
-        encoders: Sequence[Encoder[Any]] | Sequence[type[Encoder[Any]]] | None = None,
+        encoders: Sequence[Encoder] | Sequence[type[Encoder]] | None = None,
     ):
         self.template = template
         self.context = context or {}
@@ -482,13 +473,17 @@ def make_response(
     status_code: int = status.HTTP_200_OK,
     headers: Mapping[str, str] | None = None,
     background: Task | None = None,
-    encoders: Sequence[Encoder[Any]] | Sequence[type[Encoder[Any]]] | None = None,
+    encoders: Sequence[Encoder] | None = None,
+    json_encode_extra_kwargs: dict | None = None,
 ) -> Response:
     """
     Build JSON responses from a given content and
     providing extra parameters.
     """
-    app = json_encoder(content) if content is not None else None
+    _json_encode_kwargs: dict[str, Any] = json_encode_extra_kwargs or {}
+    if encoders is not None:
+        _json_encode_kwargs["with_encoders"] = (*encoders, *ENCODER_TYPES.get())
+    app = json_encode(content, **_json_encode_kwargs) if content is not None else None
 
     return response_class(
         content=app,

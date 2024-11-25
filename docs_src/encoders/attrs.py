@@ -17,6 +17,12 @@ class AttrsEncoder(Encoder):
     def serialize(self, obj: Any) -> Any:
         return asdict(obj)
 
+    def encode(self, structure: type[Any], obj: Any) -> Any:
+        if isinstance(obj, dict):
+            return structure(**obj)
+        return structure(*obj)
+
+
 
 # A normal way
 register_encoder(AttrsEncoder())
