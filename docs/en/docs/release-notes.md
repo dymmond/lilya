@@ -7,6 +7,15 @@ hide:
 
 ## Unreleased
 
+### Changed
+
+- Enhanced encoders:
+  - `ENCODER_TYPES` is now a context-variable.
+  - New encoders for datetime and date.
+  - Former `json_encoder` is now exported via public API as `json_encode`. The old name is still available in `_internal`.
+  - New method `apply_structure`, which allows input parsing.
+
+
 ### Fixed
 
 - `typing_extensions` errors on python >= 3.10.

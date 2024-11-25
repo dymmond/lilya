@@ -4,7 +4,7 @@ import inspect
 from collections.abc import Awaitable
 from typing import TYPE_CHECKING, Any, Callable, cast
 
-from lilya._internal._encoders import json_encoder
+from lilya._internal._encoders import json_encode
 from lilya._internal._exception_handlers import wrap_app_handling_exceptions
 from lilya.compat import is_async_callable
 from lilya.concurrency import run_in_threadpool
@@ -108,7 +108,7 @@ class BaseHandler:
         else:
             # If response is not an async callable, wrap it in an ASGI application and then await.
             if app is not None:
-                app = json_encoder(app)
+                app = json_encode(app)
 
             response = Ok(app)
             await response(scope, receive, send)

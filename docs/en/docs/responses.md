@@ -379,11 +379,10 @@ You want to make sure that if you return a pydantic model or a msgspec Struct or
 
 Let us see how it would look like for all of them.
 
-**For Pydantic BaseModel**
+**For pydantic**
 
-```python
-{!> ../../../docs_src/responses/encoders/pydantic.py !}
-```
+Nothing required anymore. Works out of the box.
+
 
 **For msgspec Struct**
 

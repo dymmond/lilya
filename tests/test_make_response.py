@@ -9,7 +9,6 @@ from pydantic import BaseModel
 from lilya.responses import make_response
 from lilya.routing import Path
 from lilya.testclient import create_client
-from tests.conftest import dont_run
 
 
 @dataclass
@@ -41,7 +40,6 @@ def base_model() -> User:
     return make_response(data, status_code=208)
 
 
-@pytest.mark.skipif(dont_run, reason="Python 3.8 internals")
 def test_pydantic_custom_make_response():
     with create_client(routes=[Path("/", base_model)]) as client:
         response = client.get("/")
@@ -55,7 +53,6 @@ def base_model_list() -> User:
     return make_response(data)
 
 
-@pytest.mark.skipif(dont_run, reason="Python 3.8 internals")
 def test_pydantic_custom_make_response_list():
     with create_client(routes=[Path("/", base_model_list)]) as client:
         response = client.get("/")

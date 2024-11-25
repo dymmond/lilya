@@ -22,7 +22,7 @@ from urllib.parse import quote
 import anyio
 
 from lilya import status
-from lilya._internal._encoders import json_encoder
+from lilya._internal._encoders import json_encode
 from lilya._internal._helpers import HeaderHelper
 from lilya.background import Task
 from lilya.compat import md5_hexdigest
@@ -489,7 +489,7 @@ def make_response(
     Build JSON responses from a given content and
     providing extra parameters.
     """
-    app = json_encoder(content) if content is not None else None
+    app = json_encode(content) if content is not None else None
 
     return response_class(
         content=app,
