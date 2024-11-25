@@ -16,19 +16,19 @@ from typing import (
     Literal,
     NoReturn,
     Union,
+    cast,
 )
 from urllib.parse import quote
 
 import anyio
 
 from lilya import status
-from lilya._internal._encoders import json_encode
 from lilya._internal._helpers import HeaderHelper
 from lilya.background import Task
 from lilya.compat import md5_hexdigest
 from lilya.concurrency import iterate_in_threadpool
 from lilya.datastructures import URL, Header
-from lilya.encoders import Encoder, register_encoder
+from lilya.encoders import ENCODER_TYPES, Encoder, EncoderProtocol, json_encode
 from lilya.enums import Event, HTTPMethod, MediaType
 from lilya.types import Receive, Scope, Send
 
@@ -60,9 +60,6 @@ class Response:
         self.background = background
         self.cookies = cookies
         self.encoders = encoders or []
-
-        for encoder in self.encoders:
-            register_encoder(encoder)
 
         self.body = self.make_response(content)
         self.raw_headers: list[Any] = []
@@ -311,8 +308,6 @@ class StreamingResponse(Response):
         encoders: Sequence[Encoder] | Sequence[type[Encoder]] | None = None,
     ) -> None:
         self.encoders = encoders or []
-        for encoder in self.encoders:
-            register_encoder(encoder)
 
         if isinstance(content, AsyncIterable):
             self.body_iterator = content
@@ -379,9 +374,6 @@ class FileResponse(Response):
         self.background = background
 
         self.encoders = encoders or []
-        for encoder in self.encoders:
-            register_encoder(encoder)
-
         self.make_headers(headers)
 
         if self.filename is not None:
@@ -483,13 +475,23 @@ def make_response(
     status_code: int = status.HTTP_200_OK,
     headers: Mapping[str, str] | None = None,
     background: Task | None = None,
-    encoders: Sequence[Encoder] | Sequence[type[Encoder]] | None = None,
+    encoders: Sequence[Encoder] | None = None,
 ) -> Response:
     """
     Build JSON responses from a given content and
     providing extra parameters.
     """
-    app = json_encode(content) if content is not None else None
+    app = (
+        json_encode(
+            content,
+            with_encoders=cast(
+                Union[Sequence[EncoderProtocol], None],
+                None if encoders is None else (*encoders, *ENCODER_TYPES.get()),
+            ),
+        )
+        if content is not None
+        else None
+    )
 
     return response_class(
         content=app,

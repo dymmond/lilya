@@ -6,6 +6,7 @@ from attrs import define
 from msgspec import Struct
 from pydantic import BaseModel
 
+from lilya.encoders import Encoder, apply_structure
 from lilya.responses import make_response
 from lilya.routing import Path
 from lilya.testclient import create_client
@@ -167,3 +168,42 @@ def test_structure_responses(value):
 
         assert response.status_code == 201
         assert response.json() == [1, 2, 3, 4]
+
+
+def test_custom_encoder_response():
+    class Foo:
+        a: int
+
+        def __init__(self, a: int):
+            self.a = a
+
+        def __eq__(self, other) -> bool:
+            return isinstance(other, type(self)) and other.a == self.a
+
+    @dataclass
+    class FooDataclass:
+        a: int
+
+    class FooEncoder(Encoder):
+        __type__ = Foo
+
+        def serialize(self, value: Foo) -> dict:
+            return {"a": value.a}
+
+        def encode(self, structure, value):
+            foo = Foo(value["a"])
+            return foo
+
+    def home():
+        return make_response(Foo(a=3), status_code=201, encoders=[FooEncoder()])
+
+    with create_client(routes=[Path("/", home)]) as client:
+        response = client.get("/")
+
+        assert response.status_code == 201
+        assert response.json() == {"a": 3}
+        result = apply_structure(Foo, response.json(), with_encoders=[FooEncoder()])
+        assert result == Foo(3)
+        assert result != FooDataclass(3)
+        # try again with defaults and a similar structured dataclass
+        assert apply_structure(FooDataclass, response.json()) == FooDataclass(3)

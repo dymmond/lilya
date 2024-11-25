@@ -14,12 +14,13 @@ hide:
   - New encoders for datetime and date.
   - Former `json_encoder` is now exported via public API as `json_encode`. The old name is still available in `_internal`.
   - New method `apply_structure`, which allows input parsing.
-
+  - `make_response` does not support encoders as class anymore only as instance.
 
 ### Fixed
 
 - `typing_extensions` errors on python >= 3.10.
 - Address deprecation warnings in tests.
+- Fix encoders applied after simplifying response.
 
 ## 0.10.2
 
