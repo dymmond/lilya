@@ -23,12 +23,10 @@ SupportsAsyncCloseType = TypeVar(
 
 
 try:
-    hashlib.md5(b"data", usedforsecurity=False)  # type: ignore[call-arg]
+    hashlib.md5(b"data", usedforsecurity=False)
 
     def md5_hexdigest(data: bytes, *, usedforsecurity: bool = True) -> str:  # pragma: no cover
-        return hashlib.md5(  # type: ignore[call-arg]
-            data, usedforsecurity=usedforsecurity
-        ).hexdigest()
+        return hashlib.md5(data, usedforsecurity=usedforsecurity).hexdigest()
 
 except TypeError:  # pragma: no cover
 
