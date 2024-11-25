@@ -142,7 +142,7 @@ Nothing required anymore. Works out of the box thanks to the ModelDumpEncoder. B
 {!> ../../../docs_src/encoders/attrs.py !}
 ```
 
-Easy and poweful, right? Yes.
+Easy and powerful, right? Yes.
 
 Do you understand what does this mean? Means you can design **any encoder** at your choice using
 also any library of your choice as well.
@@ -179,14 +179,16 @@ Let us see how it would look like now using the `make_response`.
 
 ## Use with custom json encoder
 
-Sometimes you want speed and replace the default json encoder for e.g. orjson.
-This is no problem
+Sometimes you might want a more performant json parser that is not the default python json built-in, for example, the orjson
+json serializer/deserializer.
+
+This is no problem for Lilya:
 
 ``` python
 {!> ../../../docs_src/encoders/direct_usage_orjson.py !}
 ```
 
-or the `make_response` example with orjson
+Or the `make_response` example with orjson
 
 ``` python
 {!> ../../../docs_src/encoders/make_response_orjson.py !}
