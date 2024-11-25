@@ -5,6 +5,16 @@ hide:
 
 # Release Notes
 
+## 0.11.1
+
+### Added
+
+- `__encode__` flag to all native encoders.
+
+### Fixed
+
+- `StructureEncoder` __type__ was pointing to the wrong structures.
+
 ## 0.11.0
 
 ### Changed
