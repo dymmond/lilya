@@ -9,6 +9,7 @@ from datetime import date, datetime
 from enum import Enum
 from inspect import isclass
 from pathlib import PurePath
+from types import GeneratorType
 from typing import Any, Generic, Protocol, TypeVar, cast, runtime_checkable
 
 T = TypeVar("T")
@@ -46,6 +47,7 @@ class Encoder(Generic[T]):
     """
 
     name: str | None = None
+    __encode__: bool = True
     __type__: type | tuple[type, ...] | None = None
 
     def is_type(self, value: Any) -> bool:
@@ -106,6 +108,7 @@ class ModelDumpEncoder(EncoderProtocol, MoldingProtocol):
 
 class EnumEncoder(Encoder):
     name: str = "EnumEncoder"
+    __encode__ = False
     __type__ = Enum
 
     def serialize(self, obj: Enum) -> Any:
@@ -142,7 +145,7 @@ class DateEncoder(Encoder):
 
 class StructureEncoder(Encoder):
     name: str = "StructureEncoder"
-    __type__ = Iterable
+    __type__ = (list, set, frozenset, GeneratorType, tuple, deque)
 
     def is_type_structure(self, value: Any) -> bool:
         return isclass(value) and issubclass(value, list)
