@@ -16,6 +16,13 @@ class MsgSpecEncoder(Encoder):
         """
         return msgspec.json.decode(msgspec.json.encode(obj))
 
+    def encode(
+        self,
+        structure: Any,
+        obj: Any,
+    ) -> Any:
+        return msgspec.json.decode(obj, type=structure)
+
 
 # A normal way
 register_encoder(MsgSpecEncoder())

@@ -51,7 +51,7 @@ class Response:
         cookies: Mapping[str, str] | Any | None = None,
         media_type: str | None = None,
         background: Task | None = None,
-        encoders: Sequence[Encoder[Any]] | Sequence[type[Encoder[Any]]] | None = None,
+        encoders: Sequence[Encoder] | Sequence[type[Encoder]] | None = None,
     ) -> None:
         if status_code is not None:
             self.status_code = status_code
@@ -254,7 +254,7 @@ class JSONResponse(Response):
         headers: Mapping[str, str] | None = None,
         media_type: str | None = None,
         background: Task | None = None,
-        encoders: Sequence[Encoder[Any]] | Sequence[type[Encoder[Any]]] | None = None,
+        encoders: Sequence[Encoder] | Sequence[type[Encoder]] | None = None,
     ) -> None:
         super().__init__(
             content=content,
@@ -286,7 +286,7 @@ class RedirectResponse(Response):
         status_code: int = status.HTTP_307_TEMPORARY_REDIRECT,
         headers: Mapping[str, str] | None = None,
         background: Task | None = None,
-        encoders: Sequence[Encoder[Any]] | Sequence[type[Encoder[Any]]] | None = None,
+        encoders: Sequence[Encoder] | Sequence[type[Encoder]] | None = None,
     ) -> None:
         super().__init__(
             content=b"",
@@ -308,7 +308,7 @@ class StreamingResponse(Response):
         headers: Mapping[str, str] | None = None,
         media_type: str | None = None,
         background: Task | None = None,
-        encoders: Sequence[Encoder[Any]] | Sequence[type[Encoder[Any]]] | None = None,
+        encoders: Sequence[Encoder] | Sequence[type[Encoder]] | None = None,
     ) -> None:
         self.encoders = encoders or []
         for encoder in self.encoders:
@@ -367,7 +367,7 @@ class FileResponse(Response):
         stat_result: os.stat_result | None = None,
         method: str | None = None,
         content_disposition_type: str = "attachment",
-        encoders: Sequence[Encoder[Any]] | Sequence[type[Encoder[Any]]] | None = None,
+        encoders: Sequence[Encoder] | Sequence[type[Encoder]] | None = None,
     ) -> None:
         self.path = path
         self.status_code = status_code
@@ -450,7 +450,7 @@ class TemplateResponse(HTMLResponse):
         background: Task | None = None,
         headers: dict[str, Any] | None = None,
         media_type: MediaType | str = MediaType.HTML,
-        encoders: Sequence[Encoder[Any]] | Sequence[type[Encoder[Any]]] | None = None,
+        encoders: Sequence[Encoder] | Sequence[type[Encoder]] | None = None,
     ):
         self.template = template
         self.context = context or {}
@@ -483,7 +483,7 @@ def make_response(
     status_code: int = status.HTTP_200_OK,
     headers: Mapping[str, str] | None = None,
     background: Task | None = None,
-    encoders: Sequence[Encoder[Any]] | Sequence[type[Encoder[Any]]] | None = None,
+    encoders: Sequence[Encoder] | Sequence[type[Encoder]] | None = None,
 ) -> Response:
     """
     Build JSON responses from a given content and

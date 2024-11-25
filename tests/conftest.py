@@ -27,6 +27,13 @@ class MsgSpecEncoder(Encoder):
     def serialize(self, obj: Any) -> Any:
         return msgspec.json.decode(msgspec.json.encode(obj))
 
+    def encode(
+        self,
+        structure: Any,
+        obj: Any,
+    ) -> Any:
+        return msgspec.json.decode(obj, type=structure)
+
 
 register_encoder(MsgSpecEncoder())
 

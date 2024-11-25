@@ -379,19 +379,19 @@ Vejamos como seria para cada um deles.
 **Para Pydantic BaseModel**
 
 ```python
-{!> ../../../docs_src/responses/encoders/pydantic.py !}
+{!> ../../../docs_src/encoders/pydantic.py !}
 ```
 
 **Para msgspec Struct**
 
 ```python
-{!> ../../../docs_src/responses/encoders/example.py !}
+{!> ../../../docs_src/encoders/example.py !}
 ```
 
 **Para attrs**
 
 ```python
-{!> ../../../docs_src/responses/encoders/attrs.py !}
+{!> ../../../docs_src/encoders/attrs.py !}
 ```
 
 Fácil e poderoso, certo? Sim.
@@ -406,7 +406,7 @@ A flexibilidade do Lilya permite que seja livre e para que o Lilya não esteja v
 Depois que os [codificadores personalizados nos exemplos](#construir-um-codificador-personalizado) forem criados, isto permite fazer algo diretamente assim.
 
 ```python
-{!> ../../../docs_src/responses/encoders/responses.py !}
+{!> ../../../docs_src/encoders/responses.py !}
 ```
 
 #### Codificadores personalizados e o `make_response`
@@ -421,5 +421,5 @@ O codificador personalizado **não lida** com isso para si, mas o `make_response
 Vejamos como ficaria agora utilizando o `make_response`.
 
 ```python
-{!> ../../../docs_src/responses/encoders/make_response.py !}
+{!> ../../../docs_src/encoders/make_response.py !}
 ```

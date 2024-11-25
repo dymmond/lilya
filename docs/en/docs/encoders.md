@@ -1,10 +1,47 @@
 # Encoders
 
-Encoders are responsible how to encode responses.
+Encoders are basically converters between datastructures and json. Its main use is in response were different return values are automatically
+parsed into json objects.
+
+For understanding what they are doing, it is helpful to see the manual usage
+
+## Manual usage
+
+Encoders provide two public methods:
+
+- json_encode
+- apply_structure
+
+### json_encode
+
+`json_encode` is basically an enhanced json.dumps. It provides via the encoders converters which parse additional
+types to json.
+By default only a simplification is done, therefore the json string is deserialized again so a simple datastructure is returned.
+
+``` python
+from lilya.encoders import json_encode
+
+json_string = json_encode({"hello": "world"}, post_transform_fn=None)
+# or
+json_string = json_encode({"hello": "world"}, post_transform_fn=lambda x: x)
+
+```
+
+### apply_structure
+
+`apply_structure` is basically the inverse of `json_encode`.
+It assumes it is known from which structure a value was serlialized.
+If one encoder matches via `is_type_structure` (for Encoder by default `isclass(structure) and issubclass(structure, self.__type__)`) the encoder is used.
+First is checked via `is_type` if the value is already converted and if yes simply returned.
+Otherwise the value is molded via the structure in an instance and returned.
+
+``` python
+{!> ../../../docs_src/encoders/molding.py !}
+```
 
 ## Default Encoders
 
-In order to understand how to serialise a specific object into `json`, Lilya has some default
+In order to understand how to serialize a specific object into `json`, Lilya has some default
 encoders that evaluates when tries to *guess* the response type.
 
 * `DataclassEncoder` - Serialises `dataclass` objects.
@@ -23,22 +60,24 @@ is extremly easy and possible.
 As mentioned before, Lilya has [default encoders](#default-encoders) that are used to transform a response
 into a `json` serialisable response.
 
-To build a custom encoder you must use the `Encoder` class from Lilya and override the `serialize()` function
+To build a custom encoder you must implement the `EncoderProtocol`. You can use the `Encoder` helper class from Lilya for that and override the `serialize()` function
 where it applies the serialisation process of the encoder type.
+If the encoder should also be able to deserialize a value in an provided object, you need additionally the method:
+`encode` and maybe the method `is_type_structure` (you can use the `MoldingProtocol` for type checks).
 
 Then you **must register the encoder** for Lilya to use it.
 
-When defining an encoder the `__type__` or `def is_type(self, value: Any) -> bool:`
+When defining an encoder the `def is_type(self, value: Any) -> bool:` or (Encoder helper class only)`__type__`
 **must be declared or overridden**.
 
-When the `__type__` is properly declared, the default `is_type` will evaluate the object against the
-type and return `True` or `False`.
+When in an Encoder subclass the `__type__` is properly declared, the default `is_type` and `is_type_structure` will evaluate the object against the
+type and return `True` or `False`. `__type__` can be a single type or a tuple of types.
 
 This is used internally to understand the type of encoder that will be applied to a given object.
 
-!!! warning
+!!! Warning
     If you are not able to provide the `__type__` for any reason and you just want to override the
-    default evaluation process, simple override the `is_type()` and apply your custom logic there.
+    default evaluation process, simple use EncoderProtocol, override the `is_type()` and apply your custom logic there.
 
     E.g.: In Python 3.8, for a Pydantic `BaseModel` if passed in the `__type__`, it will throw an
     error due to Pydantic internals, so to workaround this issue, you can simply override the `is_type()`
@@ -53,7 +92,7 @@ from lilya.encoders import Encoder, register_encoder
 Create and register an encoder that handles `msgspec.Struct` types.
 
 ```python
-{!> ../../../docs_src/responses/encoders/example.py !}
+{!> ../../../docs_src/responses/encoders/msgspec.py !}
 ```
 
 Simple right? Because now the `MsgSpecEncoder` is registered, you can simply do this in your handlers
@@ -91,19 +130,23 @@ Let us see how it would look like for all of them.
 
 **For pydantic**
 
-Nothing required anymore. Works out of the box.
+Nothing required anymore. Works out of the box thanks to the ModelDumpEncoder. But we can do an instance check instead:
+
+```python
+{!> ../../../docs_src/encoders/pydantic.py !}
+```
 
 
 **For msgspec Struct**
 
 ```python
-{!> ../../../docs_src/responses/encoders/example.py !}
+{!> ../../../docs_src/encoders/example.py !}
 ```
 
 **For attrs**
 
 ```python
-{!> ../../../docs_src/responses/encoders/attrs.py !}
+{!> ../../../docs_src/encoders/attrs.py !}
 ```
 
 Easy and poweful, right? Yes.
@@ -120,7 +163,7 @@ After the [custom encoders in the examples](#build-a-custom-encoder) are created
 do something like this directly.
 
 ```python
-{!> ../../../docs_src/responses/encoders/responses.py !}
+{!> ../../../docs_src/encoders/responses.py !}
 ```
 
 #### Custom encoders and the `make_response`
@@ -136,5 +179,5 @@ The custom encoder **does not handle** that for you but the `make_response` does
 Let us see how it would look like now using the `make_response`.
 
 ```python
-{!> ../../../docs_src/responses/encoders/make_response.py !}
+{!> ../../../docs_src/encoders/make_response.py !}
 ```

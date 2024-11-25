@@ -2,7 +2,7 @@ from lilya._internal._encoders import (
     ENCODER_TYPES,
     Encoder,
     EncoderProtocol,
-    WithEncodeProtocol,
+    MoldingProtocol,
     apply_structure,
     json_encode,
     register_encoder,
@@ -13,7 +13,7 @@ __all__ = [
     "register_encoder",
     "Encoder",
     "EncoderProtocol",
-    "WithEncodeProtocol",
+    "MoldingProtocol",
     "json_encode",
     "apply_structure",
 ]

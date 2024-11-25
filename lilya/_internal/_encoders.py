@@ -2,40 +2,44 @@ from __future__ import annotations
 
 import json
 from collections import deque
-from collections.abc import Callable, Generator, Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from contextvars import ContextVar
 from dataclasses import asdict, is_dataclass
 from datetime import date, datetime
 from enum import Enum
 from inspect import isclass
 from pathlib import PurePath
-from typing import Any, Protocol, TypeVar, cast, runtime_checkable
+from typing import Any, Generic, Protocol, TypeVar, cast, runtime_checkable
 
 T = TypeVar("T")
 
 
 # TODO: timedelta encode
 @runtime_checkable
-class EncoderProtocol(Protocol[T]):
+class EncoderProtocol(Protocol):
     def is_type(self, value: Any) -> bool:
-        """Check if encoder is applicable for this type"""
+        """Check if encoder is applicable for values this type"""
 
-    def serialize(self, value: T) -> Any:
+    def serialize(self, value: Any) -> Any:
         """ "Prepare for serialization."""
 
 
-# not runtime-checkable
-class WithEncodeProtocol(Protocol):
+@runtime_checkable
+class MoldingProtocol(Protocol):
+    def is_type(self, value: Any) -> bool:
+        """Check if encoder is applicable for values of this type"""
+
     def is_type_structure(self, value: Any) -> bool:
-        """Check if encoder is applicable for this type"""
+        """Check if encoder is applicable for the structure"""
 
     def encode(self, structure: Any, value: Any) -> Any:
         """
-        Function that transforms a value into the structure
+        Function that transforms the value via the structure
         """
 
 
-class Encoder(EncoderProtocol[T]):
+# For backward compatibility allow T, despite there is no user of T
+class Encoder(Generic[T]):
     """
     The base class for any custom encoder
     added to the system.
@@ -48,10 +52,10 @@ class Encoder(EncoderProtocol[T]):
         return isinstance(value, self.__type__)
 
     def is_type_structure(self, value: Any) -> bool:
-        return issubclass(value, self.__type__)
+        return isclass(value) and issubclass(value, self.__type__)
 
 
-class DataclassEncoder(EncoderProtocol, WithEncodeProtocol):
+class DataclassEncoder(EncoderProtocol, MoldingProtocol):
     name: str = "DataclassEncoder"
 
     def is_type(self, value: Any) -> bool:
@@ -66,7 +70,7 @@ class DataclassEncoder(EncoderProtocol, WithEncodeProtocol):
         return structure(**value)
 
 
-class NamedTupleEncoder(EncoderProtocol, WithEncodeProtocol):
+class NamedTupleEncoder(EncoderProtocol, MoldingProtocol):
     name: str = "NamedTupleEncoder"
 
     def is_type(self, value: Any) -> bool:
@@ -84,7 +88,7 @@ class NamedTupleEncoder(EncoderProtocol, WithEncodeProtocol):
         return structure(*obj)
 
 
-class ModelDumpEncoder(EncoderProtocol, WithEncodeProtocol):
+class ModelDumpEncoder(EncoderProtocol, MoldingProtocol):
     name: str = "ModelDumpEncoder"
     # e.g. pydantic
 
@@ -100,7 +104,7 @@ class ModelDumpEncoder(EncoderProtocol, WithEncodeProtocol):
         return structure(**value)
 
 
-class EnumEncoder(Encoder[Enum], WithEncodeProtocol):
+class EnumEncoder(Encoder):
     name: str = "EnumEncoder"
     __type__ = Enum
 
@@ -111,7 +115,7 @@ class EnumEncoder(Encoder[Enum], WithEncodeProtocol):
         return structure(value)
 
 
-class PurePathEncoder(Encoder[Any], WithEncodeProtocol):
+class PurePathEncoder(Encoder):
     name: str = "PurePathEncoder"
     __type__ = PurePath
 
@@ -122,11 +126,11 @@ class PurePathEncoder(Encoder[Any], WithEncodeProtocol):
         return structure(value)
 
 
-class DateEncoder(Encoder[Any], WithEncodeProtocol):
+class DateEncoder(Encoder):
     name: str = "DateEncoder"
     __type__ = date
 
-    def serialize(self, obj: date) -> str:
+    def serialize(self, obj: date | datetime) -> str:
         return obj.isoformat()
 
     def encode(self, structure: type[date], value: Any) -> date | datetime:
@@ -136,12 +140,15 @@ class DateEncoder(Encoder[Any], WithEncodeProtocol):
         return date_obj.date()
 
 
-class StructureEncoder(Encoder, WithEncodeProtocol):
+class StructureEncoder(Encoder):
     name: str
-    __type__ = (set, frozenset, Generator, Iterable, deque)
+    __type__ = Iterable
 
-    def serialize(self, obj: Any) -> list:
-        return list(cast(Any, obj))
+    def is_type_structure(self, value: Any) -> bool:
+        return isclass(value) and issubclass(value, list)
+
+    def serialize(self, obj: Iterable) -> list:
+        return list(obj)
 
     def encode(self, structure: type, obj: Any) -> list:
         return list(obj)
@@ -159,23 +166,27 @@ DEFAULT_ENCODER_TYPES: deque[EncoderProtocol] = deque(
     )
 )
 
-ENCODER_TYPES: ContextVar[Sequence[EncoderProtocol]] = ContextVar(
+ENCODER_TYPES: ContextVar[Sequence[EncoderProtocol | MoldingProtocol]] = ContextVar(
     "ENCODER_TYPES", default=DEFAULT_ENCODER_TYPES
 )
 
 
-def get_encoder_name(encoder: EncoderProtocol) -> str:
+def get_encoder_name(encoder: Any) -> str:
     if getattr(encoder, "name", None):
         return cast(str, encoder.name)
     else:
         return type(encoder).__name__
 
 
-def register_encoder(encoder: EncoderProtocol | type[EncoderProtocol]) -> None:
+def register_encoder(
+    encoder: EncoderProtocol | MoldingProtocol | type[EncoderProtocol] | type[MoldingProtocol],
+) -> None:
     if isclass(encoder):
         encoder = encoder()
-    if not isinstance(encoder, EncoderProtocol):
-        raise RuntimeError(f'"{encoder}" is not implementing the EncoderProtocol.')
+    if not isinstance(encoder, (EncoderProtocol, MoldingProtocol)):
+        raise RuntimeError(
+            f'"{encoder}" is not implementing the EncoderProtocol or MoldingProtocol.'
+        )
 
     encoder_types = ENCODER_TYPES.get()
     if not isinstance(encoder_types, deque):
@@ -186,14 +197,14 @@ def register_encoder(encoder: EncoderProtocol | type[EncoderProtocol]) -> None:
 
     encoder_name = get_encoder_name(encoder)
 
-    remove_elements: list[EncoderProtocol] = []
+    remove_elements: list[EncoderProtocol | MoldingProtocol] = []
     for value in encoder_types:
         if get_encoder_name(value) == encoder_name:
             remove_elements.append(value)
             break
     for element in remove_elements:
         encoder_types.remove(element)
-    encoder_types.appendleft(cast(Encoder[Any], encoder))
+    encoder_types.appendleft(encoder)
 
 
 def json_encode_default(
@@ -214,7 +225,7 @@ def json_encode_default(
     encoder_types = ENCODER_TYPES.get()
 
     for encoder in encoder_types:
-        if encoder.is_type(value):
+        if hasattr(encoder, "serialize") and encoder.is_type(value):
             return encoder.serialize(value)
 
     # If no encoder was found, raise a ValueError
@@ -225,7 +236,7 @@ def json_encode(
     value: Any,
     *,
     json_encode_fn: Callable[..., Any] = json.dumps,
-    post_transform_fn: Callable[[str], Any] | None = json.loads,
+    post_transform_fn: Callable[[Any], Any] | None = json.loads,
     with_encoders: Sequence[EncoderProtocol] | None = None,
 ) -> Any:
     """
@@ -293,8 +304,12 @@ def apply_structure(
         encoder_types = ENCODER_TYPES.get()
 
         for encoder in encoder_types:
-            if hasattr(encoder, "encode") and encoder.is_type(value):
-                return encoder.serialize(value)
+            if hasattr(encoder, "encode") and cast(MoldingProtocol, encoder).is_type_structure(
+                structure
+            ):
+                if encoder.is_type(value):
+                    return value
+                return encoder.encode(structure, value)
     else:
         token = ENCODER_TYPES.set(with_encoders)
         try:
