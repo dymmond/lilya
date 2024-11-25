@@ -3,7 +3,7 @@
 Encoders are basically converters between datastructures and json. Its main use is in response were different return values are automatically
 parsed into json objects.
 
-For understanding what they are doing, it is helpful to see the manual usage
+For understanding what they are doing, it is helpful to go through the [manual usage](#manual-usage)
 
 ## Manual usage
 
@@ -14,7 +14,7 @@ Encoders provide two public methods:
 
 ### json_encode
 
-`json_encode` is basically an enhanced json.dumps. It provides via the encoders converters which parse additional
+`json_encode` is basically an enhanced json.dumps. It provides via the encoder converters which parse additional
 types to json.
 By default only a simplification is done, therefore the json string is deserialized again so a simple datastructure is returned.
 
@@ -47,10 +47,10 @@ encoders that evaluates when tries to *guess* the response type.
 * `DateEncoder` - Serializes date and datetime objects.
 * `StructureEncoder` - Serializes more complex data types which implement `Iterable`.
 
-What a brand new encoder is needed and it is not natively supported by Lilya? Well, [building a custom encoder](#build-a-custom-encoder)
+What if a brand new encoder is needed and it is not natively supported by Lilya? Well, [building a custom encoder](#build-a-custom-encoder)
 is extremly easy and possible.
 
-All of the default encoders are also implementing the molding protocol.
+All default encoders are also implementing the molding protocol.
 
 ## Build a custom encoder
 
@@ -80,10 +80,6 @@ This is used internally to understand the type of encoder that will be applied t
     E.g.: In Python 3.8, for a Pydantic `BaseModel` if passed in the `__type__`, it will throw an
     error due to Pydantic internals, so to workaround this issue, you can simply override the `is_type()`
     and apply the logic that validates the type of the object and returns a boolean.
-
-```python
-from lilya.encoders import Encoder, register_encoder
-```
 
 **Example**
 
@@ -134,7 +130,6 @@ Nothing required anymore. Works out of the box thanks to the ModelDumpEncoder. B
 {!> ../../../docs_src/encoders/pydantic.py !}
 ```
 
-
 **For msgspec Struct**
 
 ```python
@@ -158,7 +153,6 @@ library.
 !!! Tip
     You can replace other Encoders by providing a name attribute.
     By default all encoders use their class-name as name.
-
 #### Custom encoders and responses
 
 After the [custom encoders in the examples](#build-a-custom-encoder) are created, this allows to
@@ -167,7 +161,6 @@ do something like this directly.
 ```python
 {!> ../../../docs_src/encoders/responses.py !}
 ```
-
 #### Custom encoders and the `make_response`
 
 Well, here its where the `make_response` helps you. The `make_response` will generate a `JSONResponse`
@@ -184,12 +177,10 @@ Let us see how it would look like now using the `make_response`.
 {!> ../../../docs_src/encoders/make_response.py !}
 ```
 
-
 ## Use with custom json encoder
 
 Sometimes you want speed and replace the default json encoder for e.g. orjson.
 This is no problem
-
 
 ``` python
 {!> ../../../docs_src/encoders/direct_usage_orjson.py !}
