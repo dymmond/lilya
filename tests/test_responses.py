@@ -9,6 +9,7 @@ import pytest
 
 from lilya import status
 from lilya.background import Task
+from lilya.encoders import Encoder
 from lilya.requests import Request
 from lilya.responses import (
     Error,
@@ -22,9 +23,28 @@ from lilya.responses import (
 from lilya.testclient import TestClient
 
 
+class Foo: ...
+
+
+# check that encoders are saved as instances on responses
+class FooEncoder(Encoder):
+    __type__ = Foo
+
+    def serialize(self, obj: Foo) -> bool:
+        return True
+
+    def encode(
+        self,
+        structure: type[Foo],
+        obj,
+    ):
+        return True
+
+
 def test_text_response(test_client_factory):
     async def app(scope, receive, send):
-        response = Response("hello, world", media_type="text/plain")
+        response = Response("hello, world", media_type="text/plain", encoders=[FooEncoder])
+        assert isinstance(response.encoders[0], FooEncoder)
         await response(scope, receive, send)
 
     client = test_client_factory(app)
@@ -34,7 +54,8 @@ def test_text_response(test_client_factory):
 
 def test_ok_response(test_client_factory):
     async def app(scope, receive, send):
-        response = Ok("hello, world")
+        response = Ok("hello, world", encoders=[FooEncoder])
+        assert isinstance(response.encoders[0], FooEncoder)
         await response(scope, receive, send)
 
     client = test_client_factory(app)
@@ -44,7 +65,8 @@ def test_ok_response(test_client_factory):
 
 def test_error_response(test_client_factory):
     async def app(scope, receive, send):
-        response = Error("hello, world")
+        response = Error("hello, world", encoders=[FooEncoder])
+        assert isinstance(response.encoders[0], FooEncoder)
         await response(scope, receive, send)
 
     client = test_client_factory(app)
@@ -55,7 +77,8 @@ def test_error_response(test_client_factory):
 
 def test_bytes_response(test_client_factory):
     async def app(scope, receive, send):
-        response = Response(b"xxxxx", media_type="image/png")
+        response = Response(b"xxxxx", media_type="image/png", encoders=[FooEncoder])
+        assert isinstance(response.encoders[0], FooEncoder)
         await response(scope, receive, send)
 
     client = test_client_factory(app)
@@ -65,7 +88,8 @@ def test_bytes_response(test_client_factory):
 
 def test_json_none_response(test_client_factory):
     async def app(scope, receive, send):
-        response = JSONResponse(None)
+        response = JSONResponse(None, encoders=[FooEncoder])
+        assert isinstance(response.encoders[0], FooEncoder)
         await response(scope, receive, send)
 
     client = test_client_factory(app)
@@ -77,9 +101,10 @@ def test_json_none_response(test_client_factory):
 def test_redirect_response(test_client_factory):
     async def app(scope, receive, send):
         if scope["path"] == "/":
-            response = Response("hello, world", media_type="text/plain")
+            response = Response("hello, world", media_type="text/plain", encoders=[FooEncoder])
         else:
-            response = RedirectResponse("/")
+            response = RedirectResponse("/", encoders=[FooEncoder])
+        assert isinstance(response.encoders[0], FooEncoder)
         await response(scope, receive, send)
 
     client = test_client_factory(app)
@@ -106,7 +131,10 @@ def test_streaming_response(test_client_factory):
 
         cleanup_task = Task(numbers_for_cleanup, start=6, stop=9)
         generator = numbers(1, 5)
-        response = StreamingResponse(generator, media_type="text/plain", background=cleanup_task)
+        response = StreamingResponse(
+            generator, media_type="text/plain", background=cleanup_task, encoders=[FooEncoder]
+        )
+        assert isinstance(response.encoders[0], FooEncoder)
         await response(scope, receive, send)
 
     assert filled_by_bg_task == ""
@@ -131,7 +159,10 @@ def test_streaming_response_custom_iterator(test_client_factory):
                 self._called += 1
                 return str(self._called)
 
-        response = StreamingResponse(CustomAsyncIterator(), media_type="text/plain")
+        response = StreamingResponse(
+            CustomAsyncIterator(), media_type="text/plain", encoders=[FooEncoder]
+        )
+        assert isinstance(response.encoders[0], FooEncoder)
         await response(scope, receive, send)
 
     client = test_client_factory(app)
@@ -146,7 +177,10 @@ def test_streaming_response_custom_iterable(test_client_factory):
                 for i in range(5):
                     yield str(i + 1)
 
-        response = StreamingResponse(CustomAsyncIterable(), media_type="text/plain")
+        response = StreamingResponse(
+            CustomAsyncIterable(), media_type="text/plain", encoders=[FooEncoder]
+        )
+        assert isinstance(response.encoders[0], FooEncoder)
         await response(scope, receive, send)
 
     client = test_client_factory(app)
@@ -163,7 +197,8 @@ def test_sync_streaming_response(test_client_factory):
                     yield ", "
 
         generator = numbers(1, 5)
-        response = StreamingResponse(generator, media_type="text/plain")
+        response = StreamingResponse(generator, media_type="text/plain", encoders=[FooEncoder])
+        assert isinstance(response.encoders[0], FooEncoder)
         await response(scope, receive, send)
 
     client = test_client_factory(app)
@@ -219,7 +254,10 @@ def test_file_response(tmpdir, test_client_factory):
     cleanup_task = Task(numbers_for_cleanup, start=6, stop=9)
 
     async def app(scope, receive, send):
-        response = FileResponse(path=path, filename="example.png", background=cleanup_task)
+        response = FileResponse(
+            path=path, filename="example.png", background=cleanup_task, encoders=[FooEncoder]
+        )
+        assert isinstance(response.encoders[0], FooEncoder)
         await response(scope, receive, send)
 
     assert filled_by_bg_task == ""
@@ -289,7 +327,8 @@ def test_set_cookie(test_client_factory, monkeypatch):
     monkeypatch.setattr(time, "time", lambda: mocked_now.timestamp())
 
     async def app(scope, receive, send):
-        response = Response("Hello, world!", media_type="text/plain")
+        response = Response("Hello, world!", media_type="text/plain", encoders=[FooEncoder])
+        assert isinstance(response.encoders[0], FooEncoder)
         response.set_cookie(
             "mycookie",
             "myvalue",
