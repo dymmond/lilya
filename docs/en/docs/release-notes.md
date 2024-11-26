@@ -7,11 +7,9 @@ hide:
 
 ## Unreleased
 
-
 ### Fixed
 
 - Crash when passing string to is_type_structure (e.g. string annotations).
-
 
 ## 0.11.1
 
