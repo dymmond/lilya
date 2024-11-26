@@ -240,7 +240,7 @@ def json_encode(
     *,
     json_encode_fn: Callable[..., Any] = json.dumps,
     post_transform_fn: Callable[[Any], Any] | None = json.loads,
-    with_encoders: Sequence[EncoderProtocol] | None = None,
+    with_encoders: Sequence[EncoderProtocol | MoldingProtocol] | None = None,
 ) -> Any:
     """
     Encode a value to a JSON-compatible format using a list of encoder types.
@@ -286,7 +286,7 @@ def apply_structure(
     structure: Any,
     value: Any,
     *,
-    with_encoders: Sequence[EncoderProtocol] | None = None,
+    with_encoders: Sequence[EncoderProtocol | MoldingProtocol] | None = None,
 ) -> Any:
     """
     Apply structure to value. Decoding for e.g. input parameters

@@ -9,6 +9,7 @@ import typing
 from collections.abc import AsyncIterable, Awaitable, Callable, Iterable, Mapping, Sequence
 from datetime import datetime
 from email.utils import format_datetime, formatdate
+from inspect import isclass
 from mimetypes import guess_type
 from typing import (
     Any,
@@ -26,14 +27,17 @@ from lilya.background import Task
 from lilya.compat import md5_hexdigest
 from lilya.concurrency import iterate_in_threadpool
 from lilya.datastructures import URL, Header
-from lilya.encoders import ENCODER_TYPES, Encoder, json_encode
+from lilya.encoders import ENCODER_TYPES, EncoderProtocol, MoldingProtocol, json_encode
 from lilya.enums import Event, HTTPMethod, MediaType
 from lilya.types import Receive, Scope, Send
 
 Content = Union[str, bytes]
+Encoder = Union[EncoderProtocol, MoldingProtocol]
 SyncContentStream = Iterable[Content]
 AsyncContentStream = AsyncIterable[Content]
 ContentStream = Union[AsyncContentStream, SyncContentStream]
+
+_empty: tuple[Any, ...] = ()
 
 
 class Response:
@@ -49,7 +53,7 @@ class Response:
         cookies: Mapping[str, str] | Any | None = None,
         media_type: str | None = None,
         background: Task | None = None,
-        encoders: Sequence[Encoder] | Sequence[type[Encoder]] | None = None,
+        encoders: Sequence[Encoder | type[Encoder]] | None = None,
     ) -> None:
         if status_code is not None:
             self.status_code = status_code
@@ -57,7 +61,9 @@ class Response:
             self.media_type = media_type
         self.background = background
         self.cookies = cookies
-        self.encoders = encoders or []
+        self.encoders: list[Encoder] = [
+            encoder() if isclass(encoder) else encoder for encoder in encoders or _empty
+        ]
 
         self.body = self.make_response(content)
         self.raw_headers: list[Any] = []
@@ -249,7 +255,7 @@ class JSONResponse(Response):
         headers: Mapping[str, str] | None = None,
         media_type: str | None = None,
         background: Task | None = None,
-        encoders: Sequence[Encoder] | Sequence[type[Encoder]] | None = None,
+        encoders: Sequence[Encoder | type[Encoder]] | None = None,
     ) -> None:
         super().__init__(
             content=content,
@@ -281,7 +287,7 @@ class RedirectResponse(Response):
         status_code: int = status.HTTP_307_TEMPORARY_REDIRECT,
         headers: Mapping[str, str] | None = None,
         background: Task | None = None,
-        encoders: Sequence[Encoder] | Sequence[type[Encoder]] | None = None,
+        encoders: Sequence[Encoder | type[Encoder]] | None = None,
     ) -> None:
         super().__init__(
             content=b"",
@@ -303,9 +309,11 @@ class StreamingResponse(Response):
         headers: Mapping[str, str] | None = None,
         media_type: str | None = None,
         background: Task | None = None,
-        encoders: Sequence[Encoder] | Sequence[type[Encoder]] | None = None,
+        encoders: Sequence[Encoder | type[Encoder]] | None = None,
     ) -> None:
-        self.encoders = encoders or []
+        self.encoders: list[Encoder] = [
+            encoder() if isclass(encoder) else encoder for encoder in encoders or _empty
+        ]
 
         if isinstance(content, AsyncIterable):
             self.body_iterator = content
@@ -360,7 +368,7 @@ class FileResponse(Response):
         stat_result: os.stat_result | None = None,
         method: str | None = None,
         content_disposition_type: str = "attachment",
-        encoders: Sequence[Encoder] | Sequence[type[Encoder]] | None = None,
+        encoders: Sequence[Encoder | type[Encoder]] | None = None,
     ) -> None:
         self.path = path
         self.status_code = status_code
@@ -371,7 +379,9 @@ class FileResponse(Response):
         self.media_type = media_type
         self.background = background
 
-        self.encoders = encoders or []
+        self.encoders: list[Encoder] = [
+            encoder() if isclass(encoder) else encoder for encoder in encoders or _empty
+        ]
         self.make_headers(headers)
 
         if self.filename is not None:
@@ -440,7 +450,7 @@ class TemplateResponse(HTMLResponse):
         background: Task | None = None,
         headers: dict[str, Any] | None = None,
         media_type: MediaType | str = MediaType.HTML,
-        encoders: Sequence[Encoder] | Sequence[type[Encoder]] | None = None,
+        encoders: Sequence[Encoder | type[Encoder]] | None = None,
     ):
         self.template = template
         self.context = context or {}
