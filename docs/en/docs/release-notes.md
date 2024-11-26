@@ -7,9 +7,14 @@ hide:
 
 ## Unreleased
 
+### Changed
+
+- Encoders saved on responses are ensured to be instances and not classes.
+
 ### Fixed
 
 - Crash when passing string to is_type_structure (e.g. string annotations).
+- Fix Encoder type in responses.
 
 ## 0.11.1
 
