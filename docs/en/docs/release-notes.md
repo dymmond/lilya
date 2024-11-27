@@ -5,6 +5,13 @@ hide:
 
 # Release Notes
 
+## Unreleased
+
+### Fixed
+
+- Ensure encoders used for `apply_structure` have at least `encode` and `is_type_structure`.
+  The remaining methods are ensured by `EncodeProtocol` check.
+
 ## 0.11.2
 
 ### Changed

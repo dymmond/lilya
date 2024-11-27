@@ -307,8 +307,10 @@ def apply_structure(
         encoder_types = ENCODER_TYPES.get()
 
         for encoder in encoder_types:
-            if hasattr(encoder, "encode") and cast(MoldingProtocol, encoder).is_type_structure(
-                structure
+            if (
+                hasattr(encoder, "encode")
+                and hasattr(encoder, "is_type_structure")
+                and encoder.is_type_structure(structure)
             ):
                 if encoder.is_type(value):
                     return value
