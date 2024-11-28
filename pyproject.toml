@@ -112,6 +112,13 @@ docs = [
     "typing_extensions>=3.10.0"
 ]
 
+docs = [
+    "mkdocs-meta-descriptions-plugin>=2.3.0",
+    "mkdocstrings[python]>=0.23.0",
+    "pyyaml>=6.0",
+    "click>=8.1.7",
+]
+
 [tool.hatch.version]
 path = "lilya/__init__.py"
 
