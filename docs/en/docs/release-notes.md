@@ -5,7 +5,11 @@ hide:
 
 # Release Notes
 
-## Unreleased
+## 0.11.3
+
+### Changed
+
+- Lilya middleware for Authentication refactored to allow backends to be passed as parameter.
 
 ### Fixed
 

@@ -1,29 +1,22 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import Annotated, Any
+from abc import ABC
+from typing import Callable
 
 from lilya._internal._connection import Connection
+from lilya.authentication import (
+    AnonymousUser,
+    AuthCredentials,
+    AuthenticationBackend,
+    AuthenticationError,
+)
 from lilya.enums import ScopeType
 from lilya.protocols.middleware import MiddlewareProtocol
-from lilya.types import ASGIApp, Doc, Receive, Scope, Send
+from lilya.responses import PlainText, Response
+from lilya.types import ASGIApp, Receive, Scope, Send
 
 
-@dataclass
-class AuthResult:
-    user: Annotated[
-        Any,
-        Doc(
-            """
-            Arbitrary user coming from the `authenticate` of the `BaseAuthMiddleware`
-            and can be assigned to the `request.user`.
-            """
-        ),
-    ]
-
-
-class BaseAuthMiddleware(ABC, MiddlewareProtocol):  # pragma: no cover
+class BaseAuthMiddleware(ABC, MiddlewareProtocol):
     """
     `BaseAuthMiddleware` is the object that you can implement if you
     want to implement any `authentication` middleware with Lilya.
@@ -33,27 +26,23 @@ class BaseAuthMiddleware(ABC, MiddlewareProtocol):  # pragma: no cover
     Once you have installed the `AuthenticationMiddleware` and implemented the
     `authenticate`, the `request.user` will be available in any of your
     endpoints.
-
-    When implementing the `authenticate`, you must assign the result into the
-    `AuthResult` object in order for the middleware to assign the `request.user`
-    properly.
-
-    The `AuthResult` is of type `lilya.middleware.authentication.AuthResult`.
     """
 
     def __init__(
         self,
-        app: Annotated[
-            ASGIApp,
-            Doc(
-                """
-                An ASGI type callable.
-                """
-            ),
-        ],
-    ):
+        app: ASGIApp,
+        backend: AuthenticationBackend | None = None,
+        on_error: Callable[[Connection, AuthenticationError], Response] | None = None,
+    ) -> None:
         super().__init__(app)
+        assert backend is None or (
+            not hasattr(self, "authenticate") and backend is not None
+        ), "Use either 'backend' or implement 'authenticate()' function, not both."
         self.app = app
+        self.backend = backend
+        self.on_error: Callable[[Connection, Exception], Response] = (
+            on_error if on_error is not None else self.default_on_error  # type: ignore
+        )
         self.scopes: set[str] = {ScopeType.HTTP, ScopeType.WEBSOCKET}
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
@@ -66,13 +55,51 @@ class BaseAuthMiddleware(ABC, MiddlewareProtocol):  # pragma: no cover
             await self.app(scope, receive, send)
             return
 
-        auth_result = await self.authenticate(Connection(scope))
-        scope["user"] = auth_result.user
+        conn = Connection(scope)
+
+        if self.backend is not None:
+            try:
+                auth_result = await self.backend.authenticate(conn)
+            except AuthenticationError as exc:
+                await self._process_exception(scope, receive, send, conn, exc)
+                return None
+        else:
+            try:
+                auth_result = await self.authenticate(conn)
+            except AuthenticationError as exc:
+                await self._process_exception(scope, receive, send, conn, exc)
+                return None
+
+        if auth_result is None:
+            auth_result = AuthCredentials(), AnonymousUser()
+        scope["auth"], scope["user"] = auth_result
         await self.app(scope, receive, send)
 
-    @abstractmethod
-    async def authenticate(self, request: Connection) -> AuthResult:
+    async def _process_exception(
+        self, scope: Scope, receive: Receive, send: Send, connection: Connection, exc: Exception
+    ) -> None:
         """
-        The abstract method that needs to be implemented for any authentication middleware.
+        Handles exceptions that occur during the processing of a request or WebSocket connection.
+
+        Args:
+            scope (Scope): The ASGI scope dictionary containing request/connection information.
+            receive (Receive): The ASGI receive callable to receive messages.
+            send (Send): The ASGI send callable to send messages.
+            connection (Connection): The connection object representing the client connection.
+            exc (Exception): The exception that was raised during processing.
+
+        Returns:
+            Response: The response to be sent back to the client.
         """
-        raise NotImplementedError("authenticate must be implemented.")
+        response = self.on_error(connection, exc)
+        if scope["type"] == ScopeType.WEBSOCKET:
+            await send({"type": "websocket.close", "code": 1000})
+        else:
+            await response(scope, receive, send)
+
+    @staticmethod
+    def default_on_error(connection: Connection, exc: Exception) -> Response:
+        return PlainText(str(exc), status_code=400)
+
+
+class AuthenticationMiddleware(BaseAuthMiddleware): ...
