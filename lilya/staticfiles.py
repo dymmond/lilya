@@ -41,7 +41,7 @@ class StaticFiles:
     def __init__(
         self,
         *,
-        directory: PathLike | list[PathLike] | tuple[PathLike] | None = None,
+        directory: PathLike | list[PathLike] | tuple[PathLike, ...] | None = None,
         packages: list[str | tuple[str, str]] | None = None,
         html: bool = False,
         check_dir: bool = True,
@@ -51,7 +51,7 @@ class StaticFiles:
         Initialize StaticFiles middleware.
 
         Args:
-            directory (PathLike | List[PathLike] | Tuple[PathLike] | None): Base directory for serving static files.
+            directory (PathLike | List[PathLike] | Tuple[PathLike, ...] | None): Base directory for serving static files.
             packages (List[str | Tuple[str, str]] | None): List of packages containing static files.
             html (bool): Flag to enable HTML file handling for directories.
             check_dir (bool): Flag to check if the directory exists.
@@ -75,7 +75,7 @@ class StaticFiles:
 
     def get_directories(
         self,
-        directory: PathLike | list[PathLike] | tuple[PathLike] | None = None,
+        directory: PathLike | list[PathLike] | tuple[PathLike, ...] | None = None,
         packages: list[str | tuple[str, str]] | None = None,
     ) -> list[PathLike]:
         """
