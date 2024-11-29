@@ -3,9 +3,10 @@ from __future__ import annotations
 import contextvars
 import copy
 import warnings
-from typing import TYPE_CHECKING, Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any, cast
 
 from lilya.datastructures import URL
+from lilya.exceptions import ImproperlyConfigured
 from lilya.types import Doc, Scope
 
 if TYPE_CHECKING:
@@ -218,3 +219,72 @@ class G:
 
 
 g = G()
+
+
+class LazyRequestProxy:
+    """
+    A proxy to lazily evaluate attributes of the current request.
+    """
+
+    def __init__(self, request_getter: Any) -> None:
+        self._request_getter = request_getter
+
+    def __getattr__(self, item: str) -> Any:
+        request = self._request_getter()
+        if not request:
+            raise ImproperlyConfigured(
+                "Request context requires the 'RequestContextMiddleware' to be installed."
+            )
+        return getattr(request, item)
+
+    def __repr__(self: LazyRequestProxy) -> str:
+        if self._request_getter is None:
+            return "<LazyRequestProxy [Unevaluated]>"
+        return '<LazyRequestProxy "Request()">'
+
+
+class RequestContext:
+    """
+    Similar to the request, this object makes it available to the handler
+    to be access anywhere in the application that does not require the handler directly.
+    """
+
+    _request_context: contextvars.ContextVar[Request] = contextvars.ContextVar("request_context")
+
+    # Lazily access the request object
+    lazy_request = LazyRequestProxy(lambda: RequestContext._request_context.get(None))
+
+    @classmethod
+    def set_request(cls, request: Request) -> None:
+        """
+        Set the current request in the context.
+        """
+        cls._request_context.set(request)
+
+    @classmethod
+    def get_request(cls) -> Request:
+        """
+        Retrieve the current request from the context.
+        """
+        try:
+            return cls._request_context.get()
+        except LookupError:
+            raise RuntimeError(
+                "Request context requires the 'RequestContextMiddleware' to be installed."
+            ) from None
+
+    @classmethod
+    def reset_request(cls, token: Any) -> None:
+        """
+        Reset the context variable.
+        """
+        cls._request_context.reset(token)
+
+    def __str__(self) -> str:
+        return "<Request()>"
+
+    def __repr__(self) -> str:
+        return str(self)
+
+
+request_context: Request = cast("Request", RequestContext.lazy_request)
