@@ -220,3 +220,83 @@ def home(context: Context):
 
     return Response(url)
 ```
+
+## The `G` object
+
+This object is a pretty cool one, it is what allows you to have a global request context across
+the lifecycle.
+
+Imagine the following. You have a deceorator that validates a login and wants to store arbitrary
+data inside a request global context to be used later on and once the request is closed, then its
+cleared.
+
+This is where the `G` object comes to play. Imagine the `g` of Flask, same principle.
+
+To use this properly, you will need to import the `GlobalContextMiddleware`.
+
+```python
+from lilya.apps import Lilya
+from lilya.context import g
+from lilya.middleware import DefineMiddleware
+from lilya.middleware.global_context import GlobalContextMiddleware
+from lilya.routing import Path
+
+
+def populate_g():
+    g.name = "Lilya"
+    g.age = 25
+
+
+async def show_g():
+    populate_g()
+    return g.store
+
+
+app = Lilya(
+    routes=[Path("/show", show_g)],
+    middleware=[
+        DefineMiddleware(GlobalContextMiddleware)
+    ]
+)
+```
+
+This of course is a very simple example and probably not like how you would like to use but it
+explains how to use the `g`. After every request, the `g` is cleared.
+
+Imagine now you want to use it in a `decorator`.
+
+```python
+import functools
+
+from lilya.apps import Lilya
+from lilya.context import g
+from lilya.middleware import DefineMiddleware
+from lilya.middleware.global_context import GlobalContextMiddleware
+from lilya.routing import Path
+
+
+def user_check(func):
+    @functools.wraps(func)
+    async def wrapper(*args, **kwargs):
+        if not hasattr(g, "user"):
+            g.user = "not logged in"
+        return await func(*args, **kwargs)
+
+    return wrapper
+
+
+@user_check
+async def show_g():
+    return g.store
+
+
+app = Lilya(
+    routes=[Path("/show", show_g)],
+    middleware=[
+        DefineMiddleware(GlobalContextMiddleware)
+    ]
+)
+```
+
+This example is closer to the reality of the use of a `g` like validating a login against anything
+in your APIs.
