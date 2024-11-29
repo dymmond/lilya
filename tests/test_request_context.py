@@ -28,5 +28,4 @@ def test_raises_ImproperlyConfigured():
         routes=[Path("/show", show_request_context)],
     ):
         with pytest.raises(ImproperlyConfigured):
-            breakpoint()
             url = request_context.url  # noqa
