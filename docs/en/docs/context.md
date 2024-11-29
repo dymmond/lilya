@@ -300,3 +300,31 @@ app = Lilya(
 
 This example is closer to the reality of the use of a `g` like validating a login against anything
 in your APIs.
+
+## The `RequestContext` object
+
+This is a very useful object that acts a lazyy loader of the request object without the need of
+explicitly declaring it inside an handler.
+
+!!! Danger
+    When using the `request_context` object, you **must** install the [RequestContextMiddleware](./middleware.md#requestcontextmiddleware)
+    or an `ImproperlyConfigured` exception is raised.
+
+```python
+from lilya.apps import Lilya
+from lilya.context import request_context
+from lilya.middleware import DefineMiddleware
+from lilya.middleware.request_context import RequestContextMiddleware
+from lilya.routing import Path
+
+
+async def show_request_context():
+    return {"url": str(request_context.url)}
+
+
+app = Lilya(routes=[
+        Path('/show', show_request_context)
+    ],
+    middleware=[DefineMiddleware(RequestContextMiddleware)],
+)
+```

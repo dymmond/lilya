@@ -31,16 +31,11 @@ class GlobalContextMiddleware(ABC, MiddlewareProtocol):
         request lifecycle.
     """
 
-    def __init__(self, app: ASGIApp):
+    def __init__(self, app: ASGIApp) -> None:
         super().__init__(app)
         self.app = app
 
-    async def __call__(
-        self,
-        scope: Scope,
-        receive: Receive,
-        send: Send,
-    ) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
         Asynchronous call method to set up the global context and then call the parent class's __call__ method.
 
