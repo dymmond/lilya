@@ -5,13 +5,20 @@ hide:
 
 # Release Notes
 
+## Unreleased
+
+### Added
+
+- `RequestContextMiddleware` added allowing request objects being used without a context of a request
+without explicitly declaring it inside handlers.
+
 ## 0.11.4
 
 ### Added 
 
 - `GlobalContextMiddleware` the new middleware that allows you to have `g` object across the
 request lifecycle and set global variables to be accessed through that same lifecycle.
-- The `[g](./context.md#the-g-object)` definition and declaration.
+- The [g](./context.md#the-g-object) definition and declaration.
 
 ### Changed
 

@@ -194,6 +194,7 @@ how to use it is available.
 * `XFrameOptionsMiddleware` - Middleware that handles specifically against clickjacking.
 * `SecurityMiddleware` - Provides several security enhancements to the request/response cycle and adds security headers to the response.
 * `GlobalContextMiddleware` - Allows the use of the `[g](./context.md#the-g-object)` across request contexts.
+* `RequestContextMiddleware` - Adds a `request` object context without the need to use handlers.
 
 ### CSRFMiddleware
 
@@ -316,6 +317,14 @@ Provides the clean use of the [g](./context.md#the-g-object) for request context
 
 ```python
 {!> ../../../docs_src/middleware/available/global_context.py !}
+```
+
+### RequestContextMiddleware
+
+Lazy loads a request object without explicitly add it into the handlers.
+
+```python
+{!> ../../../docs_src/middleware/available/request_context.py !}
 ```
 
 ### Other middlewares
