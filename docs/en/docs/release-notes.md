@@ -13,6 +13,10 @@ hide:
 request lifecycle and set global variables to be accessed through that same lifecycle.
 - The `[g](./context.md#the-g-object)` definition and declaration.
 
+### Changed
+
+- Remove hard dependency of `dymmond-settings`.
+
 ## 0.11.3
 
 ### Changed
