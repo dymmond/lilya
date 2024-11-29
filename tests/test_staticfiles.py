@@ -18,24 +18,30 @@ from lilya.routing import Include
 from lilya.staticfiles import StaticFiles
 
 
-def test_staticfiles(tmpdir, test_client_factory):
+@pytest.mark.parametrize(
+    "wrapper", [lambda x: x, lambda x: [x], lambda x: (x,)], ids=["direct", "list", "tuple"]
+)
+def test_staticfiles(tmpdir, test_client_factory, wrapper):
     path = os.path.join(tmpdir, "example.txt")
     with open(path, "w") as file:
         file.write("<file content>")
 
-    app = StaticFiles(directory=tmpdir)
+    app = StaticFiles(directory=wrapper(tmpdir))
     client = test_client_factory(app)
     response = client.get("/example.txt")
     assert response.status_code == 200
     assert response.text == "<file content>"
 
 
-def test_staticfiles_with_pathlib(tmp_path: Path, test_client_factory):
+@pytest.mark.parametrize(
+    "wrapper", [lambda x: x, lambda x: [x], lambda x: (x,)], ids=["direct", "list", "tuple"]
+)
+def test_staticfiles_with_pathlib(tmp_path: Path, test_client_factory, wrapper):
     path = tmp_path / "example.txt"
     with open(path, "w") as file:
         file.write("<file content>")
 
-    app = StaticFiles(directory=tmp_path)
+    app = StaticFiles(directory=wrapper(tmp_path))
     client = test_client_factory(app)
     response = client.get("/example.txt")
     assert response.status_code == 200
