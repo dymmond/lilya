@@ -12,6 +12,10 @@ hide:
 - `RequestContextMiddleware` added allowing request objects being used without a context of a request
 without explicitly declaring it inside handlers.
 
+### Changed
+
+- Allow multiple directories in `StaticFiles`. This enables providing overwrites/defaults.
+
 ## 0.11.4
 
 ### Added 

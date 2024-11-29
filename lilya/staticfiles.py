@@ -41,7 +41,7 @@ class StaticFiles:
     def __init__(
         self,
         *,
-        directory: str | None = None,
+        directory: PathLike | list[PathLike] | tuple[PathLike, ...] | None = None,
         packages: list[str | tuple[str, str]] | None = None,
         html: bool = False,
         check_dir: bool = True,
@@ -51,26 +51,33 @@ class StaticFiles:
         Initialize StaticFiles middleware.
 
         Args:
-            directory (str | None): Base directory for serving static files.
+            directory (PathLike | List[PathLike] | Tuple[PathLike, ...] | None): Base directory for serving static files.
             packages (List[str | Tuple[str, str]] | None): List of packages containing static files.
             html (bool): Flag to enable HTML file handling for directories.
             check_dir (bool): Flag to check if the directory exists.
             follow_symlink (bool): Flag to follow symlinks.
         """
+
+        if directory:
+            directory = directory if isinstance(directory, (list, tuple)) else [directory]
+        else:
+            directory = None
         self.directory = directory
         self.packages = packages
         self.all_directories = self.get_directories(directory, packages)
         self.html = html
         self.config_checked = False
         self.follow_symlink = follow_symlink
-        if check_dir and directory is not None and not os.path.isdir(directory):
-            raise RuntimeError(f"Directory '{directory}' does not exist")
+        if check_dir and directory is not None:
+            for _dir in directory:
+                if not os.path.isdir(_dir):
+                    raise RuntimeError(f"Directory '{_dir}' does not exist")
 
     def get_directories(
         self,
-        directory: str | None = None,
+        directory: PathLike | list[PathLike] | tuple[PathLike, ...] | None = None,
         packages: list[str | tuple[str, str]] | None = None,
-    ) -> list[str]:
+    ) -> list[PathLike]:
         """
         Given `directory` and `packages` arguments, return a list of all the
         directories that should be used for serving static files from.
@@ -82,9 +89,9 @@ class StaticFiles:
         Returns:
             List[str]: List of directories.
         """
-        directories = []
-        if directory is not None:
-            directories.append(directory)
+        directories: list[PathLike] = []
+        if directory:
+            directories.extend(directory if isinstance(directory, (list, tuple)) else [directory])
 
         for package in packages or []:
             if isinstance(package, tuple):
@@ -198,14 +205,13 @@ class StaticFiles:
             Tuple[str, os.stat_result | None]: Full path and stat result (or None if not found).
         """
         for directory in self.all_directories:
-            joined_path = os.path.join(directory, path)
-            full_path = self.get_full_path(directory, joined_path)
+            full_path = self.get_full_path(directory, path)
             stat_result = self.get_stat_result(full_path)
             if stat_result:
                 return full_path, stat_result
         return "", None
 
-    def get_full_path(self, directory: str, path: str) -> str:
+    def get_full_path(self, directory: PathLike, path: str) -> str:
         """
         Get the full path by joining the directory and path.
 
@@ -216,6 +222,7 @@ class StaticFiles:
         Returns:
             str: Full path.
         """
+        path = os.path.join(directory, path)
         if self.follow_symlink:
             return os.path.abspath(path)
         return os.path.realpath(path)
@@ -264,6 +271,18 @@ class StaticFiles:
             return StaticResponse(response.headers)
         return response
 
+    def _check_dirs(self) -> None:
+        assert self.directory is not None
+        for directory in self.directory:
+            try:
+                stat_result = os.stat(directory)
+            except FileNotFoundError:
+                raise RuntimeError(
+                    f"StaticFiles directory '{directory}' does not exist."
+                ) from None
+            if not (stat.S_ISDIR(stat_result.st_mode) or stat.S_ISLNK(stat_result.st_mode)):
+                raise RuntimeError(f"StaticFiles path '{directory}' is not a directory.")
+
     async def check_config(self) -> None:
         """
         Perform a one-off configuration check that StaticFiles is actually
@@ -272,15 +291,7 @@ class StaticFiles:
         """
         if self.directory is None:
             return
-
-        try:
-            stat_result = await anyio.to_thread.run_sync(os.stat, self.directory)
-        except FileNotFoundError:
-            raise RuntimeError(
-                f"StaticFiles directory '{self.directory}' does not exist."
-            ) from None
-        if not (stat.S_ISDIR(stat_result.st_mode) or stat.S_ISLNK(stat_result.st_mode)):
-            raise RuntimeError(f"StaticFiles path '{self.directory}' is not a directory.")
+        await anyio.to_thread.run_sync(self._check_dirs)
 
     def is_not_modified(self, response_headers: Header, request_headers: Header) -> bool:
         """

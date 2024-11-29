@@ -340,7 +340,7 @@ from lilya.encoders import Encoder, register_encoder
 Criar e registrar um codificador que lida com tipos `msgspec.Struct`.
 
 ```python
-{!> ../../../docs_src/encoders/example.py !}
+{!> ../../../docs_src/encoders/msgspec.py !}
 ```
 
 Simples, certo? Porque agora o `MsgSpecEncoder` está registrado, pode simplesmente fazer isto nos handlers
@@ -385,7 +385,7 @@ Vejamos como seria para cada um deles.
 **Para msgspec Struct**
 
 ```python
-{!> ../../../docs_src/encoders/example.py !}
+{!> ../../../docs_src/encoders/msgspec.py !}
 ```
 
 **Para attrs**
