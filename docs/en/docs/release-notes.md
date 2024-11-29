@@ -5,6 +5,14 @@ hide:
 
 # Release Notes
 
+## 0.11.4
+
+### Added 
+
+- `GlobalContextMiddleware` the new middleware that allows you to have `g` object across the
+request lifecycle and set global variables to be accessed through that same lifecycle.
+- The `[g](./context.md#the-g-object)` definition and declaration.
+
 ## 0.11.3
 
 ### Changed

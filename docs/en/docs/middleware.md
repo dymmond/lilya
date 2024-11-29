@@ -193,6 +193,7 @@ for production or production like environments.
 how to use it is available.
 * `XFrameOptionsMiddleware` - Middleware that handles specifically against clickjacking.
 * `SecurityMiddleware` - Provides several security enhancements to the request/response cycle and adds security headers to the response.
+* `GlobalContextMiddleware` - Allows the use of the `[g](./context.md#the-g-object)` across request contexts.
 
 ### CSRFMiddleware
 
@@ -308,6 +309,14 @@ the second one applies when a unix socket is used or no client ip address was fo
 
 !!! Note
     It is currently not possible to simulate a client ip address in lilyas TestClient. So you may want to use the Forwarded header and trust "unix" for tests.
+
+### GlobalContextMiddleware
+
+Provides the clean use of the [g](./context.md#the-g-object) for request contexts.
+
+```python
+{!> ../../../docs_src/middleware/available/global_context.py !}
+```
 
 ### Other middlewares
 

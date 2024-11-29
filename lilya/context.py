@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextvars
 import copy
 import warnings
 from typing import TYPE_CHECKING, Annotated, Any
@@ -174,3 +175,46 @@ class Context:
     ) -> str:
         url: URL = self.request.path_for(name, **path_params)
         return str(url)
+
+
+class G:
+    """
+    This objects represents a global state of the application.
+    This can be used for Lilya requests and to store global
+    properties on a request context of the application and share
+    the state across.
+
+    This diverges from `state` of the application object and state
+    that is only accessible within the handler itself.
+    """
+
+    _context: contextvars.ContextVar = contextvars.ContextVar("g_context", default={})
+
+    @property
+    def store(self) -> Any:
+        return self._context.get()
+
+    def __getattr__(self, name: str) -> Any:
+        if name in self.store:
+            return self.store[name]
+        raise AttributeError(f"'G' object has no attribute '{name}'")
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name in ["store", "_context"]:
+            return super().__setattr__(name, value)
+        else:
+            self.store[name] = value
+
+    def __delattr__(self, name: str) -> None:
+        if name in self.store:
+            del self.store[name]
+        raise AttributeError(f"'G' object has no attribute '{name}'")
+
+    def clear(self) -> None:
+        self._context.set({})
+
+    def __len__(self) -> int:
+        return len(self.store)
+
+
+g = G()
