@@ -318,7 +318,7 @@ from lilya.middleware.request_context import RequestContextMiddleware
 from lilya.routing import Path
 
 
-async def show_request_context() -> dict[str, str]:
+async def show_request_context():
     return {"url": str(request_context.url)}
 
 
