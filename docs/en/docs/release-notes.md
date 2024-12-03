@@ -5,6 +5,13 @@ hide:
 
 # Release Notes
 
+## 0.11.6
+
+### Changed
+
+- Make `g` object automatically managed by Lilya middleware. You no longet need to import the
+`GlobalContextMiddleware` as it is a default Lilya middleware.
+
 ## 0.11.5
 
 ### Added

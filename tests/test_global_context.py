@@ -1,8 +1,6 @@
 import functools
 
 from lilya.context import g
-from lilya.middleware import DefineMiddleware
-from lilya.middleware.global_context import GlobalContextMiddleware
 from lilya.routing import Path
 from lilya.testclient import create_client
 
@@ -26,9 +24,7 @@ def test_global_context():
 
 
 def test_empty_global_context():
-    with create_client(
-        routes=[Path("/show", show_g)], middleware=[DefineMiddleware(GlobalContextMiddleware)]
-    ) as client:
+    with create_client(routes=[Path("/show", show_g)]) as client:
         response = client.get("/show")
         assert response.status_code == 200
         assert response.json() == {}
@@ -59,7 +55,6 @@ def test_global_context_with_decorator():
             Path("/data", get_data),
             Path("/show", get_g),
         ],
-        middleware=[DefineMiddleware(GlobalContextMiddleware)],
         debug=True,
     ) as client:
         response = client.get("/data")

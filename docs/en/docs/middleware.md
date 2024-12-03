@@ -311,14 +311,6 @@ the second one applies when a unix socket is used or no client ip address was fo
 !!! Note
     It is currently not possible to simulate a client ip address in lilyas TestClient. So you may want to use the Forwarded header and trust "unix" for tests.
 
-### GlobalContextMiddleware
-
-Provides the clean use of the [g](./context.md#the-g-object) for request contexts.
-
-```python
-{!> ../../../docs_src/middleware/available/global_context.py !}
-```
-
 ### RequestContextMiddleware
 
 Lazy loads a request object without explicitly add it into the handlers.
