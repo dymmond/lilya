@@ -5,6 +5,18 @@ hide:
 
 # Release Notes
 
+## 0.11.6
+
+### Added
+
+- Add `redirect` function as a wrapper to return `ResponseRedirect` responses. Import happens
+inside `lilya.responses import redirect`.
+
+### Changed
+
+- Make `g` object automatically managed by Lilya middleware. You no longet need to import the
+`GlobalContextMiddleware` as it is a default Lilya middleware.
+
 ## 0.11.5
 
 ### Added

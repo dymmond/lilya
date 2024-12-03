@@ -232,7 +232,8 @@ cleared.
 
 This is where the `G` object comes to play. Imagine the `g` of Flask, same principle.
 
-To use this properly, you will need to import the `GlobalContextMiddleware`.
+This object is globally used and on each request it will be "reset", meaning, it only lives
+in the request context of the call.
 
 ```python
 from lilya.apps import Lilya
@@ -248,16 +249,13 @@ def populate_g():
 
 
 async def show_g():
-    populate_g()
     return g.store
 
-
 app = Lilya(
-    routes=[Path("/show", show_g)],
-    middleware=[
-        DefineMiddleware(GlobalContextMiddleware)
-    ]
+    routes=[Path("/show", show_g)]
 )
+
+populate_g()
 ```
 
 This of course is a very simple example and probably not like how you would like to use but it
@@ -291,10 +289,7 @@ async def show_g():
 
 
 app = Lilya(
-    routes=[Path("/show", show_g)],
-    middleware=[
-        DefineMiddleware(GlobalContextMiddleware)
-    ]
+    routes=[Path("/show", show_g)]
 )
 ```
 

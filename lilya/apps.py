@@ -14,6 +14,7 @@ from lilya.datastructures import State, URLPath
 from lilya.middleware.app_settings import ApplicationSettingsMiddleware
 from lilya.middleware.base import DefineMiddleware
 from lilya.middleware.exceptions import ExceptionMiddleware
+from lilya.middleware.global_context import GlobalContextMiddleware
 from lilya.middleware.server_error import ServerErrorMiddleware
 from lilya.permissions.base import DefinePermission
 from lilya.protocols.middleware import MiddlewareProtocol
@@ -481,6 +482,7 @@ class BaseLilya:
 
         middleware = [
             DefineMiddleware(ServerErrorMiddleware, handler=error_handler, debug=self.debug),
+            DefineMiddleware(GlobalContextMiddleware),
             *self.custom_middleware,
             DefineMiddleware(ApplicationSettingsMiddleware),
             DefineMiddleware(ExceptionMiddleware, handlers=exception_handlers, debug=self.debug),

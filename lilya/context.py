@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextvars
 import copy
 import warnings
+from functools import lru_cache
 from typing import TYPE_CHECKING, Annotated, Any, cast
 
 from lilya.datastructures import URL
@@ -180,7 +181,7 @@ class Context:
 
 class G:
     """
-    This objects represents a global state of the application.
+    This object represents a global state of the application.
     This can be used for Lilya requests and to store global
     properties on a request context of the application and share
     the state across.
@@ -189,36 +190,55 @@ class G:
     that is only accessible within the handler itself.
     """
 
-    _context: contextvars.ContextVar = contextvars.ContextVar("g_context", default={})
+    _context: dict[str, Any]
+
+    def __init__(self, context: dict[str, Any] | None = None):
+        if context is None:
+            context = {}
+        super().__setattr__("_context", context)
 
     @property
     def store(self) -> Any:
-        return self._context.get()
+        return self._context
 
-    def __getattr__(self, name: str) -> Any:
-        if name in self.store:
-            return self.store[name]
-        raise AttributeError(f"'G' object has no attribute '{name}'")
+    def __setattr__(self, key: Any, value: Any) -> None:
+        self._context[key] = value
 
-    def __setattr__(self, name: str, value: Any) -> None:
-        if name in ["store", "_context"]:
-            return super().__setattr__(name, value)
-        else:
-            self.store[name] = value
+    def __getattr__(self, key: Any) -> Any:
+        try:
+            return self._context[key]
+        except KeyError:
+            message = "'{}' object has no attribute '{}'"
+            raise AttributeError(message.format(self.__class__.__name__, key)) from None
 
-    def __delattr__(self, name: str) -> None:
-        if name in self.store:
-            del self.store[name]
-        raise AttributeError(f"'G' object has no attribute '{name}'")
+    def __delattr__(self, key: Any) -> None:
+        del self._context[key]
 
-    def clear(self) -> None:
-        self._context.set({})
+    def __copy__(self) -> G:
+        return self.__class__(copy.copy(self._context))
 
     def __len__(self) -> int:
-        return len(self.store)
+        return len(self._context)
+
+    def __getitem__(self, key: str) -> Any:
+        return self._context[key]
+
+    def copy(self) -> G:
+        return copy.copy(self)
+
+    def clear(self) -> None:
+        self._context.clear()
+
+    def __repr__(self: G) -> str:
+        return f"{self.__class__.__name__}()"
 
 
-g = G()
+@lru_cache
+def get_g() -> G:
+    return G()
+
+
+g = get_g()
 
 
 class LazyRequestProxy:

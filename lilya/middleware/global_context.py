@@ -47,5 +47,8 @@ class GlobalContextMiddleware(ABC, MiddlewareProtocol):
         Returns:
             None
         """
-        g.clear()
-        await self.app(scope, receive, send)
+        try:
+            await self.app(scope, receive, send)
+        finally:
+            g.clear()
+            print(id(g))
