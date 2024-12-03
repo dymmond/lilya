@@ -19,6 +19,7 @@ from lilya.responses import (
     RedirectResponse,
     Response,
     StreamingResponse,
+    redirect,
 )
 from lilya.testclient import TestClient
 
@@ -104,6 +105,21 @@ def test_redirect_response(test_client_factory):
             response = Response("hello, world", media_type="text/plain", encoders=[FooEncoder])
         else:
             response = RedirectResponse("/", encoders=[FooEncoder])
+        assert isinstance(response.encoders[0], FooEncoder)
+        await response(scope, receive, send)
+
+    client = test_client_factory(app)
+    response = client.get("/redirect")
+    assert response.text == "hello, world"
+    assert response.url == "http://testserver/"
+
+
+def test_redirect_func(test_client_factory):
+    async def app(scope, receive, send):
+        if scope["path"] == "/":
+            response = Response("hello, world", media_type="text/plain", encoders=[FooEncoder])
+        else:
+            response = redirect("/", encoders=[FooEncoder])
         assert isinstance(response.encoders[0], FooEncoder)
         await response(scope, receive, send)
 
