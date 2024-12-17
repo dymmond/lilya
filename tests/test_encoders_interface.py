@@ -73,11 +73,20 @@ class FooSimple:
         FooModel(a=1),
         {"a": 5},
         FooSimple(name="hello"),
+        b"ctdsjdsxxxpng",
     ],
 )
 def test_idempotence(value, json_encode_kwargs):
     value_type = type(value)
     assert apply_structure(value_type, json_encode(value, **json_encode_kwargs)) == value
+
+
+@pytest.mark.parametrize(
+    "json_encode_kwargs", [{}, {"json_encode_fn": orjson.dumps, "post_transform_fn": orjson.loads}]
+)
+def test_memoryview(json_encode_kwargs):
+    tmp = b"ctdsjdsxxxpng"
+    assert apply_structure(bytes, json_encode(memoryview(tmp), **json_encode_kwargs)) == tmp
 
 
 def test_dont_crash_on_strings():

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from base64 import b64decode, b64encode
 from collections import deque
 from collections.abc import Callable, Iterable, Sequence
 from contextvars import ContextVar
@@ -143,6 +144,17 @@ class DateEncoder(Encoder):
         return date_obj.date()
 
 
+class BytesEncoder(Encoder):
+    name: str = "BytesEncoder"
+    __type__ = (bytes, memoryview)
+
+    def serialize(self, obj: bytes | memoryview) -> str:
+        return b64encode(obj).decode()
+
+    def encode(self, structure: type[bytes], value: Any) -> bytes:
+        return b64decode(value)
+
+
 class StructureEncoder(Encoder):
     name: str = "StructureEncoder"
     __type__ = (list, set, frozenset, GeneratorType, tuple, deque)
@@ -165,6 +177,7 @@ DEFAULT_ENCODER_TYPES: deque[EncoderProtocol] = deque(
         EnumEncoder(),
         PurePathEncoder(),
         DateEncoder(),
+        BytesEncoder(),
         StructureEncoder(),
     )
 )
