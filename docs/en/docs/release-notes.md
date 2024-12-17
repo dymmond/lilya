@@ -5,6 +5,13 @@ hide:
 
 # Release Notes
 
+
+## 0.11.7
+
+### Added
+
+- Add bytes encoder to encoders.
+
 ## 0.11.6
 
 ### Added
@@ -30,7 +37,7 @@ without explicitly declaring it inside handlers.
 
 ## 0.11.4
 
-### Added 
+### Added
 
 - `GlobalContextMiddleware` the new middleware that allows you to have `g` object across the
 request lifecycle and set global variables to be accessed through that same lifecycle.
