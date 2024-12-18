@@ -92,6 +92,13 @@ class Response:
         finally:
             RESPONSE_TRANSFORM_KWARGS.reset(token)
 
+    @classmethod
+    def transform(cls, content: Any) -> Any:
+        transform_kwargs = RESPONSE_TRANSFORM_KWARGS.get()
+        if transform_kwargs is None:
+            transform_kwargs = {}
+        return json_encode(content, **transform_kwargs)
+
     def make_response(self, content: Any) -> bytes | str:
         """
         Makes the Response object type.

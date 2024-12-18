@@ -16,6 +16,7 @@ hide:
 ### Changed
 
 - Move simplify logic from `make_response` to Response but keep old interface.
+- Move esmerald Response `transform` to lilya.
 
 ### Fixed
 
