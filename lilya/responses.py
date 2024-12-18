@@ -1,12 +1,22 @@
 from __future__ import annotations
 
+import contextlib
 import functools
 import http.cookies
 import json
 import os
 import stat
 import typing
-from collections.abc import AsyncIterable, Awaitable, Callable, Iterable, Mapping, Sequence
+from collections.abc import (
+    AsyncIterable,
+    Awaitable,
+    Callable,
+    Generator,
+    Iterable,
+    Mapping,
+    Sequence,
+)
+from contextvars import ContextVar
 from datetime import datetime
 from email.utils import format_datetime, formatdate
 from inspect import isclass
@@ -16,6 +26,7 @@ from typing import (
     Literal,
     NoReturn,
     Union,
+    cast,
 )
 from urllib.parse import quote
 
@@ -38,6 +49,10 @@ AsyncContentStream = AsyncIterable[Content]
 ContentStream = Union[AsyncContentStream, SyncContentStream]
 
 _empty: tuple[Any, ...] = ()
+
+RESPONSE_TRANSFORM_KWARGS: ContextVar[dict | None] = ContextVar(
+    "RESPONSE_TRANSFORM_KWARGS", default=None
+)
 
 
 class Response:
@@ -64,10 +79,18 @@ class Response:
         self.encoders: list[Encoder] = [
             encoder() if isclass(encoder) else encoder for encoder in encoders or _empty
         ]
-
         self.body = self.make_response(content)
         self.raw_headers: list[Any] = []
         self.make_headers(headers)
+
+    @classmethod
+    @contextlib.contextmanager
+    def with_transform_kwargs(cls, params: dict | None, /) -> Generator[None, None, None]:
+        token = RESPONSE_TRANSFORM_KWARGS.set(params)
+        try:
+            yield
+        finally:
+            RESPONSE_TRANSFORM_KWARGS.reset(token)
 
     def make_response(self, content: Any) -> bytes | str:
         """
@@ -77,6 +100,15 @@ class Response:
             return b""
         if isinstance(content, (bytes, memoryview)):
             return content
+        transform_kwargs = RESPONSE_TRANSFORM_KWARGS.get()
+        if transform_kwargs is not None:
+            transform_kwargs = transform_kwargs.copy()
+            if self.encoders:
+                transform_kwargs["with_encoders"] = (*self.encoders, *ENCODER_TYPES.get())
+            content = json_encode(content, **transform_kwargs)
+
+            if isinstance(content, (bytes, memoryview)):
+                return content
         return content.encode(self.charset)  # type: ignore
 
     def make_headers(
@@ -267,13 +299,28 @@ class JSONResponse(Response):
         )
 
     def make_response(self, content: Any) -> bytes:
-        return json.dumps(
-            content,
+        new_params = RESPONSE_TRANSFORM_KWARGS.get()
+        if new_params:
+            new_params = new_params.copy()
+        else:
+            new_params = {}
+        new_params["json_encode_fn"] = functools.partial(
+            json.dumps,
             ensure_ascii=False,
             allow_nan=False,
             indent=None,
             separators=(",", ":"),
-        ).encode(self.charset)
+        )
+        new_params["post_transform_fn"] = None
+        if content is NoReturn:
+            return b""
+        if self.encoders:
+            new_params["with_encoders"] = (*self.encoders, *ENCODER_TYPES.get())
+        content = json_encode(content, **new_params)
+
+        if isinstance(content, (bytes, memoryview)):
+            return content
+        return cast(bytes, content.encode(self.charset))
 
 
 class Ok(JSONResponse):
@@ -483,26 +530,22 @@ def make_response(
     status_code: int = status.HTTP_200_OK,
     headers: Mapping[str, str] | None = None,
     background: Task | None = None,
-    encoders: Sequence[Encoder] | None = None,
+    encoders: Sequence[Encoder | type[Encoder]] | None = None,
     json_encode_extra_kwargs: dict | None = None,
 ) -> Response:
     """
     Build JSON responses from a given content and
     providing extra parameters.
     """
-    _json_encode_kwargs: dict[str, Any] = json_encode_extra_kwargs or {}
-    if encoders is not None:
-        _json_encode_kwargs["with_encoders"] = (*encoders, *ENCODER_TYPES.get())
-    app = json_encode(content, **_json_encode_kwargs) if content is not None else None
-
-    return response_class(
-        content=app,
-        status_code=status_code,
-        headers=headers,
-        media_type=MediaType.JSON,
-        background=background,
-        encoders=encoders,
-    )
+    with response_class.with_transform_kwargs(json_encode_extra_kwargs):
+        return response_class(
+            content=content,
+            status_code=status_code,
+            headers=headers,
+            media_type=MediaType.JSON,
+            background=background,
+            encoders=encoders,
+        )
 
 
 def redirect(

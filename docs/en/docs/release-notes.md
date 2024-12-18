@@ -13,6 +13,14 @@ hide:
 - Add bytes encoder to encoders.
 - Allow using DefineMiddleware and DefinePermission with import strings.
 
+### Changed
+
+- Move simplify logic from `make_response` to Response but keep old interface.
+
+### Fixed
+
+- Fix unnecessary roundtrip in JSONResponse.
+
 ## 0.11.6
 
 ### Added
