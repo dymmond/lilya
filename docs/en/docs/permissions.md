@@ -21,7 +21,8 @@ guarantees it remains encapsulated within the exception handler.
 {!> ../../../docs_src/permissions/sample.py !}
 ```
 
-When defining a `permission`, it is imperative to utilize `lilya.permissions.DefinePermission` to encapsulate it.
+When defining a `permission`, it is imperative to utilize `lilya.permissions.DefinePermission` to encapsulate it. You can also
+define an import string (`"path.to.class"`) and lazily import the Permission.
 Additionally, it is advisable to adhere to the `PermissionProtocol` from
 `lilya.protocols.permissions.PermissionProtocol` as it provides an interface for the definition.
 
