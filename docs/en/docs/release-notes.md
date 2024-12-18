@@ -11,6 +11,7 @@ hide:
 ### Added
 
 - Add bytes encoder to encoders.
+- Allow using DefineMiddleware and DefinePermission with import strings.
 
 ## 0.11.6
 

@@ -128,7 +128,6 @@ assigning the result object into a `AuthResult` and make it available on every r
 
     from lilya.conf.global_settings import Settings
     from lilya.middleware import DefineMiddleware
-    from .middleware.jwt import JWTAuthMiddleware
 
 
     @dataclass
@@ -137,7 +136,8 @@ assigning the result object into a `AuthResult` and make it available on every r
         @property
         def middleware(self) -> List[DefineMiddleware]:
             return [
-                DefineMiddleware(JWTAuthMiddleware)
+                # you can also use absolute import strings
+                DefineMiddleware("project.middleware.jwt.JWTAuthMiddleware")
             ]
 
     # load the settings via LILYA_SETTINGS_MODULE=src.configs.live.AppSettings

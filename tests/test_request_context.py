@@ -3,7 +3,6 @@ import pytest  # type: ignore
 from lilya.context import request_context
 from lilya.exceptions import ImproperlyConfigured
 from lilya.middleware import DefineMiddleware
-from lilya.middleware.request_context import RequestContextMiddleware
 from lilya.requests import Request
 from lilya.routing import Path
 from lilya.testclient import create_client
@@ -16,7 +15,7 @@ async def show_request_context() -> dict[str, str]:
 def test_global_context():
     with create_client(
         routes=[Path("/show", show_request_context)],
-        middleware=[DefineMiddleware(RequestContextMiddleware)],
+        middleware=[DefineMiddleware("lilya.middleware.request_context.RequestContextMiddleware")],
     ) as client:
         response = client.get("/show")
 
@@ -39,7 +38,7 @@ async def show_request_context_and_request(request: Request) -> dict[str, str]:
 def test_global_context_with_request():
     with create_client(
         routes=[Path("/show", show_request_context_and_request)],
-        middleware=[DefineMiddleware(RequestContextMiddleware)],
+        middleware=[DefineMiddleware("lilya.middleware.request_context.RequestContextMiddleware")],
     ) as client:
         response = client.get("/show")
 

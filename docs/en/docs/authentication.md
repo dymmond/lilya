@@ -1,6 +1,6 @@
 # Authentication
 
-Lilya provides a straightforward yet robust interface for managing authentication and permissions. 
+Lilya provides a straightforward yet robust interface for managing authentication and permissions.
 By installing `AuthenticationMiddleware` with a suitable authentication backend, you can access the `request.user` and `request.auth`
 interfaces within your endpoints.
 
@@ -56,7 +56,7 @@ app = Lilya(routes=routes, middleware=middleware)
 
 ## Users
 
-Once you have installed `AuthenticationMiddleware`, the `request.user` interface becomes 
+Once you have installed `AuthenticationMiddleware`, the `request.user` interface becomes
 available to your endpoints and other middleware.
 
 This interface should subclass `BaseUser`, which includes two properties and any additional information your user model requires.
