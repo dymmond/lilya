@@ -6,6 +6,12 @@ hide:
 # Release Notes
 
 
+## 0.11.8
+
+### Fixed
+
+- Fix too strict json_encoder_fn enforcment.
+
 ## 0.11.7
 
 ### Added

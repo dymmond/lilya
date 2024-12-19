@@ -311,12 +311,15 @@ class JSONResponse(Response):
             new_params = new_params.copy()
         else:
             new_params = {}
-        new_params["json_encode_fn"] = functools.partial(
-            json.dumps,
-            ensure_ascii=False,
-            allow_nan=False,
-            indent=None,
-            separators=(",", ":"),
+        new_params.setdefault(
+            "json_encode_fn",
+            functools.partial(
+                json.dumps,
+                ensure_ascii=False,
+                allow_nan=False,
+                indent=None,
+                separators=(",", ":"),
+            ),
         )
         new_params["post_transform_fn"] = None
         if content is NoReturn:
