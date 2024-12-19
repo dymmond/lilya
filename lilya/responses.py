@@ -103,7 +103,8 @@ class Response:
         """
         Makes the Response object type.
         """
-        if content is None or content is NoReturn or not content:
+        # only handle empty string not empty bytes. Bytes are handled later
+        if content is None or content is NoReturn or content == "":
             return b""
         if isinstance(content, (bytes, memoryview)):
             return content
@@ -116,6 +117,10 @@ class Response:
 
             if isinstance(content, (bytes, memoryview)):
                 return content
+        # handle empty {} or [] gracefully instead of failing
+        # must be transformed before
+        if not content:
+            return b""
         return content.encode(self.charset)  # type: ignore
 
     def make_headers(
@@ -311,12 +316,15 @@ class JSONResponse(Response):
             new_params = new_params.copy()
         else:
             new_params = {}
-        new_params["json_encode_fn"] = functools.partial(
-            json.dumps,
-            ensure_ascii=False,
-            allow_nan=False,
-            indent=None,
-            separators=(",", ":"),
+        new_params.setdefault(
+            "json_encode_fn",
+            functools.partial(
+                json.dumps,
+                ensure_ascii=False,
+                allow_nan=False,
+                indent=None,
+                separators=(",", ":"),
+            ),
         )
         new_params["post_transform_fn"] = None
         if content is NoReturn:
