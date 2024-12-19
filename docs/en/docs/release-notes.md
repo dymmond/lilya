@@ -19,7 +19,7 @@ hide:
 
 ### Fixed
 
-- Fix serialization of primitives in the Response. Strip " by default.
+- Fix serialization of primitives in the Response. Strip `"` by default.
 
 ## 0.11.8
 
