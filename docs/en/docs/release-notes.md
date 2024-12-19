@@ -5,6 +5,15 @@ hide:
 
 # Release Notes
 
+## 0.11.9
+
+### Added
+
+- Add `session_serializer`, `session_deserializer` parameters to `SessionMiddleware`.
+
+### Changed
+
+- Refactor `SessionMiddleware`.
 
 ## 0.11.8
 
