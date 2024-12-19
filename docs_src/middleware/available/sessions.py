@@ -6,8 +6,26 @@ from lilya.apps import Lilya
 from lilya.conf.global_settings import Settings
 from lilya.middleware import DefineMiddleware
 from lilya.middleware.sessions import SessionMiddleware
+from lilya.requests import Request
+from lilya.routing import Path
 
-routes = [...]
+
+async def set_session(request: Request) -> dict:
+    # this creates/updates the session
+    if not request.scope["session"]:
+        request.scope["session"] = {"id": 1, "seen_page_list": []}
+    else:
+        # this updates the session
+        request.scope["session"]["seen_page_list"].append("homepage")
+    return request.scope["session"]
+
+
+async def delete_session(request: Request) -> dict:
+    old_session = request.scope["session"]
+    request.scope["session"] = None
+    return old_session
+
+routes = [Path("/set", set_session), Path("/delete", delete_session)]
 
 # Option one
 middleware = [DefineMiddleware(SessionMiddleware, secret_key=...)]

@@ -222,6 +222,16 @@ Adds signed cookie-based HTTP sessions. Session information is readable but not 
 {!> ../../../docs_src/middleware/available/sessions.py !}
 ```
 
+By default session data is restricted to json.dumps serializable data.
+If you want more speed or more datatypes you can pass a different serializer/deserializer, e.g. orjson:
+
+```python
+{!> ../../../docs_src/middleware/available/sessions_orjson.py !}
+```
+
+Note however when using json not all datatypes are idempotent.
+You might want to use dataclasses, msgstruct, RDF or (not recommended because of security issues: pickle).
+
 ### HTTPSRedirectMiddleware
 
 Enforces that all incoming requests must either be https or wss. Any http os ws will be redirected to

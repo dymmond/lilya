@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import json
 from base64 import b64decode, b64encode
-from typing import Literal
+from collections.abc import Callable
+from typing import Any, Literal
 
 import itsdangerous
 from itsdangerous.exc import BadSignature
@@ -24,6 +25,8 @@ class SessionMiddleware(MiddlewareProtocol):
         same_site: Literal["lax", "strict", "none"] = "lax",
         https_only: bool = False,
         domain: str | None = None,
+        session_serializer: Callable[[Any], bytes | str] = json.dumps,
+        session_deserializer: Callable[[bytes], Any] = json.loads,
     ) -> None:
         """
         Middleware for handling session data in ASGI applications.
@@ -37,6 +40,8 @@ class SessionMiddleware(MiddlewareProtocol):
             same_site (Literal["lax", "strict", "none"]): The SameSite attribute for the session cookie.
             https_only (bool): If True, set the secure flag for the session cookie (HTTPS only).
             domain (Optional[str]): The domain attribute for the session cookie.
+            session_serializer (Callable[[Any], bytes | str]): The encoder for the session. Default json.dumps.
+            session_deserializer (Callable[[bytes], Any]): The decoder for the session. Default json.loads.
         """
         self.app = app
         self.signer = itsdangerous.TimestampSigner(str(secret_key))
@@ -48,6 +53,8 @@ class SessionMiddleware(MiddlewareProtocol):
             self.security_flags += "; secure"
         if domain is not None:
             self.security_flags += f"; domain={domain}"
+        self.session_serializer = session_serializer
+        self.session_deserializer = session_deserializer
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -70,6 +77,15 @@ class SessionMiddleware(MiddlewareProtocol):
 
         await self.app(scope, receive, send_wrapper)
 
+    def decode_session(self, data: bytes) -> Any:
+        return self.session_deserializer(b64decode(data))
+
+    def encode_session(self, session: Any) -> bytes:
+        data = self.session_serializer(session)
+        if isinstance(data, str):
+            data = data.encode("utf-8")
+        return b64encode(data)
+
     async def load_session_data(self, scope: Scope, connection: Connection) -> bool:
         """
         Load session data from the session cookie.
@@ -85,7 +101,7 @@ class SessionMiddleware(MiddlewareProtocol):
             data = connection.cookies[self.session_cookie].encode("utf-8")
             try:
                 data = self.signer.unsign(data, max_age=self.max_age)
-                scope["session"] = json.loads(b64decode(data))
+                scope["session"] = self.decode_session(data)
                 return False
             except BadSignature:
                 scope["session"] = {}
@@ -125,7 +141,7 @@ class SessionMiddleware(MiddlewareProtocol):
             scope (Scope): ASGI scope.
             message (Message): ASGI message
         """
-        data = b64encode(json.dumps(scope["session"]).encode("utf-8"))
+        data = self.encode_session(scope["session"])
         data = self.signer.sign(data)
         headers = Header.from_scope(scope=scope)
         header_value = "{session_cookie}={data}; path={path}; {max_age}{security_flags}".format(
