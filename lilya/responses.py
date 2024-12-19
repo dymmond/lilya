@@ -103,7 +103,8 @@ class Response:
         """
         Makes the Response object type.
         """
-        if content is None or content is NoReturn or not content:
+        # only handle empty string not empty bytes. Bytes are handled later
+        if content is None or content is NoReturn or content == "":
             return b""
         if isinstance(content, (bytes, memoryview)):
             return content
