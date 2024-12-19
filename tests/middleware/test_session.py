@@ -1,5 +1,9 @@
+import pickle
 import re
 from collections.abc import Callable
+
+import orjson
+import pytest
 
 from lilya.apps import Lilya
 from lilya.middleware import DefineMiddleware
@@ -27,14 +31,28 @@ async def clear_session(request: Request) -> JSONResponse:
     return JSONResponse({"session": request.session})
 
 
-def test_session(test_client_factory: TestClientFactory) -> None:
+@pytest.fixture(
+    params=[
+        {},
+        {"session_serializer": orjson.dumps, "session_deserializer": orjson.loads},
+        {"session_serializer": pickle.dumps, "session_deserializer": pickle.loads},
+    ],
+    ids=["default", "orjson", "pickle"],
+)
+def encoder_parameters(request):
+    return request.param
+
+
+def test_session(test_client_factory: TestClientFactory, encoder_parameters) -> None:
     app = Lilya(
         routes=[
             Path("/view_session", handler=view_session),
             Path("/update_session", handler=update_session, methods=["POST"]),
             Path("/clear_session", handler=clear_session, methods=["POST"]),
         ],
-        middleware=[DefineMiddleware(SessionMiddleware, secret_key="example")],
+        middleware=[
+            DefineMiddleware(SessionMiddleware, secret_key="example", **encoder_parameters)
+        ],
     )
     client = test_client_factory(app)
 
@@ -60,13 +78,17 @@ def test_session(test_client_factory: TestClientFactory) -> None:
     assert response.json() == {"session": {}}
 
 
-def test_session_expires(test_client_factory: TestClientFactory) -> None:
+def test_session_expires(test_client_factory: TestClientFactory, encoder_parameters) -> None:
     app = Lilya(
         routes=[
             Path("/view_session", handler=view_session),
             Path("/update_session", handler=update_session, methods=["POST"]),
         ],
-        middleware=[DefineMiddleware(SessionMiddleware, secret_key="example", max_age=-1)],
+        middleware=[
+            DefineMiddleware(
+                SessionMiddleware, secret_key="example", max_age=-1, **encoder_parameters
+            )
+        ],
     )
     client = test_client_factory(app)
 
@@ -144,13 +166,17 @@ def test_session_cookie_subpath(test_client_factory: TestClientFactory) -> None:
     assert cookie_path == "/second_app"
 
 
-def test_invalid_session_cookie(test_client_factory: TestClientFactory) -> None:
+def test_invalid_session_cookie(
+    test_client_factory: TestClientFactory, encoder_parameters
+) -> None:
     app = Lilya(
         routes=[
             Path("/view_session", handler=view_session),
             Path("/update_session", handler=update_session, methods=["POST"]),
         ],
-        middleware=[DefineMiddleware(SessionMiddleware, secret_key="example")],
+        middleware=[
+            DefineMiddleware(SessionMiddleware, secret_key="example", **encoder_parameters)
+        ],
     )
     client = test_client_factory(app)
 
