@@ -311,6 +311,8 @@ class JSONResponse(Response):
         )
 
     def make_response(self, content: Any) -> bytes:
+        if content is NoReturn:
+            return b""
         new_params = RESPONSE_TRANSFORM_KWARGS.get()
         if new_params:
             new_params = new_params.copy()
@@ -327,8 +329,6 @@ class JSONResponse(Response):
             ),
         )
         new_params["post_transform_fn"] = None
-        if content is NoReturn:
-            return b""
         if self.encoders:
             new_params["with_encoders"] = (*self.encoders, *ENCODER_TYPES.get())
         content = json_encode(content, **new_params)
