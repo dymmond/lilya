@@ -11,7 +11,7 @@ hide:
 ### Fixed
 
 - Fix too strict json_encoder_fn enforcment.
-- Fix empty [] and {} becoming incorrectly an empty response.
+- Fix empty [] and {} becoming incorrectly an empty response in json context.
 
 ## 0.11.7
 

@@ -117,6 +117,10 @@ class Response:
 
             if isinstance(content, (bytes, memoryview)):
                 return content
+        # handle empty {} or [] gracefully instead of failing
+        # must be transformed before
+        if not content:
+            return b""
         return content.encode(self.charset)  # type: ignore
 
     def make_headers(
