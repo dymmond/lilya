@@ -15,6 +15,12 @@ hide:
 
 - Refactor `SessionMiddleware`.
 
+## 0.11.9
+
+### Fixed
+
+- Fix serialization of primitives in the Response. Strip " by default.
+
 ## 0.11.8
 
 ### Fixed

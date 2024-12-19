@@ -99,7 +99,7 @@ class Response:
             transform_kwargs = {}
         return json_encode(content, **transform_kwargs)
 
-    def make_response(self, content: Any) -> bytes | str:
+    def make_response(self, content: Any) -> bytes | memoryview:
         """
         Makes the Response object type.
         """
@@ -113,6 +113,11 @@ class Response:
             transform_kwargs = transform_kwargs.copy()
             if self.encoders:
                 transform_kwargs["with_encoders"] = (*self.encoders, *ENCODER_TYPES.get())
+            # strip " from stringified primitives
+            transform_kwargs.setdefault(
+                "post_transform_fn",
+                lambda x: x.strip('"') if isinstance(x, str) else x.strip(b'"'),
+            )
             content = json_encode(content, **transform_kwargs)
 
             if isinstance(content, (bytes, memoryview)):
@@ -310,7 +315,7 @@ class JSONResponse(Response):
             encoders=encoders,
         )
 
-    def make_response(self, content: Any) -> bytes:
+    def make_response(self, content: Any) -> bytes | memoryview:
         if content is NoReturn:
             return b""
         new_params = RESPONSE_TRANSFORM_KWARGS.get()
@@ -546,7 +551,8 @@ def make_response(
     headers: Mapping[str, str] | None = None,
     background: Task | None = None,
     encoders: Sequence[Encoder | type[Encoder]] | None = None,
-    json_encode_extra_kwargs: dict | None = None,
+    # passing mutables as default argument is not a good style but here is no other way
+    json_encode_extra_kwargs: dict | None = {},  # noqa: B006
 ) -> Response:
     """
     Build JSON responses from a given content and

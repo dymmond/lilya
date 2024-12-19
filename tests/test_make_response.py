@@ -1,3 +1,4 @@
+import datetime
 from collections import deque
 from dataclasses import dataclass
 
@@ -8,7 +9,7 @@ from msgspec import Struct
 from pydantic import BaseModel
 
 from lilya.encoders import Encoder, apply_structure
-from lilya.responses import make_response
+from lilya.responses import Response, make_response
 from lilya.routing import Path
 from lilya.testclient import create_client
 
@@ -130,7 +131,7 @@ def test_attrs_custom_make_response_list():
 @pytest.mark.parametrize(
     "json_encode_kwargs", [{}, {"json_encode_fn": orjson.dumps, "post_transform_fn": orjson.loads}]
 )
-@pytest.mark.parametrize("value", ["1", 2, 2.2, None], ids=["str", "int", "float", "none"])
+@pytest.mark.parametrize("value", ["hello", 2, 2.2, None], ids=["str", "int", "float", "none"])
 def test_primitive_responses(value, json_encode_kwargs):
     def home():
         return make_response(value, status_code=201, json_encode_extra_kwargs=json_encode_kwargs)
@@ -140,6 +141,32 @@ def test_primitive_responses(value, json_encode_kwargs):
 
         assert response.status_code == 201
         assert response.json() == value
+
+
+@pytest.mark.parametrize(
+    "json_encode_kwargs", [{}, {"json_encode_fn": orjson.dumps, "post_transform_fn": orjson.loads}]
+)
+@pytest.mark.parametrize(
+    "value,result",
+    [
+        ("hello", "hello"),
+        (b"hello", "hello"),
+        (2, "2"),
+        (2.2, "2.2"),
+        (None, ""),
+        (datetime.datetime(2014, 11, 10), "2014-11-10T00:00:00"),
+    ],
+    ids=["str", "bytes", "int", "float", "none", "datetime"],
+)
+def test_classic_response(value, result, json_encode_kwargs):
+    def home():
+        return make_response(value, status_code=201, response_class=Response)
+
+    with create_client(routes=[Path("/", home)]) as client:
+        response = client.get("/")
+
+        assert response.status_code == 201
+        assert response.text == result
 
 
 def test_dict_response():
