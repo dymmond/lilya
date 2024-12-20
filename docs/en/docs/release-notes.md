@@ -18,6 +18,7 @@ hide:
 - Allow multiple backends in `AuthenticationMiddleware`.
 - Move backend logic from `BaseAuthMiddleware` to `AuthenticationMiddleware`. Matches documentation.
 - Rename BaseUser to UserInterface and make it a protocol. Note: the old name is still available for compatibility reasons.
+- Remove undocumented stub definitions from UserInterface. They were unsound.
 
 ### Fixed
 
