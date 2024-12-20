@@ -24,11 +24,6 @@ hide:
 
 - Authentication documentation referenced non-existing structures.
 - Available middleware section in middleware.md was not up to date.
-
-## 0.11.9
-
-### Fixed
-
 - Fix serialization of primitives in the Response. Strip `"` by default.
 
 ## 0.11.8
