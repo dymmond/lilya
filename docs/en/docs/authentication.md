@@ -29,8 +29,7 @@ The implementation should implement the inteface `UserInterface`, which includes
 * `.is_authenticated`
 * `.display_name`
 
-Lilya provides two built-in user implementations: `AnonymousUser()`,
-and `BasicUser(username)`.
+Lilya provides two built-in user implementations: `AnonymousUser()` and `BasicUser(username)`.
 
 ## AuthCredentials
 

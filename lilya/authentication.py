@@ -160,6 +160,7 @@ def requires(
 class AuthenticationError(Exception): ...
 
 
+@typing.runtime_checkable
 class AuthenticationBackend(ABC, typing.Protocol):
     @abstractmethod
     async def authenticate(self, connection: Connection) -> AuthResult | None: ...
@@ -170,11 +171,8 @@ class AuthCredentials:
         self.scopes = [] if scopes is None else list(scopes)
 
 
+@typing.runtime_checkable
 class UserInterface(typing.Protocol):
-    @property
-    def is_active(self) -> bool:
-        return False
-
     @property
     def is_authenticated(self) -> bool:
         raise NotImplementedError()
@@ -209,7 +207,3 @@ class AnonymousUser(UserInterface):
     @property
     def display_name(self) -> str:
         return ""
-
-    @property
-    def is_anonymous(self) -> bool:
-        return True
