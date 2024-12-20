@@ -160,8 +160,7 @@ def requires(
 class AuthenticationError(Exception): ...
 
 
-@typing.runtime_checkable
-class AuthenticationBackend(ABC, typing.Protocol):
+class AuthenticationBackend(ABC):
     @abstractmethod
     async def authenticate(self, connection: Connection) -> AuthResult | None: ...
 
