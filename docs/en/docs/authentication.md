@@ -4,68 +4,32 @@ Lilya provides a straightforward yet robust interface for managing authenticatio
 By installing `AuthenticationMiddleware` with a suitable authentication backend, you can access the `request.user` and `request.auth`
 interfaces within your endpoints.
 
-
 ```python
-import base64
-import binascii
-
-from lilya.apps import Lilya
-from lilya.authentication import (
-    AuthCredentials, AuthenticationBackend, AuthenticationError, BasicUser
-)
-from lilya.middleware import DefineMiddleware
-from lilya.middleware.authentication import AuthenticationMiddleware
-from lilya.responses import PlainText
-from lilya.routing import Path
-
-
-class BasicAuthBackend(AuthenticationBackend):
-    async def authenticate(self, connection):
-        if "Authorization" not in connection.headers:
-            return
-
-        auth = connection.headers["Authorization"]
-        try:
-            scheme, credentials = auth.split()
-            if scheme.lower() != 'basic':
-                return
-            decoded = base64.b64decode(credentials).decode("ascii")
-        except (ValueError, UnicodeDecodeError, binascii.Error) as exc:
-            raise AuthenticationError('Invalid basic auth credentials')
-
-        username, _, password = decoded.partition(":")
-        return AuthCredentials(["authenticated"]), BasicUser(username)
-
-
-async def homepage(request):
-    if request.user.is_authenticated:
-        return PlainTextResponse('Hello, ' + request.user.display_name)
-    return PlainTextResponse('Hello, you')
-
-
-routes = [
-    Path("/", handler=homepage)
-]
-
-middleware = [
-    Middleware(AuthenticationMiddleware, backend=BasicAuthBackend())
-]
-
-app = Lilya(routes=routes, middleware=middleware)
+{!> ../../../docs_src/authentication/basic_example.py !}
 ```
+
+## Backends
+
+For backends you need the AuthenticationMiddleware (not the BaseAuthMiddleware). Only here you can provide them
+via the `backend` parameter. This can be a sequence of AuthenticationBackend instances or a also a single one.
+
+If a backend doesn't find the user it can return None in `authenticate` to skip to the next Backend.
+
+If a backend raises an error in `authenticate`, the whole chain is stopped.
+
+Backends are retrievable on the middleware via the `backend` attribute. It is always a list.
 
 ## Users
 
 Once you have installed `AuthenticationMiddleware`, the `request.user` interface becomes
 available to your endpoints and other middleware.
 
-This interface should subclass `BaseUser`, which includes two properties and any additional information your user model requires.
+The implementation should implement the inteface `UserInterface`, which includes two properties and any additional information your user model requires.
 
 * `.is_authenticated`
 * `.display_name`
 
-Lilya provides two built-in user implementations: `AnonymousUser()`,
-and `BasicUser(username)`.
+Lilya provides two built-in user implementations: `AnonymousUser()` and `BasicUser(username)`.
 
 ## AuthCredentials
 

@@ -14,6 +14,16 @@ hide:
 ### Changed
 
 - Refactor `SessionMiddleware`.
+- Refactor authentication.
+- Allow multiple backends in `AuthenticationMiddleware`.
+- Move backend logic from `BaseAuthMiddleware` to `AuthenticationMiddleware`. Matches documentation.
+- Rename BaseUser to UserInterface and make it a protocol. Note: the old name is still available for compatibility reasons.
+- Remove undocumented stub definitions from UserInterface. They were unsound.
+
+### Fixed
+
+- Authentication documentation referenced non-existing structures.
+- Available middleware section in middleware.md was not up to date.
 
 ## 0.11.9
 

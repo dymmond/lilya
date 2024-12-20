@@ -90,13 +90,17 @@ class MyMiddleware:
 When implementing a Pure ASGI middleware, it is like implementing an ASGI application, the first
 parameter **should always be an app** and the `__call__` should **always return the app**.
 
-## BaseAuthMiddleware
 
-This is a very special middleware and helps with any authentication middleware that can be used within
+## BaseAuthMiddleware & AuthenticationMiddleware
+
+These are a very special middlewares and and helps with any authentication middleware that can be used within
 an **Lilya** application but like everything else, you can design your own.
 
-`BaseAuthMiddleware` is also a protocol that simply enforces the implementation of the `authenticate` method and
-assigning the result object into a `AuthResult` and make it available on every request.
+`BaseAuthMiddleware` is also an abstract class that simply enforces the implementation of the `authenticate` method and
+assigning the result object into a `tuple[AuthCredentials | None, UserInterface | None]` or None and make it available on every request.
+
+`AuthenticationMiddleware` is an implementation using backends and most people will prefer it.
+See [Authentication](./authentication.md) for more details.
 
 ### Example of a JWT middleware class
 
@@ -104,8 +108,8 @@ assigning the result object into a `AuthResult` and make it available on every r
 {!> ../../../docs_src/middleware/auth_middleware_example.py !}
 ```
 
-1. Import the `BaseAuthMiddleware` and `AuthResult` from `lilya.middleware.authentication`.
-2. Implement the `authenticate` and assign the `user` result to the `AuthResult`.
+1. Import the `BaseAuthMiddleware` from `lilya.middleware.authentication`.
+2. Implement the `authenticate` and return `tuple[AuthCredentials, UserInterface]` (AuthResult) or None or raise.
 
 #### Import the middleware into a Lilya application
 
@@ -193,8 +197,10 @@ for production or production like environments.
 how to use it is available.
 * `XFrameOptionsMiddleware` - Middleware that handles specifically against clickjacking.
 * `SecurityMiddleware` - Provides several security enhancements to the request/response cycle and adds security headers to the response.
+* `ClientIPMiddleware` - Provides facilities to retrieve the client ip. This can be useful for ratelimits.
 * `GlobalContextMiddleware` - Allows the use of the `[g](./context.md#the-g-object)` across request contexts.
 * `RequestContextMiddleware` - Adds a `request` object context without the need to use handlers.
+* `AuthenticationMiddleware` & `BaseAuthMiddleware` - See [above](#baseauthmiddleware--authenticationmiddleware).
 
 ### CSRFMiddleware
 
