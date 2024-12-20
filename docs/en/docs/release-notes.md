@@ -14,7 +14,9 @@ hide:
 ### Changed
 
 - Refactor `SessionMiddleware`.
-- Refactor authentication. Allow multiple backends.
+- Refactor authentication.
+- Allow multiple backends in `AuthenticationMiddleware`.
+- Move backend logic from `BaseAuthMiddleware` to `AuthenticationMiddleware`. Matches documentation.
 
 ### Fixed
 
