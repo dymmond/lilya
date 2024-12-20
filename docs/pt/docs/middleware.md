@@ -94,8 +94,8 @@ para torná-lo disponível em cada pedido.
 {!> ../../../docs_src/middleware/auth_middleware_example.py !}
 ```
 
-1. Importe o `BaseAuthMiddleware` e `AuthResult` de `lilya.middleware.authentication`.
-2. Implemente o método `authenticate` e atribua o resultado `user` ao `AuthResult`.
+1. Importe o `BaseAuthMiddleware` de `lilya.middleware.authentication`.
+2. Implemente o método `authenticate` e atribua o resultado `user` ao `tuple[AuthCredentials, UserInterface]` (AuthResult).
 
 #### Importe o middleware numa aplicação Lilya
 

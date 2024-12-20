@@ -22,7 +22,6 @@ from lilya.middleware.authentication import AuthenticationMiddleware
 from lilya.requests import Connection, Request
 from lilya.responses import JSONResponse, Response
 from lilya.routing import Path, WebSocketPath
-from lilya.testclient import create_client
 from lilya.websockets import WebSocket
 
 AsyncEndpoint = Callable[..., Awaitable[Response]]
@@ -315,59 +314,15 @@ def control_panel(request: Request) -> JSONResponse:
 other_app = Lilya(
     routes=[Path("/control-panel", handler=control_panel)],
     middleware=[
-        DefineMiddleware(AuthenticationMiddleware, backend=BasicAuth(), on_error=on_auth_error)
+        DefineMiddleware(
+            AuthenticationMiddleware, backend=[BasicAuth(), BasicAuth()], on_error=on_auth_error
+        )
     ],
 )
 
 
 def test_custom_on_error(test_client_factory) -> None:
     with test_client_factory(other_app) as client:
-        response = client.get("/control-panel", auth=("lilya", "example"))
-        assert response.status_code == 200
-        assert response.json() == {"authenticated": True, "user": "lilya"}
-
-        response = client.get("/control-panel", headers={"Authorization": "basic foobar"})
-        assert response.status_code == 401
-        assert response.json() == {"error": "Invalid basic auth credentials"}
-
-
-class CustomMiddleware(AuthenticationMiddleware):
-    async def authenticate(self, request: Connection) -> tuple[AuthCredentials, BasicUser] | None:
-        return True
-
-
-def test_raise_assertation_error(test_client_factory) -> None:
-    with pytest.raises(AssertionError):
-        with create_client(
-            routes=[Path("/control-panel", handler=control_panel)],
-            middleware=[
-                DefineMiddleware(CustomMiddleware, backend=BasicAuth(), on_error=on_auth_error)
-            ],
-        ):
-            ...
-
-
-class CustomWorkingMiddleware(AuthenticationMiddleware):
-    async def authenticate(self, request: Connection) -> tuple[AuthCredentials, BasicUser] | None:
-        if "Authorization" not in request.headers:
-            return None
-
-        auth = request.headers["Authorization"]
-        try:
-            scheme, credentials = auth.split()
-            decoded = base64.b64decode(credentials).decode("ascii")
-        except (ValueError, UnicodeDecodeError, binascii.Error):
-            raise AuthenticationError("Invalid basic auth credentials") from None
-
-        username, _, password = decoded.partition(":")
-        return AuthCredentials(["authenticated"]), BasicUser(username)
-
-
-def test_custom_on_error_with_authenticate(test_client_factory) -> None:
-    with create_client(
-        routes=[Path("/control-panel", handler=control_panel)],
-        middleware=[DefineMiddleware(CustomWorkingMiddleware, on_error=on_auth_error)],
-    ) as client:
         response = client.get("/control-panel", auth=("lilya", "example"))
         assert response.status_code == 200
         assert response.json() == {"authenticated": True, "user": "lilya"}

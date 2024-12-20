@@ -14,6 +14,12 @@ hide:
 ### Changed
 
 - Refactor `SessionMiddleware`.
+- Refactor authentication. Allow multiple backends.
+
+### Fixed
+
+- Authentication documentation referenced non-existing structures.
+- Available middleware section in middleware.md was not up to date.
 
 ## 0.11.8
 

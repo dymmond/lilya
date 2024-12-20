@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from abc import ABC
-from typing import Callable
+from abc import ABC, abstractmethod
+from collections.abc import Callable, Sequence
 
 from lilya._internal._connection import Connection
 from lilya.authentication import (
@@ -9,6 +9,7 @@ from lilya.authentication import (
     AuthCredentials,
     AuthenticationBackend,
     AuthenticationError,
+    AuthResult,
 )
 from lilya.enums import ScopeType
 from lilya.protocols.middleware import MiddlewareProtocol
@@ -21,9 +22,14 @@ class BaseAuthMiddleware(ABC, MiddlewareProtocol):
     `BaseAuthMiddleware` is the object that you can implement if you
     want to implement any `authentication` middleware with Lilya.
 
-    It is not mandatory to use it and you are free to implement your.
+    It is not mandatory to use it and you are free to implement your own.
 
-    Once you have installed the `AuthenticationMiddleware` and implemented the
+    If you just want to use Authentication you can skip to `AuthenticationMiddleware` and create an AuthenticationBackend.
+
+    Once you have installed the `AuthenticationMiddleware` and
+    either provide
+
+     implemented the
     `authenticate`, the `request.user` will be available in any of your
     endpoints.
     """
@@ -31,15 +37,10 @@ class BaseAuthMiddleware(ABC, MiddlewareProtocol):
     def __init__(
         self,
         app: ASGIApp,
-        backend: AuthenticationBackend | None = None,
         on_error: Callable[[Connection, AuthenticationError], Response] | None = None,
     ) -> None:
         super().__init__(app)
-        assert backend is None or (
-            not hasattr(self, "authenticate") and backend is not None
-        ), "Use either 'backend' or implement 'authenticate()' function, not both."
         self.app = app
-        self.backend = backend
         self.on_error: Callable[[Connection, Exception], Response] = (
             on_error if on_error is not None else self.default_on_error  # type: ignore
         )
@@ -56,24 +57,21 @@ class BaseAuthMiddleware(ABC, MiddlewareProtocol):
             return
 
         conn = Connection(scope)
-
-        if self.backend is not None:
-            try:
-                auth_result = await self.backend.authenticate(conn)
-            except AuthenticationError as exc:
-                await self._process_exception(scope, receive, send, conn, exc)
-                return None
-        else:
-            try:
-                auth_result = await self.authenticate(conn)
-            except AuthenticationError as exc:
-                await self._process_exception(scope, receive, send, conn, exc)
-                return None
+        try:
+            auth_result = await self.authenticate(conn)
+        except AuthenticationError as exc:
+            await self._process_exception(scope, receive, send, conn, exc)
+            return
 
         if auth_result is None:
             auth_result = AuthCredentials(), AnonymousUser()
+
         scope["auth"], scope["user"] = auth_result
         await self.app(scope, receive, send)
+
+    @abstractmethod
+    async def authenticate(self, conn: Connection) -> None | AuthResult:
+        """Authorize users here."""
 
     async def _process_exception(
         self, scope: Scope, receive: Receive, send: Send, connection: Connection, exc: Exception
@@ -102,4 +100,34 @@ class BaseAuthMiddleware(ABC, MiddlewareProtocol):
         return PlainText(str(exc), status_code=400)
 
 
-class AuthenticationMiddleware(BaseAuthMiddleware): ...
+class AuthenticationMiddleware(BaseAuthMiddleware):
+    backend: list[AuthenticationBackend]
+
+    def __init__(
+        self,
+        app: ASGIApp,
+        backend: AuthenticationBackend | Sequence[AuthenticationBackend] | None = None,
+        on_error: Callable[[Connection, AuthenticationError], Response] | None = None,
+    ) -> None:
+        super().__init__(app, on_error=on_error)
+        if backend is None:
+            self.backend = []
+        elif isinstance(backend, AuthenticationBackend):
+            self.backend = [backend]
+        else:
+            self.backend = list(backend)
+        assert (
+            self.backend or (not getattr(self.authenticate, "requires_backend", False))
+        ), "'backend' is required for authenticate method. Overwrite 'authenticate' or provide AuthenticationBackend in backend"
+
+    async def authenticate(self, conn: Connection) -> None | AuthResult:
+        """Authorize users here."""
+
+        for backend in self.backend:
+            # exceptions are passed through to __call__ and there handled
+            auth_result = await backend.authenticate(conn)
+            if auth_result is not None:
+                return auth_result
+        return None
+
+    authenticate.requires_backend = True

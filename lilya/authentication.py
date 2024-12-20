@@ -4,6 +4,7 @@ import functools
 import inspect
 import sys
 import typing
+from abc import ABC, abstractmethod
 from urllib.parse import urlencode
 
 from lilya.compat import is_async_callable
@@ -19,6 +20,8 @@ else:  # pragma: no cover
 
 
 P = ParamSpec("P")
+
+AuthResult = tuple["AuthCredentials", "UserInterface"]
 
 
 def has_required_scope(conn: Connection, scopes: typing.Sequence[str]) -> bool:
@@ -157,11 +160,9 @@ def requires(
 class AuthenticationError(Exception): ...
 
 
-class AuthenticationBackend:
-    async def authenticate(
-        self, connection: Connection
-    ) -> tuple[AuthCredentials, BaseUser] | None:
-        raise NotImplementedError()
+class AuthenticationBackend(ABC, typing.Protocol):
+    @abstractmethod
+    async def authenticate(self, connection: Connection) -> AuthResult | None: ...
 
 
 class AuthCredentials:
@@ -169,13 +170,10 @@ class AuthCredentials:
         self.scopes = [] if scopes is None else list(scopes)
 
 
-class BaseUser:
+class UserInterface(typing.Protocol):
     @property
     def is_active(self) -> bool:
         return False
-
-    def get_id(self) -> typing.Any:
-        return
 
     @property
     def is_authenticated(self) -> bool:
@@ -185,12 +183,12 @@ class BaseUser:
     def display_name(self) -> str:
         raise NotImplementedError()
 
-    @property
-    def identity(self) -> str:
-        raise NotImplementedError()
+
+# bw compatibility alias
+BaseUser = UserInterface
 
 
-class BasicUser(BaseUser):
+class BasicUser(UserInterface):
     def __init__(self, username: str) -> None:
         self.username = username
 
@@ -203,7 +201,7 @@ class BasicUser(BaseUser):
         return self.username
 
 
-class AnonymousUser(BaseUser):
+class AnonymousUser(UserInterface):
     @property
     def is_authenticated(self) -> bool:
         return False
