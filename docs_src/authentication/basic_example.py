@@ -7,6 +7,7 @@ from lilya.authentication import (
     AuthCredentials, AuthenticationBackend, AuthenticationError, BasicUser
 )
 from lilya.middleware import DefineMiddleware
+from lilya.middleware.sessions import SessionMiddleware
 from lilya.middleware.authentication import AuthenticationMiddleware
 from lilya.responses import PlainText
 from lilya.routing import Path
@@ -51,7 +52,9 @@ routes = [
 ]
 
 middleware = [
-    Middleware(AuthenticationMiddleware, backend=[SessionBackend(), SecondBackend()])
+    # must be defined before AuthenticationMiddleware, because of the SessionBackend
+    DefineMiddleware(SessionMiddleware, secret_key=...),
+    DefineMiddleware(AuthenticationMiddleware, backend=[SessionBackend(), BasicAuthBackend()])
 ]
 
 app = Lilya(routes=routes, middleware=middleware)
