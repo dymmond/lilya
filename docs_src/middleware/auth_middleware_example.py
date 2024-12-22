@@ -4,7 +4,7 @@ from saffier.exceptions import ObjectNotFound
 
 from lilya._internal._connection import Connection
 from lilya.exceptions import NotAuthorized
-from lilya.authentication import AuthResult
+from lilya.authentication import AuthResult, AuthCredentials
 from lilya.middleware.authentication import BaseAuthMiddleware
 from lilya.types import ASGIApp
 
@@ -43,4 +43,4 @@ class JWTAuthMiddleware(BaseAuthMiddleware):
         token = Token.decode(token=token, key=self.signing_key, algorithm=self.algorithm)
 
         user = await self.retrieve_user(token.sub)
-        return (None, user)
+        return (AuthCredentials(), user)
