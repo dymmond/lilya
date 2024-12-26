@@ -22,7 +22,7 @@ from lilya._internal._urls import include
 from lilya.compat import is_async_callable
 from lilya.conf import settings
 from lilya.conf.global_settings import Settings
-from lilya.datastructures import URL, Header, ScopeHandler, URLPath
+from lilya.datastructures import URL, Header, ScopeHandler, SendReceiveSniffer, URLPath
 from lilya.enums import EventType, HTTPMethod, Match, ScopeType
 from lilya.exceptions import HTTPException, ImproperlyConfigured
 from lilya.middleware.base import DefineMiddleware
@@ -66,6 +66,10 @@ class NoMatchFound(Exception):
     def __init__(self, name: str, path_params: dict[str, Any]) -> None:
         params = ", ".join(list(path_params.keys()))
         super().__init__(f'No route exists for name "{name}" and params "{params}".')
+
+
+class ContinueRouting(BaseException):
+    """Signals that the route handling should continue and not stop with the current route"""
 
 
 def get_name(handler: Callable[..., Any]) -> str:
@@ -139,6 +143,10 @@ class BasePath:
         elif scope["type"] == ScopeType.WEBSOCKET:
             websocket_close = WebSocketClose()
             await websocket_close(scope, receive, send)
+
+    @staticmethod
+    async def handle_not_found_fallthrough(scope: Scope, receive: Receive, send: Send) -> None:
+        raise ContinueRouting()
 
     def handle_dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -760,8 +768,12 @@ class Include(BasePath):
         self.__base_app__: ASGIApp | Router
         if isinstance(app, str):
             self.__base_app__ = import_string(app)
+            self.handle_not_found = self.handle_not_found_fallthrough  # type: ignore
+        elif app is not None:
+            self.handle_not_found = self.handle_not_found_fallthrough  # type: ignore
+            self.__base_app__ = app
         else:
-            self.__base_app__ = app if app is not None else Router(routes=routes)
+            self.__base_app__ = Router(routes=routes, default=self.handle_not_found_fallthrough)
 
         self.app = self.__base_app__
 
@@ -854,7 +866,7 @@ class Include(BasePath):
             key: self.param_convertors[key].transform(value)
             for key, value in match.groupdict().items()
         }
-        remaining_path = "/" + matched_params.pop("path", "")
+        remaining_path = f'/{matched_params.pop("path", "")}'
         matched_path = route_path[: -len(remaining_path)]
 
         path_params = {**scope.get("path_params", {}), **matched_params}
@@ -1316,10 +1328,7 @@ class BaseRouter:
 
         Args:
             route: The matched route.
-            child_scope (Scope): The ASGI child scope.
-            scope (Scope): The ASGI scope.
-            receive (Receive): The ASGI receive channel.
-            send (Send): The ASGI send channel.
+            path_handler (PathHandler): The PathHandler.
         """
         path_handler.scope.update(path_handler.child_scope)
         await route.handle_dispatch(path_handler.scope, path_handler.receive, path_handler.send)  # type: ignore
@@ -1411,39 +1420,61 @@ class BaseRouter:
         if "router" not in scope:
             scope["router"] = self
 
-        partial = None
+        sniffer = SendReceiveSniffer(receive, send)
+
+        partial_matches: list[tuple[BasePath, Scope]] = []
 
         for route in self.routes:
-            match, child_scope = route.search(scope)
-            if match == Match.FULL:
-                path_handler = PathHandler(
-                    child_scope=child_scope, scope=scope, receive=receive, send=send
-                )
-                await self.handle_route(route, path_handler=path_handler)
+            # we cannot continue when the sniffer detects a sent
+            if sniffer.sent:
                 return
-            elif match == Match.PARTIAL and partial is None:
-                partial = route
-                partial_scope = child_scope
-
-        if partial is not None:
-            await self.handle_partial(partial, partial_scope, scope, receive, send)
-            return
-
-        route_path = get_route_path(scope)
-        if scope["type"] == ScopeType.HTTP and self.redirect_slashes and route_path != "/":
-            redirect_scope = dict(scope)
-            if route_path.endswith("/"):
-                redirect_scope["path"] = redirect_scope["path"].rstrip("/")
-            else:
-                redirect_scope["path"] = redirect_scope["path"] + "/"
-
-            for route in self.routes:
-                match, child_scope = route.search(redirect_scope)
-                if match != Match.NONE:
-                    redirect_url = URL.build_from_scope(scope=redirect_scope)
-                    response = RedirectResponse(url=str(redirect_url))
-                    await response(scope, receive, send)
+            match, child_scope = route.search(scope)
+            if match == Match.NONE:
+                continue
+            try:
+                if match == Match.FULL:
+                    path_handler = PathHandler(
+                        child_scope=child_scope,
+                        scope=scope,
+                        receive=sniffer.receive,
+                        send=sniffer.send,
+                    )
+                    await self.handle_route(route, path_handler=path_handler)
+                    if sniffer.sent:
+                        return  # type: ignore
+                    else:
+                        sniffer.repeat_message = True
+                elif match == Match.PARTIAL:
+                    partial_matches.append((route, child_scope))
+            except ContinueRouting:
+                pass
+        # now check partial matches (method does not match)
+        for route, child_scope in partial_matches:
+            try:
+                await self.handle_partial(route, child_scope, scope, sniffer.receive, sniffer.send)
+                if sniffer.sent:
                     return
+                else:
+                    sniffer.repeat_message = True
+            except ContinueRouting:
+                pass
+        # there was a match
+        if not sniffer.received:
+            route_path = get_route_path(scope)
+            if scope["type"] == ScopeType.HTTP and self.redirect_slashes and route_path != "/":
+                redirect_scope = dict(scope)
+                if route_path.endswith("/"):
+                    redirect_scope["path"] = redirect_scope["path"].rstrip("/")
+                else:
+                    redirect_scope["path"] = redirect_scope["path"] + "/"
+
+                for route in self.routes:
+                    match, child_scope = route.search(redirect_scope)
+                    if match != Match.NONE:
+                        redirect_url = URL.build_from_scope(scope=redirect_scope)
+                        response = RedirectResponse(url=str(redirect_url))
+                        await response(scope, receive, send)
+                        return
 
         await self.handle_default(scope, receive, send)
 
