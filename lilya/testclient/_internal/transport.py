@@ -419,19 +419,19 @@ class TestClientTransport(httpx.BaseTransport):
             for header_key, header_value in raw_kwargs["headers"]:
                 if not isinstance(header_key, bytes):
                     raise ASGISpecViolation(
-                        f'Response header key "{header_key}" is not a bytes string.'
+                        f'Response header key "{header_key!r}" is not a bytes string.'
                     )
                 if b"\n" in header_key:
                     raise ASGISpecViolation(
-                        f'Response header key "{header_key}" contains a newline.'
+                        f'Response header key "{header_key!r}" contains a newline.'
                     )
                 if not isinstance(header_value, bytes):
                     raise ASGISpecViolation(
-                        f'Response header key "{header_key}" value ("{header_value}") is not a bytes string.'
+                        f'Response header key "{header_key!r}" value ("{header_value!r}") is not a bytes string.'
                     )
                 if b"\n" in header_value:
                     raise ASGISpecViolation(
-                        f'Response header "{header_key}" value ("{header_value}") contains a newline.'
+                        f'Response header "{header_key!r}" value ("{header_value!r}") contains a newline.'
                     )
 
         response = httpx.Response(**raw_kwargs, request=request)

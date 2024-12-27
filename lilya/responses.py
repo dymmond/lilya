@@ -117,7 +117,7 @@ class Response:
         ):
             content = bytes(content)
         if isinstance(content, self.passthrough_body_types):
-            return content
+            return cast(bytes, content)
         transform_kwargs = RESPONSE_TRANSFORM_KWARGS.get()
         if transform_kwargs is not None:
             transform_kwargs = transform_kwargs.copy()
@@ -136,7 +136,7 @@ class Response:
             ):
                 content = bytes(content)
             if isinstance(content, self.passthrough_body_types):
-                return content
+                return cast(bytes, content)
         # handle empty {} or [] gracefully instead of failing
         # must be transformed before
         if not content:
@@ -347,7 +347,7 @@ class JSONResponse(Response):
         ):
             content = bytes(content)
         if isinstance(content, self.passthrough_body_types):
-            return content
+            return cast(bytes, content)
         return cast(bytes, content.encode(self.charset))
 
 
