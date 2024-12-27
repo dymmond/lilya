@@ -6,6 +6,12 @@ hide:
 # Release Notes
 
 
+## 0.11.11
+
+### Fixed
+
+- Some middleware are not multithreading/async capable.
+
 ## 0.11.10
 
 ### Added
