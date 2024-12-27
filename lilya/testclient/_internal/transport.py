@@ -412,18 +412,27 @@ class TestClientTransport(httpx.BaseTransport):
             }
 
         raw_kwargs["stream"] = httpx.ByteStream(raw_kwargs["stream"].read())
+        # we persist
+        raw_kwargs["headers"] = list(raw_kwargs["headers"])
         if self.check_asgi_conformance:
             # the raw headers are bytes
-            raw_kwargs["headers"] = list(raw_kwargs["headers"])
             for header_key, header_value in raw_kwargs["headers"]:
                 if not isinstance(header_key, bytes):
-                    raise ASGISpecViolation(f'Response header key "{header_key}" is not a bytes string.')
+                    raise ASGISpecViolation(
+                        f'Response header key "{header_key}" is not a bytes string.'
+                    )
                 if b"\n" in header_key:
-                    raise ASGISpecViolation(f'Response header key "{header_key}" contains a newline.')
+                    raise ASGISpecViolation(
+                        f'Response header key "{header_key}" contains a newline.'
+                    )
                 if not isinstance(header_value, bytes):
-                    raise ASGISpecViolation(f'Response header key "{header_key}" value ("{header_value}") is not a bytes string.')
+                    raise ASGISpecViolation(
+                        f'Response header key "{header_key}" value ("{header_value}") is not a bytes string.'
+                    )
                 if b"\n" in header_value:
-                    raise ASGISpecViolation(f'Response header "{header_key}" value ("{header_value}") contains a newline.')
+                    raise ASGISpecViolation(
+                        f'Response header "{header_key}" value ("{header_value}") contains a newline.'
+                    )
 
         response = httpx.Response(**raw_kwargs, request=request)
         if template is not None:

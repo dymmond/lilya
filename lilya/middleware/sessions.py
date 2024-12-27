@@ -152,7 +152,7 @@ class SessionMiddleware(MiddlewareProtocol):
             security_flags=self.security_flags,
         )
         headers.add("Set-Cookie", header_value)
-        message["headers"] = headers.get_multi_items()
+        message["headers"] = headers.encoded_multi_items()
         return message
 
     async def clear_session_cookie(self, scope: Scope, message: Message) -> Message:
@@ -171,5 +171,5 @@ class SessionMiddleware(MiddlewareProtocol):
             security_flags=self.security_flags,
         )
         headers.add("Set-Cookie", header_value)
-        message["headers"] = headers.get_multi_items()
+        message["headers"] = headers.encoded_multi_items()
         return message

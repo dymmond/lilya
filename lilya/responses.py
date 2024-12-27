@@ -59,6 +59,7 @@ class Response:
     media_type: str | None = None
     status_code: int | None = None
     charset: str = "utf-8"
+    passthrough_byteslike: bool = False
 
     def __init__(
         self,
@@ -69,7 +70,10 @@ class Response:
         media_type: str | None = None,
         background: Task | None = None,
         encoders: Sequence[Encoder | type[Encoder]] | None = None,
+        passthrough_byteslike: bool | None = None,
     ) -> None:
+        if passthrough_byteslike is not None:
+            self.passthrough_byteslike = passthrough_byteslike
         if status_code is not None:
             self.status_code = status_code
         if media_type is not None:
@@ -106,9 +110,9 @@ class Response:
         if content is None or content is NoReturn:
             return b""
         # at least for nginx unit this is required. Uvicorn supports all of them
-        if isinstance(content, (bytearray, memoryview)):
+        if not self.passthrough_byteslike and isinstance(content, (bytearray, memoryview)):
             content = bytes(content)
-        if isinstance(content, bytes):
+        if isinstance(content, (bytearray, memoryview, bytes)):
             return content
         transform_kwargs = RESPONSE_TRANSFORM_KWARGS.get()
         if transform_kwargs is not None:
@@ -123,9 +127,9 @@ class Response:
             content = json_encode(content, **transform_kwargs)
 
             # at least for nginx unit this is required. Uvicorn supports all of them
-            if isinstance(content, (bytearray, memoryview)):
+            if not self.passthrough_byteslike and isinstance(content, (bytearray, memoryview)):
                 content = bytes(content)
-            if isinstance(content, bytes):
+            if isinstance(content, (bytearray, memoryview, bytes)):
                 return content
         # handle empty {} or [] gracefully instead of failing
         # must be transformed before
@@ -259,14 +263,7 @@ class Response:
 
     @property
     def encoded_headers(self) -> list[Any]:
-        headers: list[tuple[Any, Any]] = []
-
-        for name, value in list(self.headers.multi_items()):
-            if not isinstance(value, bytes):
-                headers.append((name.encode("utf-8"), f"{value}".encode(errors="surrogateescape")))
-            else:
-                headers.append((name.encode("utf-8"), value))
-        return headers
+        return self.headers.get_encoded_multi_items()
 
     def message(self, prefix: str) -> dict[str, Any]:
         return {
@@ -344,9 +341,9 @@ class JSONResponse(Response):
         content = json_encode(content, **new_params)
 
         # at least for nginx unit this is required. Uvicorn supports all of them
-        if isinstance(content, (bytearray, memoryview)):
+        if not self.passthrough_byteslike and isinstance(content, (bytearray, memoryview)):
             content = bytes(content)
-        if isinstance(content, bytes):
+        if isinstance(content, (bytearray, memoryview, bytes)):
             return content
         return cast(bytes, content.encode(self.charset))
 

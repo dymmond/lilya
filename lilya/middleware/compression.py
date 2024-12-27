@@ -173,7 +173,7 @@ class GZipResponder:
         headers.add_vary_header("Accept-Encoding")
         message["body"] = body
 
-        self.initial_message["headers"] = headers.get_multi_items()
+        self.initial_message["headers"] = headers.encoded_multi_items()
         await self.send(self.initial_message)
         await self.send(message)
 
@@ -196,7 +196,7 @@ class GZipResponder:
         self.gzip_buffer.seek(0)
         self.gzip_buffer.truncate()
 
-        self.initial_message["headers"] = headers.get_multi_items()
+        self.initial_message["headers"] = headers.encoded_multi_items()
         await self.send(self.initial_message)
         await self.send(message)
 

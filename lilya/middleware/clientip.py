@@ -40,6 +40,6 @@ class ClientIPMiddleware(MiddlewareProtocol):
         scope["real-clientip"] = headers["x-real-ip"] = get_ip(
             scope, trusted_proxies=self.trusted_proxies
         )
-        scope["headers"] = headers.get_multi_items()
+        scope["headers"] = headers.encoded_multi_items()
 
         await self.app(scope, receive, send)

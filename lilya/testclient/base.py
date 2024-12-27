@@ -76,7 +76,7 @@ class TestClient(httpx.Client):
         cookies: CookieTypes | None = None,
         headers: HeaderTypes | None = None,
         follow_redirects: bool = True,
-        check_asgi_conformance: bool = True
+        check_asgi_conformance: bool = True,
     ) -> None:
         self.async_backend = AsyncBackend(backend=backend, backend_options=backend_options or {})
         if is_asgi3(app):
@@ -92,7 +92,7 @@ class TestClient(httpx.Client):
             raise_server_exceptions=raise_server_exceptions,
             root_path=root_path,
             app_state=self.app_state,
-            check_asgi_conformance=check_asgi_conformance
+            check_asgi_conformance=check_asgi_conformance,
         )
         if headers is None:
             headers = {}
