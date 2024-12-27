@@ -60,6 +60,7 @@ class Response:
     status_code: int | None = None
     charset: str = "utf-8"
     passthrough_byteslike: bool = False
+    headers: Header
 
     def __init__(
         self,
@@ -84,7 +85,6 @@ class Response:
             encoder() if isclass(encoder) else encoder for encoder in encoders or _empty
         ]
         self.body = self.make_response(content)
-        self.raw_headers: list[Any] = []
         self.make_headers(headers)
 
     @classmethod
@@ -160,18 +160,7 @@ class Response:
             # Populates the content type if exists
             if content_type is not None:
                 headers.setdefault("content-type", content_type)
-
-        raw_headers = [
-            (name.encode("utf-8"), f"{value}".encode(errors="surrogateescape"))
-            for name, value in headers.items()
-        ]
-        self.raw_headers = raw_headers
-
-    @property
-    def headers(self) -> Header:
-        if not hasattr(self, "_headers"):
-            self._headers = Header(self.raw_headers)
-        return self._headers
+        self.headers = Header(headers)
 
     def set_cookie(
         self,
@@ -228,7 +217,7 @@ class Response:
             ], "samesite must be either 'strict', 'lax' or 'none'"
             cookie[key]["samesite"] = samesite
         cookie_val = cookie.output(header="").strip()
-        self.headers.add("set-cookie", cookie_val.encode("utf-8"))
+        self.headers.add("set-cookie", cookie_val)
 
     def delete_cookie(
         self,
@@ -265,11 +254,15 @@ class Response:
     def encoded_headers(self) -> list[Any]:
         return self.headers.get_encoded_multi_items()
 
+    # make raw_headers an alias for encoded_headers in case anyone ever requires it
+    raw_headers = encoded_headers
+
     def message(self, prefix: str) -> dict[str, Any]:
         return {
             "type": prefix + "http.response.start",
             "status": self.status_code,
-            "headers": self.encoded_headers,
+            # some tests add headers dirty and assume a list
+            "headers": self.headers.get_encoded_multi_items(),
         }
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:

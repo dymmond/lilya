@@ -141,10 +141,11 @@ class Header(MultiDict, CIMultiDict):  # type: ignore
 
     def __init__(
         self,
-        *args: MultiMapping | Mapping[str, Any] | Iterable[tuple[bytes | str, bytes | str]] | None,
+        value: MultiMapping | Mapping[str, Any] | Iterable[tuple[bytes | str, bytes | str]] | None = None,
     ) -> None:
-        assert len(args) < 2, "Too many arguments."
-        value = args[0] if args else []
+        # this way we can handle None, like specified
+        if not value:
+            value = []
 
         assert isinstance(
             value, (dict, Iterable)
@@ -206,7 +207,10 @@ class Header(MultiDict, CIMultiDict):  # type: ignore
 
     def encoded_multi_items(self) -> Generator[tuple[bytes, bytes], None, None]:
         """Get all keys and values, including duplicates, bytes encoded for ASGI."""
-        return ((key.encode("utf-8"), value.encode("utf-8")) for key, value in self.multi_items())
+        return (
+            (key.encode("utf-8"), value.encode("utf-8", errors="surrogateescape"))
+            for key, value in self.multi_items()
+        )
 
     def get_encoded_multi_items(self) -> list[tuple[bytes, bytes]]:
         """
