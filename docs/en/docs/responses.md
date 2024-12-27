@@ -295,3 +295,18 @@ by default, including `Enum`, `deque`, `dataclasses`, `PurePath`, `generators` a
 
 This is archived by using [Encoders](encoders.md).
 Mainly they are additional encoders for types tje json encoder cannot handle.
+
+
+## Pass body types directly to the application server
+
+By default `ASGI` allows only *byte strings* as body type.
+Some servers are more lenient and allow also `memoryview`, `bytearray` or maybe something custom, which prevent
+in best case a copy. If you want to leverage this you can use `passthrough_body_types`. It is a type tuple on the response
+which contains the types which are directly forwarded to the application server.
+Please add `bytes` always to the types tuple, otherwise if you return bytes, it could be returned base64 encoded.
+
+To pass them through you have three options:
+
+1. Subclassing the response and add `passthrough_body_types` either as ClassVar, assignment on initialization or as property.
+2. Some responses allow setting `passthrough_body_types` on the fly. Pass the wanted types tuple to it.
+3. Overwrite globally the types tuple in `lilya.responses.Response`. This is not recommended for libraries only for final applications.

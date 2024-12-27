@@ -59,7 +59,9 @@ class Response:
     media_type: str | None = None
     status_code: int | None = None
     charset: str = "utf-8"
-    passthrough_byteslike: bool = False
+    # should be at least bytes. Ensures that no unsupported types are passed to the application server
+    # uvicorn would allow also body memoryview and bytearray
+    passthrough_body_types: tuple[type, ...] = (bytes,)
     headers: Header
 
     def __init__(
@@ -71,10 +73,10 @@ class Response:
         media_type: str | None = None,
         background: Task | None = None,
         encoders: Sequence[Encoder | type[Encoder]] | None = None,
-        passthrough_byteslike: bool | None = None,
+        passthrough_body_types: tuple[type, ...] | None = None,
     ) -> None:
-        if passthrough_byteslike is not None:
-            self.passthrough_byteslike = passthrough_byteslike
+        if passthrough_body_types is not None:
+            self.passthrough_body_types = passthrough_body_types
         if status_code is not None:
             self.status_code = status_code
         if media_type is not None:
@@ -109,10 +111,12 @@ class Response:
         """
         if content is None or content is NoReturn:
             return b""
-        # at least for nginx unit this is required. Uvicorn supports all of them
-        if not self.passthrough_byteslike and isinstance(content, (bytearray, memoryview)):
+        # convert them to bytes if not in passthrough_body_types
+        if not isinstance(content, self.passthrough_body_types) and isinstance(
+            content, (bytearray, memoryview)
+        ):
             content = bytes(content)
-        if isinstance(content, (bytearray, memoryview, bytes)):
+        if isinstance(content, self.passthrough_body_types):
             return content
         transform_kwargs = RESPONSE_TRANSFORM_KWARGS.get()
         if transform_kwargs is not None:
@@ -126,10 +130,12 @@ class Response:
             )
             content = json_encode(content, **transform_kwargs)
 
-            # at least for nginx unit this is required. Uvicorn supports all of them
-            if not self.passthrough_byteslike and isinstance(content, (bytearray, memoryview)):
+            # convert them to bytes if not in passthrough_body_types
+            if not isinstance(content, self.passthrough_body_types) and isinstance(
+                content, (bytearray, memoryview)
+            ):
                 content = bytes(content)
-            if isinstance(content, (bytearray, memoryview, bytes)):
+            if isinstance(content, self.passthrough_body_types):
                 return content
         # handle empty {} or [] gracefully instead of failing
         # must be transformed before
@@ -300,6 +306,7 @@ class JSONResponse(Response):
         media_type: str | None = None,
         background: Task | None = None,
         encoders: Sequence[Encoder | type[Encoder]] | None = None,
+        passthrough_body_types: tuple[type, ...] | None = None,
     ) -> None:
         super().__init__(
             content=content,
@@ -308,6 +315,7 @@ class JSONResponse(Response):
             media_type=media_type,
             background=background,
             encoders=encoders,
+            passthrough_body_types=passthrough_body_types,
         )
 
     def make_response(self, content: Any) -> bytes:
@@ -333,10 +341,12 @@ class JSONResponse(Response):
             new_params["with_encoders"] = (*self.encoders, *ENCODER_TYPES.get())
         content = json_encode(content, **new_params)
 
-        # at least for nginx unit this is required. Uvicorn supports all of them
-        if not self.passthrough_byteslike and isinstance(content, (bytearray, memoryview)):
+        # convert them to bytes if not in passthrough_body_types
+        if not isinstance(content, self.passthrough_body_types) and isinstance(
+            content, (bytearray, memoryview)
+        ):
             content = bytes(content)
-        if isinstance(content, (bytearray, memoryview, bytes)):
+        if isinstance(content, self.passthrough_body_types):
             return content
         return cast(bytes, content.encode(self.charset))
 
@@ -346,6 +356,9 @@ class Ok(JSONResponse):
 
 
 class RedirectResponse(Response):
+    # make sure bytes are always passed through here
+    passthrough_body_types: tuple[type, ...] = (bytes,)
+
     def __init__(
         self,
         url: str | URL,
@@ -516,6 +529,7 @@ class TemplateResponse(HTMLResponse):
         headers: dict[str, Any] | None = None,
         media_type: MediaType | str = MediaType.HTML,
         encoders: Sequence[Encoder | type[Encoder]] | None = None,
+        passthrough_body_types: tuple[type, ...] | None = None,
     ):
         self.template = template
         self.context = context or {}
@@ -527,6 +541,7 @@ class TemplateResponse(HTMLResponse):
             media_type=media_type,
             background=background,
             encoders=encoders,
+            passthrough_body_types=passthrough_body_types,
         )
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:

@@ -141,7 +141,10 @@ class Header(MultiDict, CIMultiDict):  # type: ignore
 
     def __init__(
         self,
-        value: MultiMapping | Mapping[str, Any] | Iterable[tuple[bytes | str, bytes | str]] | None = None,
+        value: MultiMapping
+        | Mapping[str, Any]
+        | Iterable[tuple[bytes | str, bytes | str]]
+        | None = None,
     ) -> None:
         # this way we can handle None, like specified
         if not value:

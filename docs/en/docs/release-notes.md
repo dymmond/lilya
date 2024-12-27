@@ -8,15 +8,24 @@ hide:
 
 ## 0.11.10
 
+### Added
+
+- Add `passthrough_body_types` for passing memoryviews and bytearrays directly to the application server.
+
 ### Changed
 
 - TestClient validates more ASGI conformance. It raises an `ASGISpecViolation` error for spec violations when `check_asgi_conformance` is True (default).
+- Response's `make_headers` now set `headers` directly.
+- Response's `headers` is now a attribute.
+- Response's `raw_headers` is now an alias for `encoded_headers`.
 
 ### Fixed
 
-- Ensure the response output is bytes.
+- Ensure the response output is bytes when not `passthrough_body_types` is set. Defaults to passing through bytes.
 - Properly handle bytearrays.
 - Properly parse header values. Properly handle cases in which header values are passed as an array in a dictionary.
+- Properly set cookies.
+
 
 ## 0.11.9
 
