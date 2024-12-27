@@ -99,13 +99,16 @@ class Response:
             transform_kwargs = {}
         return json_encode(content, **transform_kwargs)
 
-    def make_response(self, content: Any) -> bytes | memoryview:
+    def make_response(self, content: Any) -> bytes:
         """
         Makes the Response object type.
         """
         if content is None or content is NoReturn:
             return b""
-        if isinstance(content, (bytes, memoryview)):
+        # at least for nginx unit this is required. Uvicorn supports all of them
+        if isinstance(content, (bytearray, memoryview)):
+            content = bytes(content)
+        if isinstance(content, bytes):
             return content
         transform_kwargs = RESPONSE_TRANSFORM_KWARGS.get()
         if transform_kwargs is not None:
@@ -119,7 +122,10 @@ class Response:
             )
             content = json_encode(content, **transform_kwargs)
 
-            if isinstance(content, (bytes, memoryview)):
+            # at least for nginx unit this is required. Uvicorn supports all of them
+            if isinstance(content, (bytearray, memoryview)):
+                content = bytes(content)
+            if isinstance(content, bytes):
                 return content
         # handle empty {} or [] gracefully instead of failing
         # must be transformed before
@@ -272,7 +278,7 @@ class Response:
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         prefix = "websocket." if scope["type"] == "websocket" else ""
         await send(self.message(prefix=prefix))
-        await send({"type": prefix + "http.response.body", "body": self.body})
+        await send({"type": f"{prefix}http.response.body", "body": self.body})
 
         if self.background is not None:
             await self.background()
@@ -314,7 +320,7 @@ class JSONResponse(Response):
             encoders=encoders,
         )
 
-    def make_response(self, content: Any) -> bytes | memoryview:
+    def make_response(self, content: Any) -> bytes:
         if content is NoReturn:
             return b""
         new_params = RESPONSE_TRANSFORM_KWARGS.get()
@@ -337,7 +343,10 @@ class JSONResponse(Response):
             new_params["with_encoders"] = (*self.encoders, *ENCODER_TYPES.get())
         content = json_encode(content, **new_params)
 
-        if isinstance(content, (bytes, memoryview)):
+        # at least for nginx unit this is required. Uvicorn supports all of them
+        if isinstance(content, (bytearray, memoryview)):
+            content = bytes(content)
+        if isinstance(content, bytes):
             return content
         return cast(bytes, content.encode(self.charset))
 
