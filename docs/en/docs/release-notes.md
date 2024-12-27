@@ -5,6 +5,15 @@ hide:
 
 # Release Notes
 
+
+## 0.11.10
+
+### Fixed
+
+- Ensure the response output is bytes.
+- Properly handle bytearrays.
+- Properly parse header values. Properly handle cases in which header values are passed as an array in a dictionary.
+
 ## 0.11.9
 
 ### Added

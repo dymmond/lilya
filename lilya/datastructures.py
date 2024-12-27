@@ -166,13 +166,22 @@ class Header(MultiDict, CIMultiDict):  # type: ignore
         if isinstance(value, dict):
             for k, v in value.items():
                 key = k.decode("utf-8") if isinstance(k, bytes) else k
-                value = v.decode("utf-8") if isinstance(v, bytes) else v
-                headers.append((key, value))
-        if isinstance(value, list):
+                if not isinstance(v, (list, tuple)):
+                    v = [v]
+                for header_value in v:
+                    header_value = (
+                        header_value.decode("utf-8")
+                        if isinstance(header_value, bytes)
+                        else header_value
+                    )
+                    assert isinstance(header_value, str)
+                    headers.append((key, header_value))
+        elif isinstance(value, list):
             for k, v in value:
                 key = k.decode("utf-8") if isinstance(k, bytes) else k
-                value = v.decode("utf-8") if isinstance(v, bytes) else v
-                headers.append((key, value))
+                header_value = v.decode("utf-8") if isinstance(v, bytes) else v
+                assert isinstance(header_value, str)
+                headers.append((key, header_value))
 
         return headers
 
