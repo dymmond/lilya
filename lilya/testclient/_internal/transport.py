@@ -412,7 +412,8 @@ class TestClientTransport(httpx.BaseTransport):
             }
 
         raw_kwargs["stream"] = httpx.ByteStream(raw_kwargs["stream"].read())
-        # we persist
+        # we persist headers for testclient for debugging purposes
+        # must happen before checking the headers
         raw_kwargs["headers"] = list(raw_kwargs["headers"])
         if self.check_asgi_conformance:
             # the raw headers are bytes
