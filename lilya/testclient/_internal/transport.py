@@ -11,7 +11,7 @@ import httpx
 
 from lilya.testclient._internal.types import ASGI3App, PortalFactoryType
 from lilya.testclient._internal.websockets import WebSocketTestSession
-from lilya.testclient.exceptions import UpgradeException
+from lilya.testclient.exceptions import ASGISpecViolation, UpgradeException
 from lilya.types import Message
 
 
@@ -25,6 +25,7 @@ class TestClientTransport(httpx.BaseTransport):
         raise_server_exceptions: bool = True,
         root_path: str = "",
         *,
+        check_asgi_conformance: bool = True,
         app_state: dict[str, Any],
     ) -> None:
         """
@@ -34,11 +35,13 @@ class TestClientTransport(httpx.BaseTransport):
             app: The ASGI3App instance.
             portal_factory: The PortalFactoryType instance.
             raise_server_exceptions: Whether to raise server exceptions.
+            check_asgi_conformance: Whether to raise errors on ASGI conformance issues
             root_path: The root path.
             app_state: The application state.
         """
         self.app = app
         self.raise_server_exceptions = raise_server_exceptions
+        self.check_asgi_conformance = check_asgi_conformance
         self.root_path = root_path
         self.portal_factory = portal_factory
         self.app_state = app_state
@@ -313,6 +316,8 @@ class TestClientTransport(httpx.BaseTransport):
 
             body = request.read()
             if isinstance(cast(str, body), str):
+                if self.check_asgi_conformance:
+                    raise ASGISpecViolation("ASGI Spec violation: body must be a bytes string")
                 body_bytes: bytes = body.encode("utf-8")
             elif body is None:
                 body_bytes = b""
@@ -320,6 +325,10 @@ class TestClientTransport(httpx.BaseTransport):
                 try:
                     chunk = body.send(None)
                     if isinstance(chunk, str):
+                        if self.check_asgi_conformance:
+                            raise ASGISpecViolation(
+                                "ASGI Spec violation: chunk must be a bytes string"
+                            )
                         chunk = chunk.encode("utf-8")
                     return {"type": "http.request", "body": chunk, "more_body": True}
                 except StopIteration:
@@ -370,6 +379,11 @@ class TestClientTransport(httpx.BaseTransport):
                     not response_complete.is_set()
                 ), 'Received "http.response.body" after response completed.'
                 body = message.get("body", b"")
+                # we allow here all of the types because some servers allow them too
+                if self.check_asgi_conformance and not isinstance(
+                    body, (bytes, memoryview, bytearray)
+                ):
+                    raise ASGISpecViolation("ASGI Spec violation: body must be a bytes string")
                 more_body = message.get("more_body", False)
                 if request.method != "HEAD":
                     raw_kwargs["stream"].write(body)
@@ -388,9 +402,9 @@ class TestClientTransport(httpx.BaseTransport):
             if self.raise_server_exceptions:
                 raise exc
 
-        if self.raise_server_exceptions:
-            assert response_started, "TestClient did not receive any response."
-        elif not response_started:
+        if not response_started:
+            if self.raise_server_exceptions or self.check_asgi_conformance:
+                raise ASGISpecViolation("TestClient did not receive any response.")
             raw_kwargs = {
                 "status_code": 500,
                 "headers": [],
@@ -398,6 +412,18 @@ class TestClientTransport(httpx.BaseTransport):
             }
 
         raw_kwargs["stream"] = httpx.ByteStream(raw_kwargs["stream"].read())
+        if self.check_asgi_conformance:
+            # the raw headers are bytes
+            raw_kwargs["headers"] = list(raw_kwargs["headers"])
+            for header_key, header_value in raw_kwargs["headers"]:
+                if not isinstance(header_key, bytes):
+                    raise ASGISpecViolation(f'Response header key "{header_key}" is not a bytes string.')
+                if b"\n" in header_key:
+                    raise ASGISpecViolation(f'Response header key "{header_key}" contains a newline.')
+                if not isinstance(header_value, bytes):
+                    raise ASGISpecViolation(f'Response header key "{header_key}" value ("{header_value}") is not a bytes string.')
+                if b"\n" in header_value:
+                    raise ASGISpecViolation(f'Response header "{header_key}" value ("{header_value}") contains a newline.')
 
         response = httpx.Response(**raw_kwargs, request=request)
         if template is not None:

@@ -26,6 +26,7 @@ def create_client(
     on_shutdown: Sequence[Callable[[], Any]] | None = None,
     include_in_schema: bool = True,
     raise_server_exceptions: bool = True,
+    check_asgi_conformance: bool = True,
     lifespan: Lifespan[ApplicationType] | None = None,
     redirect_slashes: bool = True,
     debug: bool = False,
@@ -66,5 +67,6 @@ def create_client(
         backend_options=backend_options,
         root_path=root_path,
         raise_server_exceptions=raise_server_exceptions,
+        check_asgi_conformance=check_asgi_conformance,
         cookies=cookies,
     )

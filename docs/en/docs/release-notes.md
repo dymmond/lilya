@@ -8,6 +8,10 @@ hide:
 
 ## 0.11.10
 
+### Changed
+
+- TestClient validates more ASGI conformance. It raises an `ASGISpecViolation` error for spec violations when `check_asgi_conformance` is True (default).
+
 ### Fixed
 
 - Ensure the response output is bytes.
