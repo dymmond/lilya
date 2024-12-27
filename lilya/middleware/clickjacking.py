@@ -49,7 +49,7 @@ class XFrameOptionsMiddleware(MiddlewareProtocol):
 
             if headers.get("X-Frame-Options") is None:
                 headers.add("X-Frame-Options", self.get_xframe_options())
-                message["headers"] = headers.multi_items()
+                message["headers"] = headers.encoded_multi_items()
         await self.send(message)
 
     def get_xframe_options(self) -> str:

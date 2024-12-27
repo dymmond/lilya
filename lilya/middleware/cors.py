@@ -252,7 +252,7 @@ class CORSMiddleware(MiddlewareProtocol):
         elif not self.allow_all_origins and self.validate_origin(origin=origin):
             self.set_explicit_origin(headers, origin)
 
-        message["headers"] = headers.get_multi_items()
+        message["headers"] = headers.encoded_multi_items()
         await send(message)
 
     @staticmethod

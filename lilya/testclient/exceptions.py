@@ -9,3 +9,6 @@ if TYPE_CHECKING:
 class UpgradeException(Exception):
     def __init__(self, session: WebSocketTestSession) -> None:
         self.session = session
+
+
+class ASGISpecViolation(Exception): ...

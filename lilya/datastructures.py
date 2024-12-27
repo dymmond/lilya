@@ -53,7 +53,7 @@ class MultiMixin(Generic[T], MultiMapping[T], ABC):
             for value in self.getall(key):
                 yield key, value
 
-    def get_multi_items(self) -> list[Any]:
+    def get_multi_items(self) -> list[tuple[str, T]]:
         """
         Returns a list of values from the multi items
         """
@@ -141,18 +141,18 @@ class Header(MultiDict, CIMultiDict):  # type: ignore
 
     def __init__(
         self,
-        *args: MultiMapping
+        value: MultiMapping
         | Mapping[str, Any]
-        | Iterable[tuple[str, Any]]
-        | list[tuple[bytes, bytes]]
-        | None,
+        | Iterable[tuple[bytes | str, bytes | str]]
+        | None = None,
     ) -> None:
-        assert len(args) < 2, "Too many arguments."
-        value = args[0] if args else []
+        # this way we can handle None, like specified
+        if not value:
+            value = []
 
         assert isinstance(
-            value, (dict, list)
-        ), "The headers must be in the format of a list of tuples or dictionary."
+            value, (dict, Iterable)
+        ), "The headers must be in the format of a Iterable of tuples or dictionary."
 
         headers: list[tuple[str, Any]] = self.parse_headers(value)
         super().__init__(headers)
@@ -166,13 +166,22 @@ class Header(MultiDict, CIMultiDict):  # type: ignore
         if isinstance(value, dict):
             for k, v in value.items():
                 key = k.decode("utf-8") if isinstance(k, bytes) else k
-                value = v.decode("utf-8") if isinstance(v, bytes) else v
-                headers.append((key, value))
-        if isinstance(value, list):
+                if not isinstance(v, (list, tuple)):
+                    v = [v]
+                for header_value in v:
+                    header_value = (
+                        header_value.decode("utf-8")
+                        if isinstance(header_value, bytes)
+                        else header_value
+                    )
+                    assert isinstance(header_value, str)
+                    headers.append((key, header_value))
+        elif isinstance(value, Iterable):
             for k, v in value:
                 key = k.decode("utf-8") if isinstance(k, bytes) else k
-                value = v.decode("utf-8") if isinstance(v, bytes) else v
-                headers.append((key, value))
+                header_value = v.decode("utf-8") if isinstance(v, bytes) else v
+                assert isinstance(header_value, str)
+                headers.append((key, header_value))
 
         return headers
 
@@ -198,6 +207,19 @@ class Header(MultiDict, CIMultiDict):  # type: ignore
         if existing is not None:
             vary = ", ".join([existing, vary])
         self["vary"] = vary
+
+    def encoded_multi_items(self) -> Generator[tuple[bytes, bytes], None, None]:
+        """Get all keys and values, including duplicates, bytes encoded for ASGI."""
+        return (
+            (key.encode("utf-8"), value.encode("utf-8", errors="surrogateescape"))
+            for key, value in self.multi_items()
+        )
+
+    def get_encoded_multi_items(self) -> list[tuple[bytes, bytes]]:
+        """
+        Returns a list of values from the bytes encoded multi items for ASGI
+        """
+        return list(self.encoded_multi_items())
 
     def __repr__(self) -> str:
         class_name = self.__class__.__name__

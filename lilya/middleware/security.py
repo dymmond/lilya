@@ -134,6 +134,6 @@ class SecurityMiddleware(MiddlewareProtocol):
             headers.add("X-Content-Type-Options", self.content_type_options)
             headers.add("X-Frame-Options", self.frame_options)
             headers.add("X-XSS-Protection", self.xss_protection)
-            message["headers"] = headers.multi_items()
+            message["headers"] = headers.encoded_multi_items()
 
         await self.send(message)

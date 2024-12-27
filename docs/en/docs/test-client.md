@@ -36,6 +36,10 @@ You can use any of the `httpx` standard API like authentication, session cookies
     Occasionally you might want to test the content of 500 error responses, rather than allowing client to raise the
     server exception. In this case you should use `client = TestClient(app, raise_server_exceptions=False)`.
 
+!!! Info
+    By default the TestClient checks the ASGI protocol conformance. For a more lenient handling of defects use
+    `client = TestClient(app, check_asgi_conformance=False)`. This is however not recommended.
+
 ## Lifespan events
 
 !!! Note

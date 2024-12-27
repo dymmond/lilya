@@ -59,6 +59,10 @@ class Response:
     media_type: str | None = None
     status_code: int | None = None
     charset: str = "utf-8"
+    # should be at least bytes. Ensures that no unsupported types are passed to the application server
+    # uvicorn would allow also body memoryview and bytearray
+    passthrough_body_types: tuple[type, ...] = (bytes,)
+    headers: Header
 
     def __init__(
         self,
@@ -69,7 +73,10 @@ class Response:
         media_type: str | None = None,
         background: Task | None = None,
         encoders: Sequence[Encoder | type[Encoder]] | None = None,
+        passthrough_body_types: tuple[type, ...] | None = None,
     ) -> None:
+        if passthrough_body_types is not None:
+            self.passthrough_body_types = passthrough_body_types
         if status_code is not None:
             self.status_code = status_code
         if media_type is not None:
@@ -80,7 +87,6 @@ class Response:
             encoder() if isclass(encoder) else encoder for encoder in encoders or _empty
         ]
         self.body = self.make_response(content)
-        self.raw_headers: list[Any] = []
         self.make_headers(headers)
 
     @classmethod
@@ -99,14 +105,19 @@ class Response:
             transform_kwargs = {}
         return json_encode(content, **transform_kwargs)
 
-    def make_response(self, content: Any) -> bytes | memoryview:
+    def make_response(self, content: Any) -> bytes:
         """
         Makes the Response object type.
         """
         if content is None or content is NoReturn:
             return b""
-        if isinstance(content, (bytes, memoryview)):
-            return content
+        # convert them to bytes if not in passthrough_body_types
+        if not isinstance(content, self.passthrough_body_types) and isinstance(
+            content, (bytearray, memoryview)
+        ):
+            content = bytes(content)
+        if isinstance(content, self.passthrough_body_types):
+            return cast(bytes, content)
         transform_kwargs = RESPONSE_TRANSFORM_KWARGS.get()
         if transform_kwargs is not None:
             transform_kwargs = transform_kwargs.copy()
@@ -119,8 +130,13 @@ class Response:
             )
             content = json_encode(content, **transform_kwargs)
 
-            if isinstance(content, (bytes, memoryview)):
-                return content
+            # convert them to bytes if not in passthrough_body_types
+            if not isinstance(content, self.passthrough_body_types) and isinstance(
+                content, (bytearray, memoryview)
+            ):
+                content = bytes(content)
+            if isinstance(content, self.passthrough_body_types):
+                return cast(bytes, content)
         # handle empty {} or [] gracefully instead of failing
         # must be transformed before
         if not content:
@@ -150,18 +166,7 @@ class Response:
             # Populates the content type if exists
             if content_type is not None:
                 headers.setdefault("content-type", content_type)
-
-        raw_headers = [
-            (name.encode("utf-8"), f"{value}".encode(errors="surrogateescape"))
-            for name, value in headers.items()
-        ]
-        self.raw_headers = raw_headers
-
-    @property
-    def headers(self) -> Header:
-        if not hasattr(self, "_headers"):
-            self._headers = Header(self.raw_headers)
-        return self._headers
+        self.headers = Header(headers)
 
     def set_cookie(
         self,
@@ -218,7 +223,7 @@ class Response:
             ], "samesite must be either 'strict', 'lax' or 'none'"
             cookie[key]["samesite"] = samesite
         cookie_val = cookie.output(header="").strip()
-        self.headers.add("set-cookie", cookie_val.encode("utf-8"))
+        self.headers.add("set-cookie", cookie_val)
 
     def delete_cookie(
         self,
@@ -253,26 +258,23 @@ class Response:
 
     @property
     def encoded_headers(self) -> list[Any]:
-        headers: list[tuple[Any, Any]] = []
+        return self.headers.get_encoded_multi_items()
 
-        for name, value in list(self.headers.multi_items()):
-            if not isinstance(value, bytes):
-                headers.append((name.encode("utf-8"), f"{value}".encode(errors="surrogateescape")))
-            else:
-                headers.append((name.encode("utf-8"), value))
-        return headers
+    # make raw_headers an alias for encoded_headers in case anyone ever requires it
+    raw_headers = encoded_headers
 
     def message(self, prefix: str) -> dict[str, Any]:
         return {
             "type": prefix + "http.response.start",
             "status": self.status_code,
-            "headers": self.encoded_headers,
+            # some tests add headers dirty and assume a list
+            "headers": self.headers.get_encoded_multi_items(),
         }
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         prefix = "websocket." if scope["type"] == "websocket" else ""
         await send(self.message(prefix=prefix))
-        await send({"type": prefix + "http.response.body", "body": self.body})
+        await send({"type": f"{prefix}http.response.body", "body": self.body})
 
         if self.background is not None:
             await self.background()
@@ -304,6 +306,7 @@ class JSONResponse(Response):
         media_type: str | None = None,
         background: Task | None = None,
         encoders: Sequence[Encoder | type[Encoder]] | None = None,
+        passthrough_body_types: tuple[type, ...] | None = None,
     ) -> None:
         super().__init__(
             content=content,
@@ -312,9 +315,10 @@ class JSONResponse(Response):
             media_type=media_type,
             background=background,
             encoders=encoders,
+            passthrough_body_types=passthrough_body_types,
         )
 
-    def make_response(self, content: Any) -> bytes | memoryview:
+    def make_response(self, content: Any) -> bytes:
         if content is NoReturn:
             return b""
         new_params = RESPONSE_TRANSFORM_KWARGS.get()
@@ -337,8 +341,13 @@ class JSONResponse(Response):
             new_params["with_encoders"] = (*self.encoders, *ENCODER_TYPES.get())
         content = json_encode(content, **new_params)
 
-        if isinstance(content, (bytes, memoryview)):
-            return content
+        # convert them to bytes if not in passthrough_body_types
+        if not isinstance(content, self.passthrough_body_types) and isinstance(
+            content, (bytearray, memoryview)
+        ):
+            content = bytes(content)
+        if isinstance(content, self.passthrough_body_types):
+            return cast(bytes, content)
         return cast(bytes, content.encode(self.charset))
 
 
@@ -347,6 +356,9 @@ class Ok(JSONResponse):
 
 
 class RedirectResponse(Response):
+    # make sure bytes are always passed through here
+    passthrough_body_types: tuple[type, ...] = (bytes,)
+
     def __init__(
         self,
         url: str | URL,
@@ -517,6 +529,7 @@ class TemplateResponse(HTMLResponse):
         headers: dict[str, Any] | None = None,
         media_type: MediaType | str = MediaType.HTML,
         encoders: Sequence[Encoder | type[Encoder]] | None = None,
+        passthrough_body_types: tuple[type, ...] | None = None,
     ):
         self.template = template
         self.context = context or {}
@@ -528,6 +541,7 @@ class TemplateResponse(HTMLResponse):
             media_type=media_type,
             background=background,
             encoders=encoders,
+            passthrough_body_types=passthrough_body_types,
         )
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:

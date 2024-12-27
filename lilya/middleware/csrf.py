@@ -125,7 +125,7 @@ class CSRFMiddleware(MiddlewareProtocol):
                 domain=self.cookie_domain,
             )
             headers.add("set-cookie", cookie.to_header(header=""))
-            message["headers"] = headers.get_multi_items()
+            message["headers"] = headers.encoded_multi_items()
         return message
 
     def _generate_csrf_hash(self, token: str) -> str:
