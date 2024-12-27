@@ -102,17 +102,16 @@ class SecurityMiddleware(MiddlewareProtocol):
             receive (Receive): The receive channel.
             send (Send): The send channel.
         """
-        self.send = send
         if scope["type"] not in ("http", "websocket"):
             await self.app(scope, receive, send)
             return
 
         async def send_wrapper(message: Message) -> None:
-            await self.process_response(scope, message)
+            await self.process_response(send, scope, message)
 
         await self.app(scope, receive, send_wrapper)
 
-    async def process_response(self, scope: Scope, message: Message) -> None:
+    async def process_response(self, send: Send, scope: Scope, message: Message) -> None:
         """
         Process the response message and add security-related headers to the message headers.
 
@@ -136,4 +135,4 @@ class SecurityMiddleware(MiddlewareProtocol):
             headers.add("X-XSS-Protection", self.xss_protection)
             message["headers"] = headers.encoded_multi_items()
 
-        await self.send(message)
+        await send(message)

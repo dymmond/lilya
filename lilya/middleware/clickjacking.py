@@ -23,17 +23,16 @@ class XFrameOptionsMiddleware(MiddlewareProtocol):
         Returns:
             None
         """
-        self.send = send
         if scope["type"] not in ("http", "websocket"):
             await self.app(scope, receive, send)
             return
 
         async def send_wrapper(message: Message) -> None:
-            await self.process_response(scope, message)
+            await self.process_response(send, scope, message)
 
         await self.app(scope, receive, send_wrapper)
 
-    async def process_response(self, scope: Scope, message: Message) -> None:
+    async def process_response(self, send: Send, scope: Scope, message: Message) -> None:
         """
         Process the response message and add the X-Frame-Options header if it is not already present.
 
@@ -50,7 +49,7 @@ class XFrameOptionsMiddleware(MiddlewareProtocol):
             if headers.get("X-Frame-Options") is None:
                 headers.add("X-Frame-Options", self.get_xframe_options())
                 message["headers"] = headers.encoded_multi_items()
-        await self.send(message)
+        await send(message)
 
     def get_xframe_options(self) -> str:
         """
