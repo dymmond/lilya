@@ -198,7 +198,7 @@ class ServerErrorMiddleware(MiddlewareProtocol):
         try:
             exc_type_str = traceback_obj.exc_type_str
         except Exception:
-            # for older python versions
+            # for older python versions < 3.13
             exc_type_str = traceback_obj.exc_type.__name__
         error = f"{html.escape(exc_type_str)}: " f"{html.escape(str(traceback_obj))}"
 
