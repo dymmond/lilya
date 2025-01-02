@@ -11,7 +11,7 @@ import anyio.to_thread
 
 from lilya._internal._path import get_route_path
 from lilya.datastructures import URL, Header
-from lilya.exceptions import HTTPException
+from lilya.exceptions import ContinueRouting, HTTPException
 from lilya.responses import FileResponse, RedirectResponse, Response
 from lilya.types import Receive, Scope, Send
 
@@ -46,6 +46,7 @@ class StaticFiles:
         html: bool = False,
         check_dir: bool = True,
         follow_symlink: bool = False,
+        fall_through: bool = False,
     ) -> None:
         """
         Initialize StaticFiles middleware.
@@ -66,6 +67,7 @@ class StaticFiles:
         self.packages = packages
         self.all_directories = self.get_directories(directory, packages)
         self.html = html
+        self.fall_through = fall_through
         self.config_checked = False
         self.follow_symlink = follow_symlink
         if check_dir and directory is not None:
@@ -187,6 +189,8 @@ class StaticFiles:
                     url = url.replace(path=url.path + "/")
                     return RedirectResponse(url=url)
                 return self.file_response(full_path, stat_result, scope)
+        if self.fall_through:
+            raise ContinueRouting()
 
         if self.html:
             full_path, stat_result = await anyio.to_thread.run_sync(self.lookup_path, "404.html")

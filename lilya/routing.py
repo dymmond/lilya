@@ -22,9 +22,9 @@ from lilya._internal._urls import include
 from lilya.compat import is_async_callable
 from lilya.conf import settings
 from lilya.conf.global_settings import Settings
-from lilya.datastructures import URL, Header, ScopeHandler, URLPath
+from lilya.datastructures import URL, Header, ScopeHandler, SendReceiveSniffer, URLPath
 from lilya.enums import EventType, HTTPMethod, Match, ScopeType
-from lilya.exceptions import HTTPException, ImproperlyConfigured
+from lilya.exceptions import ContinueRouting, HTTPException, ImproperlyConfigured
 from lilya.middleware.base import DefineMiddleware
 from lilya.permissions.base import DefinePermission
 from lilya.requests import Request
@@ -42,19 +42,20 @@ class PathHandler(ScopeHandler):
     Args:
         child_scope (Scope): The child scope of the handler.
         scope (Scope): The scope of the handler.
-        receive (Receive): The receive function for handling incoming messages.
-        send (Send): The send function for sending messages.
+        sniffer (SendReceiveSniffer): The Sniffer.
 
     Attributes:
         child_scope (Scope): The child scope of the handler.
         scope (Scope): The scope of the handler.
         receive (Receive): The receive function for handling incoming messages.
         send (Send): The send function for sending messages.
+        sniffer (SendReceiveSniffer): The Sniffer.
     """
 
-    def __init__(self, child_scope: Scope, scope: Scope, receive: Receive, send: Send) -> None:
-        super().__init__(scope=scope, receive=receive, send=send)
+    def __init__(self, child_scope: Scope, scope: Scope, sniffer: SendReceiveSniffer) -> None:
+        super().__init__(scope=scope, receive=sniffer.receive, send=sniffer.send)
         self.child_scope = child_scope
+        self.sniffer = sniffer
 
 
 class NoMatchFound(Exception):
@@ -66,6 +67,20 @@ class NoMatchFound(Exception):
     def __init__(self, name: str, path_params: dict[str, Any]) -> None:
         params = ", ".join(list(path_params.keys()))
         super().__init__(f'No route exists for name "{name}" and params "{params}".')
+
+
+class PassPartialMatches(BaseException):
+    """
+    Signals that the route handling should continue and not stop with the current route
+    and partial matches should be transfered
+    """
+
+    partial_matches: Sequence[tuple[BaseRouter, BasePath, PathHandler]] = ()
+
+    def __init__(
+        self, *, partial_matches: Sequence[tuple[BaseRouter, BasePath, PathHandler]]
+    ) -> None:
+        self.partial_matches = partial_matches
 
 
 def get_name(handler: Callable[..., Any]) -> str:
@@ -139,6 +154,10 @@ class BasePath:
         elif scope["type"] == ScopeType.WEBSOCKET:
             websocket_close = WebSocketClose()
             await websocket_close(scope, receive, send)
+
+    @staticmethod
+    async def handle_not_found_fallthrough(scope: Scope, receive: Receive, send: Send) -> None:
+        raise ContinueRouting()
 
     def handle_dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -717,6 +736,7 @@ class Include(BasePath):
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
         include_in_schema: bool = True,
         deprecated: bool = False,
+        redirect_slashes: bool = True,
     ) -> None:
         """
         Initialize the router with specified parameters.
@@ -731,6 +751,7 @@ class Include(BasePath):
             middleware (Union[Sequence[DefineMiddleware], None]): The middleware.
             permissions (Union[Sequence[DefinePermission], None]): The permissions.
             include_in_schema (bool): Flag to include in the schema.
+            redirect_slashes (bool): (Only namespace or routes) Redirect slashes on mismatch.
 
         Returns:
             None
@@ -760,8 +781,17 @@ class Include(BasePath):
         self.__base_app__: ASGIApp | Router
         if isinstance(app, str):
             self.__base_app__ = import_string(app)
+            self.handle_not_found = self.handle_not_found_fallthrough  # type: ignore
+        elif app is not None:
+            self.handle_not_found = self.handle_not_found_fallthrough  # type: ignore
+            self.__base_app__ = app
         else:
-            self.__base_app__ = app if app is not None else Router(routes=routes)
+            self.__base_app__ = Router(
+                routes=routes,
+                default=self.handle_not_found_fallthrough,
+                is_sub_router=True,
+                redirect_slashes=redirect_slashes,
+            )
 
         self.app = self.__base_app__
 
@@ -854,7 +884,7 @@ class Include(BasePath):
             key: self.param_convertors[key].transform(value)
             for key, value in match.groupdict().items()
         }
-        remaining_path = "/" + matched_params.pop("path", "")
+        remaining_path = f'/{matched_params.pop("path", "")}'
         matched_path = route_path[: -len(remaining_path)]
 
         path_params = {**scope.get("path_params", {}), **matched_params}
@@ -956,6 +986,7 @@ class Host(BasePath):
     __slots__ = (
         "host",
         "app",
+        "__base_app__",
         "name",
         "middleware",
         "permissions",
@@ -974,7 +1005,7 @@ class Host(BasePath):
     ) -> None:
         assert not host.startswith("/"), "Host must not start with '/'"
         self.host = host
-        self.app = app
+        self.app = self.__base_app__ = app
         self.name = name
         self.host_regex, self.host_format, self.param_convertors, self.path_start = compile_path(
             host
@@ -1019,7 +1050,7 @@ class Host(BasePath):
         """
         Returns a list of declared path objects.
         """
-        return getattr(self.app, "routes", [])
+        return getattr(self.__base_app__, "routes", [])
 
     def search(self, scope: Scope) -> tuple[Match, Scope]:
         """
@@ -1180,6 +1211,7 @@ class BaseRouter:
         "middleware_stack",
         "permission_started",
         "settings_module",
+        "is_sub_router",
     )
 
     def __init__(
@@ -1207,6 +1239,7 @@ class BaseRouter:
         ] = None,
         include_in_schema: bool = True,
         deprecated: bool = False,
+        is_sub_router: bool = False,
     ) -> None:
         assert lifespan is None or (
             on_startup is None and on_shutdown is None
@@ -1239,6 +1272,7 @@ class BaseRouter:
         self.settings_module = settings_module
         self.middleware_stack = self.app
         self.permission_started = False
+        self.is_sub_router = is_sub_router
 
         self._apply_middleware(self.middleware)
         self._apply_permissions(self.permissions)
@@ -1316,29 +1350,23 @@ class BaseRouter:
 
         Args:
             route: The matched route.
-            child_scope (Scope): The ASGI child scope.
-            scope (Scope): The ASGI scope.
-            receive (Receive): The ASGI receive channel.
-            send (Send): The ASGI send channel.
+            path_handler (PathHandler): The PathHandler.
         """
-        path_handler.scope.update(path_handler.child_scope)
-        await route.handle_dispatch(path_handler.scope, path_handler.receive, path_handler.send)  # type: ignore
+        new_scope = dict(path_handler.scope)
+        new_scope.update(path_handler.child_scope)
+        await route.handle_dispatch(new_scope, path_handler.receive, path_handler.send)  # type: ignore
 
-    async def handle_partial(
-        self, route: BasePath, partial_scope: Scope, scope: Scope, receive: Receive, send: Send
-    ) -> None:
+    async def handle_partial(self, route: BasePath, path_handler: PathHandler) -> None:
         """
         Handle a partial route match.
 
         Args:
-            route: The partial matched route.
-            partial_scope: The partial route scope.
-            scope (Scope): The ASGI scope.
-            receive (Receive): The ASGI receive channel.
-            send (Send): The ASGI send channel.
+            route: The matched route.
+            path_handler (PathHandler): The PathHandler.
         """
-        scope.update(partial_scope)
-        await route.handle_dispatch(scope, receive, send)  # type: ignore
+        new_scope = dict(path_handler.scope)
+        new_scope.update(path_handler.child_scope)
+        await route.handle_dispatch(new_scope, path_handler.receive, path_handler.send)  # type: ignore
 
     async def handle_default(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -1411,39 +1439,69 @@ class BaseRouter:
         if "router" not in scope:
             scope["router"] = self
 
-        partial = None
+        sniffer = SendReceiveSniffer(receive, send)
+
+        partial_matches: list[tuple[BaseRouter, BasePath, PathHandler]] = []
+        had_match = False
 
         for route in self.routes:
-            match, child_scope = route.search(scope)
-            if match == Match.FULL:
-                path_handler = PathHandler(
-                    child_scope=child_scope, scope=scope, receive=receive, send=send
-                )
-                await self.handle_route(route, path_handler=path_handler)
+            # we cannot continue when the sniffer detects a sent
+            if sniffer.sent:
                 return
-            elif match == Match.PARTIAL and partial is None:
-                partial = route
-                partial_scope = child_scope
+            match, child_scope = route.search(scope)
+            if match == Match.NONE:
+                continue
+            had_match = True
+            path_handler = PathHandler(child_scope=child_scope, scope=scope, sniffer=sniffer)
+            try:
+                if match == Match.FULL:
+                    await self.handle_route(route, path_handler=path_handler)
+                    if sniffer.sent:
+                        return  # type: ignore
+                    else:
+                        sniffer.repeat_message = True
+                elif match == Match.PARTIAL:
+                    partial_matches.append((self, route, path_handler))
+            except PassPartialMatches as exc:
+                # collect the partial matches from the sub-router
+                partial_matches.extend(exc.partial_matches)
+            except ContinueRouting:
+                pass
+        # check if redirect would be possible, when no match was found
+        if not had_match and self.redirect_slashes:
+            route_path = get_route_path(scope)
+            if scope["type"] == ScopeType.HTTP and route_path != "/":
+                redirect_scope = dict(scope)
+                if route_path.endswith("/"):
+                    redirect_scope["path"] = redirect_scope["path"].rstrip("/")
+                else:
+                    redirect_scope["path"] = redirect_scope["path"] + "/"
 
-        if partial is not None:
-            await self.handle_partial(partial, partial_scope, scope, receive, send)
-            return
+                for route in self.routes:
+                    match, child_scope = route.search(redirect_scope)
+                    if match != Match.NONE:
+                        redirect_url = URL.build_from_scope(scope=redirect_scope)
+                        response = RedirectResponse(url=str(redirect_url))
+                        await response(scope, receive, send)
+                        return
 
-        route_path = get_route_path(scope)
-        if scope["type"] == ScopeType.HTTP and self.redirect_slashes and route_path != "/":
-            redirect_scope = dict(scope)
-            if route_path.endswith("/"):
-                redirect_scope["path"] = redirect_scope["path"].rstrip("/")
-            else:
-                redirect_scope["path"] = redirect_scope["path"] + "/"
-
-            for route in self.routes:
-                match, child_scope = route.search(redirect_scope)
-                if match != Match.NONE:
-                    redirect_url = URL.build_from_scope(scope=redirect_scope)
-                    response = RedirectResponse(url=str(redirect_url))
-                    await response(scope, receive, send)
+        if self.is_sub_router:
+            # now pass the partial matches to the upper router
+            raise PassPartialMatches(partial_matches=partial_matches)
+        # when in the main router, check partial matches (method does not match)
+        # use for this the handler method of the sub-router to keep their modifications
+        for router, route, path_handler in partial_matches:
+            try:
+                await router.handle_partial(route, path_handler)
+                # should propagate back to this sniffer
+                if sniffer.sent:
                     return
+                else:
+                    # rearm sniffer of the path handler (sub router)
+                    path_handler.sniffer.repeat_message = True
+                    sniffer.repeat_message = True
+            except ContinueRouting:
+                pass
 
         await self.handle_default(scope, receive, send)
 

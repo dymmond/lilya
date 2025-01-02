@@ -9,12 +9,7 @@ import pytest
 
 from lilya.apps import Lilya
 from lilya.exceptions import HTTPException
-
-# from lilya.middleware.base import BaseHTTPMiddleware
 from lilya.routing import Include
-
-# from lilya.middleware import DefineMiddleware
-# from lilya.requests import Request
 from lilya.staticfiles import StaticFiles
 
 
@@ -29,6 +24,36 @@ def test_staticfiles(tmpdir, test_client_factory, wrapper):
     app = StaticFiles(directory=wrapper(tmpdir))
     client = test_client_factory(app)
     response = client.get("/example.txt")
+    assert response.status_code == 200
+    assert response.text == "<file content>"
+
+
+def test_staticfiles_fallthrough(tmp_path_factory, test_client_factory):
+    tmp1 = tmp_path_factory.mktemp("a")
+    tmp2 = tmp_path_factory.mktemp("b")
+    path = os.path.join(tmp2, "example.html")
+    with open(path, "w") as file:
+        file.write("<file content>")
+
+    path = os.path.join(tmp2, "foo")
+    os.mkdir(path)
+
+    path = os.path.join(path, "index.html")
+    with open(path, "w") as file:
+        file.write("<dir content>")
+
+    static1 = StaticFiles(directory=tmp1, fall_through=True)
+    static2 = StaticFiles(directory=tmp2, html=True)
+
+    routes = [Include("/static/", static1, redirect_slashes=False), Include("/static/", static2)]
+    app = Lilya(routes=routes)
+    client = test_client_factory(app)
+    response = client.get("/static/")
+    assert response.status_code == 404
+    response = client.get("/static/foo")
+    assert response.text == "<dir content>"
+    assert response.status_code == 200
+    response = client.get("/static/example.html")
     assert response.status_code == 200
     assert response.text == "<file content>"
 
