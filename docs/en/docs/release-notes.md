@@ -19,6 +19,10 @@ hide:
 - Fall-through routing was implemented.
 - Expose `redirect_slashes` on `Include`.
 
+### Fixed
+
+- `Host` with middleware or permissions.
+
 ## 0.11.11
 
 ### Fixed
