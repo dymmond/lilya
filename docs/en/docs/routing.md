@@ -404,6 +404,17 @@ Example:
 {!> ../../../docs_src/routing/routes/routes_priority.py !}
 ```
 
+### Fall-through routing
+
+Lilya supports fall-through routing. This means routes of every router are first checked until a full match is found (path and methods match)
+and no `lilya.routing.ContinueRouting` exception was raised.
+When no match is found, it is tried to match the path only (partial match) and to raise an appropiate exception.
+Somewhere between both passes is `redirect_slashes` which causes the router to issue an redirect to an existing path in case a slash is missing or too much.
+
+This means you can import with two Includes with the same path containing multiple routes. You can even have routes with the same path
+when the methods differ or the first handler raises `lilya.routing.ContinueRouting` after a more careful inspection.
+It is not a problem if `receive` was called **one time** for the inspection. The message is repeated for the next handler.
+
 ## Path parameters
 
 Paths can use templating style for path components. The path params are only applied to [Path](#path) and

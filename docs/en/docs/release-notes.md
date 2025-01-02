@@ -5,6 +5,20 @@ hide:
 
 # Release Notes
 
+## 0.12.0
+
+### Added
+
+- Add `ReceiveSendSniffer`. This sniffer allows to detect communication events and to replay receive messages.
+- `Include` and `BaseLilya` (application) have now a ClassVar `router_class` to provide a custom router.
+- Subclasses of `BaseLilya` (application) can set the `router_class` to None to provide a completely custom router
+  which initialization parameters aren't required to match the ones of `Router`.
+
+### Changed
+
+- The `PathHandler` interface was changed to receive a `ReceiveSendSniffer` instead of `send`/`receive`.
+- The `handle_partial` interface was changed to receive a `PathHandler`.
+- Fall-through routing was implemented.
 
 ## 0.11.11
 
