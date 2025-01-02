@@ -31,8 +31,6 @@ You can also provide multiple `StaticFiles` and use `fall_through=True` for all 
     {!> ../../../docs_src/static_files/overwrite_fall_through.py!}
 ```
 
-
-
 The `packages` option allows inclusion of "static" directories from within a Python package.
 The Python "bootstrap4" package serves as an example.
 
