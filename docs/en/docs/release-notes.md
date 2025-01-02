@@ -19,6 +19,7 @@ hide:
 - The `PathHandler` interface was changed to receive a `ReceiveSendSniffer` instead of `send`/`receive`.
 - The `handle_partial` interface was changed to receive a `PathHandler`.
 - Fall-through routing was implemented.
+- Expose `redirect_slashes` on Includes.
 
 ## 0.11.11
 

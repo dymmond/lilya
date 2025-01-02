@@ -413,7 +413,11 @@ Somewhere between both passes is `redirect_slashes` which causes the router to i
 
 This means you can import with two Includes with the same path containing multiple routes. You can even have routes with the same path
 when the methods differ or the first handler raises `lilya.routing.ContinueRouting` after a more careful inspection.
-It is not a problem if `receive` was called **one time** for the inspection. The message is repeated for the next handler.
+It is not a problem if `receive` was called **one time** for the inspection. The received message is repeated for the next handler.
+
+!!! Warning
+    Despite possible it can lead to hard to debug errors when in two different Includes both with `redirect_slashes` active have
+    each route pathes like `/path` and `/path/`. You may want to disable `redirect_slashes` in the first `Include` in this case.
 
 ## Path parameters
 

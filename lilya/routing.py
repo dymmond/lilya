@@ -1802,6 +1802,7 @@ class Include(BasePath):
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
         include_in_schema: bool = True,
         deprecated: bool = False,
+        redirect_slashes: bool = True,
     ) -> None:
         """
         Initialize the router with specified parameters.
@@ -1816,6 +1817,7 @@ class Include(BasePath):
             middleware (Union[Sequence[DefineMiddleware], None]): The middleware.
             permissions (Union[Sequence[DefinePermission], None]): The permissions.
             include_in_schema (bool): Flag to include in the schema.
+            redirect_slashes (bool): (Only namespace or routes) Redirect slashes on mismatch.
 
         Returns:
             None
@@ -1851,7 +1853,10 @@ class Include(BasePath):
             self.__base_app__ = app
         else:
             self.__base_app__ = self.router_class(
-                routes=routes, default=self.handle_not_found_fallthrough, is_sub_router=True
+                routes=routes,
+                default=self.handle_not_found_fallthrough,
+                is_sub_router=True,
+                redirect_slashes=redirect_slashes,
             )
 
         self.app = self.__base_app__
