@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from functools import cached_property
-from typing import Annotated, Any, ClassVar, cast
+from typing import Annotated, Any, cast
 
 from lilya._internal._module_loading import import_string
 from lilya._utils import is_class_and_subclass
@@ -44,9 +44,6 @@ P = ParamSpec("P")
 
 
 class BaseLilya:
-    router_class: ClassVar[type[Router] | None] = Router
-    router: Router
-
     def __init__(
         self,
         debug: Annotated[bool, Doc("Enable or disable debug mode. Defaults to False.")] = False,
@@ -395,17 +392,16 @@ class BaseLilya:
         self.state = State()
         self.middleware_stack: ASGIApp | None = None
 
-        if self.router_class is not None:
-            self.router = self.router_class(
-                routes=routes,
-                redirect_slashes=redirect_slashes,
-                permissions=self.custom_permissions,
-                on_startup=on_startup,
-                on_shutdown=on_shutdown,
-                lifespan=lifespan,
-                include_in_schema=include_in_schema,
-                settings_module=self.settings,
-            )
+        self.router: Router = Router(
+            routes=routes,
+            redirect_slashes=redirect_slashes,
+            permissions=self.custom_permissions,
+            on_startup=on_startup,
+            on_shutdown=on_shutdown,
+            lifespan=lifespan,
+            include_in_schema=include_in_schema,
+            settings_module=self.settings,
+        )
         self.__set_settings_app(self.settings, self)
 
     @property

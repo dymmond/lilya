@@ -10,9 +10,6 @@ hide:
 ### Added
 
 - Add `ReceiveSendSniffer`. This sniffer allows to detect communication events and to replay receive messages.
-- `Include` and `BaseLilya` (application) have now a ClassVar `router_class` to provide a custom router.
-- Subclasses of `BaseLilya` (application) can set the `router_class` to None to provide a completely custom router
-  which initialization parameters aren't required to match the ones of `Router`.
 - Expose `fall_through` on `StaticFile`.
 
 ### Changed
