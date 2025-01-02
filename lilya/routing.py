@@ -24,7 +24,7 @@ from lilya.conf import settings
 from lilya.conf.global_settings import Settings
 from lilya.datastructures import URL, Header, ScopeHandler, SendReceiveSniffer, URLPath
 from lilya.enums import EventType, HTTPMethod, Match, ScopeType
-from lilya.exceptions import HTTPException, ImproperlyConfigured
+from lilya.exceptions import ContinueRouting, HTTPException, ImproperlyConfigured
 from lilya.middleware.base import DefineMiddleware
 from lilya.permissions.base import DefinePermission
 from lilya.requests import Request
@@ -69,13 +69,14 @@ class NoMatchFound(Exception):
         super().__init__(f'No route exists for name "{name}" and params "{params}".')
 
 
-class ContinueRouting(BaseException):
-    """Signals that the route handling should continue and not stop with the current route"""
+class PassPartialMatches(BaseException):
+    """
+    Signals that the route handling should continue and not stop with the current route
+    and partial matches should be transfered
+    """
 
     partial_matches: Sequence[tuple[BaseRouter, BasePath, PathHandler]] = ()
 
-
-class PassPartialMatches(ContinueRouting):
     def __init__(
         self, *, partial_matches: Sequence[tuple[BaseRouter, BasePath, PathHandler]]
     ) -> None:
@@ -1186,11 +1187,11 @@ class BaseRouter:
                         sniffer.repeat_message = True
                 elif match == Match.PARTIAL:
                     partial_matches.append((self, route, path_handler))
-            except ContinueRouting as exc:
+            except PassPartialMatches as exc:
                 # collect the partial matches from the sub-router
-                # (PassPartialMatches is a subclass of ContinueRouting)
-                # ContinueRouting contains stub partial_matches
                 partial_matches.extend(exc.partial_matches)
+            except ContinueRouting:
+                pass
         # check if redirect would be possible, when no match was found
         if not had_match and self.redirect_slashes:
             route_path = get_route_path(scope)
@@ -1225,7 +1226,6 @@ class BaseRouter:
                     path_handler.sniffer.repeat_message = True
                     sniffer.repeat_message = True
             except ContinueRouting:
-                # here we ignore partial_matches
                 pass
 
         await self.handle_default(scope, receive, send)

@@ -65,6 +65,13 @@ class WebSocketException(Exception):
         return f"{class_name}(code={self.code!r}, reason={self.reason!r})"
 
 
+class ContinueRouting(BaseException):
+    """
+    Signals that the route handling should continue and not stop with the current route.
+    Instead of signalling instantly a 404 the default handler of the router is used when the last route.
+    """
+
+
 class ImproperlyConfigured(HTTPException, ValueError):
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
 

@@ -13,13 +13,14 @@ hide:
 - `Include` and `BaseLilya` (application) have now a ClassVar `router_class` to provide a custom router.
 - Subclasses of `BaseLilya` (application) can set the `router_class` to None to provide a completely custom router
   which initialization parameters aren't required to match the ones of `Router`.
+- Expose `fall_through` on `StaticFile`.
 
 ### Changed
 
 - The `PathHandler` interface was changed to receive a `ReceiveSendSniffer` instead of `send`/`receive`.
 - The `handle_partial` interface was changed to receive a `PathHandler`.
 - Fall-through routing was implemented.
-- Expose `redirect_slashes` on Includes.
+- Expose `redirect_slashes` on `Include`.
 
 ## 0.11.11
 

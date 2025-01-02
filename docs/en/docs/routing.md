@@ -403,21 +403,54 @@ Example:
 ```python
 {!> ../../../docs_src/routing/routes/routes_priority.py !}
 ```
+You can make the negative example work by using [fall-through routing](#fall-through-routing).
 
 ### Fall-through routing
 
 Lilya supports fall-through routing. This means routes of every router are first checked until a full match is found (path and methods match)
-and no `lilya.routing.ContinueRouting` exception was raised.
+and no `lilya.exceptions.ContinueRouting` exception was raised.
 When no match is found, it is tried to match the path only (partial match) and to raise an appropiate exception.
 Somewhere between both passes is `redirect_slashes` which causes the router to issue an redirect to an existing path in case a slash is missing or too much.
 
 This means you can import with two Includes with the same path containing multiple routes. You can even have routes with the same path
-when the methods differ or the first handler raises `lilya.routing.ContinueRouting` after a more careful inspection.
-It is not a problem if `receive` was called **one time** for the inspection. The received message is repeated for the next handler.
+when the methods differ or the first handler raises `lilya.exceptions.ContinueRouting` after a more careful inspection.
+It is not a problem if `receive` was called **one time** for the inspection.
+The received first message is repeated for the next handler.
 
-!!! Warning
-    Despite possible it can lead to hard to debug errors when in two different Includes both with `redirect_slashes` active have
-    each route pathes like `/path` and `/path/`. You may want to disable `redirect_slashes` in the first `Include` in this case.
+Simple example
+
+```python
+{!> ../../../docs_src/routing/routes/routes_fall_through_simple.py !}
+```
+
+!!! Tip
+    In case of multiple StaticFiles you can enable the fall-through behavior by setting the `fall_through` argument to `True` for all but
+    the last StaticFiles.
+
+!!! Note
+    Unfortunately there is no sniff method. So you have to be careful when sniffing the body (`Request`) for raising `lilya.exceptions.ContinueRouting`.
+
+#### Examples
+
+Recap the example in [routes priority](#routes-priority). With the fall-through feature it is possible to handle the `don't` way.
+
+```python
+{!> ../../../docs_src/routing/routes/routes_priority_fall_through.py !}
+```
+
+It is even more safe because a user named `me` wouldn't be accessed.
+
+Let's assume for performance reasons we want to turn off the `redirect_slashes` feature but
+only for a performance critical Include block.
+The rest is handled by an included ASGI app.
+This can be done by passing `redirect_slashes=False` to the `Include`.
+
+```python
+{!> ../../../docs_src/routing/routes/routes_fall_through_redirect.py !}
+```
+
+Note: this works only for routes and namespace. For other parameters the `redirect_slashes` argument
+is ignored.
 
 ## Path parameters
 
