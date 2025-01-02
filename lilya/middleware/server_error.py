@@ -195,10 +195,12 @@ class ServerErrorMiddleware(MiddlewareProtocol):
                 is_collapsed = True
 
         # escape error class and text
-        error = (
-            f"{html.escape(traceback_obj.exc_type.__name__)}: "
-            f"{html.escape(str(traceback_obj))}"
-        )
+        try:
+            exc_type_str = traceback_obj.exc_type_str
+        except Exception:
+            # for older python versions < 3.13
+            exc_type_str = traceback_obj.exc_type.__name__
+        error = f"{html.escape(exc_type_str)}: " f"{html.escape(str(traceback_obj))}"
 
         template = get_template_errors()
         return template.format(styles=get_css_style(), js=get_js(), error=error, exc_html=exc_html)

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import gzip
 import io
+from functools import cached_property
 from typing import NoReturn
 
 from lilya.datastructures import Header
@@ -79,9 +80,10 @@ class GZipResponder:
         self.started = False
         self.content_encoding_set = False
         self.gzip_buffer = io.BytesIO()
-        self.gzip_file = gzip.GzipFile(
-            mode="wb", fileobj=self.gzip_buffer, compresslevel=self.compresslevel
-        )
+
+    @cached_property
+    def gzip_file(self) -> gzip.GzipFile:
+        return gzip.GzipFile(mode="wb", fileobj=self.gzip_buffer, compresslevel=self.compresslevel)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -93,7 +95,12 @@ class GZipResponder:
             send (Send): The send channel.
         """
         self.send = send
-        await self.app(scope, receive, self.send_with_gzip)
+        try:
+            await self.app(scope, receive, self.send_with_gzip)
+        finally:
+            # ensure cleanup if file is initialized
+            if "gzip_file" in self.__dict__ and not self.gzip_file.closed:
+                self.gzip_file.close()
 
     async def send_with_gzip(self, message: Message) -> None:
         """
