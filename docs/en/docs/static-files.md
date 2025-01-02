@@ -9,6 +9,7 @@ Lilya provides a convenient `StaticFiles` class for serving files from a specifi
 - `html` - Operate in HTML mode, automatically loading `index.html` for directories if it exists.
 - `check_dir` - Ensure that the directory exists upon instantiation. Defaults to `True`.
 - `follow_symlink` - A boolean indicating whether symbolic links for files and directories should be followed. Defaults to `False`.
+- `fall_through` - Raises `ContinueRouting` on missing files. Defaults to `False`.
 
 ```python
     {!> ../../../docs_src/static_files/basic.py!}
@@ -19,11 +20,18 @@ In HTML mode, if a `404.html` file exists, it will be displayed as the 404 respo
 
 As directory also a tuple or list can be provided. This is useful for overwrites or multiple directories which should served under the same
 location.
-You can theoretically also provide multiple `StaticFiles` but sacrifces the fallthrough behaviour this way.
 
 ```python
     {!> ../../../docs_src/static_files/basic_overwrite.py!}
 ```
+
+You can also provide multiple `StaticFiles` and use `fall_through=True` for all except the last to keep the fall-through behavior.
+
+```python
+    {!> ../../../docs_src/static_files/overwrite_fall_through.py!}
+```
+
+
 
 The `packages` option allows inclusion of "static" directories from within a Python package.
 The Python "bootstrap4" package serves as an example.
