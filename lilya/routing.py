@@ -775,7 +775,7 @@ class Host(BasePath):
         """
         Returns a list of declared path objects.
         """
-        return getattr(self.app, "routes", [])
+        return getattr(self.__base_app__, "routes", [])
 
     def search(self, scope: Scope) -> tuple[Match, Scope]:
         """
