@@ -986,6 +986,7 @@ class Host(BasePath):
     __slots__ = (
         "host",
         "app",
+        "__base_app__",
         "name",
         "middleware",
         "permissions",
@@ -1004,7 +1005,7 @@ class Host(BasePath):
     ) -> None:
         assert not host.startswith("/"), "Host must not start with '/'"
         self.host = host
-        self.app = app
+        self.app = self.__base_app__ = app
         self.name = name
         self.host_regex, self.host_format, self.param_convertors, self.path_start = compile_path(
             host
@@ -1049,7 +1050,7 @@ class Host(BasePath):
         """
         Returns a list of declared path objects.
         """
-        return getattr(self.app, "routes", [])
+        return getattr(self.__base_app__, "routes", [])
 
     def search(self, scope: Scope) -> tuple[Match, Scope]:
         """
