@@ -25,7 +25,7 @@ location.
     {!> ../../../docs_src/static_files/basic_overwrite.py!}
 ```
 
-You can also provide multiple `StaticFiles` and use `fall_through=True` for all except the last to keep the fall-through behavior.
+You can provide multiple `StaticFiles` and use `fall_through=True` for all except the last one to maintain the fall-through behavior.
 
 ```python
     {!> ../../../docs_src/static_files/overwrite_fall_through.py!}
