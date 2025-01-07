@@ -403,6 +403,60 @@ Example:
 ```python
 {!> ../../../docs_src/routing/routes/routes_priority.py !}
 ```
+You can make the negative example work by using [fall-through routing](#fall-through-routing).
+
+### Fall-through routing
+
+Lilya supports fall-through routing. This means routes of every router are first checked until a full match is found (both path and methods match)
+and no `lilya.exceptions.ContinueRouting` exception is raised.
+
+If no complete match is found, the router attempts in an next pass to match the path only (partial match) and raises an appropriate exception.
+
+Additionally, the `redirect_slashes` feature issues a redirect to an existing path if a slash is either missing or excessive. The evaluation
+takes place somewhere between both passes.
+
+You can import with two Includes using the same path containing multiple routes.
+
+It's possible to have routes with the same path if the methods differ or if the first handler raises lilya.exceptions.ContinueRouting after a more detailed inspection.
+It's not an issue if `receive` was called **once** for the inspection.
+The first received message is repeated for the next handler.
+
+Simple example
+
+```python
+{!> ../../../docs_src/routing/routes/routes_fall_through_simple.py !}
+```
+
+!!! Tip
+    In case of multiple StaticFiles you can enable the fall-through behavior by setting the `fall_through` argument to `True` for all but
+    the last StaticFiles.
+
+!!! Note
+    Unfortunately, there is no sniff method yet.
+    Therefore, you must be cautious when inspecting the body (`Request`) to raise `lilya.exceptions.ContinueRouting`.
+
+#### Examples
+
+Recap the example in [routes priority](#routes-priority). With the fall-through feature it is possible to handle the `don't` way.
+
+```python
+{!> ../../../docs_src/routing/routes/routes_priority_fall_through.py !}
+```
+
+It is even safer because a user named `me` wouldn't be accessed.
+
+Let's assume for performance reasons we want to turn off the `redirect_slashes` feature, but
+only for a performance-critical Include block.
+The rest is handled by an included ASGI app.
+This can be done by passing `redirect_slashes=False` to the `Include`.
+
+```python
+{!> ../../../docs_src/routing/routes/routes_fall_through_redirect.py !}
+```
+
+!!! Note
+    Passing `redirect_slashes=False` works only for routes and namespace. For other parameters the `redirect_slashes` argument
+    is ignored.
 
 ## Path parameters
 

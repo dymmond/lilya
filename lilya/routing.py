@@ -5,7 +5,7 @@ import inspect
 import re
 import traceback
 from collections.abc import Awaitable, Callable, Mapping, Sequence
-from typing import Annotated, Any, TypeVar, cast
+from typing import Annotated, Any, ClassVar, TypeVar, cast
 
 from lilya import status
 from lilya._internal._events import AsyncLifespan, handle_lifespan_events
@@ -22,9 +22,9 @@ from lilya._internal._urls import include
 from lilya.compat import is_async_callable
 from lilya.conf import settings
 from lilya.conf.global_settings import Settings
-from lilya.datastructures import URL, Header, ScopeHandler, URLPath
+from lilya.datastructures import URL, Header, ScopeHandler, SendReceiveSniffer, URLPath
 from lilya.enums import EventType, HTTPMethod, Match, ScopeType
-from lilya.exceptions import HTTPException, ImproperlyConfigured
+from lilya.exceptions import ContinueRouting, HTTPException, ImproperlyConfigured
 from lilya.middleware.base import DefineMiddleware
 from lilya.permissions.base import DefinePermission
 from lilya.requests import Request
@@ -42,19 +42,20 @@ class PathHandler(ScopeHandler):
     Args:
         child_scope (Scope): The child scope of the handler.
         scope (Scope): The scope of the handler.
-        receive (Receive): The receive function for handling incoming messages.
-        send (Send): The send function for sending messages.
+        sniffer (SendReceiveSniffer): The Sniffer.
 
     Attributes:
         child_scope (Scope): The child scope of the handler.
         scope (Scope): The scope of the handler.
         receive (Receive): The receive function for handling incoming messages.
         send (Send): The send function for sending messages.
+        sniffer (SendReceiveSniffer): The Sniffer.
     """
 
-    def __init__(self, child_scope: Scope, scope: Scope, receive: Receive, send: Send) -> None:
-        super().__init__(scope=scope, receive=receive, send=send)
+    def __init__(self, child_scope: Scope, scope: Scope, sniffer: SendReceiveSniffer) -> None:
+        super().__init__(scope=scope, receive=sniffer.receive, send=sniffer.send)
         self.child_scope = child_scope
+        self.sniffer = sniffer
 
 
 class NoMatchFound(Exception):
@@ -66,6 +67,20 @@ class NoMatchFound(Exception):
     def __init__(self, name: str, path_params: dict[str, Any]) -> None:
         params = ", ".join(list(path_params.keys()))
         super().__init__(f'No route exists for name "{name}" and params "{params}".')
+
+
+class PassPartialMatches(BaseException):
+    """
+    Signals that the route handling should continue and not stop with the current route
+    and partial matches should be transfered
+    """
+
+    partial_matches: Sequence[tuple[BaseRouter, BasePath, PathHandler]] = ()
+
+    def __init__(
+        self, *, partial_matches: Sequence[tuple[BaseRouter, BasePath, PathHandler]]
+    ) -> None:
+        self.partial_matches = partial_matches
 
 
 def get_name(handler: Callable[..., Any]) -> str:
@@ -139,6 +154,10 @@ class BasePath:
         elif scope["type"] == ScopeType.WEBSOCKET:
             websocket_close = WebSocketClose()
             await websocket_close(scope, receive, send)
+
+    @staticmethod
+    async def handle_not_found_fallthrough(scope: Scope, receive: Receive, send: Send) -> None:
+        raise ContinueRouting()
 
     def handle_dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -689,273 +708,11 @@ class WebSocketPath(BaseHandler, BasePath):
         return f"{self.__class__.__name__}(path={self.path!r}, name={self.name!r})"
 
 
-class Include(BasePath):
-    __slots__ = (
-        "path",
-        "app",
-        "namespace",
-        "pattern",
-        "name",
-        "exception_handlers",
-        "middleware",
-        "permissions",
-        "exception_handlers",
-        "deprecated",
-    )
-
-    def __init__(
-        self,
-        path: str,
-        app: ASGIApp | str | None = None,
-        routes: Sequence[BasePath] | None = None,
-        namespace: str | None = None,
-        pattern: str | None = None,
-        name: str | None = None,
-        *,
-        middleware: Sequence[DefineMiddleware] | None = None,
-        permissions: Sequence[DefinePermission] | None = None,
-        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
-        include_in_schema: bool = True,
-        deprecated: bool = False,
-    ) -> None:
-        """
-        Initialize the router with specified parameters.
-
-        Args:
-            path (str): The path associated with the router.
-            app (Union[ASGIApp, str, None]): The ASGI app.
-            routes (Union[Sequence[BasePath], None]): The routes.
-            namespace (Union[str, None]): The namespace.
-            pattern (Union[str, None]): The pattern.
-            name (Union[str, None]): The name.
-            middleware (Union[Sequence[DefineMiddleware], None]): The middleware.
-            permissions (Union[Sequence[DefinePermission], None]): The permissions.
-            include_in_schema (bool): Flag to include in the schema.
-
-        Returns:
-            None
-        """
-        assert path == "" or path.startswith("/"), "Routed paths must start with '/'"
-        assert (
-            app is not None or routes is not None or namespace is not None
-        ), "Either 'app=...', or 'routes=...', or 'namespace=...' must be specified"
-        self.path = clean_path(path)
-
-        assert (
-            namespace is None or routes is None
-        ), "Either 'namespace=...' or 'routes=', not both."
-
-        if namespace and not isinstance(namespace, str):
-            raise ImproperlyConfigured("Namespace must be a string. Example: 'myapp.routes'.")
-
-        if pattern and not isinstance(pattern, str):
-            raise ImproperlyConfigured("Pattern must be a string. Example: 'route_patterns'.")
-
-        if pattern and routes:
-            raise ImproperlyConfigured("Pattern must be used only with namespace.")
-
-        if namespace is not None:
-            routes = include(namespace, pattern)
-
-        self.__base_app__: ASGIApp | Router
-        if isinstance(app, str):
-            self.__base_app__ = import_string(app)
-        else:
-            self.__base_app__ = app if app is not None else Router(routes=routes)
-
-        self.app = self.__base_app__
-
-        self.middleware = middleware if middleware is not None else []
-        self.permissions = permissions if permissions is not None else []
-        self.exception_handlers = {} if exception_handlers is None else dict(exception_handlers)
-
-        self._apply_middleware(middleware)
-        self._apply_permissions(permissions)
-
-        self.name = name
-        self.include_in_schema = include_in_schema
-        self.deprecated = deprecated
-
-        self.path_regex, self.path_format, self.param_convertors, self.path_start = compile_path(
-            clean_path(self.path + "/{path:path}")
-        )
-
-    def _apply_middleware(self, middleware: Sequence[DefineMiddleware] | None) -> None:
-        """
-        Apply middleware to the app.
-
-        Args:
-            middleware (Union[Sequence[DefineMiddleware], None]): The middleware.
-
-        Returns:
-            None
-        """
-        if middleware is not None:
-            for cls, args, options in reversed(middleware):
-                self.app = cls(app=self.app, *args, **options)
-
-    def _apply_permissions(self, permissions: Sequence[DefinePermission] | None) -> None:
-        """
-        Apply permissions to the app.
-
-        Args:
-            permissions (Union[Sequence[DefinePermission], None]): The permissions.
-
-        Returns:
-            None
-        """
-        if permissions is not None:
-            for cls, args, options in reversed(permissions):
-                self.app = cls(app=self.app, *args, **options)
-
-    @property
-    def routes(self) -> list[BasePath]:
-        """
-        Returns a list of declared path objects.
-        """
-        return getattr(self.__base_app__, "routes", [])
-
-    def search(self, scope: Scope) -> tuple[Match, Scope]:
-        """
-        Searches within the route patterns and matches against the regex.
-
-        If found, then dispatches the request to the handler of the object.
-
-        Args:
-            scope (Scope): The request scope.
-
-        Returns:
-            Tuple[Match, Scope]: The match result and child scope.
-        """
-        if scope["type"] in {ScopeType.HTTP, ScopeType.WEBSOCKET}:
-            root_path = scope.get("root_path", "")
-            route_path = get_route_path(scope)
-            match = self.path_regex.match(route_path)
-
-            if match:
-                return self.handle_match(scope, match, route_path, root_path)
-
-        return Match.NONE, {}
-
-    def handle_match(
-        self, scope: Scope, match: re.Match, route_path: str, root_path: str
-    ) -> tuple[Match, Scope]:
-        """
-        Handles the case when a match is found in the route patterns.
-
-        Args:
-            scope (Scope): The request scope.
-            match: The match object from the regex.
-
-        Returns:
-            Tuple[Match, Scope]: The match result and child scope.
-        """
-        matched_params = {
-            key: self.param_convertors[key].transform(value)
-            for key, value in match.groupdict().items()
-        }
-        remaining_path = "/" + matched_params.pop("path", "")
-        matched_path = route_path[: -len(remaining_path)]
-
-        path_params = {**scope.get("path_params", {}), **matched_params}
-        child_scope = {
-            "path_params": path_params,
-            "app_root_path": scope.get("app_root_path", root_path),
-            "root_path": root_path + matched_path,
-            "handler": self.app,
-        }
-        return Match.FULL, child_scope
-
-    async def handle_dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
-        """
-        Handles the dispatch of the request to the appropriate handler.
-
-        Args:
-            scope (Scope): The request scope.
-            receive (Receive): The receive channel.
-            send (Send): The send channel.
-
-        Returns:
-            None
-        """
-        try:
-            await self.app(scope, receive, send)
-        except Exception as ex:
-            await self.handle_exception_handlers(scope, receive, send, ex)
-
-    def path_for(self, name: str, /, **path_params: Any) -> URLPath:
-        """
-        Generate a URLPath for a given route name and path parameters.
-
-        Args:
-            name (str): The name of the route.
-            path_params: Path parameters for route substitution.
-
-        Returns:
-            URLPath: The generated URLPath.
-
-        Raises:
-            NoMatchFound: If no matching route is found for the given name and parameters.
-        """
-
-        if self.name is not None and name == self.name and "path" in path_params:
-            path_params["path"] = path_params["path"].lstrip("/")
-            path, remaining_params = replace_params(
-                self.path_format, self.param_convertors, path_params
-            )
-            if not remaining_params:
-                return URLPath(path=path)
-        elif self.name is None or name.startswith(self.name + ":"):
-            return self._path_for_without_name(name, path_params)
-
-        raise NoMatchFound(name, path_params)
-
-    def _path_for_without_name(self, name: str, path_params: dict) -> URLPath:
-        """
-        Generate a URLPath for a route without a specific name and with path parameters.
-
-        Args:
-            name (str): The name of the route.
-            path_params: Path parameters for route substitution.
-
-        Returns:
-            URLPath: The generated URLPath.
-
-        Raises:
-            NoMatchFound: If no matching route is found for the given name and parameters.
-        """
-        if self.name is None:
-            remaining_name = name
-        else:
-            remaining_name = name[len(self.name) + 1 :]
-
-        path_kwarg = path_params.get("path")
-        path_params["path"] = ""
-        path_prefix, remaining_params = replace_params(
-            self.path_format, self.param_convertors, path_params
-        )
-
-        if path_kwarg is not None:
-            remaining_params["path"] = path_kwarg
-
-        for route in self.routes or []:
-            try:
-                url = route.path_for(remaining_name, **remaining_params)
-                return URLPath(path=path_prefix.rstrip("/") + str(url), protocol=url.protocol)
-            except NoMatchFound:
-                pass
-
-        raise NoMatchFound(name, path_params)
-
-    def __repr__(self) -> str:
-        name = self.name or ""
-        return f"{self.__class__.__name__}(path={self.path!r}, name={name!r}, app={self.app!r})"
-
-
 class Host(BasePath):
     __slots__ = (
         "host",
         "app",
+        "__base_app__",
         "name",
         "middleware",
         "permissions",
@@ -974,7 +731,7 @@ class Host(BasePath):
     ) -> None:
         assert not host.startswith("/"), "Host must not start with '/'"
         self.host = host
-        self.app = app
+        self.app = self.__base_app__ = app
         self.name = name
         self.host_regex, self.host_format, self.param_convertors, self.path_start = compile_path(
             host
@@ -1019,7 +776,7 @@ class Host(BasePath):
         """
         Returns a list of declared path objects.
         """
-        return getattr(self.app, "routes", [])
+        return getattr(self.__base_app__, "routes", [])
 
     def search(self, scope: Scope) -> tuple[Match, Scope]:
         """
@@ -1180,6 +937,7 @@ class BaseRouter:
         "middleware_stack",
         "permission_started",
         "settings_module",
+        "is_sub_router",
     )
 
     def __init__(
@@ -1207,6 +965,7 @@ class BaseRouter:
         ] = None,
         include_in_schema: bool = True,
         deprecated: bool = False,
+        is_sub_router: bool = False,
     ) -> None:
         assert lifespan is None or (
             on_startup is None and on_shutdown is None
@@ -1239,6 +998,7 @@ class BaseRouter:
         self.settings_module = settings_module
         self.middleware_stack = self.app
         self.permission_started = False
+        self.is_sub_router = is_sub_router
 
         self._apply_middleware(self.middleware)
         self._apply_permissions(self.permissions)
@@ -1316,29 +1076,23 @@ class BaseRouter:
 
         Args:
             route: The matched route.
-            child_scope (Scope): The ASGI child scope.
-            scope (Scope): The ASGI scope.
-            receive (Receive): The ASGI receive channel.
-            send (Send): The ASGI send channel.
+            path_handler (PathHandler): The PathHandler.
         """
-        path_handler.scope.update(path_handler.child_scope)
-        await route.handle_dispatch(path_handler.scope, path_handler.receive, path_handler.send)  # type: ignore
+        new_scope = dict(path_handler.scope)
+        new_scope.update(path_handler.child_scope)
+        await route.handle_dispatch(new_scope, path_handler.receive, path_handler.send)  # type: ignore
 
-    async def handle_partial(
-        self, route: BasePath, partial_scope: Scope, scope: Scope, receive: Receive, send: Send
-    ) -> None:
+    async def handle_partial(self, route: BasePath, path_handler: PathHandler) -> None:
         """
         Handle a partial route match.
 
         Args:
-            route: The partial matched route.
-            partial_scope: The partial route scope.
-            scope (Scope): The ASGI scope.
-            receive (Receive): The ASGI receive channel.
-            send (Send): The ASGI send channel.
+            route: The matched route.
+            path_handler (PathHandler): The PathHandler.
         """
-        scope.update(partial_scope)
-        await route.handle_dispatch(scope, receive, send)  # type: ignore
+        new_scope = dict(path_handler.scope)
+        new_scope.update(path_handler.child_scope)
+        await route.handle_dispatch(new_scope, path_handler.receive, path_handler.send)  # type: ignore
 
     async def handle_default(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -1411,39 +1165,69 @@ class BaseRouter:
         if "router" not in scope:
             scope["router"] = self
 
-        partial = None
+        sniffer = SendReceiveSniffer(receive, send)
+
+        partial_matches: list[tuple[BaseRouter, BasePath, PathHandler]] = []
+        had_match = False
 
         for route in self.routes:
-            match, child_scope = route.search(scope)
-            if match == Match.FULL:
-                path_handler = PathHandler(
-                    child_scope=child_scope, scope=scope, receive=receive, send=send
-                )
-                await self.handle_route(route, path_handler=path_handler)
+            # we cannot continue when the sniffer detects a sent
+            if sniffer.sent:
                 return
-            elif match == Match.PARTIAL and partial is None:
-                partial = route
-                partial_scope = child_scope
+            match, child_scope = route.search(scope)
+            if match == Match.NONE:
+                continue
+            had_match = True
+            path_handler = PathHandler(child_scope=child_scope, scope=scope, sniffer=sniffer)
+            try:
+                if match == Match.FULL:
+                    await self.handle_route(route, path_handler=path_handler)
+                    if sniffer.sent:
+                        return  # type: ignore
+                    else:
+                        sniffer.repeat_message = True
+                elif match == Match.PARTIAL:
+                    partial_matches.append((self, route, path_handler))
+            except PassPartialMatches as exc:
+                # collect the partial matches from the sub-router
+                partial_matches.extend(exc.partial_matches)
+            except ContinueRouting:
+                pass
+        # check if redirect would be possible, when no match was found
+        if not had_match and self.redirect_slashes:
+            route_path = get_route_path(scope)
+            if scope["type"] == ScopeType.HTTP and route_path != "/":
+                redirect_scope = dict(scope)
+                if route_path.endswith("/"):
+                    redirect_scope["path"] = redirect_scope["path"].rstrip("/")
+                else:
+                    redirect_scope["path"] = redirect_scope["path"] + "/"
 
-        if partial is not None:
-            await self.handle_partial(partial, partial_scope, scope, receive, send)
-            return
+                for route in self.routes:
+                    match, child_scope = route.search(redirect_scope)
+                    if match != Match.NONE:
+                        redirect_url = URL.build_from_scope(scope=redirect_scope)
+                        response = RedirectResponse(url=str(redirect_url))
+                        await response(scope, receive, send)
+                        return
 
-        route_path = get_route_path(scope)
-        if scope["type"] == ScopeType.HTTP and self.redirect_slashes and route_path != "/":
-            redirect_scope = dict(scope)
-            if route_path.endswith("/"):
-                redirect_scope["path"] = redirect_scope["path"].rstrip("/")
-            else:
-                redirect_scope["path"] = redirect_scope["path"] + "/"
-
-            for route in self.routes:
-                match, child_scope = route.search(redirect_scope)
-                if match != Match.NONE:
-                    redirect_url = URL.build_from_scope(scope=redirect_scope)
-                    response = RedirectResponse(url=str(redirect_url))
-                    await response(scope, receive, send)
+        if self.is_sub_router:
+            # now pass the partial matches to the upper router
+            raise PassPartialMatches(partial_matches=partial_matches)
+        # when in the main router, check partial matches (method does not match)
+        # use for this the handler method of the sub-router to keep their modifications
+        for router, route, path_handler in partial_matches:
+            try:
+                await router.handle_partial(route, path_handler)
+                # should propagate back to this sniffer
+                if sniffer.sent:
                     return
+                else:
+                    # rearm sniffer of the path handler (sub router)
+                    path_handler.sniffer.repeat_message = True
+                    sniffer.repeat_message = True
+            except ContinueRouting:
+                pass
 
         await self.handle_default(scope, receive, send)
 
@@ -1987,3 +1771,279 @@ class Router(BaseRouter):
 
 # Declare an alias for the Path
 RoutePath = Path
+
+
+class Include(BasePath):
+    router_class: ClassVar[type[BaseRouter]] = Router
+
+    __slots__ = (
+        "path",
+        "app",
+        "namespace",
+        "pattern",
+        "name",
+        "exception_handlers",
+        "middleware",
+        "permissions",
+        "exception_handlers",
+        "deprecated",
+    )
+
+    def __init__(
+        self,
+        path: str,
+        app: ASGIApp | str | None = None,
+        routes: Sequence[BasePath] | None = None,
+        namespace: str | None = None,
+        pattern: str | None = None,
+        name: str | None = None,
+        *,
+        middleware: Sequence[DefineMiddleware] | None = None,
+        permissions: Sequence[DefinePermission] | None = None,
+        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        include_in_schema: bool = True,
+        deprecated: bool = False,
+        redirect_slashes: bool = True,
+    ) -> None:
+        """
+        Initialize the router with specified parameters.
+
+        Args:
+            path (str): The path associated with the router.
+            app (Union[ASGIApp, str, None]): The ASGI app.
+            routes (Union[Sequence[BasePath], None]): The routes.
+            namespace (Union[str, None]): The namespace.
+            pattern (Union[str, None]): The pattern.
+            name (Union[str, None]): The name.
+            middleware (Union[Sequence[DefineMiddleware], None]): The middleware.
+            permissions (Union[Sequence[DefinePermission], None]): The permissions.
+            include_in_schema (bool): Flag to include in the schema.
+            redirect_slashes (bool): (Only namespace or routes) Redirect slashes on mismatch.
+
+        Returns:
+            None
+        """
+        assert path == "" or path.startswith("/"), "Routed paths must start with '/'"
+        assert (
+            app is not None or routes is not None or namespace is not None
+        ), "Either 'app=...', or 'routes=...', or 'namespace=...' must be specified"
+        self.path = clean_path(path)
+
+        assert (
+            namespace is None or routes is None
+        ), "Either 'namespace=...' or 'routes=', not both."
+
+        if namespace and not isinstance(namespace, str):
+            raise ImproperlyConfigured("Namespace must be a string. Example: 'myapp.routes'.")
+
+        if pattern and not isinstance(pattern, str):
+            raise ImproperlyConfigured("Pattern must be a string. Example: 'route_patterns'.")
+
+        if pattern and routes:
+            raise ImproperlyConfigured("Pattern must be used only with namespace.")
+
+        if namespace is not None:
+            routes = include(namespace, pattern)
+
+        self.__base_app__: ASGIApp | Router
+        if isinstance(app, str):
+            self.__base_app__ = import_string(app)
+            self.handle_not_found = self.handle_not_found_fallthrough  # type: ignore
+        elif app is not None:
+            self.handle_not_found = self.handle_not_found_fallthrough  # type: ignore
+            self.__base_app__ = app
+        else:
+            self.__base_app__ = self.router_class(
+                routes=routes,
+                default=self.handle_not_found_fallthrough,
+                is_sub_router=True,
+                redirect_slashes=redirect_slashes,
+            )
+
+        self.app = self.__base_app__
+
+        self.middleware = middleware if middleware is not None else []
+        self.permissions = permissions if permissions is not None else []
+        self.exception_handlers = {} if exception_handlers is None else dict(exception_handlers)
+
+        self._apply_middleware(middleware)
+        self._apply_permissions(permissions)
+
+        self.name = name
+        self.include_in_schema = include_in_schema
+        self.deprecated = deprecated
+
+        self.path_regex, self.path_format, self.param_convertors, self.path_start = compile_path(
+            clean_path(self.path + "/{path:path}")
+        )
+
+    def _apply_middleware(self, middleware: Sequence[DefineMiddleware] | None) -> None:
+        """
+        Apply middleware to the app.
+
+        Args:
+            middleware (Union[Sequence[DefineMiddleware], None]): The middleware.
+
+        Returns:
+            None
+        """
+        if middleware is not None:
+            for cls, args, options in reversed(middleware):
+                self.app = cls(app=self.app, *args, **options)
+
+    def _apply_permissions(self, permissions: Sequence[DefinePermission] | None) -> None:
+        """
+        Apply permissions to the app.
+
+        Args:
+            permissions (Union[Sequence[DefinePermission], None]): The permissions.
+
+        Returns:
+            None
+        """
+        if permissions is not None:
+            for cls, args, options in reversed(permissions):
+                self.app = cls(app=self.app, *args, **options)
+
+    @property
+    def routes(self) -> list[BasePath]:
+        """
+        Returns a list of declared path objects.
+        """
+        return getattr(self.__base_app__, "routes", [])
+
+    def search(self, scope: Scope) -> tuple[Match, Scope]:
+        """
+        Searches within the route patterns and matches against the regex.
+
+        If found, then dispatches the request to the handler of the object.
+
+        Args:
+            scope (Scope): The request scope.
+
+        Returns:
+            Tuple[Match, Scope]: The match result and child scope.
+        """
+        if scope["type"] in {ScopeType.HTTP, ScopeType.WEBSOCKET}:
+            root_path = scope.get("root_path", "")
+            route_path = get_route_path(scope)
+            match = self.path_regex.match(route_path)
+
+            if match:
+                return self.handle_match(scope, match, route_path, root_path)
+
+        return Match.NONE, {}
+
+    def handle_match(
+        self, scope: Scope, match: re.Match, route_path: str, root_path: str
+    ) -> tuple[Match, Scope]:
+        """
+        Handles the case when a match is found in the route patterns.
+
+        Args:
+            scope (Scope): The request scope.
+            match: The match object from the regex.
+
+        Returns:
+            Tuple[Match, Scope]: The match result and child scope.
+        """
+        matched_params = {
+            key: self.param_convertors[key].transform(value)
+            for key, value in match.groupdict().items()
+        }
+        remaining_path = f'/{matched_params.pop("path", "")}'
+        matched_path = route_path[: -len(remaining_path)]
+
+        path_params = {**scope.get("path_params", {}), **matched_params}
+        child_scope = {
+            "path_params": path_params,
+            "app_root_path": scope.get("app_root_path", root_path),
+            "root_path": root_path + matched_path,
+            "handler": self.app,
+        }
+        return Match.FULL, child_scope
+
+    async def handle_dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """
+        Handles the dispatch of the request to the appropriate handler.
+
+        Args:
+            scope (Scope): The request scope.
+            receive (Receive): The receive channel.
+            send (Send): The send channel.
+
+        Returns:
+            None
+        """
+        try:
+            await self.app(scope, receive, send)
+        except Exception as ex:
+            await self.handle_exception_handlers(scope, receive, send, ex)
+
+    def path_for(self, name: str, /, **path_params: Any) -> URLPath:
+        """
+        Generate a URLPath for a given route name and path parameters.
+
+        Args:
+            name (str): The name of the route.
+            path_params: Path parameters for route substitution.
+
+        Returns:
+            URLPath: The generated URLPath.
+
+        Raises:
+            NoMatchFound: If no matching route is found for the given name and parameters.
+        """
+
+        if self.name is not None and name == self.name and "path" in path_params:
+            path_params["path"] = path_params["path"].lstrip("/")
+            path, remaining_params = replace_params(
+                self.path_format, self.param_convertors, path_params
+            )
+            if not remaining_params:
+                return URLPath(path=path)
+        elif self.name is None or name.startswith(self.name + ":"):
+            return self._path_for_without_name(name, path_params)
+
+        raise NoMatchFound(name, path_params)
+
+    def _path_for_without_name(self, name: str, path_params: dict) -> URLPath:
+        """
+        Generate a URLPath for a route without a specific name and with path parameters.
+
+        Args:
+            name (str): The name of the route.
+            path_params: Path parameters for route substitution.
+
+        Returns:
+            URLPath: The generated URLPath.
+
+        Raises:
+            NoMatchFound: If no matching route is found for the given name and parameters.
+        """
+        if self.name is None:
+            remaining_name = name
+        else:
+            remaining_name = name[len(self.name) + 1 :]
+
+        path_kwarg = path_params.get("path")
+        path_params["path"] = ""
+        path_prefix, remaining_params = replace_params(
+            self.path_format, self.param_convertors, path_params
+        )
+
+        if path_kwarg is not None:
+            remaining_params["path"] = path_kwarg
+
+        for route in self.routes or []:
+            try:
+                url = route.path_for(remaining_name, **remaining_params)
+                return URLPath(path=path_prefix.rstrip("/") + str(url), protocol=url.protocol)
+            except NoMatchFound:
+                pass
+
+        raise NoMatchFound(name, path_params)
+
+    def __repr__(self) -> str:
+        name = self.name or ""
+        return f"{self.__class__.__name__}(path={self.path!r}, name={name!r}, app={self.app!r})"

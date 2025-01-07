@@ -11,7 +11,7 @@ from anyio.to_thread import run_sync
 from multidict import CIMultiDict, MultiDict as BaseMultiDict, MultiDictProxy, MultiMapping
 
 from lilya.enums import DefaultPort, HTTPType, ScopeType, WebsocketType
-from lilya.types import Receive, Scope, Send
+from lilya.types import Message, Receive, Scope, Send
 
 T = TypeVar("T")
 
@@ -802,3 +802,40 @@ class ScopeHandler:
             else:
                 values[key] = value
         return hash((type(self),) + tuple(values))
+
+
+class SendReceiveSniffer:
+    """
+    Sniffs send, receive usage of asgi apps
+    """
+
+    __slots__ = ("_receive", "_send", "received", "sent", "message", "repeat_message")
+    _receive: Receive
+    _send: Send
+    received: bool
+    sent: bool
+    # repeat message one time if available
+    repeat_message: bool
+    message: None | Message
+
+    def __init__(self, receive: Receive, send: Send) -> None:
+        self._receive = receive
+        self._send = send
+        self.received = False
+        self.sent = False
+        self.repeat_message = False
+        self.message = None
+
+    async def receive(self) -> Message:
+        self.received = True
+        if not self.repeat_message or self.message is None:
+            self.message = await self._receive()
+        self.repeat_message = False
+        return self.message
+
+    async def send(self, message: Message) -> None:
+        self.sent = True
+        await self._send(message)
+
+    def __bool__(self) -> bool:
+        return self.sent
