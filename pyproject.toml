@@ -33,6 +33,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
     "Topic :: Internet :: WWW/HTTP",
 ]
@@ -91,6 +92,7 @@ testing = [
     "pytest-mock>=3.12.0",
     "python-multipart>=0.0.13",
     "mypy==1.10.0",
+    "pyyaml>=6.0,<7.0.0",
     "typing_extensions>=3.10.0",
     "ipython",
     "ptpython",

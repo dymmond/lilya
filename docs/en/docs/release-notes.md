@@ -9,6 +9,7 @@ hide:
 
 ### Added
 
+- Support for Python 3.13.
 - Add `ReceiveSendSniffer`. This sniffer allows to detect communication events and to replay receive messages.
 - `Include` and `BaseLilya` (application) have now a ClassVar `router_class` to provide a custom router.
 - Subclasses of `BaseLilya` (application) can set the `router_class` to None to provide a completely custom router
