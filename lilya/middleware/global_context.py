@@ -51,4 +51,3 @@ class GlobalContextMiddleware(ABC, MiddlewareProtocol):
             await self.app(scope, receive, send)
         finally:
             g.clear()
-            print(id(g))
