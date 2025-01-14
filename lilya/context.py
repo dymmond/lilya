@@ -308,3 +308,87 @@ class RequestContext:
 
 
 request_context: Request = cast("Request", RequestContext.lazy_request)
+
+
+class LazySessionProxy:
+    def __init__(self, session_getter: Any) -> None:
+        self._session_getter = session_getter
+
+    def __getitem__(self, key: str) -> Any:
+        session = self._session_getter()
+        if session is None:
+            raise RuntimeError("Session context requires 'SessionMiddleware' to be installed.")
+        return session[key]
+
+    def __setitem__(self, key: str, value: Any) -> None:
+        session = self._session_getter()
+        if session is None:
+            raise RuntimeError("Session context requires 'SessionMiddleware' to be installed.")
+        session[key] = value
+
+    def __delitem__(self, key: str) -> None:
+        session = self._session_getter()
+        if session is None:
+            raise RuntimeError("Session context requires 'SessionMiddleware' to be installed.")
+        del session[key]
+
+    def __contains__(self, key: str) -> bool:
+        session = self._session_getter()
+        return key in session if session else False
+
+    def get(self, key: str, default: Any = None) -> Any:
+        session = self._session_getter()
+        return session.get(key, default) if session else default
+
+    def reset_context(self) -> None:
+        session = self._session_getter()
+        session.clear()
+
+    def __repr__(self: LazySessionProxy) -> str:
+        return '<LazySessionProxy "session">'
+
+
+class SessionContext:
+    """
+    A context manager for handling session-specific request data using context variables.
+    """
+
+    _session_context: contextvars.ContextVar[Request] = contextvars.ContextVar("session_context")
+
+    # Lazily access the session object
+    lazy_session = LazySessionProxy(lambda: SessionContext._get_session_data())
+
+    @classmethod
+    def set_request(cls, request: Request) -> None:
+        """Set the session context for the request."""
+        cls._session_context.set(request)
+
+    @classmethod
+    def get_request(cls) -> Request:
+        """Retrieve the current request (session context)."""
+        try:
+            return cls._session_context.get()
+        except LookupError:
+            raise RuntimeError(
+                "Session context not set. Ensure 'SessionMiddleware' is properly installed."
+            ) from None
+
+    @classmethod
+    def _get_session_data(cls) -> Any:
+        """Get the session data from the request."""
+        request = cls.get_request()
+        return getattr(request, "session", {})
+
+    @classmethod
+    def reset_context(cls, token: Any) -> None:
+        """
+        Reset the session context.
+        """
+        # Ensure the token is a valid instance of Token
+        if not isinstance(token, contextvars.Token):
+            raise TypeError(f"Expected a Token, got {type(token)}")
+        cls._session_context.reset(token)
+
+
+# Define session as a lazy proxy
+session: LazySessionProxy = SessionContext.lazy_session

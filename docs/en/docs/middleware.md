@@ -199,8 +199,9 @@ how to use it is available.
 * `SecurityMiddleware` - Provides several security enhancements to the request/response cycle and adds security headers to the response.
 * `ClientIPMiddleware` - Provides facilities to retrieve the client ip. This can be useful for ratelimits.
 * `GlobalContextMiddleware` - Allows the use of the `[g](./context.md#the-g-object)` across request contexts.
-* `RequestContextMiddleware` - Adds a `request` object context without the need to use handlers.
+* `RequestContextMiddleware` - Adds a `request_context` object context without the need to use handlers.
 * `AuthenticationMiddleware` & `BaseAuthMiddleware` - See [above](#baseauthmiddleware--authenticationmiddleware).
+* `SessionContextMiddleware`- Adds a `session` object context to be accessed in the handlers or request context in general.
 
 ### CSRFMiddleware
 
@@ -333,6 +334,18 @@ Lazy loads a request object without explicitly add it into the handlers.
 
 ```python
 {!> ../../../docs_src/middleware/available/request_context.py !}
+```
+
+### SessionContextMiddleware
+
+Lazy loads a session object without explicitly go through the `request.session` object. This can be accessed within
+the request context of any handler.
+
+The `SessionContextMiddleware` **depends** on the [SessionMiddleware](#sessionmiddleware) to **also be installed** and the
+**order matters**.
+
+```python
+{!> ../../../docs_src/middleware/available/session_context_middleware.py !}
 ```
 
 ### Other middlewares

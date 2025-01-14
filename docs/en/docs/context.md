@@ -298,7 +298,7 @@ in your APIs.
 
 ## The `RequestContext` object
 
-This is a very useful object that acts a lazyy loader of the request object without the need of
+This is a very useful object that acts a lazy loader of the request object without the need of
 explicitly declaring it inside an handler.
 
 !!! Danger
@@ -321,5 +321,39 @@ app = Lilya(routes=[
         Path('/show', show_request_context)
     ],
     middleware=[DefineMiddleware(RequestContextMiddleware)],
+)
+```
+
+## The `Session` object
+
+This is also a very useful object that can be used in a lazy load mode across the request lifecycle. If you are familiar
+with the flask `session`, this one acts in the same fashion.
+
+!!! Danger
+    When using the `session` object, you **must** install the [SessionMiddleware](./middleware.md#sessioncontextmiddleware)
+    and the [SessionContextMiddleware](./middleware.md#sessioncontextmiddleware) in this specific order as the order matters or an `ImproperlyConfigured` exception is raised.
+
+
+```python
+from lilya.apps import Lilya
+from lilya.context import session
+from lilya.middleware import DefineMiddleware
+from lilya.middleware.session_context import SessionContextMiddleware
+from lilya.middleware.sessions import SessionMiddleware
+from lilya.routing import Path
+
+
+async def home():
+    session["visits"] = session.get("visits", 0) + 1
+    return {"visits": session["visits"]}
+
+
+app = Lilya(routes=[
+        Path('/show', home)
+    ],
+    middleware=[
+        DefineMiddleware(SessionMiddleware, secret='my_secret'),
+        DefineMiddleware(SessionContextMiddleware),
+    ],
 )
 ```

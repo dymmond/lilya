@@ -5,6 +5,13 @@ hide:
 
 # Release Notes
 
+## 0.12.1
+
+### Added
+
+- New [SessionContextMiddleware](./middleware.md#sessioncontextmiddleware) allowing to use the new `session` object
+in a request context.
+
 ## 0.12.0
 
 ### Added
