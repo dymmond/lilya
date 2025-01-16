@@ -12,6 +12,11 @@ hide:
 - New [SessionContextMiddleware](./middleware.md#sessioncontextmiddleware) allowing to use the new `session` object
 in a request context.
 
+### Changed
+
+- Updated the Context section by adding the [session context](./context#the-session-object) examples and explanation
+how to use it.
+
 ## 0.12.0
 
 ### Added
