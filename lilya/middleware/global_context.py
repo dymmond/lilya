@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC
 
-from lilya.context import g
+from lilya.context import G, g_context
 from lilya.protocols.middleware import MiddlewareProtocol
 from lilya.types import ASGIApp, Receive, Scope, Send
 
@@ -47,7 +47,8 @@ class GlobalContextMiddleware(ABC, MiddlewareProtocol):
         Returns:
             None
         """
+        token = g_context.set(G())
         try:
             await self.app(scope, receive, send)
         finally:
-            g.clear()
+            g_context.reset(token)
