@@ -11,10 +11,15 @@ from lilya.routing import Path
 from lilya.templating.jinja import Jinja2Template
 
 
-def test_templates(tmpdir, test_client_factory):
+@pytest.mark.parametrize("apostrophe", ["'", '"'])
+def test_templates(tmpdir, test_client_factory, apostrophe):
     path = os.path.join(tmpdir, "index.html")
     with open(path, "w") as file:
-        file.write("<html>Hello, <a href='{{ url_for('homepage') }}'>world</a></html>")
+        file.write(
+            "<html>Hello, <a href='{{ url_for('homepage') }}'>world</a></html>".replace(
+                "'", apostrophe
+            )
+        )
 
     async def homepage(request):
         return templates.get_template_response(request, "index.html")
@@ -27,7 +32,9 @@ def test_templates(tmpdir, test_client_factory):
 
     client = test_client_factory(app)
     response = client.get("/")
-    assert response.text == "<html>Hello, <a href='http://testserver/'>world</a></html>"
+    assert response.text == "<html>Hello, <a href='http://testserver/'>world</a></html>".replace(
+        "'", apostrophe
+    )
     assert response.template.name == "index.html"
     assert set(response.context.keys()) == {"request"}
 
