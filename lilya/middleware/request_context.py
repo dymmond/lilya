@@ -55,7 +55,7 @@ class RequestContextMiddleware(ABC, MiddlewareProtocol):
             return
 
         global_request = Request(scope, receive)
-        token = RequestContext._request_context.set(global_request)
+        token = RequestContext.set_request(global_request)
         try:
             await self.app(scope, receive, send)
         finally:

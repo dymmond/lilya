@@ -3,7 +3,6 @@ from __future__ import annotations
 import contextvars
 import copy
 import warnings
-from functools import lru_cache
 from typing import TYPE_CHECKING, Annotated, Any, cast
 
 from lilya.datastructures import URL
@@ -233,12 +232,50 @@ class G:
         return f"{self.__class__.__name__}()"
 
 
-@lru_cache
+g_context: contextvars.ContextVar[G] = contextvars.ContextVar("g_context")
+
+
 def get_g() -> G:
-    return G()
+    return g_context.get()
 
 
-g = get_g()
+class LazyGProxy:
+    """
+    A proxy to lazily evaluate attributes of the current request.
+    """
+
+    @property
+    def store(self) -> Any:
+        return get_g().store
+
+    def __getattr__(self, item: str) -> Any:
+        return getattr(get_g(), item)
+
+    def __setattr__(self, key: Any, value: Any) -> None:
+        get_g().__setattr__(key, value)
+
+    def __delattr__(self, key: Any) -> None:
+        delattr(get_g(), key)
+
+    def __copy__(self) -> G:
+        try:
+            return get_g()
+        except LookupError:
+            return G()
+
+    def __len__(self) -> int:
+        return len(get_g())
+
+    def __getitem__(self, key: str) -> Any:
+        return get_g()[key]
+
+    def __repr__(self: LazyRequestProxy) -> str:
+        if get_g() is None:
+            return "<LazyGProxy [Unevaluated]>"
+        return '<LazyGProxy "G()">'
+
+
+g: G = cast("G", LazyGProxy())
 
 
 class LazyRequestProxy:
@@ -258,7 +295,7 @@ class LazyRequestProxy:
         return getattr(request, item)
 
     def __repr__(self: LazyRequestProxy) -> str:
-        if self._request_getter is None:
+        if self._request_getter() is None:
             return "<LazyRequestProxy [Unevaluated]>"
         return '<LazyRequestProxy "Request()">'
 
@@ -275,11 +312,11 @@ class RequestContext:
     lazy_request = LazyRequestProxy(lambda: RequestContext._request_context.get(None))
 
     @classmethod
-    def set_request(cls, request: Request) -> None:
+    def set_request(cls, request: Request) -> contextvars.Token:
         """
         Set the current request in the context.
         """
-        cls._request_context.set(request)
+        return cls._request_context.set(request)
 
     @classmethod
     def get_request(cls) -> Request:
