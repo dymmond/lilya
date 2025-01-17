@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.12.2
+
+### Fixed
+
+- Context G threads safety 
+
 ## 0.12.1
 
 ### Added
