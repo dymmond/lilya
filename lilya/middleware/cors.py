@@ -242,6 +242,7 @@ class CORSMiddleware(MiddlewareProtocol):
             return
 
         message.setdefault("headers", [])
+        # we need to update the message
         headers = Header.from_scope(scope=message)
         headers.update(self.simple_headers)
         origin = request_headers["Origin"]

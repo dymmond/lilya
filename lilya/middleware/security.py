@@ -123,7 +123,8 @@ class SecurityMiddleware(MiddlewareProtocol):
             None
         """
         if message["type"] == "http.response.start":
-            headers: Header = Header.from_scope(scope)
+            # we need to update the headers of message
+            headers: Header = Header.from_scope(message)
             headers.add(
                 "Content-Security-Policy", "" if not self.content_policy else self.content_policy
             )

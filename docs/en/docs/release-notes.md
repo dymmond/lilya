@@ -5,11 +5,18 @@ hide:
 
 # Release Notes
 
+## 0.12.3
+
+### Fixed
+
+- `from_scope` was incorrectly applied in some middleware on scope and not on message for updated message headers.
+  This breaks for example post responses.
+
 ## 0.12.2
 
 ### Fixed
 
-- Context G threads safety 
+- Context G threads safety
 
 ## 0.12.1
 
