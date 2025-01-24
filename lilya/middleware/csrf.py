@@ -113,6 +113,7 @@ class CSRFMiddleware(MiddlewareProtocol):
         Args:
             message: An ASGI 'Message'
         """
+        # we need to update the message
         headers = Header.from_scope(scope=message)
         if "set-cookie" not in headers:
             cookie = Cookie(

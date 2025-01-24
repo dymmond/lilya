@@ -143,7 +143,8 @@ class SessionMiddleware(MiddlewareProtocol):
         """
         data = self.encode_session(scope["session"])
         data = self.signer.sign(data)
-        headers = Header.from_scope(scope=scope)
+        # we need to update the message
+        headers = Header.from_scope(scope=message)
         header_value = "{session_cookie}={data}; path={path}; {max_age}{security_flags}".format(
             session_cookie=self.session_cookie,
             data=data.decode("utf-8"),
@@ -162,7 +163,8 @@ class SessionMiddleware(MiddlewareProtocol):
         Args:
             scope (Scope): ASGI scope.
         """
-        headers = Header.from_scope(scope=scope)
+        # we need to update the message
+        headers = Header.from_scope(scope=message)
         header_value = "{session_cookie}={data}; path={path}; {expires}{security_flags}".format(
             session_cookie=self.session_cookie,
             data="null",

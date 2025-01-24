@@ -44,7 +44,8 @@ class XFrameOptionsMiddleware(MiddlewareProtocol):
             None
         """
         if message["type"] == "http.response.start":
-            headers: Header = Header.from_scope(scope)
+            # we need to update the message
+            headers: Header = Header.from_scope(message)
 
             if headers.get("X-Frame-Options") is None:
                 headers.add("X-Frame-Options", self.get_xframe_options())
