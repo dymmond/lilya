@@ -234,5 +234,7 @@ class Jinja2Template:
         Returns:
             TemplateResponse: The rendered template response.
         """
-        template_renderer = TemplateRenderer(template=self)
+        template_renderer = TemplateRenderer(
+            template=self, render_function_name="render_async" if self.env.is_async else "render"
+        )
         return template_renderer(*args, **kwargs)

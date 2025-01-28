@@ -267,6 +267,15 @@ can later be used to serialise your response automatically and then passed to th
 Check the [build a custom encoder](#build-a-custom-encoder) and [custom encoders with make_response](#custom-encoders-and-the-make_response)
 for more details and how to leverage the power of Lilya.
 
+## Async content
+
+You can pass coroutines as content to most standard responses. This will delay the evaluation of the content to the `__call__` method
+if `resolve_async_content()` is not called earlier.
+The cool part, we reuse the main eventloop.
+
+Note, this means we get the body attribute of the response as well as the `content-length` header later
+after the `resolve_async_content()` call (which is called in `__call__`).
+
 ## Delegate to Lilya
 
 Delegating to Lilya means that if no response is specified, Lilya will go through the internal

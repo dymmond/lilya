@@ -5,6 +5,14 @@ hide:
 
 # Release Notes
 
+
+## 0.12.4
+
+### Added
+
+- Compatibility mode for async response content.
+- Support for jinja enable_async option.
+
 ## 0.12.3
 
 ### Fixed

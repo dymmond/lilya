@@ -21,8 +21,9 @@ PathLike = Union[str, "os.PathLike[str]"]
 
 
 class BaseTemplateRenderer(Generic[T]):
-    def __init__(self, template: T) -> None:
+    def __init__(self, template: T, render_function_name: str = "render") -> None:
         self.template = template
+        self.render_function_name = render_function_name
 
     def get_template(self, name: str) -> T:
         return self.template.get_template(name=name)  # type: ignore
@@ -49,4 +50,5 @@ class BaseTemplateRenderer(Generic[T]):
             headers=headers,
             media_type=media_type,
             background=background,
+            render_function_name=self.render_function_name,
         )
