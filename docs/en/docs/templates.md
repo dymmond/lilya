@@ -43,16 +43,17 @@ This is for example handy when you need async templates.
 
 ### Async templates
 
-One cool feature of jinja2 is, that you can you can have async templates. This means awaitables are automatically resolved
+A very good feature of jinja2 is that you can you can have async templates. This means awaitables are automatically resolved
 and async iteration is supported out of the box.
-This is especcially useful for the edgy/saffier orms.
+This is especially useful for the async ORMs, for example [Edgy](https://edgy.dymmond.com).
 
 ```python
 {!> ../../../docs_src/templates/template_async.py !}
 ```
 
 And now you can iterate over QuerySets out of the box. Nothing else is required.
-Note, internally the template response switches the render method and uses the [async content](./responses.md#async-content) feature
+
+Note that internally the template response switches the render method and uses the [async content](./responses.md#async-content) feature
 so you can only access the body attribute after calling `__call__` or `resolve_async_content()`.
 
 ### Optional Arguments
