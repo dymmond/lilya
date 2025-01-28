@@ -53,6 +53,20 @@ def test_text_response(test_client_factory):
     assert response.text == "hello, world"
 
 
+def test_async_text_response(test_client_factory):
+    async def create_hello_world():
+        return "hello, world"
+
+    async def app(scope, receive, send):
+        response = Response(create_hello_world(), media_type="text/plain", encoders=[FooEncoder])
+        assert isinstance(response.encoders[0], FooEncoder)
+        await response(scope, receive, send)
+
+    client = test_client_factory(app)
+    response = client.get("/")
+    assert response.text == "hello, world"
+
+
 def test_ok_response(test_client_factory):
     async def app(scope, receive, send):
         response = Ok("hello, world", encoders=[FooEncoder])

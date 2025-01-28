@@ -19,7 +19,7 @@ from collections.abc import (
 from contextvars import ContextVar
 from datetime import datetime
 from email.utils import format_datetime, formatdate
-from inspect import isclass
+from inspect import isawaitable, isclass
 from mimetypes import guess_type
 from typing import (
     Any,
@@ -86,8 +86,21 @@ class Response:
         self.encoders: list[Encoder] = [
             encoder() if isclass(encoder) else encoder for encoder in encoders or _empty
         ]
-        self.body = self.make_response(content)
+        if isawaitable(content):
+            self.async_content = content
+        else:
+            self.body = self.make_response(content)
         self.make_headers(headers)
+
+    async def resolve_async_content(self) -> None:
+        if getattr(self, "async_content", None) is not None:
+            self.body = self.make_response(await self.async_content)
+            self.async_content = None
+            if (
+                HeaderHelper.has_body_message(self.status_code)
+                and "content-length" not in self.headers
+            ):
+                self.headers["content-length"] = str(len(self.body))
 
     @classmethod
     @contextlib.contextmanager
@@ -160,7 +173,7 @@ class Response:
             content_type = HeaderHelper.get_content_type(
                 charset=self.charset, media_type=self.media_type
             )
-            if hasattr(self, "body") and self.body is not None:
+            if getattr(self, "body", None) is not None:
                 headers.setdefault("content-length", str(len(self.body)))
 
             # Populates the content type if exists
@@ -273,6 +286,7 @@ class Response:
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         prefix = "websocket." if scope["type"] == "websocket" else ""
+        await self.resolve_async_content()
         await send(self.message(prefix=prefix))
         await send({"type": f"{prefix}http.response.body", "body": self.body})
 
@@ -520,6 +534,8 @@ class FileResponse(Response):
 
 
 class TemplateResponse(HTMLResponse):
+    render_function_name: str = "render"
+
     def __init__(
         self,
         template: Any,
@@ -530,10 +546,13 @@ class TemplateResponse(HTMLResponse):
         media_type: MediaType | str = MediaType.HTML,
         encoders: Sequence[Encoder | type[Encoder]] | None = None,
         passthrough_body_types: tuple[type, ...] | None = None,
+        render_function_name: str | None = None,
     ):
+        if render_function_name:
+            self.render_function_name = render_function_name
         self.template = template
         self.context = context or {}
-        content = self.template.render(context)
+        content = getattr(self.template, self.render_function_name)(context)
         super().__init__(
             content=content,
             status_code=status_code,
