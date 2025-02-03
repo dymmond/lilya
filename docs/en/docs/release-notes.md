@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.12.5
+
+### Added
+
+- Header is now an iterator which is an alias to encoded_multi_items.
+  Instead of reparsing the headers for every middleware, keep the instance and mimic a fitting generator.
 
 ## 0.12.4
 

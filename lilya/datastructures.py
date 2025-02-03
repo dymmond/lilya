@@ -49,7 +49,7 @@ class MultiMixin(Generic[T], MultiMapping[T], ABC):
 
     def multi_items(self) -> Generator[tuple[str, T], None, None]:
         """Get all keys and values, including duplicates."""
-        for key in set(self):
+        for key in set(self.keys()):
             for value in self.getall(key):
                 yield key, value
 
@@ -198,9 +198,21 @@ class Header(MultiDict, CIMultiDict):  # type: ignore
     @classmethod
     def from_scope(cls, scope: Any) -> Header:
         """
-        Builds the headers from the scope.
+        Builds the headers from the scope or message.
         """
         return cls(scope["headers"])
+
+    @classmethod
+    def ensure_header_instance(cls, scope: Any) -> Header:
+        """
+        Ensure the headers are an instance of Header.
+        This way reparsing can be prevented.
+        It is applicable on scope or messages.
+        """
+        headers = scope.get("headers", ())
+        if not isinstance(headers, Header):
+            scope["headers"] = cls(headers)
+        return cast(Header, scope["headers"])
 
     def add_vary_header(self, vary: str) -> None:
         existing = self.get("vary")
@@ -214,6 +226,10 @@ class Header(MultiDict, CIMultiDict):  # type: ignore
             (key.encode("utf-8"), value.encode("utf-8", errors="surrogateescape"))
             for key, value in self.multi_items()
         )
+
+    def __iter__(self) -> Generator[tuple[bytes, bytes], None, None]:
+        """For compatibility with ASGI."""
+        return self.encoded_multi_items()
 
     def get_encoded_multi_items(self) -> list[tuple[bytes, bytes]]:
         """

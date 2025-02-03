@@ -42,7 +42,7 @@ def get_ip(scope: Scope, trusted_proxies: None | Sequence[str] = None) -> str:
         client_ip = "unix"
 
     if client_ip in get_trusted_proxies(trusted_proxies):
-        headers = Header.from_scope(scope)
+        headers = Header.ensure_header_instance(scope)
         try:
             ip_matches = _forwarded_regex.search(headers["forwarded"])
             client_ip = ip_matches[1]

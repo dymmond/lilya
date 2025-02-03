@@ -100,7 +100,8 @@ class Connection(Mapping[str, Any]):
     @property
     def headers(self) -> Header:
         if self._headers is None:
-            self._headers = Header.from_scope(scope=self.scope)
+            # otherwise underlying apps can see an exhausted generator in scope
+            self._headers = Header.ensure_header_instance(scope=self.scope)
         return self._headers
 
     @property

@@ -266,7 +266,7 @@ class StaticFiles:
             Response: File response.
         """
         try:
-            request_headers = Header.from_scope(scope=scope)
+            request_headers = Header.ensure_header_instance(scope=scope)
         except KeyError:
             raise HTTPException(status_code=404) from None
 
