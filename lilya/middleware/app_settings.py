@@ -26,7 +26,7 @@ class ApplicationSettingsMiddleware(MiddlewareProtocol):
             receive (Receive): The ASGI receive function.
             send (Send): The ASGI send function.
         """
-        app = cast(Lilya, application_context.get())
+        app = cast("Lilya", application_context.get())
 
         if getattr(app, "settings_module", None) is not None:
             settings.configure(app.settings)
