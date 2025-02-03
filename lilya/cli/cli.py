@@ -10,6 +10,7 @@ from typing import TypeVar
 
 import click
 
+from lilya import __version__
 from lilya.cli.constants import (
     APP_PARAMETER,
     EXCLUDED_DIRECTIVES,
@@ -97,6 +98,7 @@ class DirectiveGroup(click.Group):
 
 
 @click.group(cls=DirectiveGroup)
+@click.version_option(__version__)
 @click.option(
     APP_PARAMETER,
     "path",
