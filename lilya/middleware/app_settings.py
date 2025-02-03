@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from lilya.conf import __lazy_settings__, settings
 from lilya.conf.context_vars import get_override_settings
+from lilya.context import application_context
 from lilya.protocols.middleware import MiddlewareProtocol
 from lilya.types import ASGIApp, Receive, Scope, Send
 
@@ -25,7 +26,7 @@ class ApplicationSettingsMiddleware(MiddlewareProtocol):
             receive (Receive): The ASGI receive function.
             send (Send): The ASGI send function.
         """
-        app: Lilya = scope["app"]
+        app: Lilya = application_context.get()
 
         if getattr(app, "settings_module", None) is not None:
             settings.configure(app.settings)

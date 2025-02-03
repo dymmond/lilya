@@ -10,8 +10,14 @@ from lilya.exceptions import ImproperlyConfigured
 from lilya.types import Doc, Scope
 
 if TYPE_CHECKING:
+    from lilya.apps import BaseLilya
     from lilya.requests import Request
     from lilya.routing import BasePath
+
+
+application_context: contextvars.ContextVar[BaseLilya] = contextvars.ContextVar(
+    "application_context"
+)
 
 
 class Context:
@@ -89,7 +95,7 @@ class Context:
 
     @property
     def app(self) -> Any:
-        return self.request.scope["app"]
+        return application_context.get()
 
     def add_to_context(
         self,

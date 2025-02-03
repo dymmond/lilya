@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.12.5
+
+### Added
+
+- Add application_context, a ContextVar pointing to the current application instance. This is more flexible than the
+  current scope approach.
 
 ## 0.12.4
 

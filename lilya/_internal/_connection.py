@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, NoReturn, cast
 
 from lilya._internal._message import Address
 from lilya._internal._parsers import cookie_parser
+from lilya.context import application_context
 from lilya.datastructures import URL, Header, QueryParam, State
 from lilya.enums import ScopeType
 from lilya.exceptions import ImproperlyConfigured
@@ -73,7 +74,7 @@ class Connection(Mapping[str, Any]):
 
     @property
     def app(self) -> Any:
-        return self.scope["app"]
+        return application_context.get()
 
     @property
     def url(self) -> URL:

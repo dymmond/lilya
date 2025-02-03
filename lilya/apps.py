@@ -10,6 +10,7 @@ from lilya._utils import is_class_and_subclass
 from lilya.conf import __lazy_settings__, settings as lilya_settings
 from lilya.conf.exceptions import FieldException
 from lilya.conf.global_settings import Settings
+from lilya.context import application_context
 from lilya.datastructures import State, URLPath
 from lilya.middleware.app_settings import ApplicationSettingsMiddleware
 from lilya.middleware.base import DefineMiddleware
@@ -834,11 +835,16 @@ class BaseLilya:
         lilya_settings.configure(__lazy_settings__._wrapped)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        # legacy
         scope["app"] = self
 
-        if self.middleware_stack is None:
-            self.middleware_stack = self.build_middleware_stack()
-        await self.middleware_stack(scope, receive, send)
+        token = application_context.set(self)
+        try:
+            if self.middleware_stack is None:
+                self.middleware_stack = self.build_middleware_stack()
+            await self.middleware_stack(scope, receive, send)
+        finally:
+            application_context.reset(token)
         await self._globalise_settings()
 
 
