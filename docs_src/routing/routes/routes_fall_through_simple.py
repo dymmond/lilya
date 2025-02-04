@@ -1,12 +1,32 @@
 from lilya.apps import Lilya
 from lilya.routing import Path, Include
+from lilya.exceptions import ContinueRouting, HTTPException
 
 
 async def active_user(): ...
 
 
-async def user_post(): ...
+async def user_state_update(request):
+    sniffed_msg, body_initialized = await request.sniff()
+    if not body_initialized:
+        raise ContinueRouting()
+    try:
+        jsonob = await request.json()
+    except Exception:
+        raise ContinueRouting()
+    if jsonob.get("type") != "update_state":
+        raise ContinueRouting()
+    # update state
 
+
+async def user_post_message(request):
+    sniffed_msg, body_initialized = await request.sniff()
+    if b'"message"' not in sniffed_msg["body"]:
+        raise ContinueRouting()
+    jsonob = await request.json()
+    if jsonob.get("type") != "message":
+        raise HTTPException(status_code=404)
+    # post message
 
 async def list_user(): ...
 
@@ -33,12 +53,12 @@ app = Lilya(
             routes=[
                 Path(
                     "/users/me",
-                    handler=user_post,
+                    handler=user_state_update,
                     methods=["POST"]
                 ),
                 Path(
                     "/users/me",
-                    handler=user_post2,
+                    handler=user_post_message,
                     methods=["POST"]
                 )
             ],
