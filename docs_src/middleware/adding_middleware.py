@@ -2,6 +2,7 @@ from typing import Any, Dict
 
 from lilya.apps import Lilya
 from lilya.middleware import DefineMiddleware
+from lilya.datastructures import Header
 from lilya.protocols.middleware import MiddlewareProtocol
 from lilya.types import ASGIApp, Receive, Scope, Send
 
@@ -24,6 +25,8 @@ class SampleMiddleware(MiddlewareProtocol):
         """
         Implement the middleware logic here
         """
+        # optional helper to manipulate/parse the headers and keep them in the scope
+        header_instance = Header.ensure_header_instance(scope)
         ...
 
 

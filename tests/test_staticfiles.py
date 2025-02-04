@@ -171,7 +171,10 @@ def test_staticfiles_config_check_occurs_only_once(tmpdir, test_client_factory):
         client.get("/")
 
 
-def test_staticfiles_prevents_breaking_out_of_directory(tmpdir):
+@pytest.mark.parametrize(
+    "test_path", ["/../example.txt", "test/../example.txt", "test/../../example.txt"]
+)
+def test_staticfiles_prevents_breaking_out_of_directory(tmpdir, test_path):
     directory = os.path.join(tmpdir, "foo")
     os.mkdir(directory)
 
@@ -181,7 +184,7 @@ def test_staticfiles_prevents_breaking_out_of_directory(tmpdir):
 
     app = StaticFiles(directory=directory)
     # We can't test this with 'httpx', so we test the app directly here.
-    path = app.get_path({"path": "/../example.txt"})
+    path = app.get_path({"path": test_path})
     scope = {"method": "GET"}
 
     with pytest.raises(HTTPException) as exc_info:
