@@ -423,11 +423,23 @@ The first received message is repeated for the next handler. For this the helper
 It returns a tuple: `sniffed_message, is_body_initialized_now`. When the second item of the tuple is true, you can use Request like usual
 because the whole request is an one message event.
 
-Simple example
+Example
 
 ```python
 {!> ../../../docs_src/routing/routes/routes_fall_through_simple.py !}
 ```
+
+In detail what does `sniff` do:
+
+1. It returns the first event message and replays it. Because it only extracts one message the `ContinueRouting` logic works-
+2. If it turns out that the whole request is just this one message and it is http then set body of request. It also sets the flag is_body_initialized_now,
+   so the handler can detect if it can use request without limitations.
+   For example if in handled cases the message will be small, e.g. just a boolean. In other cases just return to routing.
+
+What happens when all handlers skip?
+
+Exactly the same what happens when no route was found.
+
 
 !!! Tip
     In case of multiple StaticFiles you can enable the fall-through behavior by setting the `fall_through` argument to `True` for all but
@@ -436,6 +448,7 @@ Simple example
 #### Examples
 
 Recap the example in [routes priority](#routes-priority). With the fall-through feature it is possible to handle the `don't` way.
+In constrast to the former example with sniff it is quite simple.
 
 ```python
 {!> ../../../docs_src/routing/routes/routes_priority_fall_through.py !}
