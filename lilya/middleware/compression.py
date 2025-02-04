@@ -128,7 +128,7 @@ class GZipResponder:
             message (Message): The outgoing message.
         """
         self.initial_message = message
-        headers = Header(self.initial_message["headers"])
+        headers = Header.ensure_header_instance(self.initial_message)
         self.content_encoding_set = "content-encoding" in headers
 
     async def handle_response_body_with_encoding(self, message: Message) -> None:

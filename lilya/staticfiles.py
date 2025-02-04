@@ -104,9 +104,9 @@ class StaticFiles:
             assert spec is not None, f"Package {package!r} could not be found."
             assert spec.origin is not None, f"Package {package!r} could not be found."
             package_directory = os.path.normpath(os.path.join(spec.origin, "..", statics_dir))
-            assert os.path.isdir(
-                package_directory
-            ), f"Directory '{statics_dir!r}' in package {package!r} could not be found."
+            assert os.path.isdir(package_directory), (
+                f"Directory '{statics_dir!r}' in package {package!r} could not be found."
+            )
             directories.append(package_directory)
 
         return directories
@@ -142,6 +142,7 @@ class StaticFiles:
             str: Normalized path.
         """
         route_path = self.get_route_path(scope)
+        route_path = route_path.lstrip("./")
         return os.path.normpath(os.path.join(*route_path.split("/")))
 
     def get_route_path(self, scope: Scope) -> str:
@@ -169,7 +170,6 @@ class StaticFiles:
         """
         if scope["method"] not in ("GET", "HEAD"):
             raise HTTPException(status_code=405)
-
         try:
             full_path, stat_result = await anyio.to_thread.run_sync(self.lookup_path, path)
         except PermissionError:
@@ -265,10 +265,8 @@ class StaticFiles:
         Returns:
             Response: File response.
         """
-        try:
-            request_headers = Header.ensure_header_instance(scope=scope)
-        except KeyError:
-            raise HTTPException(status_code=404) from None
+        # no headers are no issue
+        request_headers = Header.ensure_header_instance(scope=scope)
 
         response = FileResponse(full_path, status_code=status_code, stat_result=stat_result)
         if self.is_not_modified(response.headers, request_headers):
