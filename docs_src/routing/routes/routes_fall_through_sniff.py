@@ -16,7 +16,7 @@ async def user_state_update(request):
         raise ContinueRouting()
     if jsonob.get("type") != "update_state":
         raise ContinueRouting()
-    # update state
+    # update user state, e.g. offline, online
 
 
 async def user_post_message(request):
@@ -26,7 +26,7 @@ async def user_post_message(request):
     jsonob = await request.json()
     if jsonob.get("type") != "message":
         raise HTTPException(status_code=404)
-    # post message
+    # post message for e.g. a chat
 
 async def list_user(): ...
 
