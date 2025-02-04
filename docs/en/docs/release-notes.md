@@ -12,7 +12,6 @@ hide:
 - Header is now an iterator which is an alias to encoded_multi_items.
   Instead of reparsing the headers for every middleware, keep the instance and mimic a fitting generator.
 
-
 ### Fixed
 
 - StaticFiles without scope headers failed.
