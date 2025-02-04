@@ -420,7 +420,7 @@ You can import with two Includes using the same path containing multiple routes.
 It's possible to have routes with the same path if the methods differ or if the first handler raises lilya.exceptions.ContinueRouting after a more detailed inspection.
 It's not an issue if `receive` was called **once** for the inspection.
 The first received message is repeated for the next handler. For this the helper method `sniff` exists on requests.
-It returns a tuple: `sniffed_message, is_body_initialized_now`. If the second item of the tuple is `True`, you can proceed to use Request like usual
+It returns a tuple: `sniffed_message, is_body_initialized_now`. If the second item of the tuple is `True`, you can proceed to use Request as usual
 because the whole request is an one message event.
 
 #### Example
