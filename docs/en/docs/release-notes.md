@@ -12,6 +12,13 @@ hide:
 - Header is now an iterator which is an alias to encoded_multi_items.
   Instead of reparsing the headers for every middleware, keep the instance and mimic a fitting generator.
 
+
+### Fixed
+
+- StaticFiles without scope headers failed.
+- StaticFiles were susceptible for path traversal attacks. We tested wrong.
+- Calling Request.headers could empty the headers in scope when just a generator.
+
 ## 0.12.4
 
 ### Added
