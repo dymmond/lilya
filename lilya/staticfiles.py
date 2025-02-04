@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import posixpath
 import stat
 from email.utils import parsedate
 from typing import Union
@@ -141,7 +142,7 @@ class StaticFiles:
         Returns:
             str: Normalized path.
         """
-        route_path = self.get_route_path(scope)
+        route_path = posixpath.normpath(self.get_route_path(scope))
         route_path = route_path.lstrip("./")
         return os.path.normpath(os.path.join(*route_path.split("/")))
 
