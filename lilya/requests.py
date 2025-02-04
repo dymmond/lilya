@@ -79,9 +79,9 @@ class Request(Connection):
         """
         Asserts if the multipart python package is installed.
         """
-        assert parse_options_header is not None, (
-            "The `python-multipart` library must be installed to use form parsing."
-        )
+        assert (
+            parse_options_header is not None
+        ), "The `python-multipart` library must be installed to use form parsing."
 
     @property
     def method(self) -> str:
