@@ -45,3 +45,28 @@ def test_sniffing(test_client_factory):
         assert response.json() == {"sniff2": "edgylilya"}
         response = client.post("/me", json={"notexisting": "edgylilya"})
         assert response.status_code == 404
+
+
+def test_sniffing_get(test_client_factory):
+    async def sniff1(username: str, request: Request):
+        if username == "me":
+            raise ContinueRouting()
+        return JSONResponse({"sniff1": "itsnotme"}, media_type="text/plain")
+
+    async def sniff2(request: Request):
+        return JSONResponse({"sniff2": "itsme"}, media_type="text/plain")
+
+    app = Router(
+        [
+            Path("/user/{username}", handler=sniff1, methods=["GET"]),
+            Path("/user/me", handler=sniff2, methods=["GET"]),
+        ]
+    )
+    with test_client_factory(app) as client:
+        response = client.get("/user/foo")
+        assert response.status_code == 200
+        assert response.json() == {"sniff1": "itsnotme"}
+
+        response = client.get("/user/me")
+        assert response.status_code == 200
+        assert response.json() == {"sniff2": "itsme"}

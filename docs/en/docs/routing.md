@@ -431,7 +431,7 @@ Example
 
 In detail what does `sniff` do:
 
-1. It returns the first event message and replays it. Because it only extracts one message the `ContinueRouting` logic works-
+1. It returns the first event message and replays it. Because it only extracts at most one message the fall-through logic works.
 2. If it turns out that the whole request is just this one message and it is http then set body of request. It also sets the flag is_body_initialized_now,
    so the handler can detect if it can use request without limitations.
    For example if in handled cases the message will be small, e.g. just a boolean. In other cases just return to routing.
@@ -440,6 +440,9 @@ What happens when all handlers skip?
 
 Exactly the same what happens when no route was found.
 
+What to do when handling GET and POST
+
+Check the method first. Otherwise you can run into troubles when trying to receive from bodyless requests.
 
 !!! Tip
     In case of multiple StaticFiles you can enable the fall-through behavior by setting the `fall_through` argument to `True` for all but
