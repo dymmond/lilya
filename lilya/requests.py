@@ -41,6 +41,7 @@ class Request(Connection):
     __slots__ = (
         "_receive",
         "_send",
+        "_stored_receive_message",
         "_stream_consumed",
         "_is_disconnected",
         "_json",
@@ -65,6 +66,7 @@ class Request(Connection):
         super().__init__(scope)
         assert scope["type"] == ScopeType.HTTP
         self._receive = receive
+        self._stored_receive_message: Message | None = None
         self._send = send
         self._stream_consumed = False
         self._is_disconnected = False
@@ -91,25 +93,43 @@ class Request(Connection):
         """
         return cast(str, self.scope["method"])
 
-    @property
-    def receive(self) -> Receive:
+    async def receive(self) -> Message:
         """
-        Get the receive channel of the request.
+        The receive channel of the request.
 
         Returns:
-            Receive: The receive channel.
+            Message: the message.
         """
-        return self._receive
+        if self._stored_receive_message is not None:
+            msg = self._stored_receive_message
+            self._stored_receive_message = None
+            return msg
+        return await self._receive()
 
-    @property
-    def send(self) -> Send:
+    async def sniff(self) -> tuple[Message, bool]:
         """
-        Get the send of the request.
+        The receive channel of the request.
 
         Returns:
-            Receive: The send.
+            Message: the message.
         """
-        return self._send
+        event = await self.receive()
+        self._stored_receive_message = event
+        more_body = event.get("more_body", False)
+        body_is_initialized = False
+        if not more_body and event["type"] == Event.HTTP_REQUEST and event["body"]:
+            self._body = self.scope["_body"] = event["body"]
+            self._stream_consumed = True
+            body_is_initialized = True
+
+        return event, body_is_initialized
+
+    async def send(self, message: Message) -> None:
+        """
+        The send of the request.
+
+        """
+        await self._send(message)
 
     @property
     def media(self) -> dict[str, Any]:
@@ -158,7 +178,7 @@ class Request(Connection):
             if self._stream_consumed:
                 raise RuntimeError("Stream consumed")
             while not self._stream_consumed:
-                event = await self._receive()
+                event = await self.receive()
                 if event["type"] == Event.HTTP_REQUEST:
                     if not event.get("more_body", False):
                         self._stream_consumed = True
@@ -183,7 +203,11 @@ class Request(Connection):
             bytes: The request body as bytes.
         """
         if self._body is Empty:
-            self._body = b"".join([chunk async for chunk in self.stream()])  # type: ignore
+            if "_body" in self.scope:
+                body: bytes = self.scope["_body"]
+            else:
+                body = self.scope["_body"] = b"".join([chunk async for chunk in self.stream()])
+            self._body = body  # type: ignore
         return cast(bytes, self._body)
 
     async def json(self) -> Any:
@@ -194,10 +218,7 @@ class Request(Connection):
             Any: The parsed JSON data.
         """
         if self._json is Empty:
-            if "_body" in self.scope:
-                body = self.scope["_body"]
-            else:
-                body = self.scope["_body"] = await self.body() or b"null"
+            body = await self.body() or b"null"
             self._json = json.loads(body)
         return self._json
 
@@ -314,7 +335,7 @@ class Request(Connection):
             # If message isn't immediately available, move on
             with anyio.CancelScope() as cs:
                 cs.cancel()
-                message = await self._receive()
+                message = await self.receive()
 
             if message.get("type") == "http.disconnect":
                 self._is_disconnected = True
@@ -333,7 +354,7 @@ class Request(Connection):
             for name in SERVER_PUSH_HEADERS:
                 for value in self.headers.getlist(name):
                     raw_headers.append((name.encode("utf-8"), value.encode("utf-8")))
-            await self._send({"type": "http.response.push", "path": path, "headers": raw_headers})
+            await self.send({"type": "http.response.push", "path": path, "headers": raw_headers})
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}()"

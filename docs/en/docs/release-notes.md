@@ -10,13 +10,18 @@ hide:
 ### Added
 
 - Header is now an iterator which is an alias to encoded_multi_items.
-  Instead of reparsing the headers for every middleware, keep the instance and mimic a fitting generator.
+  Instead of reparsing the headers for every middleware, keep the instance and mimic a fitting generator.- `sniff` method on Request.
+
+### Changed
+
+- `receive`, `send` are not properties anymore on Request but proper methods. `receive` has a replay mode for `sniff`.
 
 ### Fixed
 
 - StaticFiles without scope headers failed.
 - StaticFiles were susceptible for path traversal attacks.
 - Calling Request.headers could empty the headers in scope when just a generator.
+- Messages were not replayed in case `ContinueRouting` was raised. This prevented sniffing like documented.
 
 ## 0.12.4
 

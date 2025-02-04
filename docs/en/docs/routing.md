@@ -419,25 +419,41 @@ You can import with two Includes using the same path containing multiple routes.
 
 It's possible to have routes with the same path if the methods differ or if the first handler raises lilya.exceptions.ContinueRouting after a more detailed inspection.
 It's not an issue if `receive` was called **once** for the inspection.
-The first received message is repeated for the next handler.
+The first received message is repeated for the next handler. For this the helper method `sniff` exists on requests.
+It returns a tuple: `sniffed_message, is_body_initialized_now`. If the second item of the tuple is `True`, you can proceed to use Request as usual
+because the whole request is an one message event.
 
-Simple example
+#### Example
 
 ```python
-{!> ../../../docs_src/routing/routes/routes_fall_through_simple.py !}
+{!> ../../../docs_src/routing/routes/routes_fall_through_sniff.py !}
 ```
 
 !!! Tip
     In case of multiple StaticFiles you can enable the fall-through behavior by setting the `fall_through` argument to `True` for all but
     the last StaticFiles.
 
-!!! Note
-    Unfortunately, there is no sniff method yet.
-    Therefore, you must be cautious when inspecting the body (`Request`) to raise `lilya.exceptions.ContinueRouting`.
+#### Detailed Explanation of `sniff`
 
-#### Examples
+1. **Message Extraction and Replay**:
+    `sniff` returns the first event message and replays it. Since it extracts at most one message, the fall-through logic remains effective.
+
+2. **Handling Single Message Requests**:
+    If the entire request consists of just this one message and it is an HTTP request, `sniff` sets the body of the request. It also sets the flag `is_body_initialized_now`, allowing the handler to determine if the request can be used without limitations. For instance, if the message is small (e.g., just a boolean), the handler can proceed. Otherwise, it returns to routing.
+
+
+#### What happens when all handlers skip?
+
+The behavior is identical to when no route is found.
+
+#### Handling GET and POST Requests
+
+Always check the method first. This prevents issues when trying to process bodyless requests.
+
+#### Further examples
 
 Recap the example in [routes priority](#routes-priority). With the fall-through feature it is possible to handle the `don't` way.
+In contrast to the previous example with sniff, this is quite straightforward.
 
 ```python
 {!> ../../../docs_src/routing/routes/routes_priority_fall_through.py !}
@@ -457,6 +473,7 @@ This can be done by passing `redirect_slashes=False` to the `Include`.
 !!! Note
     Passing `redirect_slashes=False` works only for routes and namespace. For other parameters the `redirect_slashes` argument
     is ignored.
+
 
 ## Path parameters
 

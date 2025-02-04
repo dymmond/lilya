@@ -1192,7 +1192,8 @@ class BaseRouter:
                 # collect the partial matches from the sub-router
                 partial_matches.extend(exc.partial_matches)
             except ContinueRouting:
-                pass
+                assert not sniffer.sent, "Cannot continue routing when an answer was already sent."
+                sniffer.repeat_message = True
         # check if redirect would be possible, when no match was found
         if not had_match and self.redirect_slashes:
             route_path = get_route_path(scope)
@@ -1227,7 +1228,9 @@ class BaseRouter:
                     path_handler.sniffer.repeat_message = True
                     sniffer.repeat_message = True
             except ContinueRouting:
-                pass
+                assert not sniffer.sent, "Cannot continue routing when an answer was already sent."
+                path_handler.sniffer.repeat_message = True
+                sniffer.repeat_message = True
 
         await self.handle_default(scope, receive, send)
 
