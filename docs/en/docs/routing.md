@@ -426,7 +426,7 @@ because the whole request is an one message event.
 #### Example
 
 ```python
-{!> ../../../docs_src/routing/routes/routes_fall_through_simple.py !}
+{!> ../../../docs_src/routing/routes/routes_fall_through_sniff.py !}
 ```
 
 !!! Tip
