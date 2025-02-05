@@ -303,6 +303,13 @@ async def test_upload_file_repr():
     assert repr(file) == "DataUpload(filename='file', size=4, headers=Header({}))"
 
 
+def test_header_in():
+    # required for uvicorn
+    multi = Header([(b"content-length", b"6"), (b"Connection", b"close")])
+    assert (b"Connection", b"close") in multi
+    assert (b"foo", b"close") not in multi
+
+
 @pytest.mark.anyio
 async def test_upload_file_repr_headers():
     stream = io.BytesIO(b"data")

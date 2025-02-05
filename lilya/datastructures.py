@@ -231,6 +231,13 @@ class Header(MultiDict, CIMultiDict):  # type: ignore
         """For compatibility with ASGI."""
         return self.encoded_multi_items()
 
+    def __contains__(self, item: Any) -> bool:
+        try:
+            return super().__contains__(item)
+        except TypeError:
+            # uvicorn compatibility
+            return any(kv == item for kv in self.encoded_multi_items())
+
     def get_encoded_multi_items(self) -> list[tuple[bytes, bytes]]:
         """
         Returns a list of values from the bytes encoded multi items for ASGI
