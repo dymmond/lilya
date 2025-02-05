@@ -5,6 +5,13 @@ hide:
 
 # Release Notes
 
+
+## 0.12.6
+
+### Fixed
+
+- Bug with uvicorn. It assumes the headers in scope being a list instead of an iterator.
+
 ## 0.12.5
 
 ### Added
