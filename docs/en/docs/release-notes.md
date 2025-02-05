@@ -5,6 +5,11 @@ hide:
 
 # Release Notes
 
+## 0.12.7
+
+### Changed
+
+- FileResponse tries to offload the file response to the server in case it supports the extensions.
 
 ## 0.12.6
 
