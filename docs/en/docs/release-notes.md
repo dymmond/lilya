@@ -5,6 +5,16 @@ hide:
 
 # Release Notes
 
+## 0.12.7
+
+### Added
+
+- Added `version` to Lilya client.
+
+### Changed
+
+- Declaring `DefinePermission` became optional as Lilya automatically wraps if not provided.
+- Declaring `DefineMiddleware` became optional as Lilya automatically wraps if not provided.
 
 ## 0.12.6
 

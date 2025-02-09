@@ -9,6 +9,7 @@ from typing import Annotated, Any, ClassVar, TypeVar, cast
 
 from lilya import status
 from lilya._internal._events import AsyncLifespan, handle_lifespan_events
+from lilya._internal._middleware import wrap_middleware
 from lilya._internal._module_loading import import_string
 from lilya._internal._path import (
     clean_path,
@@ -17,6 +18,7 @@ from lilya._internal._path import (
     parse_path,
     replace_params,
 )
+from lilya._internal._permissions import wrap_permission
 from lilya._internal._responses import BaseHandler
 from lilya._internal._urls import include
 from lilya.compat import is_async_callable
@@ -318,12 +320,20 @@ class Path(BaseHandler, BasePath):
         else:
             self.app = handler
 
-        self.middleware = middleware
-        self.permissions = permissions
+        if middleware is not None:
+            self.middleware = [wrap_middleware(mid) for mid in middleware]
+        else:
+            self.middleware = middleware
+
+        self.permissions = permissions if permissions is not None else []
         self.exception_handlers = {} if exception_handlers is None else dict(exception_handlers)
 
+        self.wrapped_permissions = [
+            wrap_permission(permission) for permission in permissions or []
+        ]
+
         self._apply_middleware(self.middleware)
-        self._apply_permissions(self.permissions)
+        self._apply_permissions(self.wrapped_permissions)
 
         if self.methods is not None:
             self.methods = [method.upper() for method in self.methods]
@@ -547,12 +557,20 @@ class WebSocketPath(BaseHandler, BasePath):
         else:
             self.app = handler
 
-        self.middleware = middleware
-        self.permissions = permissions
+        if middleware is not None:
+            self.middleware = [wrap_middleware(mid) for mid in middleware]
+        else:
+            self.middleware = middleware
+
+        self.permissions = permissions if permissions is not None else []
         self.exception_handlers = {} if exception_handlers is None else dict(exception_handlers)
 
+        self.wrapped_permissions = [
+            wrap_permission(permission) for permission in permissions or []
+        ]
+
         self._apply_middleware(self.middleware)
-        self._apply_permissions(self.permissions)
+        self._apply_permissions(self.wrapped_permissions)
 
         self.path_regex, self.path_format, self.param_convertors, self.path_start = compile_path(
             self.path
@@ -740,8 +758,12 @@ class Host(BasePath):
         self.permissions = permissions if permissions is not None else []
         self.exception_handlers = {} if exception_handlers is None else dict(exception_handlers)
 
-        self._apply_middleware(middleware)
-        self._apply_permissions(permissions)
+        self.wrapped_permissions = [
+            wrap_permission(permission) for permission in permissions or []
+        ]
+
+        self._apply_middleware(self.middleware)
+        self._apply_permissions(self.wrapped_permissions)
 
     def _apply_middleware(self, middleware: Sequence[DefineMiddleware] | None) -> None:
         """
@@ -1000,8 +1022,12 @@ class BaseRouter:
         self.permission_started = False
         self.is_sub_router = is_sub_router
 
+        self.wrapped_permissions = [
+            wrap_permission(permission) for permission in permissions or []
+        ]
+
         self._apply_middleware(self.middleware)
-        self._apply_permissions(self.permissions)
+        self._apply_permissions(self.wrapped_permissions)
         self._set_settings_app(self.settings_module, self)
 
     def _apply_middleware(self, middleware: Sequence[DefineMiddleware] | None) -> None:
@@ -1869,8 +1895,12 @@ class Include(BasePath):
         self.permissions = permissions if permissions is not None else []
         self.exception_handlers = {} if exception_handlers is None else dict(exception_handlers)
 
-        self._apply_middleware(middleware)
-        self._apply_permissions(permissions)
+        self.wrapped_permissions = [
+            wrap_permission(permission) for permission in permissions or []
+        ]
+
+        self._apply_middleware(self.middleware)
+        self._apply_permissions(self.wrapped_permissions)
 
         self.name = name
         self.include_in_schema = include_in_schema

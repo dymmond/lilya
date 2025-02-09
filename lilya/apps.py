@@ -5,7 +5,9 @@ from collections.abc import Awaitable, Callable, Mapping, Sequence
 from functools import cached_property
 from typing import Annotated, Any, ClassVar, cast
 
+from lilya._internal._middleware import wrap_middleware
 from lilya._internal._module_loading import import_string
+from lilya._internal._permissions import wrap_permission
 from lilya._utils import is_class_and_subclass
 from lilya.conf import __lazy_settings__, settings as lilya_settings
 from lilya.conf.exceptions import FieldException
@@ -389,8 +391,15 @@ class BaseLilya:
         self.debug = self.__load_settings_value("debug", debug, is_boolean=True)
 
         self.exception_handlers = {} if exception_handlers is None else dict(exception_handlers)
-        self.custom_middleware = self.__load_settings_value("middleware", middleware)
-        self.custom_permissions = self.__load_settings_value("permissions", permissions)
+        self.custom_middleware = [
+            wrap_middleware(middleware)
+            for middleware in self.__load_settings_value("middleware", middleware) or []
+        ]
+
+        self.custom_permissions = [
+            wrap_permission(permission)
+            for permission in self.__load_settings_value("permissions", permissions) or []
+        ]
 
         self.state = State()
         self.middleware_stack: ASGIApp | None = None
