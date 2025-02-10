@@ -10,12 +10,12 @@ def wrap_middleware(
 ) -> DefineMiddleware:
     """
     Wraps the given middleware into a DefineMiddleware instance if it is not already one.
-    Or else it will assume its a Lilya permission and wraps it.
+    Or else it will assume its a Lilya middleware and wraps it.
 
     Args:
-        permission (Union["BasePermission", Any]): The permission to be wrapped.
+        middleware (Union[DefineMiddleware, Any]): The middleware to be wrapped.
     Returns:
-        BasePermission: The wrapped permission instance.
+        DefineMiddleware: The wrapped middleware instance.
     """
     if isinstance(middleware, DefineMiddleware):
         return middleware
