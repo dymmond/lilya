@@ -9,13 +9,13 @@ def wrap_permission(
     permission: DefinePermission | Any,
 ) -> DefinePermission:
     """
-    Wraps the given permission into a BasePermission instance if it is not already one.
+    Wraps the given permission into a DefinePermission instance if it is not already one.
     Or else it will assume its a Lilya permission and wraps it.
 
     Args:
-        permission (Union["BasePermission", Any]): The permission to be wrapped.
+        permission (Union[DefinePermission, Any]): The permission to be wrapped.
     Returns:
-        BasePermission: The wrapped permission instance.
+        DefinePermission: The wrapped permission instance.
     """
     if isinstance(permission, DefinePermission):
         return permission
