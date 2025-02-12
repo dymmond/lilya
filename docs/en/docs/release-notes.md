@@ -15,6 +15,10 @@ hide:
 
 - Declaring `DefinePermission` became optional as Lilya automatically wraps if not provided.
 - Declaring `DefineMiddleware` became optional as Lilya automatically wraps if not provided.
+-
+### Fixed
+
+- `SessionMiddleware` was creating duplicates because it was called on every lifecycle.
 
 ## 0.12.6
 

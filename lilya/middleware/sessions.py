@@ -59,11 +59,6 @@ class SessionMiddleware(MiddlewareProtocol):
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
         ASGI application callable.
-
-        Args:
-            scope (Scope): ASGI scope.
-            receive (Receive): ASGI receive channel.
-            send (Send): ASGI send channel.
         """
         if scope["type"] not in ("http", "websocket"):
             await self.app(scope, receive, send)
@@ -89,13 +84,6 @@ class SessionMiddleware(MiddlewareProtocol):
     async def load_session_data(self, scope: Scope, connection: Connection) -> bool:
         """
         Load session data from the session cookie.
-
-        Args:
-            scope (Scope): ASGI scope.
-            connection (Connection): HTTP connection object.
-
-        Returns:
-            bool: True if the initial session was empty, False otherwise.
         """
         if self.session_cookie in connection.cookies:
             data = connection.cookies[self.session_cookie].encode("utf-8")
@@ -117,59 +105,34 @@ class SessionMiddleware(MiddlewareProtocol):
         send: Send,
     ) -> None:
         """
-        Process the response and set the session cookie.
-
-        Args:
-            message (Message): ASGI message.
-            scope (Scope): ASGI scope.
-            initial_session_was_empty (bool): True if the initial session was empty, False otherwise.
-            send (Send): ASGI send channel.
+        Process the response and set the session cookie. Handles multiple messages.
         """
         if message["type"] == "http.response.start":
-            if scope["session"]:
-                message = await self.set_session_cookie(scope, message)
-            elif not initial_session_was_empty:
-                message = await self.clear_session_cookie(scope, message)
+            headers = Header.ensure_header_instance(scope=message)
+            if "set-cookie" not in (h.lower() for h in headers.keys()):  # Check if already set
+                if scope["session"]:
+                    data = self.encode_session(scope["session"])
+                    data = self.signer.sign(data)
+                    header_value = (
+                        "{session_cookie}={data}; path={path}; {max_age}{security_flags}".format(
+                            session_cookie=self.session_cookie,
+                            data=data.decode("utf-8"),
+                            path=self.path,
+                            max_age=f"Max-Age={self.max_age}; " if self.max_age else "",
+                            security_flags=self.security_flags,
+                        )
+                    )
+                    headers.add("Set-Cookie", header_value)
+                elif not initial_session_was_empty:
+                    header_value = (
+                        "{session_cookie}={data}; path={path}; {expires}{security_flags}".format(
+                            session_cookie=self.session_cookie,
+                            data="null",
+                            path=self.path,
+                            expires="expires=Thu, 01 Jan 1970 00:00:00 GMT; ",
+                            security_flags=self.security_flags,
+                        )
+                    )
+                    headers.add("Set-Cookie", header_value)
 
         await send(message)
-
-    async def set_session_cookie(self, scope: Scope, message: Message) -> Message:
-        """
-        Set the session cookie in the response headers.
-
-        Args:
-            scope (Scope): ASGI scope.
-            message (Message): ASGI message
-        """
-        data = self.encode_session(scope["session"])
-        data = self.signer.sign(data)
-        # we need to update the message
-        headers = Header.ensure_header_instance(scope=message)
-        header_value = "{session_cookie}={data}; path={path}; {max_age}{security_flags}".format(
-            session_cookie=self.session_cookie,
-            data=data.decode("utf-8"),
-            path=self.path,
-            max_age=f"Max-Age={self.max_age}; " if self.max_age else "",
-            security_flags=self.security_flags,
-        )
-        headers.add("Set-Cookie", header_value)
-        return message
-
-    async def clear_session_cookie(self, scope: Scope, message: Message) -> Message:
-        """
-        Clear the session cookie in the response headers.
-
-        Args:
-            scope (Scope): ASGI scope.
-        """
-        # we need to update the message
-        headers = Header.ensure_header_instance(scope=message)
-        header_value = "{session_cookie}={data}; path={path}; {expires}{security_flags}".format(
-            session_cookie=self.session_cookie,
-            data="null",
-            path=self.path,
-            expires="expires=Thu, 01 Jan 1970 00:00:00 GMT; ",
-            security_flags=self.security_flags,
-        )
-        headers.add("Set-Cookie", header_value)
-        return message
