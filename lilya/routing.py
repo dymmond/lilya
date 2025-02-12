@@ -22,6 +22,7 @@ from lilya._internal._permissions import wrap_permission
 from lilya._internal._responses import BaseHandler
 from lilya._internal._urls import include
 from lilya.compat import is_async_callable
+from lilya.concurrency import run_in_threadpool
 from lilya.conf import settings
 from lilya.conf.global_settings import Settings
 from lilya.datastructures import URL, Header, ScopeHandler, SendReceiveSniffer, URLPath
@@ -283,6 +284,8 @@ class Path(BaseHandler, BasePath):
         "permissions",
         "exception_handlers",
         "deprecated",
+        "before_request",
+        "after_request",
         "__handler_app__",
         "_signature",
     )
@@ -298,6 +301,8 @@ class Path(BaseHandler, BasePath):
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        before_request: Sequence[Callable[..., Any]] | None = None,
+        after_request: Sequence[Callable[..., Any]] | None = None,
         deprecated: bool = False,
     ) -> None:
         assert path.startswith("/"), "Paths must start with '/'"
@@ -334,6 +339,9 @@ class Path(BaseHandler, BasePath):
 
         self._apply_middleware(self.middleware)
         self._apply_permissions(self.wrapped_permissions)
+
+        self.before_request = before_request if before_request is not None else []
+        self.after_request = after_request if after_request is not None else []
 
         if self.methods is not None:
             self.methods = [method.upper() for method in self.methods]
@@ -504,10 +512,29 @@ class Path(BaseHandler, BasePath):
             await response(scope, receive, send)
         else:
             try:
+                for before_request in self.before_request:
+                    if inspect.isclass(before_request):
+                        before_request = before_request()
+
+                    if is_async_callable(before_request):
+                        await before_request(scope, receive, send)
+                    else:
+                        await run_in_threadpool(before_request, scope, receive, send)
+
                 if not hasattr(self.app, "__is_controller__"):
                     await self.app(scope, receive, send)
                 else:
                     await self.handle_controller(scope, receive, send)
+
+                for after_request in self.after_request:
+                    if inspect.isclass(after_request):
+                        after_request = after_request()
+
+                    if is_async_callable(after_request):
+                        await after_request(scope, receive, send)
+                    else:
+                        await run_in_threadpool(after_request, scope, receive, send)
+
             except Exception as ex:
                 await self.handle_exception_handlers(scope, receive, send, ex)
 
@@ -525,6 +552,8 @@ class WebSocketPath(BaseHandler, BasePath):
         "middleware",
         "permissions",
         "exception_handlers",
+        "before_request",
+        "after_request",
         "__handler_app__",
         "_signature",
     )
@@ -539,6 +568,8 @@ class WebSocketPath(BaseHandler, BasePath):
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        before_request: Sequence[Callable[..., Any]] | None = None,
+        after_request: Sequence[Callable[..., Any]] | None = None,
     ) -> None:
         assert path.startswith("/"), "Paths must start with '/'"
         self.path = clean_path(path)
@@ -568,6 +599,9 @@ class WebSocketPath(BaseHandler, BasePath):
         self.wrapped_permissions = [
             wrap_permission(permission) for permission in permissions or []
         ]
+
+        self.before_request = before_request if before_request is not None else []
+        self.after_request = after_request if after_request is not None else []
 
         self._apply_middleware(self.middleware)
         self._apply_permissions(self.wrapped_permissions)
@@ -678,7 +712,25 @@ class WebSocketPath(BaseHandler, BasePath):
             None
         """
         try:
+            for before_request in self.before_request:
+                if inspect.isclass(before_request):
+                    before_request = before_request()
+
+                if is_async_callable(before_request):
+                    await before_request(scope, receive, send)
+                else:
+                    await run_in_threadpool(before_request, scope, receive, send)
+
             await self.app(scope, receive, send)
+
+            for after_request in self.after_request:
+                if inspect.isclass(after_request):
+                    after_request = after_request()
+
+                if is_async_callable(after_request):
+                    await after_request(scope, receive, send)
+                else:
+                    await run_in_threadpool(after_request, scope, receive, send)
         except Exception as ex:
             await self.handle_exception_handlers(scope, receive, send, ex)
 
@@ -735,6 +787,8 @@ class Host(BasePath):
         "middleware",
         "permissions",
         "exception_handlers",
+        "before_request",
+        "after_request",
     )
 
     def __init__(
@@ -746,6 +800,8 @@ class Host(BasePath):
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        before_request: Sequence[Callable[..., Any]] | None = None,
+        after_request: Sequence[Callable[..., Any]] | None = None,
     ) -> None:
         assert not host.startswith("/"), "Host must not start with '/'"
         self.host = host
@@ -761,6 +817,9 @@ class Host(BasePath):
         self.wrapped_permissions = [
             wrap_permission(permission) for permission in permissions or []
         ]
+
+        self.before_request = before_request if before_request is not None else []
+        self.after_request = after_request if after_request is not None else []
 
         self._apply_middleware(self.middleware)
         self._apply_permissions(self.wrapped_permissions)
@@ -856,7 +915,25 @@ class Host(BasePath):
             None
         """
         try:
+            for before_request in self.before_request:
+                if inspect.isclass(before_request):
+                    before_request = before_request()
+
+                if is_async_callable(before_request):
+                    await before_request(scope, receive, send)
+                else:
+                    await run_in_threadpool(before_request, scope, receive, send)
+
             await self.app(scope, receive, send)
+
+            for after_request in self.after_request:
+                if inspect.isclass(after_request):
+                    after_request = after_request()
+
+                if is_async_callable(after_request):
+                    await after_request(scope, receive, send)
+                else:
+                    await run_in_threadpool(after_request, scope, receive, send)
         except Exception as ex:
             await self.handle_exception_handlers(scope, receive, send, ex)
 
@@ -960,6 +1037,8 @@ class BaseRouter:
         "permission_started",
         "settings_module",
         "is_sub_router",
+        "before_request",
+        "after_request",
     )
 
     def __init__(
@@ -973,6 +1052,8 @@ class BaseRouter:
         *,
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
+        before_request: Sequence[Callable[..., Any]] | None = None,
+        after_request: Sequence[Callable[..., Any]] | None = None,
         settings_module: Annotated[
             Settings | None,
             Doc(
@@ -1021,6 +1102,9 @@ class BaseRouter:
         self.middleware_stack = self.app
         self.permission_started = False
         self.is_sub_router = is_sub_router
+
+        self.before_request = before_request if before_request is not None else []
+        self.after_request = after_request if after_request is not None else []
 
         self.wrapped_permissions = [
             wrap_permission(permission) for permission in permissions or []
@@ -1392,7 +1476,25 @@ class BaseRouter:
         if scope["type"] == ScopeType.LIFESPAN:
             await self.lifespan(scope, receive, send)
             return
+
+        for before_request in self.before_request:
+            if inspect.isclass(before_request):
+                before_request = before_request()
+
+            if is_async_callable(before_request):
+                await before_request(scope, receive, send)
+            else:
+                await run_in_threadpool(before_request, scope, receive, send)
         await self.middleware_stack(scope, receive, send)
+
+        for after_request in self.after_request:
+            if inspect.isclass(after_request):
+                after_request = after_request()
+
+            if is_async_callable(after_request):
+                await after_request(scope, receive, send)
+            else:
+                await run_in_threadpool(after_request, scope, receive, send)
 
 
 class Router(BaseRouter):
@@ -1816,6 +1918,8 @@ class Include(BasePath):
         "permissions",
         "exception_handlers",
         "deprecated",
+        "before_request",
+        "after_request",
     )
 
     def __init__(
@@ -1830,6 +1934,8 @@ class Include(BasePath):
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        before_request: Sequence[Callable[..., Any]] | None = None,
+        after_request: Sequence[Callable[..., Any]] | None = None,
         include_in_schema: bool = True,
         deprecated: bool = False,
         redirect_slashes: bool = True,
@@ -1898,6 +2004,9 @@ class Include(BasePath):
         self.wrapped_permissions = [
             wrap_permission(permission) for permission in permissions or []
         ]
+
+        self.before_request = before_request if before_request is not None else []
+        self.after_request = after_request if after_request is not None else []
 
         self._apply_middleware(self.middleware)
         self._apply_permissions(self.wrapped_permissions)
@@ -2009,7 +2118,25 @@ class Include(BasePath):
             None
         """
         try:
+            for before_request in self.before_request:
+                if inspect.isclass(before_request):
+                    before_request = before_request()
+
+                if is_async_callable(before_request):
+                    await before_request(scope, receive, send)
+                else:
+                    await run_in_threadpool(before_request, scope, receive, send)
+
             await self.app(scope, receive, send)
+
+            for after_request in self.after_request:
+                if inspect.isclass(after_request):
+                    after_request = after_request()
+
+                if is_async_callable(after_request):
+                    await after_request(scope, receive, send)
+                else:
+                    await run_in_threadpool(after_request, scope, receive, send)
         except Exception as ex:
             await self.handle_exception_handlers(scope, receive, send, ex)
 
