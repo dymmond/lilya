@@ -283,6 +283,8 @@ class Path(BaseHandler, BasePath):
         "permissions",
         "exception_handlers",
         "deprecated",
+        "before_request",
+        "after_request",
         "__handler_app__",
         "_signature",
     )
@@ -298,6 +300,8 @@ class Path(BaseHandler, BasePath):
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        before_request: Sequence[Callable[..., Any]] | None = None,
+        after_request: Sequence[Callable[..., Any]] | None = None,
         deprecated: bool = False,
     ) -> None:
         assert path.startswith("/"), "Paths must start with '/'"
@@ -334,6 +338,9 @@ class Path(BaseHandler, BasePath):
 
         self._apply_middleware(self.middleware)
         self._apply_permissions(self.wrapped_permissions)
+
+        self.before_request = before_request if before_request is not None else []
+        self.after_request = after_request if after_request is not None else []
 
         if self.methods is not None:
             self.methods = [method.upper() for method in self.methods]
@@ -525,6 +532,8 @@ class WebSocketPath(BaseHandler, BasePath):
         "middleware",
         "permissions",
         "exception_handlers",
+        "before_request",
+        "after_request",
         "__handler_app__",
         "_signature",
     )
@@ -539,6 +548,8 @@ class WebSocketPath(BaseHandler, BasePath):
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        before_request: Sequence[Callable[..., Any]] | None = None,
+        after_request: Sequence[Callable[..., Any]] | None = None,
     ) -> None:
         assert path.startswith("/"), "Paths must start with '/'"
         self.path = clean_path(path)
@@ -568,6 +579,9 @@ class WebSocketPath(BaseHandler, BasePath):
         self.wrapped_permissions = [
             wrap_permission(permission) for permission in permissions or []
         ]
+
+        self.before_request = before_request if before_request is not None else []
+        self.after_request = after_request if after_request is not None else []
 
         self._apply_middleware(self.middleware)
         self._apply_permissions(self.wrapped_permissions)
@@ -735,6 +749,8 @@ class Host(BasePath):
         "middleware",
         "permissions",
         "exception_handlers",
+        "before_request",
+        "after_request",
     )
 
     def __init__(
@@ -746,6 +762,8 @@ class Host(BasePath):
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        before_request: Sequence[Callable[..., Any]] | None = None,
+        after_request: Sequence[Callable[..., Any]] | None = None,
     ) -> None:
         assert not host.startswith("/"), "Host must not start with '/'"
         self.host = host
@@ -761,6 +779,9 @@ class Host(BasePath):
         self.wrapped_permissions = [
             wrap_permission(permission) for permission in permissions or []
         ]
+
+        self.before_request = before_request if before_request is not None else []
+        self.after_request = after_request if after_request is not None else []
 
         self._apply_middleware(self.middleware)
         self._apply_permissions(self.wrapped_permissions)
@@ -993,9 +1014,9 @@ class BaseRouter:
         deprecated: bool = False,
         is_sub_router: bool = False,
     ) -> None:
-        assert lifespan is None or (
-            on_startup is None and on_shutdown is None
-        ), "Use either 'lifespan' or 'on_startup'/'on_shutdown', not both."
+        assert lifespan is None or (on_startup is None and on_shutdown is None), (
+            "Use either 'lifespan' or 'on_startup'/'on_shutdown', not both."
+        )
 
         if inspect.isasyncgenfunction(lifespan) or inspect.isgeneratorfunction(lifespan):
             raise ImproperlyConfigured(
@@ -1823,6 +1844,8 @@ class Include(BasePath):
         "permissions",
         "exception_handlers",
         "deprecated",
+        "before_request",
+        "after_request",
     )
 
     def __init__(
@@ -1837,6 +1860,8 @@ class Include(BasePath):
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        before_request: Sequence[Callable[..., Any]] | None = None,
+        after_request: Sequence[Callable[..., Any]] | None = None,
         include_in_schema: bool = True,
         deprecated: bool = False,
         redirect_slashes: bool = True,
@@ -1860,14 +1885,14 @@ class Include(BasePath):
             None
         """
         assert path == "" or path.startswith("/"), "Routed paths must start with '/'"
-        assert (
-            app is not None or routes is not None or namespace is not None
-        ), "Either 'app=...', or 'routes=...', or 'namespace=...' must be specified"
+        assert app is not None or routes is not None or namespace is not None, (
+            "Either 'app=...', or 'routes=...', or 'namespace=...' must be specified"
+        )
         self.path = clean_path(path)
 
-        assert (
-            namespace is None or routes is None
-        ), "Either 'namespace=...' or 'routes=', not both."
+        assert namespace is None or routes is None, (
+            "Either 'namespace=...' or 'routes=', not both."
+        )
 
         if namespace and not isinstance(namespace, str):
             raise ImproperlyConfigured("Namespace must be a string. Example: 'myapp.routes'.")
@@ -1905,6 +1930,9 @@ class Include(BasePath):
         self.wrapped_permissions = [
             wrap_permission(permission) for permission in permissions or []
         ]
+
+        self.before_request = before_request if before_request is not None else []
+        self.after_request = after_request if after_request is not None else []
 
         self._apply_middleware(self.middleware)
         self._apply_permissions(self.wrapped_permissions)
