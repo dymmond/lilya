@@ -8,8 +8,11 @@ import anyio
 import pytest
 
 from lilya import status
+from lilya.apps import Lilya
 from lilya.background import Task
 from lilya.encoders import Encoder
+from lilya.middleware import DefineMiddleware
+from lilya.middleware.sessions import SessionMiddleware
 from lilya.requests import Request
 from lilya.responses import (
     Error,
@@ -21,6 +24,7 @@ from lilya.responses import (
     StreamingResponse,
     redirect,
 )
+from lilya.routing import Path
 from lilya.testclient import TestClient
 
 
@@ -379,6 +383,108 @@ def test_set_cookie(test_client_factory, monkeypatch):
         response.headers["set-cookie"]
         == "mycookie=myvalue; Domain=localhost; expires=Thu, 22 Jan 2037 12:00:10 GMT; "
         "HttpOnly; Max-Age=10; Path=/; SameSite=none; Secure"
+    )
+
+
+def test_set_cookie_multiple(test_client_factory, monkeypatch):
+    # Mock time used as a reference for `Expires` by stdlib `SimpleCookie`.
+    mocked_now = dt.datetime(2037, 1, 22, 12, 0, 0, tzinfo=dt.timezone.utc)
+    monkeypatch.setattr(time, "time", lambda: mocked_now.timestamp())
+
+    async def app(scope, receive, send):
+        response = Response("Hello, world!", media_type="text/plain", encoders=[FooEncoder])
+        assert isinstance(response.encoders[0], FooEncoder)
+        response.set_cookie(
+            "access_cookie",
+            "myvalue",
+            max_age=10,
+            expires=10,
+            path="/",
+            domain="localhost",
+            secure=True,
+            httponly=True,
+            samesite="none",
+        )
+        response.set_cookie(
+            "refresh_cookie",
+            "myvalue",
+            max_age=10,
+            expires=10,
+            path="/",
+            domain="localhost",
+            secure=True,
+            httponly=True,
+            samesite="none",
+        )
+        await response(scope, receive, send)
+
+    client = test_client_factory(app)
+    response = client.get("/")
+    assert response.text == "Hello, world!"
+
+    assert (
+        response.headers["set-cookie"]
+        == "access_cookie=myvalue; Domain=localhost; expires=Thu, 22 Jan 2037 12:00:10 GMT; HttpOnly; Max-Age=10; Path=/; SameSite=none; Secure, refresh_cookie=myvalue; Domain=localhost; expires=Thu, 22 Jan 2037 12:00:10 GMT; HttpOnly; Max-Age=10; Path=/; SameSite=none; Secure"
+    )
+
+
+def test_set_cookie_multiple_with_session(test_client_factory, monkeypatch):
+    # Mock time used as a reference for `Expires` by stdlib `SimpleCookie`.
+    mocked_now = dt.datetime(2037, 1, 22, 12, 0, 0, tzinfo=dt.timezone.utc)
+    monkeypatch.setattr(time, "time", lambda: mocked_now.timestamp())
+
+    async def home():
+        response = Response("Hello, world!", media_type="text/plain", encoders=[FooEncoder])
+        response.set_cookie(
+            "access_cookie",
+            "myvalue",
+            max_age=10,
+            expires=10,
+            path="/",
+            domain="localhost",
+            secure=True,
+            httponly=True,
+            samesite="none",
+        )
+        response.set_cookie(
+            "refresh_cookie",
+            "myvalue",
+            max_age=10,
+            expires=10,
+            path="/",
+            domain="localhost",
+            secure=True,
+            httponly=True,
+            samesite="none",
+        )
+        return response
+
+    async def update_session(request: Request) -> JSONResponse:
+        data = await request.json()
+        request.session.update(data)
+        return JSONResponse({"session": request.session})
+
+    lilya_app = Lilya(
+        routes=[
+            Path("/session", update_session, methods=["POST"]),
+            Path("/", home),
+        ],
+        middleware=[
+            DefineMiddleware(SessionMiddleware, secret_key="your-secret-key"),
+        ],
+    )
+
+    client = test_client_factory(lilya_app)
+
+    response = client.post("/session", json={"some": "data"})
+    assert response.json() == {"session": {"some": "data"}}
+
+    response = client.get("/")
+    assert response.text == "Hello, world!"
+
+    assert (
+        response.headers["set-cookie"]
+        == "access_cookie=myvalue; Domain=localhost; expires=Thu, 22 Jan 2037 12:00:10 GMT; HttpOnly; Max-Age=10; Path=/; SameSite=none; Secure, refresh_cookie=myvalue; Domain=localhost; expires=Thu, 22 Jan 2037 12:00:10 GMT; HttpOnly; Max-Age=10; Path=/; SameSite=none; Secure"
     )
 
 
