@@ -513,6 +513,9 @@ class Path(BaseHandler, BasePath):
         else:
             try:
                 for before_request in self.before_request:
+                    if inspect.isclass(before_request):
+                        before_request = before_request()
+
                     if is_async_callable(before_request):
                         await before_request(scope, receive, send)
                     else:
@@ -524,6 +527,9 @@ class Path(BaseHandler, BasePath):
                     await self.handle_controller(scope, receive, send)
 
                 for after_request in self.after_request:
+                    if inspect.isclass(after_request):
+                        after_request = after_request()
+
                     if is_async_callable(after_request):
                         await after_request(scope, receive, send)
                     else:
@@ -707,6 +713,9 @@ class WebSocketPath(BaseHandler, BasePath):
         """
         try:
             for before_request in self.before_request:
+                if inspect.isclass(before_request):
+                    before_request = before_request()
+
                 if is_async_callable(before_request):
                     await before_request(scope, receive, send)
                 else:
@@ -715,6 +724,9 @@ class WebSocketPath(BaseHandler, BasePath):
             await self.app(scope, receive, send)
 
             for after_request in self.after_request:
+                if inspect.isclass(after_request):
+                    after_request = after_request()
+
                 if is_async_callable(after_request):
                     await after_request(scope, receive, send)
                 else:
@@ -904,6 +916,9 @@ class Host(BasePath):
         """
         try:
             for before_request in self.before_request:
+                if inspect.isclass(before_request):
+                    before_request = before_request()
+
                 if is_async_callable(before_request):
                     await before_request(scope, receive, send)
                 else:
@@ -912,6 +927,9 @@ class Host(BasePath):
             await self.app(scope, receive, send)
 
             for after_request in self.after_request:
+                if inspect.isclass(after_request):
+                    after_request = after_request()
+
                 if is_async_callable(after_request):
                     await after_request(scope, receive, send)
                 else:
@@ -1460,6 +1478,9 @@ class BaseRouter:
             return
 
         for before_request in self.before_request:
+            if inspect.isclass(before_request):
+                before_request = before_request()
+
             if is_async_callable(before_request):
                 await before_request(scope, receive, send)
             else:
@@ -1467,6 +1488,9 @@ class BaseRouter:
         await self.middleware_stack(scope, receive, send)
 
         for after_request in self.after_request:
+            if inspect.isclass(after_request):
+                after_request = after_request()
+
             if is_async_callable(after_request):
                 await after_request(scope, receive, send)
             else:
@@ -2095,6 +2119,9 @@ class Include(BasePath):
         """
         try:
             for before_request in self.before_request:
+                if inspect.isclass(before_request):
+                    before_request = before_request()
+
                 if is_async_callable(before_request):
                     await before_request(scope, receive, send)
                 else:
@@ -2103,6 +2130,9 @@ class Include(BasePath):
             await self.app(scope, receive, send)
 
             for after_request in self.after_request:
+                if inspect.isclass(after_request):
+                    after_request = after_request()
+
                 if is_async_callable(after_request):
                     await after_request(scope, receive, send)
                 else:
