@@ -32,6 +32,8 @@ def create_client(
     debug: bool = False,
     root_path: str = "",
     cookies: httpx._types.CookieTypes | None = None,
+    before_request: Sequence[Callable[..., Any]] | None = None,
+    after_request: Sequence[Callable[..., Any]] | None = None,
     **kwargs: Any,
 ) -> TestClient:
     """
@@ -60,6 +62,8 @@ def create_client(
             lifespan=lifespan,
             redirect_slashes=redirect_slashes,
             include_in_schema=include_in_schema,
+            before_request=before_request,
+            after_request=after_request,
             **kwargs,
         ),
         base_url=base_url,

@@ -96,6 +96,7 @@ testing = [
     "ptpython",
     "ipdb",
     "pdbpp",
+    "structlog",
 ]
 
 docs = [

@@ -5,7 +5,13 @@ hide:
 
 # Release Notes
 
-## 0.12.7
+## 0.12.8
+
+### Added
+
+- `Lilya`, `Include`, `Host`, `Path` and `Router` now support `before_request` and `after_request`
+life cycles. This can be particularly useful to those who want to perform actions before and after
+a request is performed. E.g.: Telemetry.
 
 ### Added
 

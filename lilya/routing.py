@@ -22,6 +22,7 @@ from lilya._internal._permissions import wrap_permission
 from lilya._internal._responses import BaseHandler
 from lilya._internal._urls import include
 from lilya.compat import is_async_callable
+from lilya.concurrency import run_in_threadpool
 from lilya.conf import settings
 from lilya.conf.global_settings import Settings
 from lilya.datastructures import URL, Header, ScopeHandler, SendReceiveSniffer, URLPath
@@ -511,10 +512,23 @@ class Path(BaseHandler, BasePath):
             await response(scope, receive, send)
         else:
             try:
+                for before_request in self.before_request:
+                    if is_async_callable(before_request):
+                        await before_request(scope, receive, send)
+                    else:
+                        await run_in_threadpool(before_request, scope, receive, send)
+
                 if not hasattr(self.app, "__is_controller__"):
                     await self.app(scope, receive, send)
                 else:
                     await self.handle_controller(scope, receive, send)
+
+                for after_request in self.after_request:
+                    if is_async_callable(after_request):
+                        await after_request(scope, receive, send)
+                    else:
+                        await run_in_threadpool(after_request, scope, receive, send)
+
             except Exception as ex:
                 await self.handle_exception_handlers(scope, receive, send, ex)
 
@@ -692,7 +706,19 @@ class WebSocketPath(BaseHandler, BasePath):
             None
         """
         try:
+            for before_request in self.before_request:
+                if is_async_callable(before_request):
+                    await before_request(scope, receive, send)
+                else:
+                    await run_in_threadpool(before_request, scope, receive, send)
+
             await self.app(scope, receive, send)
+
+            for after_request in self.after_request:
+                if is_async_callable(after_request):
+                    await after_request(scope, receive, send)
+                else:
+                    await run_in_threadpool(after_request, scope, receive, send)
         except Exception as ex:
             await self.handle_exception_handlers(scope, receive, send, ex)
 
@@ -877,7 +903,19 @@ class Host(BasePath):
             None
         """
         try:
+            for before_request in self.before_request:
+                if is_async_callable(before_request):
+                    await before_request(scope, receive, send)
+                else:
+                    await run_in_threadpool(before_request, scope, receive, send)
+
             await self.app(scope, receive, send)
+
+            for after_request in self.after_request:
+                if is_async_callable(after_request):
+                    await after_request(scope, receive, send)
+                else:
+                    await run_in_threadpool(after_request, scope, receive, send)
         except Exception as ex:
             await self.handle_exception_handlers(scope, receive, send, ex)
 
@@ -1420,7 +1458,19 @@ class BaseRouter:
         if scope["type"] == ScopeType.LIFESPAN:
             await self.lifespan(scope, receive, send)
             return
+
+        for before_request in self.before_request:
+            if is_async_callable(before_request):
+                await before_request(scope, receive, send)
+            else:
+                await run_in_threadpool(before_request, scope, receive, send)
         await self.middleware_stack(scope, receive, send)
+
+        for after_request in self.after_request:
+            if is_async_callable(after_request):
+                await after_request(scope, receive, send)
+            else:
+                await run_in_threadpool(after_request, scope, receive, send)
 
 
 class Router(BaseRouter):
@@ -2044,7 +2094,19 @@ class Include(BasePath):
             None
         """
         try:
+            for before_request in self.before_request:
+                if is_async_callable(before_request):
+                    await before_request(scope, receive, send)
+                else:
+                    await run_in_threadpool(before_request, scope, receive, send)
+
             await self.app(scope, receive, send)
+
+            for after_request in self.after_request:
+                if is_async_callable(after_request):
+                    await after_request(scope, receive, send)
+                else:
+                    await run_in_threadpool(after_request, scope, receive, send)
         except Exception as ex:
             await self.handle_exception_handlers(scope, receive, send, ex)
 
