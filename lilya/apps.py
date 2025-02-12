@@ -341,6 +341,78 @@ class BaseLilya:
                 """
             ),
         ] = None,
+        before_request: Annotated[
+            Sequence[Callable[[], Any]] | None,
+            Doc(
+                """
+                A `list` of events that are trigger before the application
+                processes the request.
+
+                Read more about the [events](https://lilya.dev/lifespan/).
+
+                **Example**
+
+                ```python
+                from edgy import Database, Registry
+
+                from lilya.apps import Lilya
+                from lilya.requests import Request
+                from lilya.routing import Path
+
+                database = Database("postgresql+asyncpg://user:password@host:port/database")
+                registry = Registry(database=database)
+
+
+                async def create_user(request: Request):
+                    # Logic to create the user
+                    data = await request.json()
+                    ...
+
+
+                app = Lilya(
+                    routes=[Path("/create", handler=create_user)],
+                    before_request=[database.connect],
+                )
+                ```
+                """
+            ),
+        ] = None,
+        after_request: Annotated[
+            Sequence[Callable[[], Any]] | None,
+            Doc(
+                """
+                A `list` of events that are trigger after the application
+                processes the request.
+
+                Read more about the [events](https://lilya.dev/lifespan/).
+
+                **Example**
+
+                ```python
+                from edgy import Database, Registry
+
+                from lilya.apps import Lilya
+                from lilya.requests import Request
+                from lilya.routing import Path
+
+                database = Database("postgresql+asyncpg://user:password@host:port/database")
+                registry = Registry(database=database)
+
+
+                async def create_user(request: Request):
+                    # Logic to create the user
+                    data = await request.json()
+                    ...
+
+
+                app = Lilya(
+                    routes=[Path("/create", handler=create_user)],
+                    after_request=[database.disconnect],
+                )
+                ```
+                """
+            ),
+        ] = None,
         redirect_slashes: Annotated[
             bool,
             Doc(
@@ -401,6 +473,14 @@ class BaseLilya:
             for permission in self.__load_settings_value("permissions", permissions) or []
         ]
 
+        self.before_request_callbacks = (
+            self.__load_settings_value("before_request", before_request) or []
+        )
+
+        self.after_request_callbacks = (
+            self.__load_settings_value("after_request", after_request) or []
+        )
+
         self.state = State()
         self.middleware_stack: ASGIApp | None = None
 
@@ -414,6 +494,8 @@ class BaseLilya:
                 lifespan=lifespan,
                 include_in_schema=include_in_schema,
                 settings_module=self.settings,
+                before_request=self.before_request_callbacks,
+                after_request=self.after_request_callbacks,
             )
         self.__set_settings_app(self.settings, self)
 

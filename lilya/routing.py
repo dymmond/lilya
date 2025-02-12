@@ -960,6 +960,8 @@ class BaseRouter:
         "permission_started",
         "settings_module",
         "is_sub_router",
+        "before_request",
+        "after_request",
     )
 
     def __init__(
@@ -973,6 +975,8 @@ class BaseRouter:
         *,
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
+        before_request: Sequence[Callable[..., Any]] | None = None,
+        after_request: Sequence[Callable[..., Any]] | None = None,
         settings_module: Annotated[
             Settings | None,
             Doc(
@@ -1021,6 +1025,9 @@ class BaseRouter:
         self.middleware_stack = self.app
         self.permission_started = False
         self.is_sub_router = is_sub_router
+
+        self.before_request = before_request if before_request is not None else []
+        self.after_request = after_request if after_request is not None else []
 
         self.wrapped_permissions = [
             wrap_permission(permission) for permission in permissions or []
