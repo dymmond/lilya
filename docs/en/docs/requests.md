@@ -326,7 +326,7 @@ There are two ways of making it happening: `sync` and `async`.
 === "Async"
 
     ```python
-    {!> ../../../docs_src/requests/cycle/func_async.py !}
+    {!> ../../../docs_src/requests/cycle/class_async.py !}
     ```
 === "Sync"
 
@@ -362,7 +362,7 @@ to the handler.
 === "Async"
 
     ```python
-    {!> ../../../docs_src/requests/cycle/class_async.py !}
+    {!> ../../../docs_src/requests/cycle/func_async.py !}
     ```
 === "Sync"
 
