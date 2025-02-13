@@ -7,9 +7,9 @@ hide:
 
 ## 0.12.9
 
-#### Added
+### Added
 
-- Missing before and after request in the handler helpers
+- Missing before and after request in the handler helpers.
 
 ## 0.12.8
 
@@ -18,9 +18,6 @@ hide:
 - `Lilya`, `Include`, `Host`, `Path` and `Router` now support `before_request` and `after_request`
 life cycles. This can be particularly useful to those who want to perform actions before and after
 a request is performed. E.g.: Telemetry.
-
-### Added
-
 - Added `version` to Lilya client.
 
 ### Changed
