@@ -960,6 +960,8 @@ class Lilya(BaseLilya):
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
         include_in_schema: bool = True,
+        before_request: Sequence[Callable[..., Any]] | None = None,
+        after_request: Sequence[Callable[..., Any]] | None = None,
     ) -> Callable[[CallableDecorator], CallableDecorator]:
         """
         Decorator for defining a GET route.
@@ -984,6 +986,8 @@ class Lilya(BaseLilya):
             permissions=permissions,
             exception_handlers=exception_handlers,
             include_in_schema=include_in_schema,
+            before_request=before_request,
+            after_request=after_request,
         )
 
     def head(
@@ -994,6 +998,8 @@ class Lilya(BaseLilya):
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
         include_in_schema: bool = True,
+        before_request: Sequence[Callable[..., Any]] | None = None,
+        after_request: Sequence[Callable[..., Any]] | None = None,
     ) -> Callable[[CallableDecorator], CallableDecorator]:
         """
         Decorator for defining a HEAD route.
@@ -1018,6 +1024,8 @@ class Lilya(BaseLilya):
             permissions=permissions,
             exception_handlers=exception_handlers,
             include_in_schema=include_in_schema,
+            before_request=before_request,
+            after_request=after_request,
         )
 
     def post(
@@ -1028,6 +1036,8 @@ class Lilya(BaseLilya):
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
         include_in_schema: bool = True,
+        before_request: Sequence[Callable[..., Any]] | None = None,
+        after_request: Sequence[Callable[..., Any]] | None = None,
     ) -> Callable[[CallableDecorator], CallableDecorator]:
         """
         Decorator for defining a POST route.
@@ -1052,6 +1062,8 @@ class Lilya(BaseLilya):
             permissions=permissions,
             exception_handlers=exception_handlers,
             include_in_schema=include_in_schema,
+            before_request=before_request,
+            after_request=after_request,
         )
 
     def put(
@@ -1062,6 +1074,8 @@ class Lilya(BaseLilya):
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
         include_in_schema: bool = True,
+        before_request: Sequence[Callable[..., Any]] | None = None,
+        after_request: Sequence[Callable[..., Any]] | None = None,
     ) -> Callable[[CallableDecorator], CallableDecorator]:
         """
         Decorator for defining a PUT route.
@@ -1086,6 +1100,8 @@ class Lilya(BaseLilya):
             permissions=permissions,
             exception_handlers=exception_handlers,
             include_in_schema=include_in_schema,
+            before_request=before_request,
+            after_request=after_request,
         )
 
     def patch(
@@ -1096,6 +1112,8 @@ class Lilya(BaseLilya):
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
         include_in_schema: bool = True,
+        before_request: Sequence[Callable[..., Any]] | None = None,
+        after_request: Sequence[Callable[..., Any]] | None = None,
     ) -> Callable[[CallableDecorator], CallableDecorator]:
         """
         Decorator for defining a PATCH route.
@@ -1120,6 +1138,8 @@ class Lilya(BaseLilya):
             permissions=permissions,
             exception_handlers=exception_handlers,
             include_in_schema=include_in_schema,
+            before_request=before_request,
+            after_request=after_request,
         )
 
     def delete(
@@ -1130,6 +1150,8 @@ class Lilya(BaseLilya):
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
         include_in_schema: bool = True,
+        before_request: Sequence[Callable[..., Any]] | None = None,
+        after_request: Sequence[Callable[..., Any]] | None = None,
     ) -> Callable[[CallableDecorator], CallableDecorator]:
         """
         Decorator for defining a DELETE route.
@@ -1154,6 +1176,8 @@ class Lilya(BaseLilya):
             permissions=permissions,
             exception_handlers=exception_handlers,
             include_in_schema=include_in_schema,
+            before_request=before_request,
+            after_request=after_request,
         )
 
     def trace(
@@ -1164,6 +1188,8 @@ class Lilya(BaseLilya):
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
         include_in_schema: bool = True,
+        before_request: Sequence[Callable[..., Any]] | None = None,
+        after_request: Sequence[Callable[..., Any]] | None = None,
     ) -> Callable[[CallableDecorator], CallableDecorator]:
         """
         Decorator for defining a TRACE route.
@@ -1188,6 +1214,8 @@ class Lilya(BaseLilya):
             permissions=permissions,
             exception_handlers=exception_handlers,
             include_in_schema=include_in_schema,
+            before_request=before_request,
+            after_request=after_request,
         )
 
     def options(
@@ -1198,6 +1226,8 @@ class Lilya(BaseLilya):
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
         include_in_schema: bool = True,
+        before_request: Sequence[Callable[..., Any]] | None = None,
+        after_request: Sequence[Callable[..., Any]] | None = None,
     ) -> Callable[[CallableDecorator], CallableDecorator]:
         """
         Decorator for defining a OPTIONS route.
@@ -1222,6 +1252,8 @@ class Lilya(BaseLilya):
             permissions=permissions,
             exception_handlers=exception_handlers,
             include_in_schema=include_in_schema,
+            before_request=before_request,
+            after_request=after_request,
         )
 
     def route(
@@ -1233,6 +1265,8 @@ class Lilya(BaseLilya):
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
         include_in_schema: bool = True,
+        before_request: Sequence[Callable[..., Any]] | None = None,
+        after_request: Sequence[Callable[..., Any]] | None = None,
     ) -> Callable[[CallableDecorator], CallableDecorator]:
         """
         Decorator for defining a generic route.
@@ -1258,6 +1292,8 @@ class Lilya(BaseLilya):
             permissions=permissions,
             exception_handlers=exception_handlers,
             include_in_schema=include_in_schema,
+            before_request=before_request,
+            after_request=after_request,
         )
 
     def websocket(
@@ -1267,6 +1303,8 @@ class Lilya(BaseLilya):
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        before_request: Sequence[Callable[..., Any]] | None = None,
+        after_request: Sequence[Callable[..., Any]] | None = None,
     ) -> Callable[[CallableDecorator], CallableDecorator]:
         """
         Decorator for defining a WebSocket route.
@@ -1289,6 +1327,8 @@ class Lilya(BaseLilya):
             middleware=middleware,
             permissions=permissions,
             exception_handlers=exception_handlers,
+            before_request=before_request,
+            after_request=after_request,
         )
 
 
