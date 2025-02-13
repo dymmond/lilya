@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.12.9
+
+#### Added
+
+- Missing before and after request in the handler helpers
+
 ## 0.12.8
 
 ### Added
