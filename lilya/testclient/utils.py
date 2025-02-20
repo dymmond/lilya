@@ -1,12 +1,12 @@
 from __future__ import annotations
 
+import asyncio
 import sys
 from functools import wraps
-from typing import Any
+from typing import Any, Callable
 
 from lilya.conf import settings
 from lilya.conf.context_vars import set_override_settings
-from lilya.conf.global_settings import Settings
 
 if sys.version_info >= (3, 10):  # pragma: no cover
     from typing import ParamSpec
@@ -48,6 +48,30 @@ class override_settings:
         """
         self.app = kwargs.pop("app", None)
         self.options = kwargs
+        self._original_settings = None
+
+    async def __aenter__(self) -> None:
+        """
+        Enter the context manager and set the modified settings.
+
+        Saves the original settings and sets the modified settings
+        based on the provided options.
+
+        Returns:
+            None
+        """
+        self.__enter__()
+
+    async def __aexit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
+        """
+        Restores the original settings and sets them up again.
+
+        Args:
+            exc_type (Any): The type of the exception raised, if any.
+            exc_value (Any): The exception instance raised, if any.
+            traceback (Any): The traceback for the exception raised, if any.
+        """
+        self.__exit__(exc_type, exc_value, traceback)
 
     def __enter__(self) -> None:
         """
@@ -59,8 +83,9 @@ class override_settings:
         Returns:
             None
         """
+        settings._setup()
         self._original_settings = settings._wrapped
-        settings._wrapped = Settings(settings._wrapped, **self.options)
+        settings._wrapped = self._original_settings.__class__(settings._wrapped, **self.options)
         set_override_settings(True)
 
     def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
@@ -76,7 +101,7 @@ class override_settings:
         settings._setup()
         set_override_settings(False)
 
-    def __call__(self, test_func: Any) -> Any:
+    def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
         """
         Decorator that wraps a test function and executes it within a context manager.
 
@@ -87,10 +112,19 @@ class override_settings:
             Any: The result of the test function.
 
         """
+        if asyncio.iscoroutinefunction(func):
 
-        @wraps(test_func)
-        def inner(*args: P.args, **kwargs: P.kwargs) -> Any:
-            with self:
-                return test_func(*args, **kwargs)
+            @wraps(func)
+            async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
+                async with self:
+                    return await func(*args, **kwargs)
 
-        return inner
+            return async_wrapper
+        else:
+
+            @wraps(func)
+            def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
+                with self:
+                    return func(*args, **kwargs)
+
+            return sync_wrapper

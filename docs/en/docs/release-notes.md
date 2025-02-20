@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.12.10
+
+### Fixed
+
+- `override_settings` was not having the override import behaviour expected.
+
 ## 0.12.9
 
 ### Added
