@@ -83,6 +83,7 @@ class override_settings:
         Returns:
             None
         """
+        settings._setup()
         self._original_settings = settings._wrapped
         settings._wrapped = self._original_settings.__class__(settings._wrapped, **self.options)
         set_override_settings(True)
