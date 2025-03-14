@@ -161,5 +161,13 @@ INFO:     Application startup complete.
 INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
 ```
 
+## Powered by
+
+Worth mentioning who is helping us.
+
+**JetBrains**
+
+[![JetBrains logo.](https://resources.jetbrains.com/storage/products/company/brand/logos/jetbrains.svg)](https://jb.gg/OpenSourceSupport)
+
 [esmerald]: https://lilya.dev/esmerald
 [fastapi]: https://fastapi.tiangolo.com
