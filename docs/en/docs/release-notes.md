@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.12.11
+
+### Fixed
+
+- Header fix for uvicorn wasn't working anymore after a dependency update. Allow bytes header keys.
+
 ## 0.12.10
 
 ### Fixed

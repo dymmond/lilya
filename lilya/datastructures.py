@@ -132,7 +132,7 @@ class FormMultiDict(ImmutableMultiDict[Any]):
                 await value.close()
 
 
-class Header(MultiDict, CIMultiDict):  # type: ignore
+class Header(MultiDict, CIMultiDict):
     """Container used for both request and response headers.
     It is a subclass of  [CIMultiDict](https://multidict.readthedocs.io/en/stable/multidict.html#cimultidictproxy)
 
@@ -231,12 +231,22 @@ class Header(MultiDict, CIMultiDict):  # type: ignore
         """For compatibility with ASGI."""
         return self.encoded_multi_items()
 
-    def __contains__(self, item: Any) -> bool:
-        try:
+    def __contains__(self, item: str | bytes | tuple[bytes | str, bytes | str]) -> bool:
+        # required by uvicorn which assumes the headers are a container like list.
+        # elaborate for generic use
+        if isinstance(item, bytes):
+            item = item.decode("utf-8", errors="surrogateescape")
+        if isinstance(item, str):
             return super().__contains__(item)
-        except TypeError:
-            # uvicorn compatibility
-            return any(kv == item for kv in self.encoded_multi_items())
+        try:
+            k, v = (
+                x if isinstance(x, str) else x.decode("utf8", errors="surrogateescape")
+                for x in item
+            )
+        except (ValueError, AttributeError):
+            return False
+        # required for handling case insensitivity
+        return any(v == val for val in self.get_all(k))
 
     def get_encoded_multi_items(self) -> list[tuple[bytes, bytes]]:
         """
