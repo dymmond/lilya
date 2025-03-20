@@ -132,7 +132,7 @@ class FormMultiDict(ImmutableMultiDict[Any]):
                 await value.close()
 
 
-class Header(MultiDict, CIMultiDict):  # type: ignore
+class Header(MultiDict, CIMultiDict):
     """Container used for both request and response headers.
     It is a subclass of  [CIMultiDict](https://multidict.readthedocs.io/en/stable/multidict.html#cimultidictproxy)
 
