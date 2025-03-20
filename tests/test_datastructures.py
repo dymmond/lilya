@@ -306,7 +306,10 @@ async def test_upload_file_repr():
 def test_header_in():
     # required for uvicorn
     multi = Header([(b"content-length", b"6"), (b"Connection", b"close")])
+    assert "ConnecTion" in multi
+    assert b"ConnecTion" in multi
     assert (b"Connection", b"close") in multi
+    assert (b"ConnecTion", b"close") in multi
     assert (b"foo", b"close") not in multi
 
 
