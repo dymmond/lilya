@@ -528,7 +528,7 @@ class FileResponse(Response):
                     await send(
                         {
                             "type": "http.response.zerocopysend",
-                            "file": file.fileno(),
+                            "file": file.fileno(),  # type: ignore
                             "count": self.chunk_size,
                             "more_body": more_body,
                         }
