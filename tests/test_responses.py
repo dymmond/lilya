@@ -309,25 +309,25 @@ def test_file_response(tmpdir, test_client_factory):
     assert filled_by_bg_task == "6, 7, 8, 9"
 
 
-@pytest.mark.parametrize("extensions,result", [
-    ({"http.response.pathsend": {}}, "http.response.pathsend"),
-    ({"http.response.zerocopysend": {}}, "http.response.zerocopysend"),
-])
+@pytest.mark.parametrize(
+    "extensions,result",
+    [
+        ({"http.response.pathsend": {}}, "http.response.pathsend"),
+        ({"http.response.zerocopysend": {}}, "http.response.zerocopysend"),
+    ],
+)
 async def test_file_response_optimizations(tmpdir, test_client_factory, extensions, result):
     path = os.path.join(tmpdir, "xyz")
     content = b"<file content>" * 1000
     with open(path, "wb") as file:
         file.write(content)
 
-    fresponse = FileResponse(
-        path=path, filename="example.png"
-    )
+    fresponse = FileResponse(path=path, filename="example.png")
     fresponse.chunk_size = 10
     responses = Queue()
     await fresponse({"extensions": extensions, "type": "response"}, None, responses.put)
     response1 = await responses.get()
     response2 = await responses.get()
-
 
     expected_disposition = 'attachment; filename="example.png"'
     assert response1["headers"]["content-type"] == "image/png"
@@ -342,6 +342,7 @@ async def test_file_response_optimizations(tmpdir, test_client_factory, extensio
         while response2["more_body"]:
             response2 = await responses.get()
         assert not response2["more_body"]
+
 
 def test_file_response_with_directory_raises_error(tmpdir, test_client_factory):
     app = FileResponse(path=tmpdir, filename="example.png")
