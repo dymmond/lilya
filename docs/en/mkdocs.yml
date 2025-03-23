@@ -86,6 +86,7 @@ nav:
   - lifespan.md
   - middleware.md
   - permissions.md
+  - observables.md
   - static-files.md
   - templates.md
   - server-push.md
