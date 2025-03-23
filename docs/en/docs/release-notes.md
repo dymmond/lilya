@@ -7,6 +7,11 @@ hide:
 
 ## 0.12.11
 
+### Added
+
+- [Observables](./observables.md) documentation section. This is a new feature that allows to create
+observables that can be used to create a more reactive programming style.
+
 ### Fixed
 
 - Header fix for uvicorn wasn't working anymore after a dependency update. Allow bytes header keys.
