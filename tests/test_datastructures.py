@@ -139,7 +139,7 @@ def test_multidict():
     assert repr(query) == "MultiDict([('a', '456'), ('b', '789')])"
 
     query = MultiDict([("a", "123"), ("a", "456")])
-    # MultiDict.popitem removes an arbitary item and make no gurantees about the order
+    # MultiDict.popitem removes an arbitary item and makes no gurantees about the order
     # see: https://multidict.aio-libs.org/en/stable/multidict/#multidict.MultiDict.popitem
     item = query.popitem()
     assert query.get(item[0]) is not None
