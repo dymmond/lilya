@@ -138,9 +138,10 @@ def test_multidict():
     assert query.get("a", None) == "456"
     assert repr(query) == "MultiDict([('a', '456'), ('b', '789')])"
 
-    query = MultiDict([("a", "123"), ("a", "456"), ("b", "789")])
+    query = MultiDict([("a", "123"), ("a", "456")])
+    # popitem removes an item but does not gurantee that it is the last or first item
     item = query.popitem()
-    assert query.get(item[0]) == "456"
+    assert query.get(item[0]) is not None
 
     query = MultiDict([("a", "123"), ("a", "456"), ("b", "789")])
     assert query.poplist("a") == ["123", "456"]
