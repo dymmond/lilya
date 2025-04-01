@@ -309,6 +309,7 @@ def test_file_response(tmpdir, test_client_factory):
     assert "etag" in response.headers
     assert filled_by_bg_task == "6, 7, 8, 9"
 
+
 @pytest.mark.parametrize(
     "extensions,result",
     [
