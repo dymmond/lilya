@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.13.0
+
+### Changed
+
+- `multidict` bumped to a minimum of 6.3.0.
+
 ## 0.12.11
 
 ### Added

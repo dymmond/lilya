@@ -140,7 +140,7 @@ def test_multidict():
 
     query = MultiDict([("a", "123"), ("a", "456"), ("b", "789")])
     item = query.popitem()
-    assert query.get(item[0]) == "456"
+    assert query.get(item[0]) is None
 
     query = MultiDict([("a", "123"), ("a", "456"), ("b", "789")])
     assert query.poplist("a") == ["123", "456"]
