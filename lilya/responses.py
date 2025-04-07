@@ -513,9 +513,27 @@ class FileResponse(Response):
 
         prefix = "websocket." if scope["type"] == "websocket" else ""
         await send(self.message(prefix=prefix))
+        extensions = scope.get("extensions", {})
 
         if self.send_header_only:
             await send({"type": "http.response.body", "body": b"", "more_body": False})
+        elif "http.response.pathsend" in extensions:
+            await send({"type": "http.response.pathsend", "path": self.path})
+        elif "http.response.zerocopysend" in extensions:
+            async with await anyio.open_file(self.path, mode="rb") as file:
+                size = int(self.headers["content-length"])
+                more_body = True
+                while more_body:
+                    more_body = size > self.chunk_size
+                    await send(
+                        {
+                            "type": "http.response.zerocopysend",
+                            "file": file.fileno(),  # type: ignore
+                            "count": self.chunk_size,
+                            "more_body": more_body,
+                        }
+                    )
+                    size -= self.chunk_size
         else:
             async with await anyio.open_file(self.path, mode="rb") as file:
                 more_body = True
