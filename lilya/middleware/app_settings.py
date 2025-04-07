@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from warnings import warn
 
-from lilya.conf import __lazy_settings__, settings
-from lilya.conf.context_vars import get_override_settings
 from lilya.protocols.middleware import MiddlewareProtocol
 from lilya.types import ASGIApp, Receive, Scope, Send
 
-if TYPE_CHECKING:
-    from lilya.apps import Lilya
+warn("This module is deprecated without replacement", DeprecationWarning, stacklevel=2)
 
 
 class ApplicationSettingsMiddleware(MiddlewareProtocol):
@@ -25,11 +22,4 @@ class ApplicationSettingsMiddleware(MiddlewareProtocol):
             receive (Receive): The ASGI receive function.
             send (Send): The ASGI send function.
         """
-        app: Lilya = scope["app"]
-
-        if getattr(app, "settings_module", None) is not None:
-            settings.configure(app.settings)
-        else:
-            if not get_override_settings():
-                settings.configure(__lazy_settings__._wrapped)
         await self.app(scope, receive, send)

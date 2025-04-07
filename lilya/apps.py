@@ -2,18 +2,16 @@ from __future__ import annotations
 
 import sys
 from collections.abc import Awaitable, Callable, Mapping, Sequence
-from functools import cached_property
-from typing import Annotated, Any, ClassVar, cast
+from typing import Annotated, Any, ClassVar
 
 from lilya._internal._middleware import wrap_middleware
 from lilya._internal._module_loading import import_string
 from lilya._internal._permissions import wrap_permission
 from lilya._utils import is_class_and_subclass
-from lilya.conf import __lazy_settings__, settings as lilya_settings
+from lilya.conf import _monkay, settings as lilya_settings
 from lilya.conf.exceptions import FieldException
 from lilya.conf.global_settings import Settings
 from lilya.datastructures import State, URLPath
-from lilya.middleware.app_settings import ApplicationSettingsMiddleware
 from lilya.middleware.asyncexit import AsyncExitStackMiddleware
 from lilya.middleware.base import DefineMiddleware
 from lilya.middleware.exceptions import ExceptionMiddleware
@@ -446,7 +444,7 @@ class BaseLilya:
             ),
         ] = True,
     ) -> None:
-        self.settings_module: Settings = None
+        self.settings_module: Settings | None = None
 
         if settings_module is not None and isinstance(settings_module, str):
             settings_module = import_string(settings_module)
@@ -517,16 +515,12 @@ class BaseLilya:
         """
         if not is_boolean:
             if not value:
-                return self.__get_settings_value(
-                    self.settings_module, cast(Settings, lilya_settings), name
-                )
+                return self.__get_settings_value(self.settings_module, lilya_settings, name)
             return value
 
         if value is not None:
             return value
-        return self.__get_settings_value(
-            self.settings_module, cast(Settings, lilya_settings), name
-        )
+        return self.__get_settings_value(self.settings_module, lilya_settings, name)
 
     def __get_settings_value(
         self,
@@ -543,7 +537,7 @@ class BaseLilya:
             return getattr(global_settings, value, None)
         return setting_value
 
-    @cached_property
+    @property
     def settings(self) -> Settings:
         """
         Returns the Lilya settings object for easy access.
@@ -560,8 +554,8 @@ class BaseLilya:
         app.settings
         ```
         """
-        general_settings = self.settings_module if self.settings_module else lilya_settings
-        return cast(Settings, general_settings)
+        general_settings = self.settings_module if self.settings_module else _monkay.settings
+        return general_settings
 
     def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         return self.router.path_for(name, **path_params)
@@ -580,7 +574,6 @@ class BaseLilya:
             DefineMiddleware(ServerErrorMiddleware, handler=error_handler, debug=self.debug),
             DefineMiddleware(GlobalContextMiddleware),
             *self.custom_middleware,
-            DefineMiddleware(ApplicationSettingsMiddleware),
             DefineMiddleware(ExceptionMiddleware, handlers=exception_handlers, debug=self.debug),
             DefineMiddleware(AsyncExitStackMiddleware, debug=self.debug),
         ]
@@ -919,20 +912,12 @@ class BaseLilya:
             )
         )
 
-    async def _globalise_settings(self) -> None:
-        """
-        Making sure the global settings remain as is
-        after the request is done.
-        """
-        lilya_settings.configure(__lazy_settings__._wrapped)
-
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         scope["app"] = self
-
-        if self.middleware_stack is None:
-            self.middleware_stack = self.build_middleware_stack()
-        await self.middleware_stack(scope, receive, send)
-        await self._globalise_settings()
+        with _monkay.with_settings(self.settings):
+            if self.middleware_stack is None:
+                self.middleware_stack = self.build_middleware_stack()
+            await self.middleware_stack(scope, receive, send)
 
 
 class Lilya(BaseLilya):
