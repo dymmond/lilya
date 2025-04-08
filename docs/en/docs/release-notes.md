@@ -5,11 +5,16 @@ hide:
 
 # Release Notes
 
-## Unreleased
+## 0.13.0
 
 ### Changed
 
 - FileResponse tries to offload the file response to the server in case it supports the extensions.
+- [monkay](https://monkay.dymmond.com) as the lazy settings manager.
+
+### Removed
+
+- Old LazyObject settings system allowing for more flexibility from [monkay](https://monkay.dymmond.com).
 
 ## 0.12.11
 
