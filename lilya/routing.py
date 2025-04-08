@@ -5,7 +5,8 @@ import inspect
 import re
 import traceback
 from collections.abc import Awaitable, Callable, Mapping, Sequence
-from typing import Annotated, Any, ClassVar, TypeVar, cast
+from contextlib import nullcontext
+from typing import Annotated, Any, ClassVar, TypeVar
 
 from lilya import status
 from lilya._internal._events import AsyncLifespan, handle_lifespan_events
@@ -23,7 +24,7 @@ from lilya._internal._responses import BaseHandler
 from lilya._internal._urls import include
 from lilya.compat import is_async_callable
 from lilya.concurrency import run_in_threadpool
-from lilya.conf import settings
+from lilya.conf import _monkay
 from lilya.conf.global_settings import Settings
 from lilya.datastructures import URL, Header, ScopeHandler, SendReceiveSniffer, URLPath
 from lilya.enums import EventType, HTTPMethod, Match, ScopeType
@@ -211,7 +212,12 @@ class BasePath:
         return getattr(exc, "status_code", status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     async def _handle_http_exception(
-        self, scope: Scope, receive: Receive, send: Send, exc: Exception, status_code: int
+        self,
+        scope: Scope,
+        receive: Receive,
+        send: Send,
+        exc: Exception,
+        status_code: int,
     ) -> None:
         """
         Handle HTTP exceptions.
@@ -364,7 +370,7 @@ class Path(BaseHandler, BasePath):
         Validates the return annotation of a handler
         if `enforce_return_annotation` is set to True.
         """
-        if not settings.enforce_return_annotation:
+        if not _monkay.settings.enforce_return_annotation:
             return None
 
         if self.signature.return_annotation is inspect._empty:
@@ -622,7 +628,7 @@ class WebSocketPath(BaseHandler, BasePath):
         Validates the return annotation of a handler
         if `enforce_return_annotation` is set to True.
         """
-        if not settings.enforce_return_annotation:
+        if not _monkay.settings.enforce_return_annotation:
             return None
 
         if self.signature.return_annotation is inspect._empty:
@@ -1142,15 +1148,18 @@ class BaseRouter:
             for cls, args, options in reversed(self.permissions):
                 self.middleware_stack = cls(app=self.middleware_stack, *args, **options)
 
-    def _set_settings_app(self, settings_module: Settings, app: ASGIApp) -> None:
+    def _set_settings_app(self, settings_module: Settings | None, app: ASGIApp) -> None:
         """
         Sets the main `app` of the settings module.
         This is particularly useful for reversing urls.
         """
         if settings_module is None:
-            settings_module = cast(Settings, settings)
-
-        settings_module.app = app
+            settings = _monkay.settings
+        else:
+            settings = settings_module
+        # either unset or explicit settings_module
+        if settings.app is None or settings_module is not None:
+            settings.app = app
 
     def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         for route in self.routes:
@@ -1270,7 +1279,11 @@ class BaseRouter:
             receive (Receive): The ASGI receive channel.
             send (Send): The ASGI send channel.
         """
-        assert scope["type"] in (ScopeType.HTTP, ScopeType.WEBSOCKET, ScopeType.LIFESPAN)
+        assert scope["type"] in (
+            ScopeType.HTTP,
+            ScopeType.WEBSOCKET,
+            ScopeType.LIFESPAN,
+        )
 
         if "router" not in scope:
             scope["router"] = self
@@ -1485,28 +1498,34 @@ class BaseRouter:
         return wrapper
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] == ScopeType.LIFESPAN:
-            await self.lifespan(scope, receive, send)
-            return
+        ctxmanager = (
+            nullcontext()
+            if self.settings_module is None
+            else _monkay.with_settings(self.settings_module)
+        )
+        with ctxmanager:
+            if scope["type"] == ScopeType.LIFESPAN:
+                await self.lifespan(scope, receive, send)
+                return
 
-        for before_request in self.before_request:
-            if inspect.isclass(before_request):
-                before_request = before_request()
+            for before_request in self.before_request:
+                if inspect.isclass(before_request):
+                    before_request = before_request()
 
-            if is_async_callable(before_request):
-                await before_request(scope, receive, send)
-            else:
-                await run_in_threadpool(before_request, scope, receive, send)
-        await self.middleware_stack(scope, receive, send)
+                if is_async_callable(before_request):
+                    await before_request(scope, receive, send)
+                else:
+                    await run_in_threadpool(before_request, scope, receive, send)
+            await self.middleware_stack(scope, receive, send)
 
-        for after_request in self.after_request:
-            if inspect.isclass(after_request):
-                after_request = after_request()
+            for after_request in self.after_request:
+                if inspect.isclass(after_request):
+                    after_request = after_request()
 
-            if is_async_callable(after_request):
-                await after_request(scope, receive, send)
-            else:
-                await run_in_threadpool(after_request, scope, receive, send)
+                if is_async_callable(after_request):
+                    await after_request(scope, receive, send)
+                else:
+                    await run_in_threadpool(after_request, scope, receive, send)
 
 
 class Router(BaseRouter):
