@@ -2,7 +2,9 @@ import copy
 import operator
 from collections.abc import Callable
 from typing import Any, TypeVar
+from warnings import warn
 
+warn("This module is deprecated. Switch to monkay", DeprecationWarning, stacklevel=2)
 empty = object()
 RT = TypeVar("RT")  # return type
 
