@@ -4,7 +4,7 @@ from collections.abc import Callable
 from typing import Any, TypeVar
 from warnings import warn
 
-warn("This module is deprecated. Switch to monkay", DeprecationWarning, stacklevel=2)
+warn("This module is deprecated. Switch to monkay.", DeprecationWarning, stacklevel=2)
 empty = object()
 RT = TypeVar("RT")  # return type
 
@@ -61,7 +61,9 @@ class LazyObject:  # pragma: no cover
         """
         Must be implemented by subclasses to initialize the wrapped object.
         """
-        raise NotImplementedError("subclasses of LazyObject must provide a _setup() method")
+        raise NotImplementedError(
+            "subclasses of LazyObject must provide a _setup() method"
+        )
 
     def __reduce__(self) -> Any:
         if self._wrapped is empty:
