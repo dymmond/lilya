@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Annotated, Any, ClassVar
 
 from lilya import __version__
 from lilya.conf.enums import EnvironmentType
-from lilya.types import ApplicationType, ASGIApp, Doc, ExceptionHandler
+from lilya.types import ApplicationType, Doc, ExceptionHandler
 
 if TYPE_CHECKING:
     from lilya.middleware.base import DefineMiddleware
@@ -82,15 +82,6 @@ class _Internal(_BaseSettings):
             """
         ),
     ] = field(default=__version__)
-    app: Annotated[
-        ASGIApp | None,
-        Doc(
-            """
-            The global application where the global settings is hooked.
-            It is advised, unless you are confortable with it, **not to change it**.
-            """
-        ),
-    ] = None
     ipython_args: ClassVar[list[str]] = ["--no-banner"]
     ptpython_config_file: Annotated[
         str,

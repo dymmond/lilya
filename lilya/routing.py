@@ -1118,7 +1118,6 @@ class BaseRouter:
 
         self._apply_middleware(self.middleware)
         self._apply_permissions(self.wrapped_permissions)
-        self._set_settings_app(self.settings_module, self)
 
     def _apply_middleware(self, middleware: Sequence[DefineMiddleware] | None) -> None:
         """
@@ -1147,19 +1146,6 @@ class BaseRouter:
         if permissions is not None:
             for cls, args, options in reversed(self.permissions):
                 self.middleware_stack = cls(app=self.middleware_stack, *args, **options)
-
-    def _set_settings_app(self, settings_module: Settings | None, app: ASGIApp) -> None:
-        """
-        Sets the main `app` of the settings module.
-        This is particularly useful for reversing urls.
-        """
-        if settings_module is None:
-            settings = _monkay.settings
-        else:
-            settings = settings_module
-        # either unset or explicit settings_module
-        if settings.app is None or settings_module is not None:
-            settings.app = app
 
     def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         for route in self.routes:
