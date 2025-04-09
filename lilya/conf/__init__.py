@@ -6,13 +6,15 @@ from typing import TYPE_CHECKING, Any, cast
 from monkay import Monkay
 
 if TYPE_CHECKING:
+    from lilya.apps import BaseLilya
     from lilya.conf.global_settings import Settings
 
 ENVIRONMENT_VARIABLE = "LILYA_SETTINGS_MODULE"
 
-_monkay: Monkay[None, Settings] = Monkay(
+_monkay: Monkay[BaseLilya, Settings] = Monkay(
     globals(),
     settings_path=os.environ.get(ENVIRONMENT_VARIABLE, "lilya.conf.global_settings.Settings"),
+    with_instance=True,
 )
 
 

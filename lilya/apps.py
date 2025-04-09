@@ -47,6 +47,7 @@ P = ParamSpec("P")
 class BaseLilya:
     router_class: ClassVar[type[Router] | None] = Router
     router: Router
+    register_as_global_instance: bool = False
 
     def __init__(
         self,
@@ -496,15 +497,12 @@ class BaseLilya:
                 before_request=self.before_request_callbacks,
                 after_request=self.after_request_callbacks,
             )
-        self.__set_settings_app(self.settings, self)
+        if self.register_as_global_instance:
+            _monkay.set_instance(self)
 
     @property
     def routes(self) -> list[BasePath]:
         return self.router.routes
-
-    def __set_settings_app(self, settings_module: Settings, app: ASGIApp) -> None:
-        if settings_module.app is None:
-            self.router._set_settings_app(settings_module, app)
 
     def __load_settings_value(
         self, name: str, value: Any | None = None, is_boolean: bool = False
@@ -914,7 +912,7 @@ class BaseLilya:
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         scope["app"] = self
-        with _monkay.with_settings(self.settings):
+        with _monkay.with_settings(self.settings), _monkay.with_instance(self):
             if self.middleware_stack is None:
                 self.middleware_stack = self.build_middleware_stack()
             await self.middleware_stack(scope, receive, send)
@@ -936,6 +934,8 @@ class Lilya(BaseLilya):
     app = Lilya(debug=True, routes=[...], middleware=[...], ...)
     ```
     """
+
+    register_as_global_instance: bool = True
 
     def get(
         self,
@@ -1340,3 +1340,5 @@ class ChildLilya(Lilya):
     app = Lilya(routes=[Include("/child", app=ChildLilya(...))])
     ```
     """
+
+    register_as_global_instance: bool = False

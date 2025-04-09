@@ -5,6 +5,13 @@ hide:
 
 # Release Notes
 
+
+## 0.13.1
+
+### Changed
+
+- Proper instance tracking.
+
 ## 0.13.0
 
 ### Changed
