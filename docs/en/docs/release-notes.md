@@ -5,6 +5,13 @@ hide:
 
 # Release Notes
 
+## 0.13.2
+
+### Changed
+
+- Deduplicate code between Router and Lilya. Move methods in a mixin.
+- Move some methods and properties from BaseLilya to Lilya.
+- Unprefix load_settings_value. Matches now the one of esmerald.
 
 ## 0.13.1
 
