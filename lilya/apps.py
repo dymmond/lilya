@@ -22,7 +22,7 @@ from lilya.protocols.middleware import MiddlewareProtocol
 from lilya.protocols.permissions import PermissionProtocol
 from lilya.requests import Request
 from lilya.responses import Response
-from lilya.routing import BasePath, Include, Router
+from lilya.routing import BasePath, Include, Router, RoutingMethodsMixin
 from lilya.types import (
     ApplicationType,
     ASGIApp,
@@ -47,464 +47,13 @@ P = ParamSpec("P")
 class BaseLilya:
     router_class: ClassVar[type[Router] | None] = Router
     router: Router
-    register_as_global_instance: bool = False
-
-    def __init__(
-        self,
-        debug: Annotated[bool, Doc("Enable or disable debug mode. Defaults to False.")] = False,
-        settings_module: Annotated[
-            Settings | str | None,
-            Doc(
-                """
-                Alternative settings parameter. This parameter is an alternative to
-                `LILYA_SETTINGS_MODULE` way of loading your settings into a Lilya application.
-
-                When the `settings_module` is provided, it will make sure it takes priority over
-                any other settings provided for the instance.
-
-                Read more about the [settings module](https://lilya.dev/settings/)
-                and how you can leverage it in your application.
-
-                !!! Tip
-                    The settings module can be very useful if you want to have, for example, a
-                    [ChildLilya](https://lilya.dev/routing/#childlilya-application) that needs completely different settings
-                    from the main app.
-
-                    Example: A `ChildLilya` that takes care of the authentication into a cloud
-                    provider such as AWS and handles the `boto3` module.
-                """
-            ),
-        ] = None,
-        routes: Annotated[
-            Sequence[Any] | None,
-            Doc(
-                """
-                A global `list` of lilya routes. Those routes may vary and those can
-                be `Path`, `WebSocketPath` or even `Include`.
-
-                This is also the entry-point for the routes of the application itself.
-
-                Read more about how to use and leverage
-                the [routing system](https://lilya.dev/routing/).
-
-                **Example**
-
-                ```python
-                from lilya.apps import Lilya, Request
-                from lilya.requests import Request
-                from lilya.routing import Path
-
-
-                async def homepage(request: Request) -> str:
-                    return "Hello, home!"
-
-                async def another(request: Request) -> str:
-                    return "Hello, another!"
-
-
-                app = Lilya(
-                    routes=[
-                        Path(
-                            "/", handler=homepage,
-                        ),
-                        Include("/nested", routes=[
-                            Path("/another", another)
-                        ])
-                    ]
-                )
-                ```
-
-                !!! Note
-                    The routing system is very powerful and this example
-                    is not enough to understand what more things you can do.
-                    Read in [more detail](https://lilya.dev/routing/) about this.
-                """
-            ),
-        ] = None,
-        middleware: Annotated[
-            Sequence[DefineMiddleware] | None,
-            Doc(
-                """
-                A global sequence of Lilya middlewares that are
-                used by the application.
-
-                Read more about the [Middleware](https://lilya.dev/middleware/).
-
-                **All middlewares must be wrapped inside the `DefineMiddleware`**
-
-                ```python
-                from lilya.middleware import DefineMiddleware
-                ```
-
-                **Example**
-
-                ```python
-                from lilya.apps import Lilya
-                from lilya.middleware import DefineMiddleware
-                from lilya.middleware.httpsredirect import HTTPSRedirectMiddleware
-                from lilya.middleware.trustedhost import TrustedHostMiddleware
-
-                app = Lilya(
-                    routes=[...],
-                    middleware=[
-                        DefineMiddleware(
-                            TrustedHostMiddleware,
-                            allowed_hosts=["example.com", "*.example.com"],
-                        ),
-                        DefineMiddleware(HTTPSRedirectMiddleware),
-                    ],
-                )
-                ```
-                """
-            ),
-        ] = None,
-        exception_handlers: Annotated[
-            Mapping[Any, ExceptionHandler] | None,
-            Doc(
-                """
-                A global dictionary with handlers for exceptions.
-
-                Read more about the [Exception handlers](https://lilya.dev/exceptions/).
-
-                **Example**
-
-                ```python
-                from json import loads
-
-                from lilya import status
-                from lilya.apps import Lilya
-                from lilya.requests import Request
-                from lilya.responses import JSONResponse
-                from lilya.routing import Include, Path
-
-
-                async def handle_type_error(request: Request, exc: TypeError):
-                    status_code = status.HTTP_400_BAD_REQUEST
-                    details = loads(exc.json()) if hasattr(exc, "json") else exc.args[0]
-                    return JSONResponse({"detail": details}, status_code=status_code)
-
-
-                async def handle_value_error(request: Request, exc: ValueError):
-                    status_code = status.HTTP_400_BAD_REQUEST
-                    details = loads(exc.json()) if hasattr(exc, "json") else exc.args[0]
-                    return JSONResponse({"detail": details}, status_code=status_code)
-
-
-                async def me():
-                    return "Hello, world!"
-
-
-                app = Lilya(
-                    routes=[
-                        Include(
-                            "/",
-                            routes=[
-                                Path(
-                                    "/me",
-                                    handler=me,
-                                )
-                            ],
-                        )
-                    ],
-                    exception_handlers={
-                        TypeError: handle_type_error,
-                        ValueError: handle_value_error,
-                    },
-                )
-                ```
-                """
-            ),
-        ] = None,
-        permissions: Annotated[
-            Sequence[DefinePermission] | None,
-            Doc(
-                """
-                A global sequence of Lilya permissions that are
-                used by the application.
-
-                Read more about the [Permissions](https://lilya.dev/permissions/).
-
-                **All permissions must be wrapped inside the `DefinePermission`**
-
-                ```python
-                from lilya.permissions import DefinePermission
-                ```
-
-                **Example**
-
-                ```python
-                from lilya.apps import Lilya
-                from lilya.exceptions import PermissionDenied
-                from lilya.permissions import DefinePermission
-                from lilya.protocols.permissions import PermissionProtocol
-                from lilya.requests import Request
-                from lilya.responses import Ok
-                from lilya.routing import Path
-                from lilya.types import ASGIApp, Receive, Scope, Send
-
-
-                class AllowAccess(PermissionProtocol):
-                    def __init__(self, app: ASGIApp, *args, **kwargs):
-                        super().__init__(app, *args, **kwargs)
-                        self.app = app
-
-                    async def __call__(self, scope: Scope, receive: Receive, send: Send):
-                        request = Request(scope=scope, receive=receive, send=send)
-
-                        if "allow-admin" in request.headers:
-                            await self.app(scope, receive, send)
-                            return
-                        raise PermissionDenied()
-
-
-                def user(user: str):
-                    return Ok({"message": f"Welcome {user}"})
-
-
-                app = Lilya(
-                    routes=[Path("/{user}", user)],
-                    permissions=[DefinePermission(AllowAccess)],
-                )
-                ```
-                """
-            ),
-        ] = None,
-        on_startup: Annotated[
-            Sequence[Callable[[], Any]] | None,
-            Doc(
-                """
-                A `list` of events that are trigger upon the application
-                starts.
-
-                Read more about the [events](https://lilya.dev.dev/lifespan/).
-
-                **Example**
-
-                ```python
-                from saffier import Database, Registry
-
-                from lilya.apps import Lilya
-                from lilya.requests import Request
-                from lilya.routing import Path
-
-                database = Database("postgresql+asyncpg://user:password@host:port/database")
-                registry = Registry(database=database)
-
-
-                async def create_user(request: Request):
-                    # Logic to create the user
-                    data = await request.json()
-                    ...
-
-
-                app = Lilya(
-                    routes=[Path("/create", handler=create_user)],
-                    on_startup=[database.connect],
-                )
-                ```
-                """
-            ),
-        ] = None,
-        on_shutdown: Annotated[
-            Sequence[Callable[[], Any]] | None,
-            Doc(
-                """
-                A `list` of events that are trigger upon the application
-                shuts down.
-
-                Read more about the [events](https://lilya.dev/lifespan/).
-
-                **Example**
-
-                ```python
-                from saffier import Database, Registry
-
-                from lilya.apps import Lilya
-                from lilya.requests import Request
-                from lilya.routing import Path
-
-                database = Database("postgresql+asyncpg://user:password@host:port/database")
-                registry = Registry(database=database)
-
-
-                async def create_user(request: Request):
-                    # Logic to create the user
-                    data = await request.json()
-                    ...
-
-
-                app = Lilya(
-                    routes=[Path("/create", handler=create_user)],
-                    on_shutdown=[database.disconnect],
-                )
-                ```
-                """
-            ),
-        ] = None,
-        before_request: Annotated[
-            Sequence[Callable[[], Any]] | None,
-            Doc(
-                """
-                A `list` of events that are trigger before the application
-                processes the request.
-
-                Read more about the [events](https://lilya.dev/lifespan/).
-
-                **Example**
-
-                ```python
-                from edgy import Database, Registry
-
-                from lilya.apps import Lilya
-                from lilya.requests import Request
-                from lilya.routing import Path
-
-                database = Database("postgresql+asyncpg://user:password@host:port/database")
-                registry = Registry(database=database)
-
-
-                async def create_user(request: Request):
-                    # Logic to create the user
-                    data = await request.json()
-                    ...
-
-
-                app = Lilya(
-                    routes=[Path("/create", handler=create_user)],
-                    before_request=[database.connect],
-                )
-                ```
-                """
-            ),
-        ] = None,
-        after_request: Annotated[
-            Sequence[Callable[[], Any]] | None,
-            Doc(
-                """
-                A `list` of events that are trigger after the application
-                processes the request.
-
-                Read more about the [events](https://lilya.dev/lifespan/).
-
-                **Example**
-
-                ```python
-                from edgy import Database, Registry
-
-                from lilya.apps import Lilya
-                from lilya.requests import Request
-                from lilya.routing import Path
-
-                database = Database("postgresql+asyncpg://user:password@host:port/database")
-                registry = Registry(database=database)
-
-
-                async def create_user(request: Request):
-                    # Logic to create the user
-                    data = await request.json()
-                    ...
-
-
-                app = Lilya(
-                    routes=[Path("/create", handler=create_user)],
-                    after_request=[database.disconnect],
-                )
-                ```
-                """
-            ),
-        ] = None,
-        redirect_slashes: Annotated[
-            bool,
-            Doc(
-                """
-                Enable or disable automatic trailing slash redirection for HTTP routes.
-                """
-            ),
-        ] = True,
-        lifespan: Annotated[
-            Lifespan[ApplicationType] | None,
-            Doc(
-                """
-                A `lifespan` context manager handler. This is an alternative
-                to `on_startup` and `on_shutdown` and you **cannot used all combined**.
-
-                Read more about the [lifespan](https://lilya.dev/lifespan/).
-                """
-            ),
-        ] = None,
-        include_in_schema: Annotated[
-            bool,
-            Doc(
-                """
-                Enable or disable inclusion of the application in a OpenAPI schema integration.
-
-                !!! Note
-                    Lilya is not tight to any OpenAPI provider but provides some out of the box
-                    flags that can be used for any possible integration.
-                """
-            ),
-        ] = True,
-    ) -> None:
-        self.settings_module: Settings | None = None
-
-        if settings_module is not None and isinstance(settings_module, str):
-            settings_module = import_string(settings_module)
-
-        if settings_module:
-            if not isinstance(settings_module, Settings) and not is_class_and_subclass(
-                settings_module, Settings
-            ):
-                raise FieldException("'settings_module' must be a subclass of Settings")
-            elif isinstance(settings_module, Settings):
-                self.settings_module = settings_module
-            elif is_class_and_subclass(settings_module, Settings):
-                self.settings_module = settings_module()  # type: ignore
-
-        self.debug = self.__load_settings_value("debug", debug, is_boolean=True)
-
-        self.exception_handlers = {} if exception_handlers is None else dict(exception_handlers)
-        self.custom_middleware = [
-            wrap_middleware(middleware)
-            for middleware in self.__load_settings_value("middleware", middleware) or []
-        ]
-
-        self.custom_permissions = [
-            wrap_permission(permission)
-            for permission in self.__load_settings_value("permissions", permissions) or []
-        ]
-
-        self.before_request_callbacks = (
-            self.__load_settings_value("before_request", before_request) or []
-        )
-
-        self.after_request_callbacks = (
-            self.__load_settings_value("after_request", after_request) or []
-        )
-
-        self.state = State()
-        self.middleware_stack: ASGIApp | None = None
-
-        if self.router_class is not None:
-            self.router = self.router_class(
-                routes=routes,
-                redirect_slashes=redirect_slashes,
-                permissions=self.custom_permissions,
-                on_startup=on_startup,
-                on_shutdown=on_shutdown,
-                lifespan=lifespan,
-                include_in_schema=include_in_schema,
-                settings_module=self.settings,
-                before_request=self.before_request_callbacks,
-                after_request=self.after_request_callbacks,
-            )
-        if self.register_as_global_instance:
-            _monkay.set_instance(self)
+    register_as_global_instance: ClassVar[bool] = False
 
     @property
     def routes(self) -> list[BasePath]:
         return self.router.routes
 
-    def __load_settings_value(
+    def load_settings_value(
         self, name: str, value: Any | None = None, is_boolean: bool = False
     ) -> Any:
         """
@@ -918,7 +467,7 @@ class BaseLilya:
             await self.middleware_stack(scope, receive, send)
 
 
-class Lilya(BaseLilya):
+class Lilya(RoutingMethodsMixin, BaseLilya):
     """
     Initialize the Lilya ASGI framework.
 
@@ -935,87 +484,463 @@ class Lilya(BaseLilya):
     ```
     """
 
-    register_as_global_instance: bool = True
+    register_as_global_instance: ClassVar[bool] = True
 
-    def get(
+    def __init__(
         self,
-        path: str,
-        name: str | None = None,
-        middleware: Sequence[DefineMiddleware] | None = None,
-        permissions: Sequence[DefinePermission] | None = None,
-        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
-        include_in_schema: bool = True,
-        before_request: Sequence[Callable[..., Any]] | None = None,
-        after_request: Sequence[Callable[..., Any]] | None = None,
-    ) -> Callable[[CallableDecorator], CallableDecorator]:
-        """
-        Decorator for defining a GET route.
+        debug: Annotated[bool, Doc("Enable or disable debug mode. Defaults to False.")] = False,
+        settings_module: Annotated[
+            Settings | str | None,
+            Doc(
+                """
+                Alternative settings parameter. This parameter is an alternative to
+                `LILYA_SETTINGS_MODULE` way of loading your settings into a Lilya application.
 
-        Args:
-            path (str): The URL path pattern for the route.
-            methods (list[str] | None, optional): The HTTP methods allowed for the route. Defaults to None.
-            name (str | None, optional): The name of the route. Defaults to None.
-            middleware (Sequence[DefineMiddleware] | None, optional): The middleware functions to apply to the route. Defaults to None.
-            permissions (Sequence[DefinePermission] | None, optional): The permissions required for the route. Defaults to None.
-            exception_handlers (Mapping[Any, ExceptionHandler] | None, optional): The exception handlers for the route. Defaults to None.
-            include_in_schema (bool, optional): Whether to include the route in the API schema. Defaults to True.
+                When the `settings_module` is provided, it will make sure it takes priority over
+                any other settings provided for the instance.
 
-        Returns:
-            Callable[[CallableDecorator], CallableDecorator]: The decorated function.
-        """
+                Read more about the [settings module](https://lilya.dev/settings/)
+                and how you can leverage it in your application.
 
-        return self.router.get(
-            path=path,
-            name=name,
-            middleware=middleware,
-            permissions=permissions,
-            exception_handlers=exception_handlers,
-            include_in_schema=include_in_schema,
-            before_request=before_request,
-            after_request=after_request,
+                !!! Tip
+                    The settings module can be very useful if you want to have, for example, a
+                    [ChildLilya](https://lilya.dev/routing/#childlilya-application) that needs completely different settings
+                    from the main app.
+
+                    Example: A `ChildLilya` that takes care of the authentication into a cloud
+                    provider such as AWS and handles the `boto3` module.
+                """
+            ),
+        ] = None,
+        routes: Annotated[
+            Sequence[Any] | None,
+            Doc(
+                """
+                A global `list` of lilya routes. Those routes may vary and those can
+                be `Path`, `WebSocketPath` or even `Include`.
+
+                This is also the entry-point for the routes of the application itself.
+
+                Read more about how to use and leverage
+                the [routing system](https://lilya.dev/routing/).
+
+                **Example**
+
+                ```python
+                from lilya.apps import Lilya, Request
+                from lilya.requests import Request
+                from lilya.routing import Path
+
+
+                async def homepage(request: Request) -> str:
+                    return "Hello, home!"
+
+                async def another(request: Request) -> str:
+                    return "Hello, another!"
+
+
+                app = Lilya(
+                    routes=[
+                        Path(
+                            "/", handler=homepage,
+                        ),
+                        Include("/nested", routes=[
+                            Path("/another", another)
+                        ])
+                    ]
+                )
+                ```
+
+                !!! Note
+                    The routing system is very powerful and this example
+                    is not enough to understand what more things you can do.
+                    Read in [more detail](https://lilya.dev/routing/) about this.
+                """
+            ),
+        ] = None,
+        middleware: Annotated[
+            Sequence[DefineMiddleware] | None,
+            Doc(
+                """
+                A global sequence of Lilya middlewares that are
+                used by the application.
+
+                Read more about the [Middleware](https://lilya.dev/middleware/).
+
+                **All middlewares must be wrapped inside the `DefineMiddleware`**
+
+                ```python
+                from lilya.middleware import DefineMiddleware
+                ```
+
+                **Example**
+
+                ```python
+                from lilya.apps import Lilya
+                from lilya.middleware import DefineMiddleware
+                from lilya.middleware.httpsredirect import HTTPSRedirectMiddleware
+                from lilya.middleware.trustedhost import TrustedHostMiddleware
+
+                app = Lilya(
+                    routes=[...],
+                    middleware=[
+                        DefineMiddleware(
+                            TrustedHostMiddleware,
+                            allowed_hosts=["example.com", "*.example.com"],
+                        ),
+                        DefineMiddleware(HTTPSRedirectMiddleware),
+                    ],
+                )
+                ```
+                """
+            ),
+        ] = None,
+        exception_handlers: Annotated[
+            Mapping[Any, ExceptionHandler] | None,
+            Doc(
+                """
+                A global dictionary with handlers for exceptions.
+
+                Read more about the [Exception handlers](https://lilya.dev/exceptions/).
+
+                **Example**
+
+                ```python
+                from json import loads
+
+                from lilya import status
+                from lilya.apps import Lilya
+                from lilya.requests import Request
+                from lilya.responses import JSONResponse
+                from lilya.routing import Include, Path
+
+
+                async def handle_type_error(request: Request, exc: TypeError):
+                    status_code = status.HTTP_400_BAD_REQUEST
+                    details = loads(exc.json()) if hasattr(exc, "json") else exc.args[0]
+                    return JSONResponse({"detail": details}, status_code=status_code)
+
+
+                async def handle_value_error(request: Request, exc: ValueError):
+                    status_code = status.HTTP_400_BAD_REQUEST
+                    details = loads(exc.json()) if hasattr(exc, "json") else exc.args[0]
+                    return JSONResponse({"detail": details}, status_code=status_code)
+
+
+                async def me():
+                    return "Hello, world!"
+
+
+                app = Lilya(
+                    routes=[
+                        Include(
+                            "/",
+                            routes=[
+                                Path(
+                                    "/me",
+                                    handler=me,
+                                )
+                            ],
+                        )
+                    ],
+                    exception_handlers={
+                        TypeError: handle_type_error,
+                        ValueError: handle_value_error,
+                    },
+                )
+                ```
+                """
+            ),
+        ] = None,
+        permissions: Annotated[
+            Sequence[DefinePermission] | None,
+            Doc(
+                """
+                A global sequence of Lilya permissions that are
+                used by the application.
+
+                Read more about the [Permissions](https://lilya.dev/permissions/).
+
+                **All permissions must be wrapped inside the `DefinePermission`**
+
+                ```python
+                from lilya.permissions import DefinePermission
+                ```
+
+                **Example**
+
+                ```python
+                from lilya.apps import Lilya
+                from lilya.exceptions import PermissionDenied
+                from lilya.permissions import DefinePermission
+                from lilya.protocols.permissions import PermissionProtocol
+                from lilya.requests import Request
+                from lilya.responses import Ok
+                from lilya.routing import Path
+                from lilya.types import ASGIApp, Receive, Scope, Send
+
+
+                class AllowAccess(PermissionProtocol):
+                    def __init__(self, app: ASGIApp, *args, **kwargs):
+                        super().__init__(app, *args, **kwargs)
+                        self.app = app
+
+                    async def __call__(self, scope: Scope, receive: Receive, send: Send):
+                        request = Request(scope=scope, receive=receive, send=send)
+
+                        if "allow-admin" in request.headers:
+                            await self.app(scope, receive, send)
+                            return
+                        raise PermissionDenied()
+
+
+                def user(user: str):
+                    return Ok({"message": f"Welcome {user}"})
+
+
+                app = Lilya(
+                    routes=[Path("/{user}", user)],
+                    permissions=[DefinePermission(AllowAccess)],
+                )
+                ```
+                """
+            ),
+        ] = None,
+        on_startup: Annotated[
+            Sequence[Callable[[], Any]] | None,
+            Doc(
+                """
+                A `list` of events that are trigger upon the application
+                starts.
+
+                Read more about the [events](https://lilya.dev.dev/lifespan/).
+
+                **Example**
+
+                ```python
+                from saffier import Database, Registry
+
+                from lilya.apps import Lilya
+                from lilya.requests import Request
+                from lilya.routing import Path
+
+                database = Database("postgresql+asyncpg://user:password@host:port/database")
+                registry = Registry(database=database)
+
+
+                async def create_user(request: Request):
+                    # Logic to create the user
+                    data = await request.json()
+                    ...
+
+
+                app = Lilya(
+                    routes=[Path("/create", handler=create_user)],
+                    on_startup=[database.connect],
+                )
+                ```
+                """
+            ),
+        ] = None,
+        on_shutdown: Annotated[
+            Sequence[Callable[[], Any]] | None,
+            Doc(
+                """
+                A `list` of events that are trigger upon the application
+                shuts down.
+
+                Read more about the [events](https://lilya.dev/lifespan/).
+
+                **Example**
+
+                ```python
+                from saffier import Database, Registry
+
+                from lilya.apps import Lilya
+                from lilya.requests import Request
+                from lilya.routing import Path
+
+                database = Database("postgresql+asyncpg://user:password@host:port/database")
+                registry = Registry(database=database)
+
+
+                async def create_user(request: Request):
+                    # Logic to create the user
+                    data = await request.json()
+                    ...
+
+
+                app = Lilya(
+                    routes=[Path("/create", handler=create_user)],
+                    on_shutdown=[database.disconnect],
+                )
+                ```
+                """
+            ),
+        ] = None,
+        before_request: Annotated[
+            Sequence[Callable[[], Any]] | None,
+            Doc(
+                """
+                A `list` of events that are trigger before the application
+                processes the request.
+
+                Read more about the [events](https://lilya.dev/lifespan/).
+
+                **Example**
+
+                ```python
+                from edgy import Database, Registry
+
+                from lilya.apps import Lilya
+                from lilya.requests import Request
+                from lilya.routing import Path
+
+                database = Database("postgresql+asyncpg://user:password@host:port/database")
+                registry = Registry(database=database)
+
+
+                async def create_user(request: Request):
+                    # Logic to create the user
+                    data = await request.json()
+                    ...
+
+
+                app = Lilya(
+                    routes=[Path("/create", handler=create_user)],
+                    before_request=[database.connect],
+                )
+                ```
+                """
+            ),
+        ] = None,
+        after_request: Annotated[
+            Sequence[Callable[[], Any]] | None,
+            Doc(
+                """
+                A `list` of events that are trigger after the application
+                processes the request.
+
+                Read more about the [events](https://lilya.dev/lifespan/).
+
+                **Example**
+
+                ```python
+                from edgy import Database, Registry
+
+                from lilya.apps import Lilya
+                from lilya.requests import Request
+                from lilya.routing import Path
+
+                database = Database("postgresql+asyncpg://user:password@host:port/database")
+                registry = Registry(database=database)
+
+
+                async def create_user(request: Request):
+                    # Logic to create the user
+                    data = await request.json()
+                    ...
+
+
+                app = Lilya(
+                    routes=[Path("/create", handler=create_user)],
+                    after_request=[database.disconnect],
+                )
+                ```
+                """
+            ),
+        ] = None,
+        redirect_slashes: Annotated[
+            bool,
+            Doc(
+                """
+                Enable or disable automatic trailing slash redirection for HTTP routes.
+                """
+            ),
+        ] = True,
+        lifespan: Annotated[
+            Lifespan[ApplicationType] | None,
+            Doc(
+                """
+                A `lifespan` context manager handler. This is an alternative
+                to `on_startup` and `on_shutdown` and you **cannot used all combined**.
+
+                Read more about the [lifespan](https://lilya.dev/lifespan/).
+                """
+            ),
+        ] = None,
+        include_in_schema: Annotated[
+            bool,
+            Doc(
+                """
+                Enable or disable inclusion of the application in a OpenAPI schema integration.
+
+                !!! Note
+                    Lilya is not tight to any OpenAPI provider but provides some out of the box
+                    flags that can be used for any possible integration.
+                """
+            ),
+        ] = True,
+    ) -> None:
+        self.settings_module: Settings | None = None
+
+        if settings_module is not None and isinstance(settings_module, str):
+            settings_module = import_string(settings_module)
+
+        if settings_module:
+            if not isinstance(settings_module, Settings) and not is_class_and_subclass(
+                settings_module, Settings
+            ):
+                raise FieldException("'settings_module' must be a subclass of Settings")
+            elif isinstance(settings_module, Settings):
+                self.settings_module = settings_module
+            elif is_class_and_subclass(settings_module, Settings):
+                self.settings_module = settings_module()  # type: ignore
+
+        self.debug = self.load_settings_value("debug", debug, is_boolean=True)
+
+        self.exception_handlers = {} if exception_handlers is None else dict(exception_handlers)
+        self.custom_middleware = [
+            wrap_middleware(middleware)
+            for middleware in self.load_settings_value("middleware", middleware) or []
+        ]
+
+        self.custom_permissions = [
+            wrap_permission(permission)
+            for permission in self.load_settings_value("permissions", permissions) or []
+        ]
+
+        self.before_request_callbacks = (
+            self.load_settings_value("before_request", before_request) or []
         )
 
-    def head(
-        self,
-        path: str,
-        name: str | None = None,
-        middleware: Sequence[DefineMiddleware] | None = None,
-        permissions: Sequence[DefinePermission] | None = None,
-        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
-        include_in_schema: bool = True,
-        before_request: Sequence[Callable[..., Any]] | None = None,
-        after_request: Sequence[Callable[..., Any]] | None = None,
-    ) -> Callable[[CallableDecorator], CallableDecorator]:
-        """
-        Decorator for defining a HEAD route.
-
-        Args:
-            path (str): The URL path pattern for the route.
-            methods (list[str] | None, optional): The HTTP methods allowed for the route. Defaults to None.
-            name (str | None, optional): The name of the route. Defaults to None.
-            middleware (Sequence[DefineMiddleware] | None, optional): The middleware functions to apply to the route. Defaults to None.
-            permissions (Sequence[DefinePermission] | None, optional): The permissions required for the route. Defaults to None.
-            exception_handlers (Mapping[Any, ExceptionHandler] | None, optional): The exception handlers for the route. Defaults to None.
-            include_in_schema (bool, optional): Whether to include the route in the API schema. Defaults to True.
-
-        Returns:
-            Callable[[CallableDecorator], CallableDecorator]: The decorated function.
-        """
-
-        return self.router.head(
-            path=path,
-            name=name,
-            middleware=middleware,
-            permissions=permissions,
-            exception_handlers=exception_handlers,
-            include_in_schema=include_in_schema,
-            before_request=before_request,
-            after_request=after_request,
+        self.after_request_callbacks = (
+            self.load_settings_value("after_request", after_request) or []
         )
 
-    def post(
+        self.state = State()
+        self.middleware_stack: ASGIApp | None = None
+
+        if self.router_class is not None:
+            self.router = self.router_class(
+                routes=routes,
+                redirect_slashes=redirect_slashes,
+                permissions=self.custom_permissions,
+                on_startup=on_startup,
+                on_shutdown=on_shutdown,
+                lifespan=lifespan,
+                include_in_schema=include_in_schema,
+                settings_module=self.settings,
+                before_request=self.before_request_callbacks,
+                after_request=self.after_request_callbacks,
+            )
+        if self.register_as_global_instance:
+            _monkay.set_instance(self)
+
+    def forward_single_method_route(
         self,
         path: str,
+        method: str,
         name: str | None = None,
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
@@ -1023,214 +948,8 @@ class Lilya(BaseLilya):
         include_in_schema: bool = True,
         before_request: Sequence[Callable[..., Any]] | None = None,
         after_request: Sequence[Callable[..., Any]] | None = None,
-    ) -> Callable[[CallableDecorator], CallableDecorator]:
-        """
-        Decorator for defining a POST route.
-
-        Args:
-            path (str): The URL path pattern for the route.
-            methods (list[str] | None, optional): The HTTP methods allowed for the route. Defaults to None.
-            name (str | None, optional): The name of the route. Defaults to None.
-            middleware (Sequence[DefineMiddleware] | None, optional): The middleware functions to apply to the route. Defaults to None.
-            permissions (Sequence[DefinePermission] | None, optional): The permissions required for the route. Defaults to None.
-            exception_handlers (Mapping[Any, ExceptionHandler] | None, optional): The exception handlers for the route. Defaults to None.
-            include_in_schema (bool, optional): Whether to include the route in the API schema. Defaults to True.
-
-        Returns:
-            Callable[[CallableDecorator], CallableDecorator]: The decorated function.
-        """
-
-        return self.router.post(
-            path=path,
-            name=name,
-            middleware=middleware,
-            permissions=permissions,
-            exception_handlers=exception_handlers,
-            include_in_schema=include_in_schema,
-            before_request=before_request,
-            after_request=after_request,
-        )
-
-    def put(
-        self,
-        path: str,
-        name: str | None = None,
-        middleware: Sequence[DefineMiddleware] | None = None,
-        permissions: Sequence[DefinePermission] | None = None,
-        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
-        include_in_schema: bool = True,
-        before_request: Sequence[Callable[..., Any]] | None = None,
-        after_request: Sequence[Callable[..., Any]] | None = None,
-    ) -> Callable[[CallableDecorator], CallableDecorator]:
-        """
-        Decorator for defining a PUT route.
-
-        Args:
-            path (str): The URL path pattern for the route.
-            methods (list[str] | None, optional): The HTTP methods allowed for the route. Defaults to None.
-            name (str | None, optional): The name of the route. Defaults to None.
-            middleware (Sequence[DefineMiddleware] | None, optional): The middleware functions to apply to the route. Defaults to None.
-            permissions (Sequence[DefinePermission] | None, optional): The permissions required for the route. Defaults to None.
-            exception_handlers (Mapping[Any, ExceptionHandler] | None, optional): The exception handlers for the route. Defaults to None.
-            include_in_schema (bool, optional): Whether to include the route in the API schema. Defaults to True.
-
-        Returns:
-            Callable[[CallableDecorator], CallableDecorator]: The decorated function.
-        """
-
-        return self.router.put(
-            path=path,
-            name=name,
-            middleware=middleware,
-            permissions=permissions,
-            exception_handlers=exception_handlers,
-            include_in_schema=include_in_schema,
-            before_request=before_request,
-            after_request=after_request,
-        )
-
-    def patch(
-        self,
-        path: str,
-        name: str | None = None,
-        middleware: Sequence[DefineMiddleware] | None = None,
-        permissions: Sequence[DefinePermission] | None = None,
-        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
-        include_in_schema: bool = True,
-        before_request: Sequence[Callable[..., Any]] | None = None,
-        after_request: Sequence[Callable[..., Any]] | None = None,
-    ) -> Callable[[CallableDecorator], CallableDecorator]:
-        """
-        Decorator for defining a PATCH route.
-
-        Args:
-            path (str): The URL path pattern for the route.
-            methods (list[str] | None, optional): The HTTP methods allowed for the route. Defaults to None.
-            name (str | None, optional): The name of the route. Defaults to None.
-            middleware (Sequence[DefineMiddleware] | None, optional): The middleware functions to apply to the route. Defaults to None.
-            permissions (Sequence[DefinePermission] | None, optional): The permissions required for the route. Defaults to None.
-            exception_handlers (Mapping[Any, ExceptionHandler] | None, optional): The exception handlers for the route. Defaults to None.
-            include_in_schema (bool, optional): Whether to include the route in the API schema. Defaults to True.
-
-        Returns:
-            Callable[[CallableDecorator], CallableDecorator]: The decorated function.
-        """
-
-        return self.router.patch(
-            path=path,
-            name=name,
-            middleware=middleware,
-            permissions=permissions,
-            exception_handlers=exception_handlers,
-            include_in_schema=include_in_schema,
-            before_request=before_request,
-            after_request=after_request,
-        )
-
-    def delete(
-        self,
-        path: str,
-        name: str | None = None,
-        middleware: Sequence[DefineMiddleware] | None = None,
-        permissions: Sequence[DefinePermission] | None = None,
-        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
-        include_in_schema: bool = True,
-        before_request: Sequence[Callable[..., Any]] | None = None,
-        after_request: Sequence[Callable[..., Any]] | None = None,
-    ) -> Callable[[CallableDecorator], CallableDecorator]:
-        """
-        Decorator for defining a DELETE route.
-
-        Args:
-            path (str): The URL path pattern for the route.
-            methods (list[str] | None, optional): The HTTP methods allowed for the route. Defaults to None.
-            name (str | None, optional): The name of the route. Defaults to None.
-            middleware (Sequence[DefineMiddleware] | None, optional): The middleware functions to apply to the route. Defaults to None.
-            permissions (Sequence[DefinePermission] | None, optional): The permissions required for the route. Defaults to None.
-            exception_handlers (Mapping[Any, ExceptionHandler] | None, optional): The exception handlers for the route. Defaults to None.
-            include_in_schema (bool, optional): Whether to include the route in the API schema. Defaults to True.
-
-        Returns:
-            Callable[[CallableDecorator], CallableDecorator]: The decorated function.
-        """
-
-        return self.router.delete(
-            path=path,
-            name=name,
-            middleware=middleware,
-            permissions=permissions,
-            exception_handlers=exception_handlers,
-            include_in_schema=include_in_schema,
-            before_request=before_request,
-            after_request=after_request,
-        )
-
-    def trace(
-        self,
-        path: str,
-        name: str | None = None,
-        middleware: Sequence[DefineMiddleware] | None = None,
-        permissions: Sequence[DefinePermission] | None = None,
-        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
-        include_in_schema: bool = True,
-        before_request: Sequence[Callable[..., Any]] | None = None,
-        after_request: Sequence[Callable[..., Any]] | None = None,
-    ) -> Callable[[CallableDecorator], CallableDecorator]:
-        """
-        Decorator for defining a TRACE route.
-
-        Args:
-            path (str): The URL path pattern for the route.
-            methods (list[str] | None, optional): The HTTP methods allowed for the route. Defaults to None.
-            name (str | None, optional): The name of the route. Defaults to None.
-            middleware (Sequence[DefineMiddleware] | None, optional): The middleware functions to apply to the route. Defaults to None.
-            permissions (Sequence[DefinePermission] | None, optional): The permissions required for the route. Defaults to None.
-            exception_handlers (Mapping[Any, ExceptionHandler] | None, optional): The exception handlers for the route. Defaults to None.
-            include_in_schema (bool, optional): Whether to include the route in the API schema. Defaults to True.
-
-        Returns:
-            Callable[[CallableDecorator], CallableDecorator]: The decorated function.
-        """
-
-        return self.router.trace(
-            path=path,
-            name=name,
-            middleware=middleware,
-            permissions=permissions,
-            exception_handlers=exception_handlers,
-            include_in_schema=include_in_schema,
-            before_request=before_request,
-            after_request=after_request,
-        )
-
-    def options(
-        self,
-        path: str,
-        name: str | None = None,
-        middleware: Sequence[DefineMiddleware] | None = None,
-        permissions: Sequence[DefinePermission] | None = None,
-        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
-        include_in_schema: bool = True,
-        before_request: Sequence[Callable[..., Any]] | None = None,
-        after_request: Sequence[Callable[..., Any]] | None = None,
-    ) -> Callable[[CallableDecorator], CallableDecorator]:
-        """
-        Decorator for defining a OPTIONS route.
-
-        Args:
-            path (str): The URL path pattern for the route.
-            methods (list[str] | None, optional): The HTTP methods allowed for the route. Defaults to None.
-            name (str | None, optional): The name of the route. Defaults to None.
-            middleware (Sequence[DefineMiddleware] | None, optional): The middleware functions to apply to the route. Defaults to None.
-            permissions (Sequence[DefinePermission] | None, optional): The permissions required for the route. Defaults to None.
-            exception_handlers (Mapping[Any, ExceptionHandler] | None, optional): The exception handlers for the route. Defaults to None.
-            include_in_schema (bool, optional): Whether to include the route in the API schema. Defaults to True.
-
-        Returns:
-            Callable[[CallableDecorator], CallableDecorator]: The decorated function.
-        """
-
-        return self.router.options(
+    ) -> Callable[..., Any]:
+        return getattr(self.router, method.lower())(
             path=path,
             name=name,
             middleware=middleware,
@@ -1341,4 +1060,4 @@ class ChildLilya(Lilya):
     ```
     """
 
-    register_as_global_instance: bool = False
+    register_as_global_instance: ClassVar[bool] = False
