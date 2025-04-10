@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 from collections.abc import Awaitable, Callable, Mapping, Sequence
-from typing import Annotated, Any, ClassVar
+from typing import Annotated, Any, ClassVar, cast
 
 from lilya._internal._middleware import wrap_middleware
 from lilya._internal._module_loading import import_string
@@ -83,26 +83,6 @@ class BaseLilya:
         if setting_value is None:
             return getattr(global_settings, value, None)
         return setting_value
-
-    @property
-    def settings(self) -> Settings:
-        """
-        Returns the Lilya settings object for easy access.
-
-        This `settings` are the ones being used by the application upon
-        initialisation.
-
-        **Example**
-
-        ```python
-        from lilya.apps import Lilya
-
-        app = Lilya()
-        app.settings
-        ```
-        """
-        general_settings = self.settings_module if self.settings_module else _monkay.settings
-        return general_settings
 
     def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         return self.router.path_for(name, **path_params)
@@ -937,6 +917,26 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
         if self.register_as_global_instance:
             _monkay.set_instance(self)
 
+    @property
+    def settings(self) -> Settings:
+        """
+        Returns the Lilya settings object for easy access.
+
+        This `settings` are the ones being used by the application upon
+        initialisation.
+
+        **Example**
+
+        ```python
+        from lilya.apps import Lilya
+
+        app = Lilya()
+        app.settings
+        ```
+        """
+        general_settings = self.settings_module if self.settings_module else _monkay.settings
+        return general_settings
+
     def forward_single_method_route(
         self,
         path: str,
@@ -949,15 +949,18 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
         before_request: Sequence[Callable[..., Any]] | None = None,
         after_request: Sequence[Callable[..., Any]] | None = None,
     ) -> Callable[..., Any]:
-        return getattr(self.router, method.lower())(
-            path=path,
-            name=name,
-            middleware=middleware,
-            permissions=permissions,
-            exception_handlers=exception_handlers,
-            include_in_schema=include_in_schema,
-            before_request=before_request,
-            after_request=after_request,
+        return cast(
+            "Callable[..., Any]",
+            getattr(self.router, method.lower())(
+                path=path,
+                name=name,
+                middleware=middleware,
+                permissions=permissions,
+                exception_handlers=exception_handlers,
+                include_in_schema=include_in_schema,
+                before_request=before_request,
+                after_request=after_request,
+            ),
         )
 
     def route(
