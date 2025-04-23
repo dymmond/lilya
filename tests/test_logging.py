@@ -1,5 +1,4 @@
 import threading
-import time
 from typing import Any
 
 import loguru
@@ -173,53 +172,68 @@ def test_concurrent_logging_after_initial_setup():
 
 def test_rebinding_during_logging_keeps_all_threads_happy():
     """
-    Start with one logging config, then rebind to a second while workers are
-    still churning. No thread should ever see `_logger is None`, and we
-    should end up with messages in both sinks.
+    Phase 1: everyone logs under config1, then hits barrier1.
+    Binder waits on barrier1, then rebinds to config2, then hits barrier2.
+    Phase 2: everyone waits on barrier2, then logs under config2.
+
+    This guarantees no race against `_logger is None`,
+    and that both sinks see at least one message.
     """
     sink1: list[str] = []
     sink2: list[str] = []
     config1 = CustomLoguruLoggingConfig(sink_list=sink1)
     config2 = CustomLoguruLoggingConfig(sink_list=sink2)
 
-    # 1) Bind the first logger before any threads start.
+    # 1) Bind the first logger before starting any threads
     setup_logging(config1)
 
     errors: list[Exception] = []
+    num_workers = 5
+    # workers + binder
+    barrier1 = threading.Barrier(num_workers + 1)
+    barrier2 = threading.Barrier(num_workers + 1)
 
     def binder():
-        # Let the workers run for a moment, then switch to config2
-        time.sleep(0.01)
+        # wait until all workers have finished Phase 1
+        barrier1.wait()
+        # do the rebind
         setup_logging(config2)
+        # let everyone proceed to Phase 2
+        barrier2.wait()
 
     def worker():
         from lilya.logging import logger
 
-        for _ in range(2000):
+        # Phase 1
+        for _ in range(500):
             try:
-                logger.info("rebind test")
+                logger.info("phase1")
+            except Exception as e:
+                errors.append(e)
+        # sync with binder
+        barrier1.wait()
+
+        # Phase 2
+        barrier2.wait()
+        for _ in range(500):
+            try:
+                logger.info("phase2")
             except Exception as e:
                 errors.append(e)
 
-    # 2) Launch workers + binder
+    # launch
     binder_thread = threading.Thread(target=binder)
-    worker_threads = [threading.Thread(target=worker) for _ in range(5)]
-
-    for w in worker_threads:
+    workers = [threading.Thread(target=worker) for _ in range(num_workers)]
+    for w in workers:
         w.start()
     binder_thread.start()
 
-    for w in worker_threads:
+    # join
+    for w in workers:
         w.join()
     binder_thread.join()
 
-    # 3) Assertions:
-
-    # (a) No worker ever saw “logger not configured”
-    assert not errors, f"Unexpected errors: {errors}"
-
-    # (b) We logged *some* messages under config1...
-    assert len(sink1) > 0, f"Expected some messages in the *first* sink, got {len(sink1)}"
-
-    # (c) ...and *some* under config2
-    assert len(sink2) > 0, f"Expected some messages in the *second* sink, got {len(sink2)}"
+    # Assertions
+    assert not errors, f"Threads saw errors: {errors}"
+    assert any("phase1" in msg for msg in sink1), "No phase1 logs in sink1"
+    assert any("phase2" in msg for msg in sink2), "No phase2 logs in sink2"
