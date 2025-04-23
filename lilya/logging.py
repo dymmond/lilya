@@ -20,7 +20,8 @@ class LoggerProxy:
         self._lock: threading.RLock = threading.RLock()
 
     def bind_logger(self, logger: LoggerProtocol | None) -> None:  # noqa
-        self._logger = logger
+        with self._lock:
+            self._logger = logger
 
     def __getattr__(self, item: str) -> Any:
         with self._lock:

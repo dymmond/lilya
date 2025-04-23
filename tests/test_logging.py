@@ -137,19 +137,26 @@ def test_raises_assert_error(level):
         CustomLog()
 
 
-def test_concurrent_logging_after_setup():
+def test_concurrent_logging_after_initial_setup():
     """
-    After a one-time setup_logging, multiple threads should all be able to log
-    concurrently without errors, and all messages should be captured.
+    Verify that, once setup_logging() has been called,
+    multiple threads can log concurrently without ever raising,
+    and that all messages make it into the sink.
     """
     sink: list[str] = []
+    # initial bind
     setup_logging(CustomLoguruLoggingConfig(sink_list=sink))
+
+    errors: list[Exception] = []
 
     def worker():
         from lilya.logging import logger
 
         for _ in range(1000):
-            logger.info("thread-safe test")
+            try:
+                logger.info("thread-safe test")
+            except Exception as e:
+                errors.append(e)
 
     threads = [threading.Thread(target=worker) for _ in range(5)]
     for t in threads:
@@ -157,51 +164,62 @@ def test_concurrent_logging_after_setup():
     for t in threads:
         t.join()
 
+    # No errors should have occurred
+    assert not errors
+
     # 5 threads × 1000 messages each
     assert len(sink) == 5000
 
 
-def test_rebinding_during_logging_thread_safe():
+def test_rebinding_during_logging_keeps_all_threads_happy():
     """
-    While one thread is rebinding logger via setup_logging, other threads
-    should continue logging without raising, and messages should end up
-    in at least one of the two sinks.
+    Start with one logging config, then rebind to a second while workers are
+    still churning. No thread should ever see `_logger is None`, and we
+    should end up with messages in both sinks.
     """
     sink1: list[str] = []
     sink2: list[str] = []
     config1 = CustomLoguruLoggingConfig(sink_list=sink1)
     config2 = CustomLoguruLoggingConfig(sink_list=sink2)
 
+    # 1) Bind the first logger before any threads start.
+    setup_logging(config1)
+
     errors: list[Exception] = []
 
     def binder():
-        # bind first config, then rebind to second after a short sleep
-        setup_logging(config1)
+        # Let the workers run for a moment, then switch to config2
         time.sleep(0.01)
         setup_logging(config2)
 
     def worker():
         from lilya.logging import logger
 
-        for _ in range(1000):
+        for _ in range(2000):
             try:
                 logger.info("rebind test")
             except Exception as e:
                 errors.append(e)
 
+    # 2) Launch workers + binder
     binder_thread = threading.Thread(target=binder)
     worker_threads = [threading.Thread(target=worker) for _ in range(5)]
 
-    binder_thread.start()
     for w in worker_threads:
         w.start()
+    binder_thread.start()
 
-    binder_thread.join()
     for w in worker_threads:
         w.join()
+    binder_thread.join()
 
-    # No logging calls should have thrown
-    assert not errors
+    # 3) Assertions:
 
-    # At least some messages should have been captured
-    assert sink1 or sink2
+    # (a) No worker ever saw “logger not configured”
+    assert not errors, f"Unexpected errors: {errors}"
+
+    # (b) We logged *some* messages under config1...
+    assert len(sink1) > 0, f"Expected some messages in the *first* sink, got {len(sink1)}"
+
+    # (c) ...and *some* under config2
+    assert len(sink2) > 0, f"Expected some messages in the *second* sink, got {len(sink2)}"
