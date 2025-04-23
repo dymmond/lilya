@@ -5,7 +5,7 @@ import pytest
 import structlog
 from loguru import logger as loguru_logger
 
-from lilya.logging import BaseConfig, setup_logging
+from lilya.logging import LoggingConfig, setup_logging
 
 
 # Simulate a clean logger for each test
@@ -22,7 +22,7 @@ def clean_logger():
     reset_global_logger()
 
 
-class CustomLoguruLoggingConfig(BaseConfig):
+class CustomLoguruLoggingConfig(LoggingConfig):
     def __init__(self, sink_list, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.sink_list = sink_list
@@ -59,7 +59,7 @@ class ListLogger:
         self.sink.append(event)
 
 
-class CustomStructlogLoggingConfig(BaseConfig):
+class CustomStructlogLoggingConfig(LoggingConfig):
     def __init__(self, sink_list, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.sink_list = sink_list
@@ -114,3 +114,22 @@ def test_standard_logging_fallback(monkeypatch):
 
     assert hasattr(logger, "info")
     assert hasattr(logger, "debug")
+
+
+@pytest.mark.parametrize(
+    "level", [None, "lilya", 1, 2.5, "5-da"], ids=["none", "str", "int", "float", "str-int"]
+)
+def test_raises_assert_error(level):
+    with pytest.raises(AssertionError):
+
+        class CustomLog(LoggingConfig):
+            def __init__(self):
+                super().__init__(level=level)
+
+            def configure(self) -> None:
+                return None
+
+            def get_logger(self) -> Any:
+                return structlog.get_logger(__name__)
+
+        CustomLog()

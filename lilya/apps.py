@@ -12,7 +12,7 @@ from lilya.conf import _monkay, settings as lilya_settings  # noqa
 from lilya.conf.exceptions import FieldException
 from lilya.conf.global_settings import Settings
 from lilya.datastructures import State, URLPath
-from lilya.logging import BaseConfig, setup_logging
+from lilya.logging import LoggingConfig, setup_logging
 from lilya.middleware.asyncexit import AsyncExitStackMiddleware
 from lilya.middleware.base import DefineMiddleware
 from lilya.middleware.exceptions import ExceptionMiddleware
@@ -863,10 +863,10 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
             ),
         ] = True,
         logging_config: Annotated[
-            BaseConfig | None,
+            LoggingConfig | None,
             Doc(
                 """
-                An instance of [BaseConfig](https://lilya.dev/logging)
+                An instance of [LoggingConfig](https://lilya.dev/logging)
                 """
             ),
         ] = None,

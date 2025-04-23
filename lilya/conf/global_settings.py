@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Annotated, Any, ClassVar
 
 from lilya import __version__
 from lilya.conf.enums import EnvironmentType
-from lilya.logging import BaseConfig, StandardLoggingConfig
+from lilya.logging import LoggingConfig, StandardLoggingConfig
 from lilya.types import ApplicationType, Doc, ExceptionHandler
 
 if TYPE_CHECKING:
@@ -521,9 +521,9 @@ class Settings(_Internal):
         return None
 
     @property
-    def logging_config(self) -> BaseConfig | None:  # noqa
+    def logging_config(self) -> LoggingConfig | None:  # noqa
         """
-        An instance of [BaseConfig](https://lilya.dev/logging/).
+        An instance of [LoggingConfig](https://lilya.dev/logging/).
 
         Default:
             StandardLogging()
@@ -536,8 +536,8 @@ class Settings(_Internal):
 
         class AppSettings(Settings):
             @property
-            def logging_config(self) -> BaseConfig:
-                BaseConfig(
+            def logging_config(self) -> LoggingConfig:
+                LoggingConfig(
                     log_level="INFO",
                     log_format="%(levelname)s - %(message)s",
                     log_file="app.log",

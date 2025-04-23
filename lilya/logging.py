@@ -4,7 +4,7 @@ import logging.config
 from abc import ABC, abstractmethod
 from typing import Annotated, Any, cast
 
-from typing_extensions import Doc, Literal
+from typing_extensions import Doc
 
 from lilya.protocols.logging import LoggerProtocol
 
@@ -29,7 +29,7 @@ class LoggerProxy:
 logger: LoggerProtocol = cast(LoggerProtocol, LoggerProxy())
 
 
-class BaseConfig(ABC):
+class LoggingConfig(ABC):
     """
     An instance of [LoggingConfig](https://lilya.dev/logging/).
 
@@ -42,18 +42,20 @@ class BaseConfig(ABC):
 
     ```python
     from lilya.apps import Lilya
-    from lilya.logging import BaseConfig
+    from lilya.logging import LoggingConfig
 
-    logging_config = BaseConfig()
+    logging_config = LoggingConfig()
 
     app = Lilya(logging_config=logging_config)
     ```
     """
 
+    __logging_levels__: list[str] = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+
     def __init__(
         self,
         level: Annotated[
-            Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+            str,
             Doc(
                 """
                 The logging level.
@@ -62,7 +64,12 @@ class BaseConfig(ABC):
         ] = "DEBUG",
         **kwargs: Any,
     ) -> None:
-        self.level = level
+        levels: str = ", ".join(self.__logging_levels__)
+        assert (
+            level in self.__logging_levels__
+        ), f"'{level}' is not a valid logging level. Available levels: '{levels}'."
+
+        self.level = level.upper()
         self.options = kwargs
 
     @abstractmethod
@@ -80,7 +87,7 @@ class BaseConfig(ABC):
         raise NotImplementedError("`get_logger()` must be implemented in subclasses.")
 
 
-class StandardLoggingConfig(BaseConfig):
+class StandardLoggingConfig(LoggingConfig):
     def __init__(self, config: dict[str, Any] | None = None, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.config = config or self.default_config()
@@ -113,27 +120,27 @@ class StandardLoggingConfig(BaseConfig):
         return logging.getLogger("lilya")
 
 
-def setup_logging(logging_config: BaseConfig | None = None) -> None:
+def setup_logging(logging_config: LoggingConfig | None = None) -> None:
     """
     Sets up the logging system for the application.
 
-    If a custom `BaseConfig` is provided, it will be used to configure
+    If a custom `LoggingConfig` is provided, it will be used to configure
     the logging system. Otherwise, a default `StandardLoggingConfig` will be applied.
 
     This allows full flexibility to use different logging backends such as
     the standard Python `logging`, `loguru`, `structlog`, or any custom
-    implementation based on the `BaseConfig` interface.
+    implementation based on the `LoggingConfig` interface.
 
     Args:
-        logging_config: An optional instance of `BaseConfig` to customize
+        logging_config: An optional instance of `LoggingConfig` to customize
             the logging behavior. If not provided, the default standard logging
             configuration will be used.
 
     Raises:
-        ValueError: If the provided `logging_config` is not an instance of `BaseConfig`.
+        ValueError: If the provided `logging_config` is not an instance of `LoggingConfig`.
     """
-    if logging_config is not None and not isinstance(logging_config, BaseConfig):
-        raise ValueError("`logging_config` must be an instance of BaseConfig.")
+    if logging_config is not None and not isinstance(logging_config, LoggingConfig):
+        raise ValueError("`logging_config` must be an instance of LoggingConfig.")
 
     config = logging_config or StandardLoggingConfig()
     config.configure()

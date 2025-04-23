@@ -80,6 +80,7 @@ nav:
   - encoders.md
   - context.md
   - authentication.md
+  - logging.md
 - Features:
   - features/index.md
   - tasks.md
