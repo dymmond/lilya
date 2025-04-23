@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Annotated, Any, ClassVar
 
 from lilya import __version__
 from lilya.conf.enums import EnvironmentType
+from lilya.logging import LoggingConfig, StandardLoggingConfig
 from lilya.types import ApplicationType, Doc, ExceptionHandler
 
 if TYPE_CHECKING:
@@ -188,7 +189,6 @@ class Settings(_Internal):
             """
         ),
     ] = False
-
     x_frame_options: Annotated[
         str | None,
         Doc(
@@ -200,6 +200,77 @@ class Settings(_Internal):
 
             This flag is to be used when `XFrameOptionsMiddleware` is added to the
             application.
+            """
+        ),
+    ] = None
+    before_request: Annotated[
+        Sequence[Callable[..., Any]] | None,
+        Doc(
+            """
+            A `list` of events that are trigger after the application
+            processes the request.
+
+            Read more about the [events](https://lilya.dev/lifespan/).
+
+            **Example**
+
+            ```python
+            from edgy import Database, Registry
+
+            from lilya.apps import Lilya
+            from lilya.requests import Request
+            from lilya.routing import Path
+
+            database = Database("postgresql+asyncpg://user:password@host:port/database")
+            registry = Registry(database=database)
+
+            async def create_user(request: Request):
+                # Logic to create the user
+                data = await request.json()
+                ...
+
+
+            app = Lilya(
+                routes=[Path("/create", handler=create_user)],
+                after_request=[database.disconnect],
+            )
+            ```
+            """
+        ),
+    ] = None
+    after_request: Annotated[
+        Sequence[Callable[..., Any]] | None,
+        Doc(
+            """
+            A `list` of events that are trigger after the application
+            processes the request.
+
+            Read more about the [events](https://lilya.dev/lifespan/).
+
+            **Example**
+
+            ```python
+            from edgy import Database, Registry
+
+            from lilya.apps import Lilya
+            from lilya.requests import Request
+            from lilya.routing import Path
+
+            database = Database("postgresql+asyncpg://user:password@host:port/database")
+            registry = Registry(database=database)
+
+
+            async def create_user(request: Request):
+                # Logic to create the user
+                data = await request.json()
+                ...
+
+
+            app = Lilya(
+                routes=[Path("/create", handler=create_user)],
+                after_request=[database.disconnect],
+            )
+            ```
             """
         ),
     ] = None
@@ -448,3 +519,29 @@ class Settings(_Internal):
         Read more about the [lifespan](https://lilya.dev/lifespan/).
         """
         return None
+
+    @property
+    def logging_config(self) -> LoggingConfig | None:  # noqa
+        """
+        An instance of [LoggingConfig](https://lilya.dev/logging/).
+
+        Default:
+            StandardLogging()
+
+        **Example**
+
+        ```python
+        from lilya.conf import Settings
+
+
+        class AppSettings(Settings):
+            @property
+            def logging_config(self) -> LoggingConfig:
+                LoggingConfig(
+                    log_level="INFO",
+                    log_format="%(levelname)s - %(message)s",
+                    log_file="app.log",
+                )
+        ```
+        """
+        return StandardLoggingConfig()

@@ -4,14 +4,15 @@ import sys
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from typing import Annotated, Any, ClassVar, cast
 
-from lilya._internal._middleware import wrap_middleware
-from lilya._internal._module_loading import import_string
-from lilya._internal._permissions import wrap_permission
+from lilya._internal._middleware import wrap_middleware  # noqa
+from lilya._internal._module_loading import import_string  # noqa
+from lilya._internal._permissions import wrap_permission  # noqa
 from lilya._utils import is_class_and_subclass
-from lilya.conf import _monkay, settings as lilya_settings
+from lilya.conf import _monkay, settings as lilya_settings  # noqa
 from lilya.conf.exceptions import FieldException
 from lilya.conf.global_settings import Settings
 from lilya.datastructures import State, URLPath
+from lilya.logging import LoggingConfig, setup_logging
 from lilya.middleware.asyncexit import AsyncExitStackMiddleware
 from lilya.middleware.base import DefineMiddleware
 from lilya.middleware.exceptions import ExceptionMiddleware
@@ -861,6 +862,14 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
                 """
             ),
         ] = True,
+        logging_config: Annotated[
+            LoggingConfig | None,
+            Doc(
+                """
+                An instance of [LoggingConfig](https://lilya.dev/logging)
+                """
+            ),
+        ] = None,
     ) -> None:
         self.settings_module: Settings | None = None
 
@@ -898,6 +907,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
             self.load_settings_value("after_request", after_request) or []
         )
 
+        self.logging_config = self.load_settings_value("logging_config", logging_config)
         self.state = State()
         self.middleware_stack: ASGIApp | None = None
 
@@ -914,6 +924,10 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
                 before_request=self.before_request_callbacks,
                 after_request=self.after_request_callbacks,
             )
+
+        if self.logging_config is not None:
+            setup_logging(self.logging_config)
+
         if self.register_as_global_instance:
             _monkay.set_instance(self)
 

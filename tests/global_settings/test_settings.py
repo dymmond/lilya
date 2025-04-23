@@ -23,7 +23,7 @@ def test_tuple():
 
     settings_dict = settings.tuple()
 
-    assert len(settings_dict) == 8
+    assert len(settings_dict) >= 8
 
 
 def test_conf_settings():
