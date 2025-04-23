@@ -9,7 +9,7 @@ hide:
 
 ### Added
 
-- New [LoggingConfig](./configurations/logging.md) for the logging configuration. This now allows you to setup
+- New [LoggingConfig](./logging.md) for the logging configuration. This now allows you to setup
 your own logging system and plug it with anything you want and then use the global logger from Esmerald to log your
 messages by simply using:
 
