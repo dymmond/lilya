@@ -5,6 +5,26 @@ hide:
 
 # Release Notes
 
+## 0.13.3
+
+### Added
+
+- New [LoggingConfig](./configurations/logging.md) for the logging configuration. This now allows you to setup
+your own logging system and plug it with anything you want and then use the global logger from Esmerald to log your
+messages by simply using:
+
+```python
+from lilya.logging import logger
+
+logger.info("My message in my logger.")
+```
+- `StandardLogging` as the new default logging system of Esmerald, removing the dependency of `loguru` and make this one
+optional.
+
+### Fixed
+
+- Missing `before_request` and `after_request` in the global Lilya settings.
+
 ## 0.13.2
 
 ### Changed
