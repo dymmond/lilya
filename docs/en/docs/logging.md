@@ -1,4 +1,4 @@
-# LoggingConfig
+# Logging
 
 ## What is the Lilya `LoggingConfig`
 
