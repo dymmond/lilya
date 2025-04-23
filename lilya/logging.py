@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging.config
+import threading
 from abc import ABC, abstractmethod
 from typing import Annotated, Any, cast
 
@@ -16,14 +17,18 @@ class LoggerProxy:
 
     def __init__(self) -> None:
         self._logger: LoggerProtocol | None = None
+        self._lock: threading.RLock = threading.RLock()
 
     def bind_logger(self, logger: LoggerProtocol | None) -> None:  # noqa
         self._logger = logger
 
     def __getattr__(self, item: str) -> Any:
-        if not self._logger:
-            raise RuntimeError("Logger is not configured yet. Please call setup_logging() first.")
-        return getattr(self._logger, item)
+        with self._lock:
+            if not self._logger:
+                raise RuntimeError(
+                    "Logger is not configured yet. Please call setup_logging() first."
+                )
+            return getattr(self._logger, item)
 
 
 logger: LoggerProtocol = cast(LoggerProtocol, LoggerProxy())
