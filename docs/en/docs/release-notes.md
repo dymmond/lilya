@@ -5,6 +5,13 @@ hide:
 
 # Release Notes
 
+## 0.13.4
+
+### Changed
+
+- Replace in encoders the contextVar ENCODER_TYPES with a TransparentCage (monkay, works like a ContextVar mixed with a Sequence).
+- Lazy evaluate the environment variable for the settings import. This way restrictions when importing are relaxed.
+
 ## 0.13.3
 
 ### Added
