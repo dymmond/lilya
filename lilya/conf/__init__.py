@@ -13,7 +13,9 @@ ENVIRONMENT_VARIABLE = "LILYA_SETTINGS_MODULE"
 
 _monkay: Monkay[BaseLilya, Settings] = Monkay(
     globals(),
-    settings_path=os.environ.get(ENVIRONMENT_VARIABLE, "lilya.conf.global_settings.Settings"),
+    settings_path=lambda: os.environ.get(
+        ENVIRONMENT_VARIABLE, "lilya.conf.global_settings.Settings"
+    ),
     with_instance=True,
 )
 

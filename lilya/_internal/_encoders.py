@@ -4,14 +4,16 @@ import json
 from base64 import b64decode, b64encode
 from collections import deque
 from collections.abc import Callable, Iterable, Sequence
-from contextvars import ContextVar
+from contextvars import Token
 from dataclasses import asdict, is_dataclass
 from datetime import date, datetime
 from enum import Enum
 from inspect import isclass
 from pathlib import PurePath
 from types import GeneratorType
-from typing import Any, Generic, Protocol, TypeVar, cast, runtime_checkable
+from typing import Any, Generic, Protocol, TypeVar, Union, cast, runtime_checkable
+
+from monkay import TransparentCage
 
 T = TypeVar("T")
 
@@ -182,9 +184,28 @@ DEFAULT_ENCODER_TYPES: deque[EncoderProtocol] = deque(
     )
 )
 
-ENCODER_TYPES: ContextVar[Sequence[EncoderProtocol | MoldingProtocol]] = ContextVar(
-    "ENCODER_TYPES", default=DEFAULT_ENCODER_TYPES
-)
+
+_ENCODER_TYPES_TYPE_BASE = Sequence[Union[EncoderProtocol, MoldingProtocol]]
+
+
+class ENCODER_TYPES_TYPE(_ENCODER_TYPES_TYPE_BASE):
+    # ContextVar interface
+    name: str
+
+    def set(self, value: _ENCODER_TYPES_TYPE_BASE) -> Token: ...
+
+    def get(
+        self, default: _ENCODER_TYPES_TYPE_BASE | None = None
+    ) -> _ENCODER_TYPES_TYPE_BASE | None: ...
+
+    def reset(self, token: Token) -> None: ...
+
+
+# TransparentCage merges the sequence behavior into the ContextVar interface
+# This is great for esmerald where for compatibility reasons
+# a static snapshot is used.
+ENCODER_TYPES: ENCODER_TYPES_TYPE = DEFAULT_ENCODER_TYPES  # type: ignore
+TransparentCage(globals(), name="ENCODER_TYPES")
 
 
 def get_encoder_name(encoder: Any) -> str:

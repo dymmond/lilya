@@ -5,6 +5,14 @@ hide:
 
 # Release Notes
 
+## 0.13.4
+
+### Changed
+
+- Replace in encoders the contextVar ENCODER_TYPES with a TransparentCage (monkay, works like a ContextVar mixed with a Sequence).
+- Lazy evaluate the environment variable for the settings import. This relaxes the restraints on the import order.
+  You can e.g. import lilya settings before adjusting `LILYA_SETTINGS_MODULE` as long as you don't access the settings object.
+
 ## 0.13.3
 
 ### Added
