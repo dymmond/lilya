@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.13.6
+
+### Fixed
+
+- `render_template` was checking the wrong order in the TemplateController and ListController.
+
 ## 0.13.5
 
 ### Added

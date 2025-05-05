@@ -117,14 +117,14 @@ class BaseTemplateController(Controller, metaclass=TemplateControllerMetaclass):
         data: dict[str, Any] = {}
         if context is None:
             data = await self.get_context_data(request=request)
-
-        if data is None:
-            data = {}
+        else:
+            data.update(context)
 
         if "request" in data:
             del data["request"]
 
-        merged_context = await self.get_context_data(request=request, **data)
+        merged_context = await self.get_context_data(request=request)
+        merged_context.update(data)
         return self.templates.get_template_response(
             request,
             self.template_name,  # Use self.template_name as defined in the class
