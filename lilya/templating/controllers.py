@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from typing import Any
 
 from lilya.controllers import Controller
@@ -8,20 +9,18 @@ from lilya.requests import Request
 from lilya.responses import HTMLResponse
 from lilya.templating import Jinja2Template
 
-# Initialize a Jinja2 template engine instance.
-# The 'directory' specifies the location of the template files relative to the application root.
 templates = Jinja2Template(directory="templates")
 
-# Defines the public API of this module.
-__all__ = ["TemplateView"]
+__all__ = ["TemplateView", "ListView"]
 
 
 class TemplateViewMetaclass(type):
     """
-    Metaclass for BaseTemplateView that validates the 'template_name' attribute.
+    Metaclass for BaseTemplateView and its subclasses that validates the 'template_name' attribute.
 
-    Ensures that any concrete subclass of BaseTemplateView (that is not BaseTemplateView itself)
-    has the `template_name` attribute explicitly set to a non-None value.
+    Ensures that any concrete subclass intended for direct use (not BaseTemplateView itself,
+    and potentially not TemplateView if it's just an intermediary) has the
+    `template_name` attribute explicitly set to a non-None value.
     """
 
     def __init__(cls, name: str, bases: Any, dct: Any) -> None:
@@ -34,24 +33,23 @@ class TemplateViewMetaclass(type):
             dct: A dictionary containing the class's namespace.
 
         Raises:
-            ImproperlyConfigured: If a subclass of BaseTemplateView does not
+            ImproperlyConfigured: If a subclass intended for direct use does not
                                    have the 'template_name' attribute set.
         """
         super().__init__(name, bases, dct)
 
-        # We check if the class being created is NOT the base class itself,
-        # and if it still has template_name set to None.
-        # This relies on the convention that the base class is named 'BaseTemplateView'.
-        # A more robust check might involve a special class attribute marker.
+        base_classes = ["BaseTemplateView", "TemplateView", "ListView"]
+        is_base_or_template_view = name in base_classes
+
         if (
-            name != "BaseTemplateView"
-            and name != "TemplateView"
-            and getattr(cls, "template_name", None) is None
+            not is_base_or_template_view  # Not the base or the specific TemplateView class
+            and getattr(cls, "template_name", None) is None  # template_name is not set or is None
         ):
             # Also check if template_name is explicitly set to None in the dict
+            # This covers cases where template_name = None is explicitly written
             if "template_name" not in dct or dct["template_name"] is None:
                 raise ImproperlyConfigured(
-                    f"TemplateView subclass '{name}' requires the 'template_name' attribute to be set."
+                    f"'{name}' requires the 'template_name' attribute to be set or inherit from a class that sets it."
                 )
 
 
@@ -152,3 +150,64 @@ class TemplateView(BaseTemplateView):
     """
 
     ...
+
+
+class ListView(BaseTemplateView):
+    """
+    A class-based view to display a list of objects.
+
+    This view retrieves a list of items using the `get_queryset` method and
+    includes it in the template context under the name specified by `context_object_name`.
+
+    Attributes:
+        template_name: The name of the template file to render. Must be set.
+        context_object_name: The name of the context variable containing the list
+                             of objects (defaults to "object_list").
+        templates: The initialized Jinja2Template instance used for rendering.
+
+    Example usage:
+        class ArticleListView(ListView):
+            template_name = "articles/list.html"
+            context_object_name = "articles" # Optional, defaults to "object_list"
+
+            async def get_queryset(self) -> list[dict]:
+                 # Replace with actual data fetching logic (e.g., ORM query)
+                 return [
+                     {"id": 1, "title": "First Article"},
+                     {"id": 2, "title": "Second Article"},
+                 ]
+
+        # In your urls:
+        # Path("/articles", ArticleListView)
+
+    """
+
+    context_object_name: str = "object_list"
+
+    async def get_queryset(self) -> Iterable[Any]:  # noqa
+        """
+        Return the list of items for this view.
+
+        Override this method to fetch your data (e.g., from a database, API).
+        The returned value should be an iterable (list, query result, etc.).
+        This method should be asynchronous if data fetching is async.
+        """
+        return []
+
+    async def get_context_data(self, request: Request, **kwargs: Any) -> dict:
+        """
+        Return the context data for displaying the template.
+
+        Includes the list of items from `get_queryset` in the context
+        under the name specified by `self.context_object_name`.
+        """
+        # Get context from the parent class (includes 'request' and any kwargs like path parameters)
+        context = await super().get_context_data(request, **kwargs)
+
+        # Get the list of objects from the queryset method
+        object_list = await self.get_queryset()
+
+        # Add the object list to the context using the specified name
+        context[self.context_object_name] = object_list
+
+        return context
