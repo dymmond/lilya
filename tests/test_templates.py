@@ -1,5 +1,6 @@
 import os
 import pathlib
+from typing import Any
 from unittest import mock
 
 import jinja2
@@ -7,7 +8,9 @@ import pytest
 
 from lilya.apps import Lilya
 from lilya.background import Task
+from lilya.requests import Request
 from lilya.routing import Path
+from lilya.templating.controllers import TemplateView
 from lilya.templating.jinja import Jinja2Template
 
 
@@ -91,32 +94,6 @@ def test_calls_context_processors(tmp_path, test_client_factory):
     assert response.text == "<html>Hello World</html>"
     assert response.template.name == "index.html"
     assert set(response.context.keys()) == {"request", "username"}
-
-
-# def test_template_with_middleware(tmpdir, test_client_factory):
-#     path = os.path.join(tmpdir, "index.html")
-#     with open(path, "w") as file:
-#         file.write("<html>Hello, <a href='{{ url_for('homepage') }}'>world</a></html>")
-
-#     async def homepage(request):
-#         return templates.get_template_response(request, "index.html")
-
-#     class CustomMiddleware(BaseHTTPMiddleware):
-#         async def dispatch(self, request, call_next):
-#             return await call_next(request)
-
-#     app = Lilya(
-#         debug=True,
-#         routes=[Path("/", handler=homepage)],
-#         middleware=[DefineMiddleware(CustomMiddleware)],
-#     )
-#     templates = Jinja2Template(directory=str(tmpdir))
-
-#     client = test_client_factory(app)
-#     response = client.get("/")
-#     assert response.text == "<html>Hello, <a href='http://testserver/'>world</a></html>"
-#     assert response.template.name == "index.html"
-#     assert set(response.context.keys()) == {"request"}
 
 
 def test_templates_with_directories(tmp_path: pathlib.Path, test_client_factory):
@@ -228,3 +205,95 @@ def test_templates_with_kwargs_only_requires_request_in_context(tmpdir):
 
     with pytest.raises(AssertionError):
         templates.get_template_response(name="index.html", context={"a": "b"})
+
+
+@pytest.mark.parametrize("apostrophe", ["'", '"'])
+def test_templates_using_template_view(tmpdir, test_client_factory, apostrophe):
+    path = os.path.join(tmpdir, "index.html")
+    with open(path, "w") as file:
+        file.write(
+            """<html>Hello, <a href='{{ url_for('homepage') }}'>world</a>{{ name }}</html>""".replace(
+                "'", apostrophe
+            )
+        )
+
+    _templates: Jinja2Template = Jinja2Template(directory=str(tmpdir))
+
+    class HomepageView(TemplateView):
+        templates = _templates
+        template_name = "index.html"
+
+        async def get_context_data(self, request: Request, **kwargs: Any) -> dict:
+            context = await super().get_context_data(request, **kwargs)
+            context["name"] = "Lilya"
+            return context
+
+        async def get(self, request):
+            return await self.render_template(request)
+
+    app = Lilya(
+        debug=True,
+        routes=[Path("/", handler=HomepageView, name="homepage")],
+    )
+
+    client = test_client_factory(app)
+
+    response = client.get("/")
+    assert (
+        response.text
+        == "<html>Hello, <a href='http://testserver/'>world</a>Lilya</html>".replace(
+            "'", apostrophe
+        )
+    )
+    assert response.template.name == "index.html"
+    assert set(response.context.keys()) == {"request", "name"}
+
+
+@pytest.mark.parametrize("apostrophe", ["'", '"'])
+def test_templates_using_template_view_inheritance(tmpdir, test_client_factory, apostrophe):
+    path = os.path.join(tmpdir, "index.html")
+    with open(path, "w") as file:
+        file.write(
+            """<html>Hello, <a href='{{ url_for('homepage') }}'>world</a>{{ name }} {{ child }}</html>""".replace(
+                "'", apostrophe
+            )
+        )
+
+    _templates: Jinja2Template = Jinja2Template(directory=str(tmpdir))
+
+    class HomepageView(TemplateView):
+        templates = _templates
+        template_name = "index.html"
+
+        async def get_context_data(self, request: Request, **kwargs: Any) -> dict:
+            context = await super().get_context_data(request, **kwargs)
+            context["name"] = "Lilya"
+            return context
+
+        async def post(self, request):
+            return await self.render_template(request)
+
+    class ChildView(HomepageView):
+        template_name = "index.html"
+
+        async def get_context_data(self, request: Request, **kwargs: Any) -> dict:
+            context = await super().get_context_data(request, **kwargs)
+            context["child"] = "Child Lilya"
+            return context
+
+    app = Lilya(
+        debug=True,
+        routes=[Path("/", handler=ChildView, name="homepage")],
+    )
+
+    client = test_client_factory(app)
+
+    response = client.post("/")
+    assert (
+        response.text
+        == "<html>Hello, <a href='http://testserver/'>world</a>Lilya Child Lilya</html>".replace(
+            "'", apostrophe
+        )
+    )
+    assert response.template.name == "index.html"
+    assert set(response.context.keys()) == {"request", "name", "child"}
