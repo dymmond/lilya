@@ -132,3 +132,113 @@ For instance, perform database queries within the view and include the final res
 This approach helps keep templates focused on presentation logic rather than I/O operations.
 
 [jinja2]: https://jinja.palletsprojects.com/en/3.0.x/api/?highlight=environment#writing-filters
+
+Okay, here is the documentation section formatted for MkDocs. It uses standard Markdown with triple backticks for code blocks, specifying the language (`python` or `jinja`). The `{!> ... !}` syntax is kept as it seems to be part of your MkDocs setup for including files.
+
+## Class-Based Template Controllers
+
+Leveraging Lilya's `Controller` class provides a structured and reusable approach to handling requests.
+For common patterns like rendering templates or displaying lists of objects, class-based controllers offer a clean way
+to encapsulate logic.
+
+Lilya provides a base class and specific implementations to simplify these tasks.
+
+### BaseTemplateController
+
+`BaseTemplateController` serves as the foundation for template-rendering controllers. It provides core functionalities such as:
+
+* Managing the `Jinja2Template` instance used for rendering.
+* Implementing the `render_template` method, which handles the process of rendering a template with a given context.
+* Providing a base implementation for `get_context_data`, which prepares the default context dictionary for the template.
+
+Controllers like `TemplateController` and `ListController` inherit from this base to gain its core template rendering
+capabilities.
+
+### TemplateController
+
+The `TemplateController` is a simple, concrete implementation of `BaseTemplateController` designed for rendering a
+single template. It's analogous to Django's `TemplateView`.
+
+Subclasses of `TemplateController` are required to define the `template_name` attribute, specifying which template
+file should be rendered when the controller is invoked (typically via a `get` method handler).
+
+
+**Example:**
+
+```python
+import asyncio # You might need this if simulating async like in the ListView example
+from lilya.requests import Request
+from lilya.responses import HTMLResponse
+from lilya.templating.controllers import TemplateController
+
+class HomePageController(TemplateController):
+    template_name = "home.html"
+
+    async def get(self, request: Request) -> HTMLResponse:
+        """Handles GET requests for the home page."""
+        # render_template uses the template_name set on the class
+        # and calls get_context_data internally.
+        # You can pass additional context here if needed:
+        # return await self.render_template(request, context={"title": "Home"})
+        return await self.render_template(request)
+```
+
+### ListController
+
+The `ListController` is designed specifically for displaying lists of objects. It extends `BaseTemplateController`
+by providing a standard pattern for fetching data and making it available to the template context.
+
+Key features:
+
+* ***get_queryset*** method: This async method is the primary place where you'll write logic to fetch the
+list of items (e.g., querying a database, calling an API). Subclasses must override this method.
+* ***context_object_name*** attribute: A string specifying the key name under which the fetched list of objects
+will be available in the template context. It defaults to `"object_list"`.
+* **Overridden ***get_context_data***:** This method calls `get_queryset`, retrieves the list of items, and adds
+it to the context dictionary using the `context_object_name`.
+
+**Example:**
+
+```python
+import asyncio
+from lilya.requests import Request
+from lilya.responses import HTMLResponse
+from lilya.templating.controllers import ListController
+
+
+class ArticleListController(ListController):
+    template_name = "articles/list.html"
+    context_object_name = "articles" # The list will be available as 'articles' in the template
+
+    async def get_queryset(self) -> list[dict]:
+         # Replace with actual data fetching logic (e.g., ORM query)
+         # Simulate fetching data
+         print("Fetching article list...")
+         await asyncio.sleep(0.01) # Simulate async operation
+         return [
+             {"id": 1, "title": "First Article", "published": True},
+             {"id": 2, "title": "Second Article", "published": False},
+             {"id": 3, "title": "Third Article", "published": True},
+         ]
+
+    async def get(self, request: Request) -> HTMLResponse:
+        """Handles GET requests for the article list page."""
+        # render_template calls get_context_data, which calls get_queryset
+        # You can pass path parameters or other data as context if needed:
+        # return await self.render_template(request, context={"page_title": "All Articles"})
+        return await self.render_template(request)
+```
+
+**Example of the template (`articles/list.html`):**
+
+```jinja
+<h1>Articles</h1>
+<ul>
+{% for article in articles %}
+  <li>{{ article.title }} {% if not article.published %}(Draft){% endif %}</li>
+{% endfor %}
+</ul>
+```
+
+By using these class-based controllers, you can structure your template-rendering endpoints in a more
+organized and maintainable way, separating concerns like data fetching, context preparation, and rendering.

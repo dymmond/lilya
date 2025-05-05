@@ -5,6 +5,13 @@ hide:
 
 # Release Notes
 
+## 0.13.5
+
+### Added
+
+- Support for [TemplateController](./templates.md#templatecontroller).
+- Support for [ListController](./templates.md#listcontroller).
+
 ## 0.13.4
 
 ### Changed
