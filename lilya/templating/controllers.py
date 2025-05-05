@@ -11,15 +11,15 @@ from lilya.templating import Jinja2Template
 
 templates = Jinja2Template(directory="templates")
 
-__all__ = ["TemplateView", "ListView"]
+__all__ = ["TemplateController", "ListController"]
 
 
-class TemplateViewMetaclass(type):
+class TemplateControllerMetaclass(type):
     """
-    Metaclass for BaseTemplateView and its subclasses that validates the 'template_name' attribute.
+    Metaclass for BaseTemplateController and its subclasses that validates the 'template_name' attribute.
 
-    Ensures that any concrete subclass intended for direct use (not BaseTemplateView itself,
-    and potentially not TemplateView if it's just an intermediary) has the
+    Ensures that any concrete subclass intended for direct use (not BaseTemplateController itself,
+    and potentially not TemplateController if it's just an intermediary) has the
     `template_name` attribute explicitly set to a non-None value.
     """
 
@@ -38,11 +38,11 @@ class TemplateViewMetaclass(type):
         """
         super().__init__(name, bases, dct)
 
-        base_classes = ["BaseTemplateView", "TemplateView", "ListView"]
+        base_classes = ["BaseTemplateController", "TemplateController", "ListController"]
         is_base_or_template_view = name in base_classes
 
         if (
-            not is_base_or_template_view  # Not the base or the specific TemplateView class
+            not is_base_or_template_view  # Not the base or the specific TemplateController class
             and getattr(cls, "template_name", None) is None  # template_name is not set or is None
         ):
             # Also check if template_name is explicitly set to None in the dict
@@ -53,7 +53,7 @@ class TemplateViewMetaclass(type):
                 )
 
 
-class BaseTemplateView(Controller, metaclass=TemplateViewMetaclass):
+class BaseTemplateController(Controller, metaclass=TemplateControllerMetaclass):
     """
     A base class for template-based views in Lilya.
 
@@ -132,15 +132,15 @@ class BaseTemplateView(Controller, metaclass=TemplateViewMetaclass):
         )
 
 
-class TemplateView(BaseTemplateView):
+class TemplateController(BaseTemplateController):
     """
-    A basic class-based view similar to Django's TemplateView for Lilya.
+    A basic class-based view similar to Django's TemplateController for Lilya.
 
     This view is designed to render a specified template in response to a GET request.
     Subclasses must set the `template_name` attribute.
 
     Example usage:
-        class HomePageView(TemplateView):
+        class HomePageView(TemplateController):
             template_name = "home.html"
 
     Note:
@@ -152,7 +152,7 @@ class TemplateView(BaseTemplateView):
     ...
 
 
-class ListView(BaseTemplateView):
+class ListController(BaseTemplateController):
     """
     A class-based view to display a list of objects.
 
@@ -166,7 +166,7 @@ class ListView(BaseTemplateView):
         templates: The initialized Jinja2Template instance used for rendering.
 
     Example usage:
-        class ArticleListView(ListView):
+        class ArticleListController(ListController):
             template_name = "articles/list.html"
             context_object_name = "articles" # Optional, defaults to "object_list"
 
@@ -178,7 +178,7 @@ class ListView(BaseTemplateView):
                  ]
 
         # In your urls:
-        # Path("/articles", ArticleListView)
+        # Path("/articles", ArticleListController)
 
     """
 

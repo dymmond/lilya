@@ -10,7 +10,7 @@ from lilya.apps import Lilya
 from lilya.background import Task
 from lilya.requests import Request
 from lilya.routing import Path
-from lilya.templating.controllers import TemplateView
+from lilya.templating.controllers import TemplateController
 from lilya.templating.jinja import Jinja2Template
 
 
@@ -219,7 +219,7 @@ def test_templates_using_template_view(tmpdir, test_client_factory, apostrophe):
 
     _templates: Jinja2Template = Jinja2Template(directory=str(tmpdir))
 
-    class HomepageView(TemplateView):
+    class HomepageView(TemplateController):
         templates = _templates
         template_name = "index.html"
 
@@ -261,7 +261,7 @@ def test_templates_using_template_view_inheritance(tmpdir, test_client_factory, 
 
     _templates: Jinja2Template = Jinja2Template(directory=str(tmpdir))
 
-    class HomepageView(TemplateView):
+    class HomepageView(TemplateController):
         templates = _templates
         template_name = "index.html"
 
