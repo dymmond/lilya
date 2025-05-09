@@ -54,7 +54,7 @@ class BaseLilya:
     router: Router
     register_as_global_instance: ClassVar[bool] = False
     populate_global_context: (
-        Callable[[Connection], dict[str, Any] | Awaitable[str, Any]] | None
+        Callable[[Connection], dict[str, Any] | Awaitable[dict[str, Any]]] | None
     ) = None
 
     @property
