@@ -4,6 +4,7 @@ import sys
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from typing import Annotated, Any, ClassVar, cast
 
+from lilya._internal._connection import Connection  # noqa
 from lilya._internal._middleware import wrap_middleware  # noqa
 from lilya._internal._module_loading import import_string  # noqa
 from lilya._internal._permissions import wrap_permission  # noqa
@@ -16,7 +17,10 @@ from lilya.logging import LoggingConfig, setup_logging
 from lilya.middleware.asyncexit import AsyncExitStackMiddleware
 from lilya.middleware.base import DefineMiddleware
 from lilya.middleware.exceptions import ExceptionMiddleware
-from lilya.middleware.global_context import GlobalContextMiddleware
+from lilya.middleware.global_context import (
+    GlobalContextMiddleware,
+    LifespanGlobalContextMiddleware,
+)
 from lilya.middleware.server_error import ServerErrorMiddleware
 from lilya.permissions.base import DefinePermission
 from lilya.protocols.middleware import MiddlewareProtocol
@@ -49,6 +53,9 @@ class BaseLilya:
     router_class: ClassVar[type[Router] | None] = Router
     router: Router
     register_as_global_instance: ClassVar[bool] = False
+    populate_global_context: (
+        Callable[[Connection], dict[str, Any] | Awaitable[dict[str, Any]]] | None
+    ) = None
 
     @property
     def routes(self) -> list[BasePath]:
@@ -100,7 +107,10 @@ class BaseLilya:
 
         middleware = [
             DefineMiddleware(ServerErrorMiddleware, handler=error_handler, debug=self.debug),
-            DefineMiddleware(GlobalContextMiddleware),
+            DefineMiddleware(
+                GlobalContextMiddleware, populate_context=self.populate_global_context
+            ),
+            DefineMiddleware(LifespanGlobalContextMiddleware),
             *self.custom_middleware,
             DefineMiddleware(ExceptionMiddleware, handlers=exception_handlers, debug=self.debug),
             DefineMiddleware(AsyncExitStackMiddleware, debug=self.debug),
@@ -870,7 +880,38 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
                 """
             ),
         ] = None,
+        populate_global_context: Annotated[
+            Callable[[Connection], dict[str, Any] | Awaitable[dict[str, Any]]] | None,
+            Doc(
+                """
+                An function to populate the global connection context (per connection/request).
+                This can be useful for context data every request should share.
+                It is also possible here to copy from a parent global context.
+                **Example**
+
+                ```python
+                from edgy import Registry
+
+                from lilya.apps import Lilya
+                from lilya.requests import Connection
+                registry = Registry("postgresql+asyncpg://user:password@host:port/database")
+
+
+                async def populate_g(connection: Connection):
+                    return {
+                        "amount_users": await registry.get_model("User").query.count()
+                    }
+
+                app = registry.asgi(Lilya(
+                    routes=[...],
+                    populate_global_context=populate_g,
+                ))
+                ```
+                """
+            ),
+        ] = None,
     ) -> None:
+        self.populate_global_context = populate_global_context
         self.settings_module: Settings | None = None
 
         if settings_module is not None and isinstance(settings_module, str):

@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import ABC
 
 from lilya.context import RequestContext
+from lilya.enums import ScopeType
 from lilya.protocols.middleware import MiddlewareProtocol
 from lilya.requests import Request
 from lilya.types import ASGIApp, Receive, Scope, Send
@@ -37,6 +38,7 @@ class RequestContextMiddleware(ABC, MiddlewareProtocol):
         """
         super().__init__(app)
         self.app = app
+        self.scopes: set[str] = {ScopeType.HTTP, ScopeType.WEBSOCKET}
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -50,13 +52,13 @@ class RequestContextMiddleware(ABC, MiddlewareProtocol):
         If the request type is "http", it sets the global request context with the current request.
         After processing the request, it resets the request context to ensure no residual data is left.
         """
-        if scope["type"] != "http":
+        if scope["type"] not in self.scopes:
             await self.app(scope, receive, send)
             return
 
-        global_request = Request(scope, receive)
+        global_request = Request(scope, receive, send)
         token = RequestContext.set_request(global_request)
         try:
-            await self.app(scope, receive, send)
+            await self.app(scope, global_request.receive, global_request.send)
         finally:
             RequestContext.reset_request(token)

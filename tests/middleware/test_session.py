@@ -78,6 +78,61 @@ def test_session(test_client_factory: TestClientFactory, encoder_parameters) -> 
     assert response.json() == {"session": {}}
 
 
+def return_method(connection):
+    return {"initial_method": connection["method"]}
+
+
+async def areturn_method(connection):
+    return return_method(connection)
+
+
+@pytest.mark.parametrize(
+    "populate_session_fn",
+    [return_method, areturn_method],
+    ids=["sync", "async"],
+)
+def test_session_populated(
+    test_client_factory: TestClientFactory, encoder_parameters, populate_session_fn
+) -> None:
+    app = Lilya(
+        routes=[
+            Path("/view_session", handler=view_session),
+            Path("/update_session", handler=update_session, methods=["POST"]),
+            Path("/clear_session", handler=clear_session, methods=["POST"]),
+        ],
+        middleware=[
+            DefineMiddleware(
+                SessionMiddleware,
+                secret_key="example",
+                populate_session=populate_session_fn,
+                **encoder_parameters,
+            )
+        ],
+    )
+    client = test_client_factory(app)
+
+    response = client.get("/view_session")
+    assert response.json() == {"session": {"initial_method": "GET"}}
+
+    response = client.post("/update_session", json={"some": "data"})
+    assert response.json() == {"session": {"some": "data", "initial_method": "GET"}}
+
+    # check cookie max-age
+    set_cookie = response.headers["set-cookie"]
+    max_age_matches = re.search(r"; Max-Age=([0-9]+);", set_cookie)
+    assert max_age_matches is not None
+    assert int(max_age_matches[1]) == 14 * 24 * 3600
+
+    response = client.get("/view_session")
+    assert response.json() == {"session": {"some": "data", "initial_method": "GET"}}
+
+    response = client.post("/clear_session")
+    assert response.json() == {"session": {}}
+
+    response = client.get("/view_session")
+    assert response.json() == {"session": {"initial_method": "GET"}}
+
+
 def test_session_expires(test_client_factory: TestClientFactory, encoder_parameters) -> None:
     app = Lilya(
         routes=[
