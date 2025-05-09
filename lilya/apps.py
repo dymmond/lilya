@@ -894,7 +894,6 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
 
                 from lilya.apps import Lilya
                 from lilya.requests import Connection
-                from lilya.routing import Path
                 registry = Registry("postgresql+asyncpg://user:password@host:port/database")
 
 
@@ -904,6 +903,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
                     }
 
                 app = registry.asgi(Lilya(
+                    routes=[...],
                     populate_global_context=populate_g,
                 ))
                 ```
