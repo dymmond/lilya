@@ -887,6 +887,27 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
                 An function to populate the global connection context (per connection/request).
                 This can be useful for context data every request should share.
                 It is also possible here to copy from a parent global context.
+                **Example**
+
+                ```python
+                from edgy import Registry
+
+                from lilya.apps import Lilya
+                from lilya.requests import Connection
+                from lilya.routing import Path
+                registry = Registry("postgresql+asyncpg://user:password@host:port/database")
+
+
+                async def populate_g(connection: Connection):
+                    return {
+                        "amount_users": await registry.get_model("User").query.count()
+                    }
+
+                app = registry.asgi(Lilya(
+                    routes=[Path("/create", handler=create_user)],
+                    populate_global_context=populate_g,
+                ))
+                ```
                 """
             ),
         ] = None,

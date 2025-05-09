@@ -241,7 +241,7 @@ Note however when using json not all datatypes are idempotent.
 You might want to use dataclasses, msgstruct, RDF or (not recommended because of security issues: pickle).
 
 You can also automatically initialize sessions with data via the `populate_session` parameter.
-It isn't repopulated until the next request after the session is cleared. So you may can change data as you wish.
+It isn't repopulated until the next request after the session is cleared. So you can change data as you wish.
 
 ```python
 {!> ../../../docs_src/middleware/available/sessions_populate_session.py !}
