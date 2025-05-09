@@ -21,6 +21,7 @@ hide:
 ### Fixed
 
 - `SessionContext` was not working for websockets.
+- Allow sniffing with `GlobalRequestContext`.
 
 ## 0.13.6
 
