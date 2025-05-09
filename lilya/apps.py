@@ -904,7 +904,6 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
                     }
 
                 app = registry.asgi(Lilya(
-                    routes=[Path("/create", handler=create_user)],
                     populate_global_context=populate_g,
                 ))
                 ```
