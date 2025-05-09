@@ -198,7 +198,8 @@ how to use it is available.
 * `XFrameOptionsMiddleware` - Middleware that handles specifically against clickjacking.
 * `SecurityMiddleware` - Provides several security enhancements to the request/response cycle and adds security headers to the response.
 * `ClientIPMiddleware` - Provides facilities to retrieve the client ip. This can be useful for ratelimits.
-* `GlobalContextMiddleware` - Allows the use of the `[g](./context.md#the-g-object)` across request contexts.
+* `GlobalContextMiddleware` - Allows the use of the `[g](./context.md#the-g-object)` across request contexts. For Lilya by default active.
+* `LifespanGlobalContextMiddleware` - Allows the use of the `[g](./context.md#the-g-object)` in lifespan requests. For Lilya by default active.
 * `RequestContextMiddleware` - Adds a `request_context` object context without the need to use handlers.
 * `AuthenticationMiddleware` & `BaseAuthMiddleware` - See [above](#baseauthmiddleware--authenticationmiddleware).
 * `SessionContextMiddleware`- Adds a `session` object context to be accessed in the handlers or request context in general.
@@ -238,6 +239,13 @@ If you want more speed or more datatypes you can pass a different serializer/des
 
 Note however when using json not all datatypes are idempotent.
 You might want to use dataclasses, msgstruct, RDF or (not recommended because of security issues: pickle).
+
+You can also automatically initialize sessions with data via the `populate_session` parameter.
+It isn't repopulated until the next request after the session is cleared. So you may can change data as you wish.
+
+```python
+{!> ../../../docs_src/middleware/available/sessions_populate_session.py !}
+```
 
 ### HTTPSRedirectMiddleware
 

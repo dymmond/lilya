@@ -3,6 +3,7 @@ from __future__ import annotations
 import inspect
 import json
 from collections.abc import Callable, Coroutine, Generator
+from functools import cached_property
 from typing import Any, cast
 
 from lilya import status
@@ -40,20 +41,22 @@ class Controller(BaseController):
     declaration of the http verbs as views.
     """
 
-    __allowed_methods__: list[str] | None = None
     __scope__: Scope | None = None
 
     signature: inspect.Signature | None = None
+
+    @cached_property
+    def __allowed_methods__(self) -> list[str]:
+        return [
+            method
+            for method in HTTPMethod.to_list()
+            if getattr(self, method.lower(), None) is not None
+        ]
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         assert (
             scope["type"] == ScopeType.HTTP
         ), f"{self.__class__.__name__} classes must be in the http scope."
-        self.__allowed_methods__ = [
-            method
-            for method in HTTPMethod.to_list()
-            if getattr(self, method.lower(), None) is not None
-        ]
 
         await self.handle_dispatch(scope=scope, receive=receive, send=send)
 
