@@ -5,6 +5,24 @@ hide:
 
 # Release Notes
 
+## 0.13.7
+
+### Added
+
+- Add `populate_context` parameter for `GlobalContextMiddleware`.
+- Add `populate_global_context` parameter for `Lilya`.
+- Add `populate_session` parameter for `SessionMiddleware`.
+- `LifespanGlobalContextMiddleware` which is initializing `g` for lifespans.
+
+### Changed
+
+- `GlobalContextMiddleware` was initializing `g` for lifespans  Now this is moved to `LifespanGlobalContextMiddleware`.
+
+### Fixed
+
+- `SessionContext` was not working for websockets.
+- Allow sniffing with `GlobalRequestContext`.
+
 ## 0.13.6
 
 ### Fixed

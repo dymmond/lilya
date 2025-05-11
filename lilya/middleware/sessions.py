@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import json
 from base64 import b64decode, b64encode
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
+from inspect import isawaitable
 from typing import Any, Literal
 
 import itsdangerous
@@ -10,6 +11,7 @@ from itsdangerous.exc import BadSignature
 
 from lilya._internal._connection import Connection
 from lilya.datastructures import Header, Secret
+from lilya.enums import ScopeType
 from lilya.protocols.middleware import MiddlewareProtocol
 from lilya.types import ASGIApp, Message, Receive, Scope, Send
 
@@ -27,6 +29,8 @@ class SessionMiddleware(MiddlewareProtocol):
         domain: str | None = None,
         session_serializer: Callable[[Any], bytes | str] = json.dumps,
         session_deserializer: Callable[[bytes], Any] = json.loads,
+        populate_session: Callable[[Connection], dict[str, Any] | Awaitable[dict[str, Any]]]
+        | None = None,
     ) -> None:
         """
         Middleware for handling session data in ASGI applications.
@@ -42,6 +46,7 @@ class SessionMiddleware(MiddlewareProtocol):
             domain (Optional[str]): The domain attribute for the session cookie.
             session_serializer (Callable[[Any], bytes | str]): The encoder for the session. Default json.dumps.
             session_deserializer (Callable[[bytes], Any]): The decoder for the session. Default json.loads.
+            populate_session: (Callable[[Scope], dict[str, Any] | Awaitable[dict[str, Any]]]): An optional function for providing initial data to session.
         """
         self.app = app
         self.signer = itsdangerous.TimestampSigner(str(secret_key))
@@ -55,17 +60,26 @@ class SessionMiddleware(MiddlewareProtocol):
             self.security_flags += f"; domain={domain}"
         self.session_serializer = session_serializer
         self.session_deserializer = session_deserializer
+        self.populate_session = populate_session
+        self.scopes: set[str] = {ScopeType.HTTP, ScopeType.WEBSOCKET}
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
         ASGI application callable.
         """
-        if scope["type"] not in ("http", "websocket"):
+        if scope["type"] not in self.scopes:
             await self.app(scope, receive, send)
             return
 
         connection = Connection(scope)
         initial_session_was_empty = await self.load_session_data(scope, connection)
+        if initial_session_was_empty and self.populate_session is not None:
+            initial_session_data: dict[str, Any] | Awaitable[dict[str, Any]] = (
+                self.populate_session(connection)
+            )
+            if isawaitable(initial_session_data):
+                initial_session_data = await initial_session_data
+            scope["session"].update(initial_session_data)
 
         async def send_wrapper(message: Message) -> None:
             await self.process_response(message, scope, initial_session_was_empty, send)

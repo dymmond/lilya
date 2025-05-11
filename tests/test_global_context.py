@@ -75,3 +75,16 @@ def test_global_context_with_decorator():
         response = client.get("/show")
         assert response.status_code == 200
         assert response.json() == {}
+
+
+async def populate_global_context(connection):
+    return {"name": "Lilya"}
+
+
+def test_populated_global_context():
+    with create_client(
+        routes=[Path("/show", show_g)], populate_global_context=populate_global_context
+    ) as client:
+        response = client.get("/show")
+        assert response.status_code == 200
+        assert response.json() == {"name": "Lilya"}

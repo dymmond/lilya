@@ -1,8 +1,13 @@
 from __future__ import annotations
 
 from abc import ABC
+from collections.abc import Awaitable, Callable
+from inspect import isawaitable
+from typing import Any
 
+from lilya._internal._connection import Connection
 from lilya.context import G, g_context
+from lilya.enums import ScopeType
 from lilya.protocols.middleware import MiddlewareProtocol
 from lilya.types import ASGIApp, Receive, Scope, Send
 
@@ -12,6 +17,12 @@ class GlobalContextMiddleware(ABC, MiddlewareProtocol):
     GlobalContextMiddleware is an ASGI middleware that initializes a global context for each request.
 
     This middleware inherits from ABC and MiddlewareProtocol, ensuring it adheres to the ASGI middleware interface.
+
+    Args:
+        app (ASGIApp): The ASGI application to wrap.
+        populate_context: (Callable[[Connection], dict[str, Any] | Awaitable[dict[str, Any]]]):
+            An optional function for providing initial data to global contexts.
+            Can be used to copy data from a parent global context.
 
     Attributes:
         app (ASGIApp): The ASGI application instance.
@@ -31,9 +42,16 @@ class GlobalContextMiddleware(ABC, MiddlewareProtocol):
         request lifecycle.
     """
 
-    def __init__(self, app: ASGIApp) -> None:
+    def __init__(
+        self,
+        app: ASGIApp,
+        populate_context: Callable[[Connection], dict[str, Any] | Awaitable[dict[str, Any]]]
+        | None = None,
+    ) -> None:
         super().__init__(app)
         self.app = app
+        self.populate_context = populate_context
+        self.scopes: set[str] = {ScopeType.HTTP, ScopeType.WEBSOCKET}
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -47,8 +65,30 @@ class GlobalContextMiddleware(ABC, MiddlewareProtocol):
         Returns:
             None
         """
-        token = g_context.set(G())
+        # e.g. lifespans
+        if scope["type"] not in self.scopes:
+            await self.app(scope, receive, send)
+            return
+        initial_context: Any = None
+        if self.populate_context is not None:
+            initial_context = self.populate_context(Connection(scope))
+            if isawaitable(initial_context):
+                initial_context = await initial_context
+        token = g_context.set(G(initial_context))
         try:
             await self.app(scope, receive, send)
         finally:
             g_context.reset(token)
+
+
+class LifespanGlobalContextMiddleware(GlobalContextMiddleware):
+    """
+    LifespanGlobalContextMiddleware is an ASGI middleware that initializes a global context for each lifespan request (start/stop).
+    """
+
+    def __init__(
+        self,
+        app: ASGIApp,
+    ) -> None:
+        super().__init__(app)
+        self.scopes = {ScopeType.LIFESPAN}

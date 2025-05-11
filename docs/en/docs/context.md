@@ -259,7 +259,7 @@ populate_g()
 ```
 
 This of course is a very simple example and probably not like how you would like to use but it
-explains how to use the `g`. After every request, the `g` is cleared.
+explains how to use the `g`. After every request/websocket connection, the `g` is cleared.
 
 Imagine now you want to use it in a `decorator`.
 
@@ -295,6 +295,20 @@ app = Lilya(
 
 This example is closer to the reality of the use of a `g` like validating a login against anything
 in your APIs.
+
+### Populating g automatically
+
+We can also pass a parameter `populate_context` (Middleware), `populate_global_context` (Lilya) which takes the current Connection
+as parameter and is expected to return sync/asynchronously a dict with initial values for `g`.
+This can be handy to automatically provide a context without an extra middleware.
+You can also copy here values from a parent `g`.
+
+
+### The LifespanGlobalContextMiddleware
+
+You may want to use `g` also for lifespans. Here we have `LifespanGlobalContextMiddleware`.
+It doesn't has a `populate_context` parameter and ignores `populate_global_context` (Lilya).
+Liya comes by default with this middleware activated. So you are also able to use `g` in lifespans.
 
 ## The `RequestContext` object
 
