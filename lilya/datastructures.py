@@ -150,9 +150,9 @@ class Header(MultiDict, CIMultiDict):
         if not value:
             value = []
 
-        assert isinstance(
-            value, (dict, Iterable)
-        ), "The headers must be in the format of a Iterable of tuples or dictionary."
+        assert isinstance(value, (dict, Iterable)), (
+            "The headers must be in the format of a Iterable of tuples or dictionary."
+        )
 
         headers: list[tuple[str, Any]] = self.parse_headers(value)
         super().__init__(headers)
@@ -363,9 +363,9 @@ class URL:
         """
         instance: URL = super().__new__(cls)
 
-        assert isinstance(
-            url, (str, SplitResult)
-        ), "The url must be a string or a SplitResult instance."
+        assert isinstance(url, (str, SplitResult)), (
+            "The url must be a string or a SplitResult instance."
+        )
 
         if isinstance(url, str):
             result: SplitResult = urlsplit(url)

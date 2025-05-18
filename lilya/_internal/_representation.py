@@ -54,4 +54,4 @@ class Repr(Str):
         return self.__string__(" ")
 
     def __repr__(self) -> str:
-        return f'{self.__to_name__()}({self.__string__(", ")})'
+        return f"{self.__to_name__()}({self.__string__(', ')})"

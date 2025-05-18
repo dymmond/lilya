@@ -25,9 +25,9 @@ def include(arg: Any, pattern: str | None = None) -> list[BasePath]:
     router_conf_module = import_module(arg)
     patterns: list[BasePath] = getattr(router_conf_module, pattern, None)
 
-    assert (
-        patterns is not None
-    ), f"There is no pattern {pattern} found in {arg}. Are you sure you configured it correctly?"
+    assert patterns is not None, (
+        f"There is no pattern {pattern} found in {arg}. Are you sure you configured it correctly?"
+    )
 
     assert isinstance(patterns, list), f"{patterns} should be a list and not {type(patterns)}."
     return patterns

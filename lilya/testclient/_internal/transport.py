@@ -372,12 +372,12 @@ class TestClientTransport(httpx.BaseTransport):
                 raw_kwargs["headers"] = list(message.get("headers", []))
                 response_started = True
             elif message["type"] == "http.response.body":
-                assert (
-                    response_started
-                ), 'Received "http.response.body" without "http.response.start".'
-                assert (
-                    not response_complete.is_set()
-                ), 'Received "http.response.body" after response completed.'
+                assert response_started, (
+                    'Received "http.response.body" without "http.response.start".'
+                )
+                assert not response_complete.is_set(), (
+                    'Received "http.response.body" after response completed.'
+                )
                 body = message.get("body", b"")
                 # we allow here all of the types because some servers allow them too
                 if self.check_asgi_conformance and not isinstance(

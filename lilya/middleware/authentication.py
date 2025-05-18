@@ -116,9 +116,9 @@ class AuthenticationMiddleware(BaseAuthMiddleware):
             self.backend = [backend]
         else:
             self.backend = list(backend)
-        assert (
-            self.backend or (not getattr(self.authenticate, "requires_backend", False))
-        ), "'backend' is required for authenticate method. Overwrite 'authenticate' or provide AuthenticationBackend in backend"
+        assert self.backend or (not getattr(self.authenticate, "requires_backend", False)), (
+            "'backend' is required for authenticate method. Overwrite 'authenticate' or provide AuthenticationBackend in backend"
+        )
 
     async def authenticate(self, conn: Connection) -> None | AuthResult:
         """Authorize users here."""

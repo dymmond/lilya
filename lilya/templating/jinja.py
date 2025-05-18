@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
-from pathlib import Path
+from collections.abc import Sequence
 from typing import Any, Union
 
 from lilya import status
@@ -12,25 +12,20 @@ from lilya.responses import TemplateResponse
 from lilya.templating.base import BaseTemplateRenderer
 
 try:
+    import jinja2
     from jinja2 import (
         Environment,
         FileSystemLoader,
         Template as JinjaTemplate,
         TemplateNotFound as JinjaTemplateNotFound,
     )
-except ImportError as exc:
-    raise MissingDependency("jinja2 is not installed") from exc
-
-
-try:
-    import jinja2
 
     if hasattr(jinja2, "pass_context"):
         pass_context = jinja2.pass_context
     else:
         pass_context = jinja2.contextfunction
-except ImportError:
-    jinja2 = None
+except ImportError as exc:
+    raise MissingDependency("jinja2 is not installed") from exc
 
 if sys.version_info >= (3, 10):  # pragma: no cover
     from typing import ParamSpec
@@ -110,9 +105,9 @@ class TemplateRenderer(BaseTemplateRenderer):
             AssertionError: If the 'request' instance is not present or is invalid.
         """
         request = args[0] if len(args) > 0 else kwargs.get("request")
-        assert isinstance(
-            request, Request
-        ), "The first argument should always be a 'Request' instance."
+        assert isinstance(request, Request), (
+            "The first argument should always be a 'Request' instance."
+        )
         return request
 
 
@@ -123,7 +118,7 @@ class Jinja2Template:
 
     def __init__(
         self,
-        directory: str | Path | list[Path] | None = None,
+        directory: PathLike | Sequence[PathLike] | None = None,
         *,
         env: Environment | None = None,
         **options: Any,
@@ -137,9 +132,9 @@ class Jinja2Template:
             **options (Any): Additional options to configure the Jinja2 environment.
         """
         self.context_processors: Any = options.pop("context_processors", {})
-        assert (
-            env or directory
-        ), "either 'env' or 'directory' arguments must be passed but not both."
+        assert env or directory, (
+            "either 'env' or 'directory' arguments must be passed but not both."
+        )
 
         if env is None:
             self.env = self._create_environment(directory, **options)
@@ -177,7 +172,7 @@ class Jinja2Template:
         return env
 
     def _create_environment(
-        self, directory: str | Path | list[Path], **env_options: Any
+        self, directory: PathLike | Sequence[PathLike], **env_options: Any
     ) -> Environment:
         """
         Create a new Jinja2 environment with the specified options.
