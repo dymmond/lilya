@@ -51,7 +51,7 @@ class WebSocket(WebsocketMixin):
         if self.client_state == WebSocketState.CONNECTING:
             if message_type != Event.WEBSOCKET_CONNECT:
                 raise WebSocketRuntimeError(
-                    'Expected ASGI message "websocket.connect", ' f"but got {message_type!r}"
+                    f'Expected ASGI message "websocket.connect", but got {message_type!r}'
                 )
             self.client_state = WebSocketState.CONNECTED
         elif self.client_state == WebSocketState.CONNECTED:

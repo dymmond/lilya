@@ -71,9 +71,9 @@ class LoggingConfig(ABC):
         **kwargs: Any,
     ) -> None:
         levels: str = ", ".join(self.__logging_levels__)
-        assert (
-            level in self.__logging_levels__
-        ), f"'{level}' is not a valid logging level. Available levels: '{levels}'."
+        assert level in self.__logging_levels__, (
+            f"'{level}' is not a valid logging level. Available levels: '{levels}'."
+        )
 
         self.level = level.upper()
         self.options = kwargs

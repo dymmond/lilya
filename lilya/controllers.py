@@ -54,9 +54,9 @@ class Controller(BaseController):
         ]
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        assert (
-            scope["type"] == ScopeType.HTTP
-        ), f"{self.__class__.__name__} classes must be in the http scope."
+        assert scope["type"] == ScopeType.HTTP, (
+            f"{self.__class__.__name__} classes must be in the http scope."
+        )
 
         await self.handle_dispatch(scope=scope, receive=receive, send=send)
 
@@ -103,9 +103,9 @@ class WebSocketController(BaseController):
     encoding: str | None = None
 
     def __init__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        assert (
-            scope["type"] == ScopeType.WEBSOCKET
-        ), f"{self.__class__.__name__} classes must be in the websocket scope."
+        assert scope["type"] == ScopeType.WEBSOCKET, (
+            f"{self.__class__.__name__} classes must be in the websocket scope."
+        )
         self.scope = scope
         self.receive = receive
         self.send = send

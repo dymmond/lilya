@@ -1076,9 +1076,9 @@ class BaseRouter:
         deprecated: bool = False,
         is_sub_router: bool = False,
     ) -> None:
-        assert lifespan is None or (
-            on_startup is None and on_shutdown is None
-        ), "Use either 'lifespan' or 'on_startup'/'on_shutdown', not both."
+        assert lifespan is None or (on_startup is None and on_shutdown is None), (
+            "Use either 'lifespan' or 'on_startup'/'on_shutdown', not both."
+        )
 
         if inspect.isasyncgenfunction(lifespan) or inspect.isgeneratorfunction(lifespan):
             raise ImproperlyConfigured(
@@ -2057,14 +2057,14 @@ class Include(BasePath):
             None
         """
         assert path == "" or path.startswith("/"), "Routed paths must start with '/'"
-        assert (
-            app is not None or routes is not None or namespace is not None
-        ), "Either 'app=...', or 'routes=...', or 'namespace=...' must be specified"
+        assert app is not None or routes is not None or namespace is not None, (
+            "Either 'app=...', or 'routes=...', or 'namespace=...' must be specified"
+        )
         self.path = clean_path(path)
 
-        assert (
-            namespace is None or routes is None
-        ), "Either 'namespace=...' or 'routes=', not both."
+        assert namespace is None or routes is None, (
+            "Either 'namespace=...' or 'routes=', not both."
+        )
 
         if namespace and not isinstance(namespace, str):
             raise ImproperlyConfigured("Namespace must be a string. Example: 'myapp.routes'.")

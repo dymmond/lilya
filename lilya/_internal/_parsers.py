@@ -87,9 +87,9 @@ class FormParser:
         """
         Initializes the FormParser with headers and stream.
         """
-        assert (
-            multipart is not None
-        ), "The `python-multipart` library must be installed to use form parsing."
+        assert multipart is not None, (
+            "The `python-multipart` library must be installed to use form parsing."
+        )
         self.headers = headers
         self.stream = stream
         self.messages: list[tuple[FormMessage, bytes]] = []
@@ -215,9 +215,9 @@ class MultiPartParser:
             max_files (Union[int, float]): Maximum number of allowed files.
             max_fields (Union[int, float]): Maximum number of allowed fields.
         """
-        assert (
-            multipart is not None
-        ), "The `python-multipart` library must be installed to use form parsing."
+        assert multipart is not None, (
+            "The `python-multipart` library must be installed to use form parsing."
+        )
         self.headers = headers
         self.stream = stream
         self.max_files = max_files
