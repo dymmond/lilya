@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.13.8
+
+### Changed
+
+- Typing for `add_route` allowing controllers to be recognised.
+
 ## 0.13.7
 
 ### Added
