@@ -32,6 +32,20 @@ def client(test_client_factory: TestClientFactory) -> Iterator[TestClient]:
         yield client
 
 
+def test_add_route(test_client_factory: TestClientFactory) -> None:
+    class TestController(Controller):
+        async def get(self) -> PlainText:
+            return PlainText("Hello, world!")
+
+    app = Router()
+    app.add_route("/", TestController)
+    client = test_client_factory(app)
+
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.text == "Hello, world!"
+
+
 def test_http_endpoint_route(client: TestClient) -> None:
     response = client.get("/")
     assert response.status_code == 200
