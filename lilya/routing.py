@@ -1408,7 +1408,7 @@ class BaseRouter:
     def add_route(
         self,
         path: str,
-        handler: Callable[[Request], Awaitable[Response] | Response],
+        handler: Callable[[Request], Awaitable[Response] | Response] | Any,
         methods: list[str] | None = None,
         name: str | None = None,
         middleware: Sequence[DefineMiddleware] | None = None,
