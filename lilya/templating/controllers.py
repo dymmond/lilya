@@ -116,7 +116,7 @@ class BaseTemplateController(Controller, metaclass=TemplateControllerMetaclass):
         # Get the base context data and update it with the provided context
         data: dict[str, Any] = {}
         if context is None:
-            data = await self.get_context_data(request=request)
+            data = {}
         else:
             data.update(context)
 
