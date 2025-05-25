@@ -1,20 +1,19 @@
 from collections import defaultdict
 
-import click
+from sayer import Sayer
 
 from lilya.cli.directives.operations._constants import PATH
 from lilya.cli.env import DirectiveEnv
 from lilya.cli.terminal import OutputColour, Terminal
 from lilya.cli.utils import get_application_directives, get_directives
 
+directives = Sayer(help="List all available directives", name="directives")
 
-@click.command(name="directives")
+
+@directives.command(name="list")
 def list(env: DirectiveEnv) -> None:
     """
     Lists the available directives
-
-    Goes through the Lilya core native directives and given --app
-    and lists all the available directives in the system.
     """
     output = Terminal()
     usage = [
