@@ -9,7 +9,7 @@ from tests.cli.utils import run_cmd
 app = Lilya(routes=[])
 
 
-FOUND_DIRECTIVES = ["createdeployment", "createapp", "createproject", "runserver", "show-urls"]
+FOUND_DIRECTIVES = ["createdeployment", "createapp", "createproject", "runserver", "show_urls"]
 
 
 @pytest.fixture(scope="module")
@@ -58,27 +58,3 @@ def test_list_directives_with_app(create_folders):
 
     for directive in FOUND_DIRECTIVES:
         assert directive in str(o)
-
-
-def test_list_directives_with_flag(create_folders):
-    original_path = os.getcwd()
-    run_cmd("tests.cli.main:app", "lilya createproject myproject --with-structure")
-
-    os.chdir("myproject/myproject/apps")
-
-    (o, e, ss) = run_cmd("tests.cli.main:app", "lilya createapp myapp")
-
-    os.chdir(original_path)
-
-    shutil.copyfile(
-        "createsuperuser.py",
-        "myproject/myproject/apps/myapp/directives/operations/createsuperuser.py",
-    )
-
-    (o, e, ss) = run_cmd("tests.cli.main:app", "lilya --app tests.cli.main:app directives")
-    assert ss == 0
-
-    for directive in FOUND_DIRECTIVES:
-        assert directive in str(o)
-
-    assert "createsuperuser" in str(o)

@@ -20,10 +20,15 @@ from lilya.cli.constants import (
     IGNORE_DIRECTIVES,
 )
 from lilya.cli.directives.operations._constants import LILYA_SETTINGS_MODULE
+from lilya.cli.directives.operations.createapp import create_app as create_app  # noqa
+from lilya.cli.directives.operations.createdeployment import (
+    create_deployment as create_deployment,  # noqa
+)
 from lilya.cli.directives.operations.createproject import create_project as create_project  # noqa
 from lilya.cli.directives.operations.list import directives as directives  # noqa
 from lilya.cli.directives.operations.run import run as run  # noqa
 from lilya.cli.directives.operations.runserver import runserver as runserver  # noqa
+from lilya.cli.directives.operations.shell import shell as shell  # noqa
 from lilya.cli.directives.operations.show_urls import show_urls as show_urls  # noqa
 from lilya.cli.env import DirectiveEnv
 from lilya.exceptions import EnvError
@@ -118,13 +123,13 @@ lilya_cli = Sayer(
 def lilya_callback(
     ctx: click.Context,
     name: typing.Annotated[str, Argument(help="The directive name.")],
-    path: typing.Annotated[
+    app: typing.Annotated[
         str,
         Option(
             required=False, help="Module path to the Lilya application. In a module:path format."
         ),
     ],
-): ...
+) -> None: ...
 
 
 lilya_cli.add_command(directives)
@@ -132,6 +137,6 @@ lilya_cli.add_command(show_urls)
 lilya_cli.add_command(runserver)
 lilya_cli.add_command(run)
 lilya_cli.add_command(create_project)
-# lilya_cli.add_command(create_app)
-# lilya_cli.add_command(create_deployment)
-# lilya_cli.add_command(shell)
+lilya_cli.add_command(create_app)
+lilya_cli.add_command(create_deployment)
+lilya_cli.add_command(shell)

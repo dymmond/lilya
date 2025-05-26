@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Annotated
 
 from sayer import Argument, Option, command, error, success
@@ -11,10 +13,10 @@ from lilya.crypto import get_random_secret_key
 printer = Print()
 
 
-@command(name="createproject")
+@command(name="createproject")  # type: ignore
 def create_project(
     name: Annotated[str, Argument(help="The name of the project to create.")],
-    verbosity: Annotated[int, Option(1, help="Verbosity level for the output.")],
+    verbosity: Annotated[int, Option(1, "-v", help="Verbosity level for the output.")],
     with_deployment: Annotated[
         bool,
         Option(False, help="Creates a project with base deployment files.", show_default=True),
