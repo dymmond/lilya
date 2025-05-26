@@ -3,14 +3,14 @@ from __future__ import annotations
 import os
 import sys
 from enum import Enum
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Annotated, Any, TypeVar
 
 import click
+from sayer import Argument, Option, command, error
 
 from lilya._internal._events import generate_lifespan_events
 from lilya.cli.constants import APP_PARAMETER, LILYA_DISCOVER_APP
 from lilya.cli.env import DirectiveEnv
-from lilya.cli.terminal.print import Print
 from lilya.cli.utils import fetch_directive
 from lilya.compat import run_sync
 from lilya.types import Lifespan
@@ -20,48 +20,40 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 
-printer = Print()
-
 
 class Position(int, Enum):
     DEFAULT = 5
     BACK = 3
 
 
-@click.option(
-    "--directive",
-    "directive",
-    required=True,
-    help=("The name of the file of the custom directive to run."),
-)
-@click.argument("directive_args", nargs=-1, type=click.UNPROCESSED)
-@click.command(
-    name="run",
+@command(
     context_settings={
         "ignore_unknown_options": True,
-    },
+    }
 )
-def run(env: DirectiveEnv, directive: str, directive_args: Any) -> None:
+def run(
+    env: DirectiveEnv,
+    directive: Annotated[str, Option(required=True, help="The name of the file of the custom directive to run.")],
+    directive_args: Annotated[Any, Argument(default=..., nargs=-1, type=click.UNPROCESSED, help="The arguments needed to be passed to the custom directive")]) -> None:
     """
     Runs every single custom directive in the system.
 
     How to run: `lilya --app <APP-LOCATION> run -n <DIRECTIVE NAME> <ARGS>`.
 
-        Example: `lilya --app myapp:app run -n createsuperuser`
+    Example: `lilya --app myapp:app run -n createsuperuser`
     """
     name = directive
     if name is not None and getattr(env, "app", None) is None:
-        error = (
+        error(
             "You cannot specify a custom directive without specifying the --app or setting "
             "LILYA_DEFAULT_APP environment variable."
         )
-        printer.write_error(error)
         sys.exit(1)
 
     # Loads the directive object
     directive = fetch_directive(name, env.command_path, True)
     if not directive:
-        printer.write_error(f"Unknown directive: {name!r}")
+        error(f"Unknown directive: {name!r}")
         sys.exit(1)
 
     # Execute the directive

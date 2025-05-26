@@ -8,14 +8,12 @@ from pathlib import Path
 from typing import Any
 
 from jinja2 import Environment, FileSystemLoader
+from sayer import error, info
 
 import lilya
 from lilya.cli.base import BaseDirective
 from lilya.cli.constants import TREAT_AS_PROJECT_DIRECTIVE
 from lilya.cli.exceptions import DirectiveError
-from lilya.cli.terminal import Print
-
-printer = Print()
 
 
 class TemplateDirective(BaseDirective):
@@ -155,13 +153,13 @@ class TemplateDirective(BaseDirective):
 
                 shutil.copyfile(old_path, new_path)
                 if self.verbosity >= 2:
-                    printer.write_info(f"Creating {new_path}")
+                    info(f"Creating {new_path}")
                 try:
                     self.manage_template_variables(template_name, new_path, project_dir, context)
                     self.apply_umask(old_path, new_path)
                     self.make_file_writable(new_path)
                 except OSError:
-                    printer.write_error(
+                    error(
                         f"Notice: Couldn't set permission bits on {new_path}. You're "
                         "probably using an uncommon filesystem setup. No "
                         "problem.",
@@ -198,12 +196,12 @@ class TemplateDirective(BaseDirective):
         try:
             import_module(name)
         except ImportError:
-            pass
+            ...
         else:
             raise DirectiveError(
-                f"'{name}' conflicts with the name of an existing Python "
-                f"module and cannot be used as {self.a_or_an} {self.app_or_project} {self.name_or_dir}. Please try "
-                f"another {self.name_or_dir}."
+                f"'{name}' conflicts with the name of an existing project or folder "
+                f"and cannot be used as {self.a_or_an} {self.app_or_project} {name_or_dir}. Please try "
+                f"another {name_or_dir}."
             )
 
     def apply_umask(self, old_path: str | Path, new_path: str | Path) -> None:

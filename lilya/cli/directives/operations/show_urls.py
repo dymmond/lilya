@@ -5,14 +5,14 @@ import os
 import sys
 from typing import TYPE_CHECKING, Any
 
-import click
 from rich.console import Console
 from rich.table import Table
+from sayer import command, echo, error
 
 from lilya._internal._path import clean_path
 from lilya.cli.constants import LILYA_DISCOVER_APP
 from lilya.cli.env import DirectiveEnv
-from lilya.cli.terminal import OutputColour, Print, Terminal
+from lilya.cli.terminal import OutputColour
 from lilya.controllers import Controller as View
 from lilya.enums import HTTPMethod
 from lilya.routing import Path
@@ -21,8 +21,6 @@ if TYPE_CHECKING:
     from lilya.apps import ChildLilya, Lilya
     from lilya.routing import BasePath, Router
 
-printer = Print()
-writer = Terminal()
 console = Console()
 
 DOCS_ELEMENTS = [
@@ -51,26 +49,25 @@ def get_http_verb(mapping: Any) -> str:
     return HTTPMethod.GET.value
 
 
-@click.command(name="show_urls")
+@command
 def show_urls(env: DirectiveEnv) -> None:
     """Shows the information regarding the urls of a given application
 
-    How to run: `lilya show_urls`
+    How to run: `lilya show-urls`
 
-    Example: `lilya show_urls`
+    Example: `lilya show-urls`
     """
     if os.getenv(LILYA_DISCOVER_APP) is None and getattr(env, "app", None) is None:
-        error = (
+        error(
             "You cannot specify a custom directive without specifying the --app or setting "
             "LILYA_DEFAULT_APP environment variable."
         )
-        printer.write_error(error)
         sys.exit(1)
 
     app = env.app
     table = Table(title="Application Paths")
     table = get_routes_table(app, table)
-    printer.write(table)
+    echo(table)
 
 
 def get_routes_table(app: Lilya | ChildLilya | None, table: Table) -> Table:
