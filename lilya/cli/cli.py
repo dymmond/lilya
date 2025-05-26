@@ -90,6 +90,7 @@ class DirectiveGroup(SayerGroup):
                     sys.exit(1)
         return super().invoke(ctx)
 
+
 help_text = """
 Lilya command line tool allowing to run Lilya native directives or
 project unique and specific directives by passing the `-n` parameter.
@@ -112,13 +113,19 @@ lilya_cli = Sayer(
     group_class=DirectiveGroup,
 )
 
+
 @lilya_cli.callback(invoke_without_command=True)
 def lilya_callback(
     ctx: click.Context,
     name: typing.Annotated[str, Argument(help="The directive name.")],
-    path: typing.Annotated[str, Option(required=False, help="Module path to the Lilya application. In a module:path format.")],
-):
-    ...
+    path: typing.Annotated[
+        str,
+        Option(
+            required=False, help="Module path to the Lilya application. In a module:path format."
+        ),
+    ],
+): ...
+
 
 lilya_cli.add_command(directives)
 lilya_cli.add_command(show_urls)

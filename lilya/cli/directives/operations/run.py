@@ -33,8 +33,19 @@ class Position(int, Enum):
 )
 def run(
     env: DirectiveEnv,
-    directive: Annotated[str, Option(required=True, help="The name of the file of the custom directive to run.")],
-    directive_args: Annotated[Any, Argument(default=..., nargs=-1, type=click.UNPROCESSED, help="The arguments needed to be passed to the custom directive")]) -> None:
+    directive: Annotated[
+        str, Option(required=True, help="The name of the file of the custom directive to run.")
+    ],
+    directive_args: Annotated[
+        Any,
+        Argument(
+            default=...,
+            nargs=-1,
+            type=click.UNPROCESSED,
+            help="The arguments needed to be passed to the custom directive",
+        ),
+    ],
+) -> None:
     """
     Runs every single custom directive in the system.
 

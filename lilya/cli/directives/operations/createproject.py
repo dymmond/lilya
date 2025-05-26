@@ -10,13 +10,31 @@ from lilya.crypto import get_random_secret_key
 
 printer = Print()
 
+
 @command(name="createproject")
 def create_project(
     name: Annotated[str, Argument(help="The name of the project to create.")],
     verbosity: Annotated[int, Option(1, help="Verbosity level for the output.")],
-    with_deployment: Annotated[bool, Option(False, help="Creates a project with base deployment files.", show_default=True)],
-    deployment_folder_name: Annotated[str, Option("deployment", help="The name of the folder for the deployment files.", show_default=True)],
-    with_structure: Annotated[bool, Option(False, help="Creates a project with a given structure of folders and files.", show_default=True)],
+    with_deployment: Annotated[
+        bool,
+        Option(False, help="Creates a project with base deployment files.", show_default=True),
+    ],
+    deployment_folder_name: Annotated[
+        str,
+        Option(
+            "deployment",
+            help="The name of the folder for the deployment files.",
+            show_default=True,
+        ),
+    ],
+    with_structure: Annotated[
+        bool,
+        Option(
+            False,
+            help="Creates a project with a given structure of folders and files.",
+            show_default=True,
+        ),
+    ],
 ) -> None:
     """
     Creates the scaffold of a project.

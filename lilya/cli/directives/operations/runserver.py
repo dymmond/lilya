@@ -12,16 +12,32 @@ from lilya.cli.terminal import OutputColour, Terminal
 
 terminal = Terminal()
 
+
 @command
 def runserver(
     env: DirectiveEnv,
-    port: Annotated[int, Option(8000, "-p", help="Port to run the development server.", show_default=True)],
-    reload: Annotated[bool, Option(True, "-r", help="Reload server on file changes.", show_default=True)],
-    host: Annotated[str, Option(default="localhost", help="Host to run the server on.", show_default=True)],
-    debug: Annotated[bool, Option(default=True, help="Run the server in debug mode.", show_default=True)],
-    log_level: Annotated[str, Option(default="debug", help="Log level for the server.", show_default=True)],
-    lifespan: Annotated[str, Option(default="on", help="Enable lifespan events.", show_default=True)],
-    settings: Annotated[str | None, Option(help="Any custom settings to be initialised.", required=False, show_default=False)],
+    port: Annotated[
+        int, Option(8000, "-p", help="Port to run the development server.", show_default=True)
+    ],
+    reload: Annotated[
+        bool, Option(True, "-r", help="Reload server on file changes.", show_default=True)
+    ],
+    host: Annotated[
+        str, Option(default="localhost", help="Host to run the server on.", show_default=True)
+    ],
+    debug: Annotated[
+        bool, Option(default=True, help="Run the server in debug mode.", show_default=True)
+    ],
+    log_level: Annotated[
+        str, Option(default="debug", help="Log level for the server.", show_default=True)
+    ],
+    lifespan: Annotated[
+        str, Option(default="on", help="Enable lifespan events.", show_default=True)
+    ],
+    settings: Annotated[
+        str | None,
+        Option(help="Any custom settings to be initialised.", required=False, show_default=False),
+    ],
 ) -> None:
     """Starts the Lilya development server.
 

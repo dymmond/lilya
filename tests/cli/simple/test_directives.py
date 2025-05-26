@@ -9,7 +9,7 @@ from tests.cli.utils import run_cmd
 app = Lilya(routes=[])
 
 
-FOUND_DIRECTIVES = ["createapp", "createdeployment", "createproject", "runserver", "show_urls"]
+FOUND_DIRECTIVES = ["createapp", "createdeployment", "createproject", "runserver", "show-urls"]
 
 
 @pytest.fixture(scope="module")

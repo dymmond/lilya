@@ -113,7 +113,7 @@ instead.
 Example:
 
 ```shell
-$ lilya --app myproject.main:app show_urls
+$ lilya --app myproject.main:app show-urls
 ```
 
 ## How to use and when to use it

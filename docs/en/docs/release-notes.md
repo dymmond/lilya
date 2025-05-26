@@ -5,11 +5,18 @@ hide:
 
 # Release Notes
 
-## 0.13.8
+## 0.14.0
+
+### Added
+
+- Integration with [Sayer](https://sayer.dymmond.com) for the Lilya CLI. This is a massive milestone for Lilya as it allows
+you to use the Lilya CLI with the Sayer CLI, which is a powerful tool for managing your Lilya applications or any other, really.
 
 ### Changed
 
 - Typing for `add_route` allowing controllers to be recognised.
+- Rename `show_urls` directive to `show-urls`. This is a breaking change as the directive name has changed but slightly more
+consistent with the rest of the directives.
 
 ## 0.13.7
 
