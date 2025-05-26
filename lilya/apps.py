@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-import sys
 from collections.abc import Awaitable, Callable, Mapping, Sequence
-from typing import Annotated, Any, ClassVar, cast
+from typing import Annotated, Any, ClassVar, ParamSpec, cast
 
 from lilya._internal._connection import Connection  # noqa
 from lilya._internal._middleware import wrap_middleware  # noqa
@@ -40,11 +39,6 @@ from lilya.types import (
     Send,
 )
 from lilya.websockets import WebSocket
-
-if sys.version_info >= (3, 10):  # pragma: no cover
-    from typing import ParamSpec
-else:  # pragma: no cover
-    from typing_extensions import ParamSpec
 
 P = ParamSpec("P")
 

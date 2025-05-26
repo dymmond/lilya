@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import os
-import sys
 from collections.abc import Sequence
-from typing import Any, Union
+from typing import Any
 
 from lilya import status
 from lilya.exceptions import MissingDependency, TemplateNotFound
@@ -27,15 +26,12 @@ try:
 except ImportError as exc:
     raise MissingDependency("jinja2 is not installed") from exc
 
-if sys.version_info >= (3, 10):  # pragma: no cover
-    from typing import ParamSpec
-else:  # pragma: no cover
-    from typing_extensions import ParamSpec
+from typing import ParamSpec
 
 P = ParamSpec("P")
 
 
-PathLike = Union[str, "os.PathLike[str]"]
+PathLike = str | os.PathLike[str]
 
 
 class TemplateRenderer(BaseTemplateRenderer):

@@ -1,13 +1,6 @@
 from __future__ import annotations
 
-import sys
-
-if sys.version_info >= (3, 10):  # pragma: no cover
-    from typing import ParamSpec
-else:  # pragma: no cover
-    from typing_extensions import ParamSpec
-
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, ParamSpec, Protocol, runtime_checkable
 
 from lilya._internal._connection import Connection
 from lilya.types import ASGIApp, Receive, Scope, Send

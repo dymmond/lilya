@@ -5,7 +5,6 @@ import os
 import posixpath
 import stat
 from email.utils import parsedate
-from typing import Union
 
 import anyio
 import anyio.to_thread
@@ -16,7 +15,7 @@ from lilya.exceptions import ContinueRouting, HTTPException
 from lilya.responses import FileResponse, RedirectResponse, Response
 from lilya.types import Receive, Scope, Send
 
-PathLike = Union[str, "os.PathLike[str]"]
+PathLike = str | os.PathLike[str]
 
 
 class StaticResponse(Response):

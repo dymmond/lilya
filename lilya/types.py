@@ -3,7 +3,6 @@ from contextlib import AbstractAsyncContextManager
 from typing import (
     Any,
     TypeVar,
-    Union,
 )
 
 try:
@@ -28,13 +27,13 @@ ASGIApp = Callable[[Scope, Receive, Send], Awaitable[None]]
 
 StatelessLifespan = Callable[[ApplicationType], AbstractAsyncContextManager[None]]
 StatefulLifespan = Callable[[ApplicationType], AbstractAsyncContextManager[Mapping[str, Any]]]
-Lifespan = Union[StatelessLifespan[ApplicationType], StatefulLifespan[ApplicationType]]
+Lifespan = StatelessLifespan[ApplicationType] | StatefulLifespan[ApplicationType]
 
 LifespanEvent = Sequence[Callable[[], Any]]
 
-HTTPExceptionHandler = Callable[[Any, Exception], Union[Any, Awaitable[Any]]]
+HTTPExceptionHandler = Callable[[Any, Exception], Any | Awaitable[Any]]
 WebSocketExceptionHandler = Callable[[Any, Exception], Awaitable[None]]
-ExceptionHandler = Union[HTTPExceptionHandler, WebSocketExceptionHandler]
+ExceptionHandler = HTTPExceptionHandler | WebSocketExceptionHandler
 CallableDecorator = TypeVar("CallableDecorator", bound=Callable[..., Any])
 
 

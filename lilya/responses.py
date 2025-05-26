@@ -25,7 +25,6 @@ from typing import (
     Any,
     Literal,
     NoReturn,
-    Union,
     cast,
 )
 from urllib.parse import quote
@@ -42,11 +41,11 @@ from lilya.encoders import ENCODER_TYPES, EncoderProtocol, MoldingProtocol, json
 from lilya.enums import Event, HTTPMethod, MediaType
 from lilya.types import Receive, Scope, Send
 
-Content = Union[str, bytes]
-Encoder = Union[EncoderProtocol, MoldingProtocol]
+Content = str | bytes
+Encoder = EncoderProtocol | MoldingProtocol
 SyncContentStream = Iterable[Content]
 AsyncContentStream = AsyncIterable[Content]
-ContentStream = Union[AsyncContentStream, SyncContentStream]
+ContentStream = AsyncContentStream | SyncContentStream
 
 _empty: tuple[Any, ...] = ()
 

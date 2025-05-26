@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import functools
 import inspect
-import sys
 import typing
 from abc import ABC, abstractmethod
+from typing import ParamSpec
 from urllib.parse import urlencode
 
 from lilya.compat import is_async_callable
@@ -12,12 +12,6 @@ from lilya.exceptions import HTTPException
 from lilya.requests import Connection, Request
 from lilya.responses import RedirectResponse
 from lilya.websockets import WebSocket
-
-if sys.version_info >= (3, 10):  # pragma: no cover
-    from typing import ParamSpec
-else:  # pragma: no cover
-    from typing_extensions import ParamSpec
-
 
 P = ParamSpec("P")
 
