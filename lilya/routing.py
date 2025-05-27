@@ -258,7 +258,7 @@ class BasePath:
     def stringify_parameters(self) -> list[str]:  # pragma: no cover
         """
         Gets the param:type in string like list.
-        Used for the directive `lilya show_urls`.
+        Used for the directive `lilya show-urls`.
         """
         path_components = parse_path(self.path)
         parameters = [component for component in path_components if isinstance(component, tuple)]

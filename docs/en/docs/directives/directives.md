@@ -23,7 +23,7 @@ Currently there are a few built-in directives.
 * [createproject](#create-project) - Used to generate a scaffold for a project.
 * [createapp](#create-app) - Used to generate a scaffold for an application.
 * [createdeployment](#create-deployment) - Used to generate files for a deployment with docker, nginx, supervisor and gunicorn.
-* [show_urls](#show-urls) - Shows the information about the your lilya application.
+* [show-urls](#show-urls) - Shows the information about the your lilya application.
 * [shell](./shell.md) - Starts the python interactive shell for your Lilya application.
 
 ### Help
@@ -401,13 +401,13 @@ This command can be run like this:
 **Using the --app parameter**
 
 ```shell
-$ lilya --app myproject.main:app show_urls
+$ lilya --app myproject.main:app show-urls
 ```
 
 **Using the LILYA_DEFAULT_APP environment variable already exported**:
 
 ```shell
-$ lilya myproject.main:app show_urls
+$ lilya myproject.main:app show-urls
 ```
 
 ### Runserver

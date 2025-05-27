@@ -1,17 +1,11 @@
 from __future__ import annotations
 
 import inspect
-import sys
-from typing import Any, TypedDict
+from typing import Any, TypedDict, TypeGuard
 
 from lilya.compat import is_async_callable
 from lilya.testclient._internal.types import ASGI2App, ASGI3App
 from lilya.types import Receive, Scope, Send
-
-if sys.version_info >= (3, 10):  # pragma: no cover
-    from typing import TypeGuard
-else:  # pragma: no cover
-    from typing_extensions import TypeGuard
 
 
 def is_asgi3(app: ASGI2App | ASGI3App) -> TypeGuard[ASGI3App]:

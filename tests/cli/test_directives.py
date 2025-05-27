@@ -61,15 +61,11 @@ def test_list_directives_with_app(create_folders):
 
 
 def test_list_directives_with_flag(create_folders):
-    original_path = os.getcwd()
-    run_cmd("tests.cli.main:app", "lilya createproject myproject --with-structure")
-
-    os.chdir("myproject/myproject/apps")
-
-    (o, e, ss) = run_cmd("tests.cli.main:app", "lilya createapp myapp")
+    original_path = os.path.dirname(os.path.abspath(__file__))
+    run_cmd("tests.cli.main:app", "lilya createproject myproject")
 
     os.chdir(original_path)
-
+    os.makedirs("myproject/myproject/apps/myapp/directives/operations/")
     shutil.copyfile(
         "createsuperuser.py",
         "myproject/myproject/apps/myapp/directives/operations/createsuperuser.py",

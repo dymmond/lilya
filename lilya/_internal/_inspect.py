@@ -1,5 +1,5 @@
 import inspect
-from typing import Callable
+from collections.abc import Callable
 
 
 def func_accepts_kwargs(func: Callable) -> bool:

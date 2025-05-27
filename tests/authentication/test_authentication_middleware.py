@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import base64
 import binascii
-from collections.abc import Awaitable
-from typing import Callable
+from collections.abc import Awaitable, Callable
 
 import pytest
 

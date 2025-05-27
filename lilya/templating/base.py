@@ -1,23 +1,17 @@
 from __future__ import annotations
 
 import os
-import sys
-from typing import Any, Generic, TypeVar, Union
+from typing import Any, Generic, ParamSpec, TypeVar
 
 from lilya import status
 from lilya.background import Task
 from lilya.requests import Request
 from lilya.responses import TemplateResponse
 
-if sys.version_info >= (3, 10):  # pragma: no cover
-    from typing import ParamSpec
-else:  # pragma: no cover
-    from typing_extensions import ParamSpec
-
 P = ParamSpec("P")
 T = TypeVar("T")
 
-PathLike = Union[str, "os.PathLike[str]"]
+PathLike = str | os.PathLike[str]
 
 
 class BaseTemplateRenderer(Generic[T]):

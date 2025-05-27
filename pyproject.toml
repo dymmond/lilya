@@ -7,7 +7,7 @@ name = "lilya"
 description = "Yet another ASGI toolkit that delivers"
 long_description = "Yet another ASGI toolkit that delivers"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dynamic = ['version']
 authors = [{ name = "Tiago Silva", email = "tiago.arasilva@gmail.com" }]
 classifiers = [
@@ -29,7 +29,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: BSD License",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -41,7 +40,7 @@ dependencies = [
     "anyio>=3.4.0,<5",
     "multidict>=6.0.4,<7.0.0",
     "typing_extensions>=3.10.0; python_version < '3.10'",
-    "monkay>=0.4.1"
+    "sayer>=0.2.4,<1.0.0",
 ]
 keywords = ["lilya"]
 
@@ -221,6 +220,7 @@ ignore = [
     "C901",  # too complex
     "B026",  # too complex
     "UP006",
+    "UP038"
 ]
 
 

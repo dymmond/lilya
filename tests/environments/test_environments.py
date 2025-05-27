@@ -1,7 +1,7 @@
 import os
 import typing
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import pytest
 from typing_extensions import assert_type
@@ -18,8 +18,8 @@ def test_load_types_string():
     assert_type(loader("VALUE"), str)
     assert_type(loader("VALUE_DEFAULT", default=""), str)
     assert_type(loader("VALUE_CAST", cast=str), str)
-    assert_type(loader("VALUE_NONE", default=None), Optional[str])
-    assert_type(loader("VALUE_CAST_NONE", cast=str, default=None), Optional[str])
+    assert_type(loader("VALUE_NONE", default=None), str | None)
+    assert_type(loader("VALUE_CAST_NONE", cast=str, default=None), str | None)
     assert_type(loader("VALUE_CAST_VALUE", cast=str, default=""), str)
 
 
@@ -31,8 +31,8 @@ def test_load_types_string_ignore_case_false():
     assert_type(loader("VALUE"), str)
     assert_type(loader("VALUE_DEFAULT", default=""), str)
     assert_type(loader("VALUE_CAST", cast=str), str)
-    assert_type(loader("VALUE_NONE", default=None), Optional[str])
-    assert_type(loader("VALUE_CAST_NONE", cast=str, default=None), Optional[str])
+    assert_type(loader("VALUE_NONE", default=None), str | None)
+    assert_type(loader("VALUE_CAST_NONE", cast=str, default=None), str | None)
     assert_type(loader("VALUE_CAST_VALUE", cast=str, default=""), str)
 
 
@@ -67,8 +67,8 @@ def test_load_types_string_via_env_function():
     assert_type(loader.env("VALUE"), str)
     assert_type(loader.env("VALUE_DEFAULT", default=""), str)
     assert_type(loader.env("VALUE_CAST", cast=str), str)
-    assert_type(loader.env("VALUE_NONE", default=None), Optional[str])
-    assert_type(loader.env("VALUE_CAST_NONE", cast=str, default=None), Optional[str])
+    assert_type(loader.env("VALUE_NONE", default=None), str | None)
+    assert_type(loader.env("VALUE_CAST_NONE", cast=str, default=None), str | None)
     assert_type(loader.env("VALUE_CAST_VALUE", cast=str, default=""), str)
 
 
@@ -77,8 +77,8 @@ def test_load_types_boolean():
 
     assert_type(loader("BOOLEAN", cast=bool), bool)
     assert_type(loader("BOOLEAN_DEFAULT", cast=bool, default=False), bool)
-    assert_type(loader("BOOLEAN_NONE", cast=bool, default=None), Optional[bool])
-    assert_type(loader("BOOLEAN_NONE", cast=bool, default=None), Optional[bool])
+    assert_type(loader("BOOLEAN_NONE", cast=bool, default=None), str | bool)
+    assert_type(loader("BOOLEAN_NONE", cast=bool, default=None), str | bool)
 
 
 def test_load_types_boolean_ignore_case_true_raises_error():
@@ -106,8 +106,8 @@ def test_load_types_boolean_via_env_function():
 
     assert_type(loader.env("BOOLEAN", cast=bool), bool)
     assert_type(loader.env("BOOLEAN_DEFAULT", cast=bool, default=False), bool)
-    assert_type(loader.env("BOOLEAN_NONE", cast=bool, default=None), Optional[bool])
-    assert_type(loader.env("BOOLEAN_NONE", cast=bool, default=None), Optional[bool])
+    assert_type(loader.env("BOOLEAN_NONE", cast=bool, default=None), str | bool)
+    assert_type(loader.env("BOOLEAN_NONE", cast=bool, default=None), str | bool)
 
 
 def test_raises_error() -> None:

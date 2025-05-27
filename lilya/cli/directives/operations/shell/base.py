@@ -5,25 +5,29 @@ import select
 import sys
 from collections.abc import Callable, Sequence
 from contextvars import copy_context
-from typing import Any
+from typing import Annotated, Any
 
 import click
+from sayer import Option, command
 
 from lilya._internal._events import AyncLifespanContextManager
 from lilya.cli.directives.operations.shell.enums import ShellOption
 from lilya.cli.env import DirectiveEnv
-from lilya.compat import run_sync
 
 
-@click.option(
-    "--kernel",
-    default="ipython",
-    type=click.Choice(["ipython", "ptpython"]),
-    help="Which shell should start.",
-    show_default=True,
-)
-@click.command()
-def shell(env: DirectiveEnv, kernel: bool) -> None:
+@command
+async def shell(
+    env: DirectiveEnv,
+    kernel: Annotated[
+        str,
+        Option(
+            default="ipython",
+            help="Which shell should start.",
+            type=click.Choice(["ipython", "ptpython"]),
+            show_default=True,
+        ),
+    ],
+) -> None:
     """
     Starts an interactive ipython shell with all the models
     and important python libraries.
@@ -42,7 +46,7 @@ def shell(env: DirectiveEnv, kernel: bool) -> None:
     lifespan = handle_lifespan_events(
         on_startup=on_startup, on_shutdown=on_shutdown, lifespan=lifespan
     )
-    run_sync(run_shell(env.app, lifespan, kernel))  # type: ignore
+    await run_shell(env.app, lifespan, kernel)
     return None
 
 

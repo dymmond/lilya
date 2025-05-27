@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 from collections import defaultdict
 
-import click
+from sayer import command
 
 from lilya.cli.directives.operations._constants import PATH
 from lilya.cli.env import DirectiveEnv
@@ -8,8 +10,8 @@ from lilya.cli.terminal import OutputColour, Terminal
 from lilya.cli.utils import get_application_directives, get_directives
 
 
-@click.command(name="directives")
-def list(env: DirectiveEnv) -> None:
+@command
+def directives(env: DirectiveEnv) -> None:
     """
     Lists the available directives
 

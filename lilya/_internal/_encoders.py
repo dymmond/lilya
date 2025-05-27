@@ -11,7 +11,7 @@ from enum import Enum
 from inspect import isclass
 from pathlib import PurePath
 from types import GeneratorType
-from typing import Any, Generic, Protocol, TypeVar, Union, cast, runtime_checkable
+from typing import Any, Generic, Protocol, TypeVar, cast, runtime_checkable
 
 from monkay import TransparentCage
 
@@ -185,7 +185,7 @@ DEFAULT_ENCODER_TYPES: deque[EncoderProtocol] = deque(
 )
 
 
-_ENCODER_TYPES_TYPE_BASE = Sequence[Union[EncoderProtocol, MoldingProtocol]]
+_ENCODER_TYPES_TYPE_BASE = Sequence[EncoderProtocol | MoldingProtocol]
 
 
 class ENCODER_TYPES_TYPE(_ENCODER_TYPES_TYPE_BASE):

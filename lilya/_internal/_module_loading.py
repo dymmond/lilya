@@ -1,14 +1,7 @@
 from __future__ import annotations
 
-import sys
 from importlib import import_module
-from typing import Any
-
-if sys.version_info >= (3, 10):  # pragma: no cover
-    from typing import ParamSpec
-else:  # pragma: no cover
-    from typing_extensions import ParamSpec
-
+from typing import Any, ParamSpec
 
 P = ParamSpec("P")
 

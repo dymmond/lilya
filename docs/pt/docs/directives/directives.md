@@ -27,7 +27,7 @@ Atualmente, existem algumas directivas incorporadas.
 * [createproject](#criar-projecto) - Usado para gerar uma estrutura básica para um projecto.
 * [createapp](#criar-aplicação) - Usado para gerar uma estrutura básica para uma aplicação.
 * [createdeploy](#criar-deploy) - Usado para gerar ficheiros para um deploy com docker, nginx, supervisor e gunicorn.
-* [show_urls](#mostrar-urls) - Mostra informações sobre a aplicação Lilya.
+* [show-urls](#mostrar-urls) - Mostra informações sobre a aplicação Lilya.
 * [shell](./shell.md) - Inicia o shell interativa do Python para a aplicação Lilya.
 
 ### Ajuda
@@ -403,13 +403,13 @@ Este comando pode ser executado da seguinte forma:
 **Usando o parâmetro --app**
 
 ```shell
-$ lilya --app myproject.main:app show_urls
+$ lilya --app myproject.main:app show-urls
 ```
 
 **Usando a variável de ambiente LILYA_DEFAULT_APP já exportada**:
 
 ```shell
-$ lilya myproject.main:app show_urls
+$ lilya myproject.main:app show-urls
 ```
 
 ### Runserver

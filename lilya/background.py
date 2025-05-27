@@ -1,14 +1,7 @@
 from __future__ import annotations
 
-import sys
-
-if sys.version_info >= (3, 10):  # pragma: no cover
-    from typing import ParamSpec
-else:  # pragma: no cover
-    from typing_extensions import ParamSpec
-
 from collections.abc import Callable, Sequence
-from typing import Any
+from typing import Any, ParamSpec
 
 import anyio
 

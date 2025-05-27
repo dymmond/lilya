@@ -100,7 +100,7 @@ Alternativamente, pode simplesmente passar `--app` como um parâmetro com a loca
 Exemplo:
 
 ```shell
-$ lilya --app myproject.main:app show_urls
+$ lilya --app myproject.main:app show-urls
 ```
 
 ## Como usar e quando usar

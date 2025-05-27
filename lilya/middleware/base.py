@@ -1,17 +1,10 @@
 from __future__ import annotations
 
-import sys
 from collections.abc import Callable, Iterator
-from typing import Any, cast
+from typing import Any, ParamSpec, cast
 
 from lilya._internal._module_loading import import_string
 from lilya.types import ASGIApp
-
-if sys.version_info >= (3, 10):  # pragma: no cover
-    from typing import ParamSpec
-else:  # pragma: no cover
-    from typing_extensions import ParamSpec
-
 
 P = ParamSpec("P")
 
