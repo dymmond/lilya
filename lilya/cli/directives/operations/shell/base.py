@@ -7,6 +7,7 @@ from collections.abc import Callable, Sequence
 from contextvars import copy_context
 from typing import Annotated, Any
 
+import click
 from sayer import Option, command
 
 from lilya._internal._events import AyncLifespanContextManager
@@ -18,7 +19,13 @@ from lilya.cli.env import DirectiveEnv
 async def shell(
     env: DirectiveEnv,
     kernel: Annotated[
-        bool, Option(default="ipython", help="Which shell should start.", show_default=True)
+        str,
+        Option(
+            default="ipython",
+            help="Which shell should start.",
+            type=click.Choice(["ipython", "ptpython"]),
+            show_default=True,
+        ),
     ],
 ) -> None:
     """
@@ -39,7 +46,7 @@ async def shell(
     lifespan = handle_lifespan_events(
         on_startup=on_startup, on_shutdown=on_shutdown, lifespan=lifespan
     )
-    await run_shell(env.app, lifespan, kernel)  # type: ignore
+    await run_shell(env.app, lifespan, kernel)
     return None
 
 

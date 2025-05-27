@@ -60,3 +60,24 @@ def test_list_directives_with_app(create_folders):
 
     for directive in FOUND_DIRECTIVES:
         assert directive in str(o)
+
+
+def test_list_directives_with_flag(create_folders):
+    original_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    run_cmd("tests.cli.main:app", "lilya createproject myproject")
+
+    os.chdir(original_path)
+    os.makedirs("myproject/myproject/apps/myapp/directives/operations/")
+
+    shutil.copyfile(
+        "createsuperuser.py",
+        "myproject/myproject/apps/myapp/directives/operations/createsuperuser.py",
+    )
+
+    (o, e, ss) = run_cmd("tests.cli.main:app", "lilya --app tests.cli.main:app directives")
+    assert ss == 0
+
+    for directive in FOUND_DIRECTIVES:
+        assert directive in str(o)
+
+    assert "createsuperuser" in str(o)

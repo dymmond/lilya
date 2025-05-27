@@ -29,6 +29,7 @@ class Position(int, Enum):
 @command(  # type: ignore
     context_settings={
         "ignore_unknown_options": True,
+        "allow_extra_args": True,
     }
 )
 def run(
@@ -37,9 +38,8 @@ def run(
         str, Option(required=True, help="The name of the file of the custom directive to run.")
     ],
     directive_args: Annotated[
-        Any,
+        list[str],
         Argument(
-            default=...,
             nargs=-1,
             type=click.UNPROCESSED,
             help="The arguments needed to be passed to the custom directive",

@@ -45,7 +45,8 @@ class DirectiveGroup(SayerGroup):
         return super().add_command(cmd, name)
 
     def wrap_args(self, func: Callable[..., T]) -> Callable[..., T]:
-        params = inspect.signature(func).parameters
+        original = inspect.unwrap(func)
+        params = inspect.signature(original).parameters
 
         @wraps(func)
         def wrapped(ctx: click.Context, /, *args: typing.Any, **kwargs: typing.Any) -> T:
@@ -54,6 +55,7 @@ class DirectiveGroup(SayerGroup):
                 kwargs["env"] = scaffold
             return func(*args, **kwargs)
 
+        # click.pass_context makes sure that 'ctx' is the first argument
         return click.pass_context(wrapped)
 
     def process_settings(self, ctx: click.Context) -> None:
@@ -77,7 +79,7 @@ class DirectiveGroup(SayerGroup):
         Directives can be ignored depending of the functionality from what is being
         called.
         """
-        path = ctx.params.get("path", None)
+        path = ctx.params.get("app", None)
 
         # Process any settings
         self.process_settings(ctx)
