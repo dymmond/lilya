@@ -7,7 +7,7 @@ hide:
 
 ## 0.14.0
 
-Due to tye advancements of the ecosystem, it was decided to drop support for Python 3.9 so we can unify syntaxes and tools.
+Due to type advancements of the ecosystem, it was decided to drop support for Python 3.9 so we can unify syntaxes and tools.
 
 ### Added
 
