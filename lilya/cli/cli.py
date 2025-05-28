@@ -114,6 +114,7 @@ How to run custom directives: `lilya --app <APP-LOCATION> run -n <DIRECTIVE NAME
 """
 
 lilya_cli = Sayer(
+    name="Lilya",
     help=help_text,
     add_version_option=True,
     version=__version__,
