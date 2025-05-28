@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.14.1
+
+### Fixed
+
+- `observable` was causing AnyIO problems.
+
 ## 0.14.0
 
 Due to type advancements of the ecosystem, it was decided to drop support for Python 3.9 so we can unify syntaxes and tools.

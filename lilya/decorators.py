@@ -5,6 +5,7 @@ from functools import wraps
 from typing import Any
 
 import anyio
+from anyio.from_thread import start_blocking_portal
 
 from lilya._internal._events import EventDispatcher  # noqa
 from lilya.compat import is_async_callable
@@ -37,10 +38,9 @@ def observable(send: list[str] | None = None, listen: list[str] | None = None) -
                 for event in listen:
                     await EventDispatcher.subscribe(event, func)
 
-        try:
-            anyio.run(register)  # Ensures safe execution if no event loop is running
-        except RuntimeError:
-            anyio.from_thread.run(register)  # Runs in an existing event loop if active
+        # Use the portal to run the registration in a blocking manner
+        with start_blocking_portal() as portal:
+            portal.call(register)
 
         @wraps(func)
         async def wrapper(*args: Any, **kwargs: Any) -> Any:
