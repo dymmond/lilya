@@ -10,7 +10,7 @@ from typing import TypeVar
 
 import click
 from sayer import Sayer, error
-from sayer.core.groups import SayerGroup
+from sayer.core.groups.sayer import SayerGroup
 from sayer.params import Argument, Option
 
 from lilya import __version__
