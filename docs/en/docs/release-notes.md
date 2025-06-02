@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.14.2
+
+### Changed
+
+- Update internals of cli with the latest [Sayer](https://sayer.dymmond.com) version.
+
 ## 0.14.1
 
 ### Fixed
