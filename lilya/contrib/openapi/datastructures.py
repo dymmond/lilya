@@ -32,11 +32,7 @@ class OpenAPIResponse(BaseModel):
     """
 
     model: Annotated[
-        type[BaseModel] |
-        list[type[BaseModel]] |
-        type[Any] |
-        list[type[Any]]
-        ,
+        type[BaseModel] | list[type[BaseModel]] | type[Any] | list[type[Any]],
         Doc(
             """
             A `pydantic.BaseModel` type of object of a `list` of
@@ -92,7 +88,9 @@ class OpenAPIResponse(BaseModel):
     ] = None
 
     @field_validator("model", mode="before")
-    def validate_model(cls, model: type[BaseModel] | list[type[BaseModel]] | type[Any] | list[type[Any]],
+    def validate_model(
+        cls,
+        model: type[BaseModel] | list[type[BaseModel]] | type[Any] | list[type[Any]],
     ) -> type[BaseModel] | list[type[BaseModel]] | type[Any] | list[type[Any]]:
         if isinstance(model, list) and len(model) > 1:
             raise ValueError(

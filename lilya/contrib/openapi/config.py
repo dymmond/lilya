@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Annotated, Any, cast
+from typing import Annotated, Any
 
 from pydantic import AnyUrl, BaseModel
 from typing_extensions import Doc
@@ -86,17 +86,13 @@ class OpenAPIConfig(BaseModel):
         ),
     ] = "Yet another framework/toolkit that delivers."
     contact: Annotated[
-        dict[str, str| Any] | None,
+        dict[str, str | Any] | None,
         Doc(
             """
             API contact information. This is an OpenAPI schema contact, meaning, in a dictionary format compatible with OpenAPI or an instance of `lilya.openapi.schemas.v3_1_0.contact.Contact`.
             """
         ),
-    ] = {
-        "name": "Lilya",
-        "url": "https://lilya.dev",
-        "email": "admin@myapp.com"
-    }
+    ] = {"name": "Lilya", "url": "https://lilya.dev", "email": "admin@myapp.com"}
     terms_of_service: Annotated[
         AnyUrl | None,
         Doc(
@@ -374,13 +370,13 @@ class OpenAPIConfig(BaseModel):
             routes=app.routes,
             tags=self.tags,
             servers=self.servers,
-            terms_of_service=self.terms_of_service,
+            terms_of_service=self.terms_of_service,  # type: ignore
             contact=self.contact,
             license=self.license,
             webhooks=self.webhooks,
         )
         app.openapi_schema = openapi_schema
-        return cast(dict[str, Any], app.openapi_schema)
+        return app.openapi_schema
 
     def enable(self, app: Any) -> None:
         """Enables the OpenAPI documentation"""
@@ -503,5 +499,3 @@ class OpenAPIConfig(BaseModel):
                 handler=rapidoc_html,
                 include_in_schema=False,
             )
-
-        app.router.activate()
