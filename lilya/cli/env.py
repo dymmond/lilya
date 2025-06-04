@@ -27,9 +27,9 @@ class Scaffold:
 
 @dataclass
 class ModuleInfo:
-    module_import: list[str]
-    extra_sys_path: Path
-    module_paths: list[Path]
+    module_import: list[str] | None = None
+    extra_sys_path: Path | None = None
+    module_paths: list[Path] | None = None
     discovery_file: str | None = None
 
 
@@ -86,6 +86,9 @@ class DirectiveEnv:
         If the path is a directory, it checks for the presence of `__init__.py`
         files in the parent directories to construct the module paths.
         """
+        if not path:
+            return ModuleInfo()
+
         use_path = path.resolve()
         module_path = use_path
         if use_path.is_file() and use_path.stem == "__init__":
