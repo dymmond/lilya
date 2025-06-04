@@ -147,10 +147,15 @@ def runserver(
         )
 
         url = f"http://{host}:{port}"
+        docs = f"http://{host}:{port}/docs/swagger"
         toolkit.print_line()
         toolkit.print(
             f"Server started at [link={url}]{url}[/]",
             tag="server",
+        )
+        toolkit.print(
+            f"Visit the docs at [link={docs}]{docs}[/]",
+            tag="docs",
         )
 
         app = env.app
