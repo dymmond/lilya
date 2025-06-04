@@ -58,6 +58,23 @@ logger = logging.getLogger(__name__)
 
 
 def get_ui_toolkit() -> RichToolkit:
+    """
+    Returns a RichToolkit instance with a custom theme for the terminal UI.
+    This toolkit is used to render styled text in the terminal, enhancing the user interface
+    with colors and styles for various elements like tags, placeholders, text, and errors.
+
+    The theme is defined using a TaggedStyle for tag widths and a dictionary for colors.
+
+    The colors are specified in a format compatible with Rich, allowing for a visually appealing
+    and user-friendly terminal experience.
+    The `RichToolkitTheme` is configured with specific styles for different tags and elements,
+    such as "tag.title", "tag", "placeholder", "text", "selected", "result", "progress",
+    "error", and "log.info". Each of these styles is defined with a foreground and background color,
+    providing a consistent and readable appearance in the terminal.
+
+    The `get_ui_toolkit` function initializes and returns this toolkit, which can be used throughout
+    the application to print styled messages, logs, and other terminal outputs.
+    """
     theme = RichToolkitTheme(
         style=TaggedStyle(tag_width=11),
         theme={
