@@ -8,10 +8,7 @@ from pathlib import Path
 
 from lilya.apps import ChildLilya, Lilya
 from lilya.cli.constants import DISCOVERY_FILES, DISCOVERY_FUNCTIONS, LILYA_DISCOVER_APP
-from lilya.cli.terminal import Print
 from lilya.exceptions import EnvError
-
-printer = Print()
 
 
 @dataclass
@@ -24,6 +21,16 @@ class Scaffold:
 
     path: str
     app: Lilya | ChildLilya
+    app_location: Path | None = None
+    discovery_file: str | None = None
+
+
+@dataclass
+class ModuleInfo:
+    module_import: list[str]
+    extra_sys_path: Path
+    module_paths: list[Path]
+    discovery_file: str | None = None
 
 
 @dataclass
@@ -36,6 +43,7 @@ class DirectiveEnv:
     path: str | None = None
     app: Lilya | ChildLilya | None = None
     command_path: str | None = None
+    module_info: ModuleInfo | None = None
 
     def load_from_env(self, path: str | None = None) -> DirectiveEnv:
         """
@@ -57,7 +65,46 @@ class DirectiveEnv:
         _path = os.getenv(LILYA_DISCOVER_APP) if not path else path
         _app = self.find_app(path=_path, cwd=cwd)
 
-        return DirectiveEnv(path=_app.path, app=_app.app, command_path=command_path)
+        return DirectiveEnv(
+            path=_app.path,
+            app=_app.app,
+            command_path=command_path,
+            module_info=self.get_module_data_from_path(
+                _app.app_location, _app.path, _app.discovery_file
+            ),
+        )
+
+    def get_module_data_from_path(
+        self, path: Path, module_import: str, discovery_file: str
+    ) -> ModuleInfo:
+        use_path = path.resolve()
+        module_path = use_path
+        if use_path.is_file() and use_path.stem == "__init__":
+            module_path = use_path.parent
+
+        module_paths = [module_path]
+        extra_sys_path = module_path.parent
+
+        initial_init = module_path / "__init__.py"
+        if initial_init.is_file() and initial_init.stem == "__init__":
+            module_paths.insert(0, module_path.parent)
+            extra_sys_path = module_path.parent.parent
+
+        for parent in module_path.parents:
+            init_path = parent / "__init__.py"
+            if init_path.is_file():
+                module_paths.insert(0, parent)
+                extra_sys_path = parent.parent
+            else:
+                break
+
+        split_module = module_import.split(":")
+        return ModuleInfo(
+            module_import=split_module,
+            extra_sys_path=extra_sys_path.resolve(),
+            module_paths=module_paths,
+            discovery_file=discovery_file,
+        )
 
     def import_app_from_string(cls, path: str | None = None) -> Scaffold:
         if path is None:
@@ -94,14 +141,18 @@ class DirectiveEnv:
             for attr, value in module.__dict__.items():
                 if isinstance(value, Lilya):
                     app_path = f"{dotted_path}:{attr}"
-                    return Scaffold(app=value, path=app_path)
+                    return Scaffold(
+                        app=value, path=app_path, app_location=path, discovery_file=discovery_file
+                    )
 
             # Iterate over default pattern application functions
             for func in DISCOVERY_FUNCTIONS:
                 if hasattr(module, func):
                     app_path = f"{dotted_path}:{func}"
                     fn = getattr(module, func)
-                    return Scaffold(app=fn(), path=app_path)
+                    return Scaffold(
+                        app=fn(), path=app_path, app_location=path, discovery_file=discovery_file
+                    )
         return None
 
     def find_app(self, path: str | None, cwd: Path) -> Scaffold:
@@ -114,10 +165,8 @@ class DirectiveEnv:
         if path:
             return self.import_app_from_string(path)
 
-        scaffold: Scaffold | None = None
-
         # Check current folder
-        scaffold = self._find_app_in_folder(cwd, cwd)
+        scaffold: Scaffold | None = self._find_app_in_folder(cwd, cwd)
         if scaffold:
             return scaffold
 
