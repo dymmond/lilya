@@ -274,6 +274,15 @@ class Settings(_Internal):
             """
         ),
     ] = None
+    logging_level: Annotated[
+        str,
+        Doc(
+            """
+            The logging level for the application. Defaults to `DEBUG`.
+            This is used by the `StandardLoggingConfig` to set the logging level.
+            """
+        ),
+    ] = field(default="DEBUG")
 
     @property
     def routes(self) -> list[Any]:
@@ -544,4 +553,4 @@ class Settings(_Internal):
                 )
         ```
         """
-        return StandardLoggingConfig()
+        return StandardLoggingConfig(level=self.logging_level)

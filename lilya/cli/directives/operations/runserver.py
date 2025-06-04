@@ -2,15 +2,41 @@ from __future__ import annotations
 
 import os
 import sys
+from pathlib import Path
 from typing import Annotated, Any, cast
 
+from rich.tree import Tree
 from sayer import Option, command, error
 
 from lilya.cli.env import DirectiveEnv
 from lilya.cli.exceptions import DirectiveError
-from lilya.cli.terminal import OutputColour, Terminal
+from lilya.cli.terminal import Terminal
+from lilya.cli.terminal.utils import get_log_config, get_ui_toolkit
 
 terminal = Terminal()
+
+
+def get_app_tree(module_paths: list[Path], discovery_file: str) -> Tree:
+    root = module_paths[0]
+    name = f"{root.name}" if root.is_file() else f"📁 {root.name}"
+
+    root_tree = Tree(name)
+
+    if root.is_dir():
+        init_path = root / "__init__.py"
+        if init_path.is_file():
+            root_tree.add("[dim]__init__.py[/dim]")
+            root_tree.add(f"[dim]{discovery_file}[/dim]")
+
+    tree = root_tree
+    for sub_path in module_paths[1:]:
+        sub_name = f"{sub_path.name}" if sub_path.is_file() else f"📁 {sub_path.name}"
+        tree = tree.add(sub_name)
+        if sub_path.is_dir():
+            tree.add("[dim]__init__.py[/dim]")
+            tree.add(f"[dim]{discovery_file}[/dim]")
+
+    return root_tree
 
 
 @command
@@ -38,6 +64,22 @@ def runserver(
         str | None,
         Option(help="Any custom settings to be initialised.", required=False, show_default=False),
     ],
+    proxy_headers: Annotated[
+        bool,
+        Option(
+            default=True,
+            help="Enable/Disable X-Forwarded-Proto, X-Forwarded-For, X-Forwarded-Port to populate remote address info.",
+            show_default=True,
+        ),
+    ],
+    workers: Annotated[
+        int | None,
+        Option(
+            default=None,
+            help="Use multiple worker processes. Mutually exclusive with the --reload flag.",
+            required=False,
+        ),
+    ],
 ) -> None:
     """Starts the Lilya development server.
 
@@ -51,46 +93,99 @@ def runserver(
 
     How to run: `lilya runserver`
     """
-    if getattr(env, "app", None) is None:
-        error(
-            "You cannot specify a custom directive without specifying the --app or setting "
-            "LILYA_DEFAULT_APP environment variable."
+    with get_ui_toolkit() as toolkit:
+        # Analyse the app structure
+        toolkit.print(
+            "[gray50]Identifying package structures based on directories with [green]__init__.py[/green] files[/gray50]"
         )
-        sys.exit(1)
 
-    if settings is not None:
-        os.environ.setdefault("LILYA_SETTINGS_MODULE", settings)
+        if getattr(env, "app", None) is None:
+            error(
+                "You cannot specify a custom directive without specifying the --app or setting "
+                "LILYA_DEFAULT_APP environment variable."
+            )
+            sys.exit(1)
 
-    try:
-        import uvicorn
-    except ImportError:
-        raise DirectiveError(detail="Uvicorn needs to be installed to run Lilya.") from None
+        if settings is not None:
+            os.environ.setdefault("LILYA_SETTINGS_MODULE", settings)
 
-    server_environment: str = ""
-    if os.environ.get("LILYA_SETTINGS_MODULE"):
-        from lilya.conf import settings as lilya_settings
+        try:
+            import uvicorn
+        except ImportError:
+            raise DirectiveError(
+                detail="Uvicorn needs to be installed to run Lilya. Run `pip install lilya[cli]`."
+            ) from None
 
-        server_environment = f"{lilya_settings.environment} "
+        server_environment: str = ""
+        if os.environ.get("LILYA_SETTINGS_MODULE"):
+            from lilya.conf import settings as lilya_settings
 
-    app = env.app
-    message = terminal.write_info(
-        f"Starting {server_environment}server @ {host} server @ {host}",
-        colour=OutputColour.BRIGHT_CYAN,
-    )
-    terminal.rule(message, align="center")
+            server_environment = f"{lilya_settings.environment}"
 
-    if os.environ.get("LILYA_SETTINGS_MODULE"):
-        custom_message = f"'{os.environ.get('LILYA_SETTINGS_MODULE')}'"
-        terminal.rule(custom_message, align="center")
+        if not server_environment:
+            server_environment = "development"
 
-    if debug:
-        app.debug = debug
+        toolkit.print_title(f"[green]Starting {server_environment} server[/green]", tag="Lilya")
+        toolkit.print(f"Importing from [green]{env.command_path}[/green]", tag="Lilya")
+        toolkit.print(f"Importing module '{env.path}'", tag="Lilya")
+        toolkit.print_line()
 
-    uvicorn.run(
-        app=env.path,
-        port=port,
-        host=host,
-        reload=reload,
-        lifespan=cast(Any, lifespan),
-        log_level=log_level,
-    )
+        root_tree = get_app_tree(
+            env.module_info.module_paths, discovery_file=env.module_info.discovery_file
+        )
+
+        toolkit.print(root_tree, tag="module")
+        toolkit.print_line()
+
+        toolkit.print(
+            "The [bold]Lilya[/bold] object is imported using the following code:",
+            tag="code",
+        )
+        toolkit.print(
+            f"[underline]from [bold]{env.module_info.module_import[0]}[/bold] import [bold]{env.module_info.module_import[1]}[/bold]",
+            tag=env.module_info.module_import[1],
+        )
+
+        url = f"http://{host}:{port}"
+        toolkit.print_line()
+        toolkit.print(
+            f"Server started at [link={url}]{url}[/]",
+            tag="server",
+        )
+
+        app = env.app
+        if os.environ.get("LILYA_SETTINGS_MODULE"):
+            custom_message = f"'{os.environ.get('LILYA_SETTINGS_MODULE')}'"
+            toolkit.print(
+                f"Using custom settings module: [bold][green]{custom_message}[/green][/bold]",
+                tag="settings",
+            )
+        else:
+            from lilya.conf import settings as lilya_settings
+
+            toolkit.print(
+                f"Using default settings module: [bold][green]{lilya_settings.__class__.__module__}.Settings[/green][/bold]",
+                tag="settings",
+            )
+
+        toolkit.print_line()
+        toolkit.print(
+            "[yellow]Remember, [bold]runserver is for development purposes[/bold]. For production, use a proper ASGI server.[/yellow]",
+            tag="note",
+        )
+
+        if debug:
+            app.debug = debug
+
+        toolkit.print_line()
+        uvicorn.run(
+            app=env.path,
+            port=port,
+            host=host,
+            reload=reload,
+            lifespan=cast(Any, lifespan),
+            log_level=log_level,
+            proxy_headers=proxy_headers,
+            workers=workers,
+            log_config=get_log_config(),
+        )
