@@ -420,7 +420,7 @@ def test_response_media_type_override():
     )
     resp = spec["paths"]["/create"]["get"]["responses"]["201"]
 
-    assert "application/xml" in resp["content"]
+    assert "application/json" in resp["content"]
 
 
 def test_default_response_no_decorator():

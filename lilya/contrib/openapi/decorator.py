@@ -1,5 +1,3 @@
-# lilya/contrib/openapi/decorator.py
-
 import inspect
 from collections.abc import Callable, Sequence
 from functools import wraps
@@ -8,7 +6,8 @@ from typing import Annotated, Any
 from typing_extensions import Doc
 
 from lilya.contrib.openapi.datastructures import OpenAPIResponse
-from lilya.contrib.openapi.params import Query
+from lilya.contrib.openapi.helpers import convert_annotation_to_pydantic_model
+from lilya.contrib.openapi.params import Query, ResponseParam
 
 SUCCESSFUL_RESPONSE = "Successful response"
 
@@ -141,6 +140,26 @@ def openapi(
 
             wrapper = sync_wrapper
 
+        def response_models(responses: dict[int, OpenAPIResponse] | None = None) -> Any:
+            responses: dict[int, ResponseParam] = {} if responses is None else responses  # type: ignore
+
+            if responses:
+                for status_code, response in responses.items():
+                    model = (
+                        response.model if isinstance(response, (list, tuple)) else response.model  # type: ignore
+                    )
+                    annotation = (
+                        list[model[0]] if isinstance(response.model, list) else model  # type: ignore
+                    )
+
+                    alias = model.__name__ if not isinstance(model, list) else model[0].__name__
+                    responses[status_code] = ResponseParam(  # type: ignore
+                        annotation=convert_annotation_to_pydantic_model(annotation),
+                        description=response.description,
+                        alias=alias,
+                    )
+            return responses
+
         wrapper.openapi_meta = {
             "summary": summary,
             "description": description,
@@ -153,7 +172,7 @@ def openapi(
             "security": security,
             "operation_id": operation_id,
             "response_description": response_description,
-            "responses": responses or {},
+            "responses": response_models(responses) or {},
             "query": query or {},
         }
 

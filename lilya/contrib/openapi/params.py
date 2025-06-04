@@ -60,3 +60,6 @@ class Query(FieldInfo):
         if self.explode is not None:
             param["explode"] = self.explode
         return param
+
+
+class ResponseParam(FieldInfo): ...

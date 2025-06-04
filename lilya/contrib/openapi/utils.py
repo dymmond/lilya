@@ -1,9 +1,13 @@
 import re
 from collections.abc import Callable, Iterator, Sequence
-from typing import Any
+from typing import Any, get_args, get_origin
+
+from pydantic.json_schema import GenerateJsonSchema
 
 from lilya import __version__
-from lilya.contrib.openapi.params import Query
+from lilya.contrib.openapi.constants import REF_TEMPLATE
+from lilya.contrib.openapi.helpers import get_definitions
+from lilya.contrib.openapi.params import Query, ResponseParam
 
 
 def get_openapi(
@@ -45,6 +49,7 @@ def get_openapi(
         "openapi": openapi_version or "3.0.0",
         "info": info,
         "paths": {},
+        "components": {"schemas": {}},
     }
     if servers:
         spec["servers"] = list(servers)
@@ -55,9 +60,8 @@ def get_openapi(
 
     def _gather_routes(routes_list: Sequence[Any], prefix: str) -> Iterator[tuple[str, Any]]:
         """
-        Yield (full_path, route) for each leaf route, stripping out any `{...}` catch-all:
-        - If route has .routes (Include), split raw at '/{' to remove '{path}', then recurse.
-        - If route has .app with .routes (nested Lilya), split raw at '/{' and recurse into app.routes.
+        Yield (full_path, route) for each leaf route:
+        - For any Include or child-app, strip off the first "/{...}" segment if present, combine prefix+cleaned, recurse.
         - Otherwise, yield (prefix + raw, route).
         """
         for route in routes_list:
@@ -68,28 +72,25 @@ def get_openapi(
             if not raw.startswith("/"):
                 raw = "/" + raw
 
-            # If this is an Include (has .routes)
+            # Strip any typed placeholder e.g. "{path:path}" from the raw prefix
+            if "/{" in raw:
+                cleaned = raw.split("/{", 1)[0]
+            else:
+                cleaned = raw
+
+            # If this is an Include (has .routes), recurse into its routes using cleaned
             if hasattr(route, "routes") and getattr(route, "routes", None) is not None:
-                # Strip off any '{...}' part: split at the first '/{'
-                if "/{" in raw:
-                    mount_prefix = raw.split("/{", 1)[0]
-                else:
-                    mount_prefix = raw
-                combined = prefix + mount_prefix
+                combined = prefix + cleaned
                 yield from _gather_routes(route.routes, combined)
                 continue
 
-            # If this is a mounted child-app (has .app.routes)
+            # If this is a child-app mount (has .app.routes), recurse into child-app routes using cleaned
             if hasattr(route, "app") and hasattr(route.app, "routes"):
-                if "/{" in raw:
-                    mount_prefix = raw.split("/{", 1)[0]
-                else:
-                    mount_prefix = raw
-                combined = prefix + mount_prefix
+                combined = prefix + cleaned
                 yield from _gather_routes(route.app.routes, combined)
                 continue
 
-            # Leaf path: combine prefix and raw exactly
+            # Leaf path: combine prefix and raw exactly (no stripping)
             combined = prefix + raw
             yield combined, route
 
@@ -110,7 +111,7 @@ def get_openapi(
             handler: Callable[..., Any] = getattr(route, "handler", None)
             meta: dict[str, Any] = getattr(handler, "openapi_meta", {}) or {}
 
-            # Extract path parameters from {param}
+            # Path parameters
             path_param_names = re.findall(r"\{([^}]+)\}", raw_path)
             path_parameters: list[dict[str, Any]] = []
             for name in path_param_names:
@@ -123,7 +124,7 @@ def get_openapi(
                     }
                 )
 
-            # Build query parameters
+            # Query parameters
             user_query_params: list[dict[str, Any]] = []
             for name, query_param in (meta.get("query", {}) or {}).items():
                 if isinstance(query_param, Query):
@@ -131,11 +132,11 @@ def get_openapi(
                 else:
                     user_query_params.append(query_param)
 
-            # Remove any query-declared path params
-            declared_path_names = {p["name"] for p in path_parameters}
+            # Deduplicate query params that match path names
+            declared_path_names = set(path_param_names)
             merged_query: list[dict[str, Any]] = []
             for p in user_query_params:
-                if p.get("in") == "path" and p.get("name") in declared_path_names:
+                if p.get("name") in declared_path_names:
                     continue
                 merged_query.append(p)
 
@@ -158,23 +159,77 @@ def get_openapi(
             if combined_params:
                 operation["parameters"] = combined_params
 
-            # Build responses
+            # Responses and schemas
             responses_obj: dict[str, Any] = {}
             seen_responses = meta.get("responses", None)
             if isinstance(seen_responses, dict) and seen_responses:
-                for status_code_int, resp in seen_responses.items():
+                # Create a new generator to avoid reuse errors
+                schema_generator = GenerateJsonSchema(ref_template=REF_TEMPLATE)
+
+                # Prepare list of ResponseParam, unwrapping any list[...] annotations
+                to_generate: list[ResponseParam] = []
+                for response in seen_responses.values():
+                    ann = getattr(response, "annotation", None)
+                    if ann is None:
+                        continue
+
+                    origin = get_origin(ann)
+                    if origin is list or origin is Sequence:
+                        inner = get_args(ann)[0]
+                        to_generate.append(
+                            ResponseParam(
+                                annotation=inner,
+                                alias=inner.__name__,
+                                description=response.description,
+                            )
+                        )
+                    else:
+                        to_generate.append(
+                            ResponseParam(
+                                annotation=ann,
+                                alias=ann.__name__,
+                                description=response.description,
+                            )
+                        )
+
+                # Generate definitions for each model
+                _, definitions = get_definitions(
+                    fields=to_generate,  # type: ignore
+                    schema_generator=schema_generator,
+                )
+                for name, schema_def in definitions.items():
+                    spec["components"]["schemas"][name] = schema_def
+
+                # Build response entries
+                for status_code_int, response in seen_responses.items():
                     status_code = str(status_code_int)
-                    desc = getattr(resp, "response_description", "") or ""
+                    desc = getattr(response, "description", "") or ""
                     content_obj: dict[str, Any] = {}
-                    if getattr(resp, "model", None):
-                        media = getattr(resp, "media_type", "application/json")
-                        content_obj[media] = {
-                            "schema": {"$ref": f"#/components/schemas/{resp.model.__name__}"}
-                        }
+
+                    ann = getattr(response, "annotation", None)
+                    if ann is not None:
+                        media = getattr(response, "media_type", "application/json")
+                        origin = get_origin(ann)
+                        if origin is list or origin is Sequence:
+                            inner = get_args(ann)[0]
+                            ref_name = inner.__name__
+                            content_obj[media] = {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {"$ref": f"#/components/schemas/{ref_name}"},
+                                }
+                            }
+                        else:
+                            ref_name = ann.__name__
+                            content_obj[media] = {
+                                "schema": {"$ref": f"#/components/schemas/{ref_name}"}
+                            }
+
                     responses_obj[status_code] = {"description": desc or "Successful response"}
                     if content_obj:
                         responses_obj[status_code]["content"] = content_obj
             else:
+                # Default 200 without schemas
                 responses_obj["200"] = {
                     "description": meta.get("response_description") or "Successful response"
                 }
