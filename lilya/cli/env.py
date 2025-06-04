@@ -36,7 +36,7 @@ class ModuleInfo:
 @dataclass
 class DirectiveEnv:
     """
-    Loads an arbitraty application into the object
+    Loads an arbitrary application into the object
     and returns the App.
     """
 
@@ -77,6 +77,15 @@ class DirectiveEnv:
     def get_module_data_from_path(
         self, path: Path, module_import: str, discovery_file: str
     ) -> ModuleInfo:
+        """
+        Returns the module information based on the path provided.
+        It resolves the path, checks if it is a file or a directory,
+        and constructs the module import path accordingly.
+        If the path is a file, it checks if it is an `__init__.py` file
+        and adjusts the module paths accordingly.
+        If the path is a directory, it checks for the presence of `__init__.py`
+        files in the parent directories to construct the module paths.
+        """
         use_path = path.resolve()
         module_path = use_path
         if use_path.is_file() and use_path.stem == "__init__":
