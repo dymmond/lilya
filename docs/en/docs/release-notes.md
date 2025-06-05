@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.15.1
+
+### Fixed
+
+- This was supposed to go in the release 0.15.0 but a requirement was missing.
+
 ## 0.15.0
 
 ### Added
