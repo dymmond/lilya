@@ -72,7 +72,7 @@ class OpenAPIResponse(BaseModel):
         ),
     ] = "Additional response"
     media_type: Annotated[
-        MediaType,
+        MediaType | str,
         Doc("""The `media-type` of the response."""),
     ] = MediaType.JSON
     status_text: Annotated[

@@ -107,6 +107,7 @@ nav:
   - deployment/index.md
   - intro.md
   - docker.md
+- openapi.md
 - contributing.md
 - sponsorship.md
 - release-notes.md
