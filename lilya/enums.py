@@ -140,6 +140,7 @@ class MediaType(StrEnum):
     OCTET = "application/octet-stream"
     MULTIPART = "multipart/form-data"
     URLENCODED = "application/x-www-form-urlencoded"
+    XML = "application/xml"
 
 
 class WebSocketState(IntEnum):

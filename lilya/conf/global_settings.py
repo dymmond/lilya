@@ -283,6 +283,17 @@ class Settings(_Internal):
             """
         ),
     ] = field(default="DEBUG")
+    enable_openapi: Annotated[
+        bool,
+        Doc(
+            """
+            Boolean indicating if the OpenAPI schema should be generated
+            for the application.
+
+            Read more about the [OpenAPI](https://lilya.dev/openapi/).
+            """
+        ),
+    ] = field(default=False)
 
     @property
     def routes(self) -> list[Any]:
@@ -554,3 +565,29 @@ class Settings(_Internal):
         ```
         """
         return StandardLoggingConfig(level=self.logging_level)
+
+    @property
+    def openapi_config(self) -> Any | None:
+        """
+        An instance of [OpenAPIConfig](https://lilya.dev/openapi/).
+
+        Default:
+            OpenAPIConfig()
+
+        **Example**
+
+        ```python
+        from lilya.conf import Settings
+        from lilya.contrib.openapi.config import OpenAPIConfig
+
+        class AppSettings(Settings):
+            @property
+            def openapi_config(self) -> OpenAPIConfig:
+                return OpenAPIConfig(
+                    title="My API",
+                    version="1.0.0",
+                    description="This is my API description.",
+                )
+        ```
+        """
+        return None

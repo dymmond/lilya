@@ -5,6 +5,18 @@ hide:
 
 # Release Notes
 
+## 0.15.0
+
+### Added
+
+- Support for [OpenAPI](./openapi.md) documentation under the new `@openapi()` decorator. This is optional and can be used
+to document your API endpoints with OpenAPI specifications without the need of any external library.
+
+### Changed
+
+- `lilya runserver` is nor revamped with modern UI and logs.
+- `lilya runserver` now supports `workers` and `proxy-headers` parameters.
+
 ## 0.14.2
 
 ### Changed

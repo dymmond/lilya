@@ -115,6 +115,9 @@ docs = [
     "typing_extensions>=3.10.0",
 ]
 
+openapi = [
+    "pydantic>=2.11.5,<3",
+]
 
 [tool.hatch.version]
 path = "lilya/__init__.py"

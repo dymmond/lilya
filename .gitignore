@@ -31,3 +31,4 @@ target/
 .python-version
 coverage.*
 example.sqlite
+*.zip

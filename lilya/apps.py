@@ -904,6 +904,22 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
                 """
             ),
         ] = None,
+        enable_openapi: Annotated[
+            bool,
+            Doc(
+                """
+                Enable or disable OpenAPI documentation generation. Defaults to False.
+                """
+            ),
+        ] = False,
+        openapi_config: Annotated[
+            Any | None,
+            Doc(
+                """
+                A custom OpenAPIConfig instance to override defaults if provided.
+                """
+            ),
+        ] = None,
     ) -> None:
         self.populate_global_context = populate_global_context
         self.settings_module: Settings | None = None
@@ -945,6 +961,10 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
         self.logging_config = self.load_settings_value("logging_config", logging_config)
         self.state = State()
         self.middleware_stack: ASGIApp | None = None
+        self.enable_openapi = self.load_settings_value(
+            "enable_openapi", enable_openapi, is_boolean=True
+        )
+        self.openapi_config = self.load_settings_value("openapi_config", openapi_config)
 
         if self.router_class is not None:
             self.router = self.router_class(
@@ -963,8 +983,17 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
         if self.logging_config is not None:
             setup_logging(self.logging_config)
 
+        if enable_openapi:
+            self.configure_openapi(self.openapi_config)
+
         if self.register_as_global_instance:
             _monkay.set_instance(self)
+
+    def configure_openapi(self, openapi_config: Any | None = None) -> None:
+        from lilya.contrib.openapi.config import OpenAPIConfig
+
+        config_to_use = openapi_config or OpenAPIConfig()
+        config_to_use.enable(self)
 
     @property
     def settings(self) -> Settings:
