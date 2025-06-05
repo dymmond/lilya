@@ -111,7 +111,8 @@ def openapi(
         ),
     ] = None,
     query: Annotated[
-        dict[str, Query] | None,
+        dict[str, Query] | dict[str, Any] | set[str],
+        None,
         Doc(
             """
             A dict mapping each query‐param name (str) → a Query(...) instance.
@@ -160,6 +161,28 @@ def openapi(
                     )
             return responses
 
+        def query_strings(
+            query_dict: dict[str, Query] | dict[str, Any] | set[str] | None = None,
+        ) -> dict[str, Query]:
+            if query_dict is None:
+                return {}
+            if isinstance(query_dict, set):
+                return {q: Query() for q in query_dict}
+
+            if isinstance(query_dict, dict):
+                data: dict[str, Query] = {}
+                for k, v in query_dict.items():
+                    if isinstance(v, Query):
+                        data[k] = v
+                    elif isinstance(v, (list, tuple)):
+                        raise ValueError("Query cannot be a list or tuple, use Query(...) instead")
+                    elif isinstance(v, dict):
+                        data[k] = Query(**v)
+                return data
+            raise TypeError(
+                "Query must be a dict or set or a dict of key-pair value of str and Query"
+            )
+
         wrapper.openapi_meta = {
             "summary": summary,
             "description": description,
@@ -173,7 +196,7 @@ def openapi(
             "operation_id": operation_id,
             "response_description": response_description,
             "responses": response_models(responses) or {},
-            "query": query or {},
+            "query": query_strings(query) or {},
         }
 
         return wrapper
