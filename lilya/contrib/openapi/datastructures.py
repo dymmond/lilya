@@ -8,27 +8,9 @@ from lilya.enums import MediaType
 
 class OpenAPIResponse(BaseModel):
     """
-    The OpenAPIResponse is used for [OpenAPI](https://esmerald.dev/openapi/)
+    The OpenAPIResponse is used for [OpenAPI](https://lilya.dev/openapi/)
     documentation purposes and allows to describe in detail what alternative
     responses the API can return as well as the type of the return itself.
-
-    **Example**
-
-    ```python
-    from esmerald import post
-    from esmerald.openapi.datastructures import OpenAPIResponse
-    from pydantic import BaseModel
-
-
-    class ItemOut(BaseModel):
-        sku: str
-        description: str
-
-
-    @post(path='/create', summary="Creates an item", responses={200: OpenAPIResponse(model=ItemOut, description="Successfully created an item")})
-    async def create() -> None | ItemOut:
-        ...
-    ```
     """
 
     model: Annotated[

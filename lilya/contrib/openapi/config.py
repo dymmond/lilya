@@ -345,7 +345,7 @@ class OpenAPIConfig(BaseModel):
             Example: `https://lilya.dev/statics/images/favicon.ico`.
             """
         ),
-    ] = "https://esmerald.dev/statics/images/favicon.ico"
+    ] = "https://lilya.dev/statics/images/favicon.ico"
     webhooks: Annotated[
         Sequence[Any] | None,
         Doc(
