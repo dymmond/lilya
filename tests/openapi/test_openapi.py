@@ -471,7 +471,7 @@ def test_multiple_query_params():
     assert names == {"a", "b"}
 
 
-def xtest_overlap_path_query_id():
+def test_overlap_path_query_id():
     @openapi(query={"id": Query(default="x", description="query id", schema={"type": "string"})})
     async def overlap(request, id: str):
         return {"id": id}
