@@ -17,6 +17,7 @@ def build_path():
 
     if SITE_ROOT not in sys.path:
         sys.path.append(SITE_ROOT)
+        sys.path.append(os.path.join(SITE_ROOT, "apps"))
 
 
 def get_application():

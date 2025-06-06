@@ -5,6 +5,13 @@ hide:
 
 # Release Notes
 
+## 0.15.2
+
+### Fixed
+
+- Migration to Sayer missed the `run` directive argument required as False.
+- Missing `apps` when generating a project with structure.
+
 ## 0.15.1
 
 ### Fixed
