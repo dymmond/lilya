@@ -5,6 +5,7 @@ from typing import Annotated, Any
 
 from typing_extensions import Doc
 
+from lilya._internal._responses import BaseHandler
 from lilya.contrib.openapi.datastructures import OpenAPIResponse
 from lilya.contrib.openapi.helpers import convert_annotation_to_pydantic_model
 from lilya.contrib.openapi.params import Query, ResponseParam
@@ -130,7 +131,9 @@ def openapi(
 
             @wraps(func)
             async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
-                return await func(*args, **kwargs)
+                handler = BaseHandler()
+                signature = inspect.Signature.from_callable(func)
+                return handler.handle_response(func, other_signature=signature)
 
             wrapper = async_wrapper
         else:
@@ -183,6 +186,16 @@ def openapi(
                 "Query must be a dict or set or a dict of key-pair value of str and Query"
             )
 
+        def request_body(
+            responses_dict: dict[int, OpenAPIResponse] | None = None,
+        ) -> dict[str, Any]:
+            body = {} if responses_dict is None else responses_dict.copy()
+
+            for status, response in body.items():
+                body[status] = response.annotation.model_json_schema()
+
+            return body  # type: ignore
+
         wrapper.openapi_meta = {
             "summary": summary,
             "description": description,
@@ -198,6 +211,9 @@ def openapi(
             "responses": response_models(responses) or {},
             "query": query_strings(query) or {},
         }
+
+        body_fields = request_body(wrapper.openapi_meta["responses"])
+        wrapper.openapi_meta["request_body"] = body_fields
 
         return wrapper
 

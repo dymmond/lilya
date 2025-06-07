@@ -73,6 +73,7 @@ Where here the post can be directly sent like:
 
 - Typing for `settings_module` that was not parsing properly.
 - `requestBody` was not displaying when it was required and enabled.
+- The parsing of the request body via decorator and BaseHandler if `infer_body` is on.
 
 ## 0.15.2
 
