@@ -160,13 +160,7 @@ def get_openapi(
                 operation["parameters"] = combined_params
 
             if m_lower in WRITING_METHODS:
-                operation["requestBody"] = {
-                    "content": {
-                        "application/json": {
-                            "schema": {}
-                        }
-                    }
-                }
+                operation["requestBody"] = {"content": {"application/json": {"schema": {}}}}
 
             # Responses and schemas
             responses_obj: dict[str, Any] = {}
