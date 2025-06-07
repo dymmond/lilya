@@ -23,7 +23,6 @@ def test_client_factory(anyio_backend_name, anyio_backend_options):
 
 
 class MsgSpecEncoder(Encoder):
-    __type__ = Struct
 
     def is_type(self, value: Any) -> bool:
         """
