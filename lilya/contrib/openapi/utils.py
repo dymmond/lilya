@@ -5,7 +5,7 @@ from typing import Any, get_args, get_origin
 from pydantic.json_schema import GenerateJsonSchema
 
 from lilya import __version__
-from lilya.contrib.openapi.constants import REF_TEMPLATE, WRITING_METHODS
+from lilya.contrib.openapi.constants import REF_TEMPLATE, WRITING_METHODS, WRITING_STATUS_MAPPING
 from lilya.contrib.openapi.helpers import get_definitions
 from lilya.contrib.openapi.params import Query, ResponseParam
 
@@ -203,8 +203,16 @@ def get_openapi(
                 for name, schema_def in definitions.items():
                     spec["components"]["schemas"][name] = schema_def
 
+                request_body = meta.get("request_body", {})
                 # Build response entries
                 for status_code_int, response in seen_responses.items():
+                    if m_lower in WRITING_STATUS_MAPPING and status_code_int in request_body:
+                        operation["requestBody"] = {
+                            "content": {
+                                "application/json": {"schema": request_body[status_code_int]}
+                            }
+                        }
+
                     status_code = str(status_code_int)
                     desc = getattr(response, "description", "") or ""
                     content_obj: dict[str, Any] = {}

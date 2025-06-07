@@ -31,7 +31,9 @@ class BaseHandler:
     __header_params__: dict[str, Any] | None = None
     __cookie_params__: dict[str, Any] | None = None
 
-    async def extract_request_information(self, request: Request) -> None:
+    async def extract_request_information(
+        self, request: Request, signature: inspect.Signature
+    ) -> None:
         """
         Extracts the information and flattens the request dictionaries in the handler.
         """
@@ -47,17 +49,20 @@ class BaseHandler:
 
         # Store the body params in the handler variable
         self.__body_params__ = {
-            k: v.annotation for k, v in self.signature.parameters.items() if k not in reserved_keys
+            k: v.annotation for k, v in signature.parameters.items() if k not in reserved_keys
         }
 
     def handle_response(
-        self, func: Callable[[Request], Awaitable[Response] | Response]
+        self,
+        func: Callable[[Request], Awaitable[Response] | Response],
+        other_signature: inspect.Signature | None = None,
     ) -> ASGIApp:
         """
         Decorator for creating a request-response ASGI application.
 
         Args:
             func (Callable): The function to be wrapped.
+            other_signature (inspect.Signature): Another passed signature
 
         Returns:
             ASGIApp: The ASGI application.
@@ -93,7 +98,7 @@ class BaseHandler:
                 Returns:
                     None
                 """
-                signature: inspect.Signature = self.signature
+                signature: inspect.Signature = other_signature or self.signature
                 params_from_request = await self._extract_params_from_request(
                     request=request, signature=signature
                 )
@@ -102,7 +107,7 @@ class BaseHandler:
                     **params_from_request,
                     **self._extract_context(request=request, signature=signature),
                 }
-                await self.extract_request_information(request=request)
+                await self.extract_request_information(request=request, signature=signature)
 
                 if signature.parameters:
                     if SignatureDefault.REQUEST in signature.parameters:
@@ -144,7 +149,7 @@ class BaseHandler:
             response = Ok(app)
             await response(scope, receive, send)
 
-    async def _parse_inferred_body(self, request: Request) -> Any:
+    async def _parse_inferred_body(self, request: Request, signature: inspect.Signature) -> Any:
         """
         Parses only the parameters inferred to come from the request body.
 
@@ -155,7 +160,7 @@ class BaseHandler:
         - Single-param style: {"name": "...", "age": ...} -> into a single structured param
         """
         json_data = await request.json()
-        parameters = self.signature.parameters
+        parameters = signature.parameters
 
         # Determine which parameters are clearly already accounted for
         reserved_keys = set(request.path_params.keys())
@@ -209,7 +214,7 @@ class BaseHandler:
 
         json_data: dict[str, Any] = {}
         if is_body_inferred:
-            json_data = await self._parse_inferred_body(request)
+            json_data = await self._parse_inferred_body(request, signature)
 
         data = {
             param: value
