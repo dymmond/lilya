@@ -294,6 +294,18 @@ class Settings(_Internal):
             """
         ),
     ] = field(default=False)
+    infer_body: Annotated[
+        bool,
+        Doc(
+            """
+            With this flag set as True, the body of the request is automatically inferred and the type, guessed.
+
+            This is particularly useful if you want to use validation libraries such as Pydantic or msgspec.
+
+            Because the inferred type needs to be evaluated at request time, **this can impact slightly** the performance.
+            """
+        )
+    ] = field(default=False)
 
     @property
     def routes(self) -> list[Any]:
