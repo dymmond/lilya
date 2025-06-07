@@ -29,6 +29,15 @@ async def process_body(user: User, item: Item):
     return {**user.model_dump(), "sku": item.sku}
 ```
 
+Where the payload is:
+
+```json
+{
+    "user": {"name": "lilya", "age": 20},
+    "item": {"sku": "test"}
+}
+```
+
 Assuming you have the [encoders](./encoders.md) for Pydantic and Struct installed in your application (or any other) you
 desire.
 
@@ -36,6 +45,29 @@ Lilya uses the internal Encoders to parse and transform them properly.
 
 !!! Note
     `infer_body` is set to `False` by default but you can override it in the [settings](./settings.md).
+
+Another example can be:
+
+```python
+from pydantic import BaseModel
+
+
+class User(BaseModel):
+    name: str
+    age: int
+
+
+async def process_body(user: User):
+    return user
+```
+
+Where here the post can be directly sent like:
+
+```json
+{
+    "name": "lilya", "age": 20
+}
+```
 
 ### Fixed
 

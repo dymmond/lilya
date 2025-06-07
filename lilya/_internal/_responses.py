@@ -152,7 +152,7 @@ class BaseHandler:
         Supports:
 
         - Multi-param style: {"user": {...}, "item": {...}}
-        - Single-param style: {"name": "...", "age": ...} → into a single structured param
+        - Single-param style: {"name": "...", "age": ...} -> into a single structured param
         """
         json_data = await request.json()
         parameters = self.signature.parameters
