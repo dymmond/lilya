@@ -25,6 +25,8 @@ class BaseHandler:
     Utils to manage the responses of the handlers.
     """
 
+    __body_params__: list[Any] | None = None
+
     def handle_response(
         self, func: Callable[[Request], Awaitable[Response] | Response]
     ) -> ASGIApp:
@@ -120,23 +122,48 @@ class BaseHandler:
 
     async def _parse_inferred_body(self, request: Request) -> Any:
         """
-        If the automatic inferred types is enabled, then it will try
-        to parse the values to the given structure.
+        Parses only the parameters inferred to come from the request body.
+
+        Automatically skips parameters present in path, query, headers, or cookies.
+        Supports:
+
+        - Multi-param style: {"user": {...}, "item": {...}}
+        - Single-param style: {"name": "...", "age": ...} → into a single structured param
         """
         json_data = await request.json()
+        parameters = self.signature.parameters
 
-        # Extract definitions
-        definitions: dict[str, Any] = {}
-        for name, parameter in self.signature.parameters.items():
-            definitions[name] = parameter.annotation
+        # Determine which parameters are clearly already accounted for
+        reserved_keys = set(request.path_params.keys())
+        reserved_keys.update(request.query_params.keys())
+        reserved_keys.update(request.headers.keys())
+        reserved_keys.update(request.cookies.keys())
 
-        # Populate with the proper values
-        # Use the internal lilya encoders to do it so
+        # The remaining parameters are inferred as body-bound
+        body_param_names = [name for name in parameters.keys() if name not in reserved_keys]
+
         payload: dict[str, Any] = {}
-        for name, value in json_data.items():
-            encoder_object = definitions[name]
-            data = apply_structure(structure=encoder_object, value=value)
-            payload[name] = data
+
+        if len(body_param_names) == 1:
+            name = body_param_names[0]
+            encoder_object = parameters[name].annotation
+
+            try:
+                payload[name] = apply_structure(structure=encoder_object, value=json_data)
+            except Exception:  # noqa
+                # Case 2: body is a dict of param -> value
+                if name in json_data:
+                    payload[name] = apply_structure(
+                        structure=encoder_object, value=json_data[name]
+                    )
+                else:
+                    raise ValueError(f"Missing expected body key '{name}'.") from None
+        else:
+            for name in body_param_names:
+                if name not in json_data:
+                    raise ValueError(f"Missing expected body key '{name}'.")
+                encoder_object = parameters[name].annotation
+                payload[name] = apply_structure(structure=encoder_object, value=json_data[name])
 
         # Return the final payload
         return payload
