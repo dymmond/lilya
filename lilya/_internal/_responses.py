@@ -4,10 +4,11 @@ import inspect
 from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Any, cast
 
-from lilya._internal._encoders import json_encode
+from lilya._internal._encoders import apply_structure, json_encode
 from lilya._internal._exception_handlers import wrap_app_handling_exceptions
 from lilya.compat import is_async_callable
 from lilya.concurrency import run_in_threadpool
+from lilya.conf import _monkay
 from lilya.context import Context
 from lilya.enums import SignatureDefault
 from lilya.requests import Request
@@ -67,12 +68,16 @@ class BaseHandler:
                 Returns:
                     None
                 """
-
                 signature: inspect.Signature = self.signature
+                params_from_request = await self._extract_params_from_request(
+                    request=request, signature=signature
+                )
+
                 func_params: dict[str, Any] = {
-                    **self._extract_params_from_request(request=request, signature=signature),
+                    **params_from_request,
                     **self._extract_context(request=request, signature=signature),
                 }
+
                 if signature.parameters:
                     if SignatureDefault.REQUEST in signature.parameters:
                         func_params.update({"request": request})
@@ -113,7 +118,30 @@ class BaseHandler:
             response = Ok(app)
             await response(scope, receive, send)
 
-    def _extract_params_from_request(
+    async def _parse_inferred_body(self, request: Request) -> Any:
+        """
+        If the automatic inferred types is enabled, then it will try
+        to parse the values to the given structure.
+        """
+        json_data = await request.json()
+
+        # Extract definitions
+        definitions: dict[str, Any] = {}
+        for name, parameter in self.signature.parameters.items():
+            definitions[name] = parameter.annotation
+
+        # Populate with the proper values
+        # Use the internal lilya encoders to do it so
+        payload: dict[str, Any] = {}
+        for name, value in json_data.items():
+            encoder_object = definitions[name]
+            data = apply_structure(structure=encoder_object, value=value)
+            payload[name] = data
+
+        # Return the final payload
+        return payload
+
+    async def _extract_params_from_request(
         self, request: Request, signature: inspect.Signature
     ) -> dict[str, Any]:
         """
@@ -126,11 +154,20 @@ class BaseHandler:
         Returns:
             Dict[str, Any]: A dictionary containing parameters extracted from the request.
         """
-        return {
+        is_body_inferred: bool = _monkay.settings.infer_body
+
+        json_data: dict[str, Any] = {}
+        if is_body_inferred:
+            json_data = await self._parse_inferred_body(request)
+
+        data = {
             param: value
             for param, value in request.path_params.items()
             if param in signature.parameters
         }
+
+        data.update(json_data)
+        return data
 
     def _extract_context(self, request: Request, signature: inspect.Signature) -> dict[str, Any]:
         """

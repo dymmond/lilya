@@ -475,7 +475,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
         self,
         debug: Annotated[bool, Doc("Enable or disable debug mode. Defaults to False.")] = False,
         settings_module: Annotated[
-            Settings | str | None,
+            type[Settings] | str | None,
             Doc(
                 """
                 Alternative settings parameter. This parameter is an alternative to
@@ -933,7 +933,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
             ):
                 raise FieldException("'settings_module' must be a subclass of Settings")
             elif isinstance(settings_module, Settings):
-                self.settings_module = settings_module
+                self.settings_module = settings_module  # type: ignore
             elif is_class_and_subclass(settings_module, Settings):
                 self.settings_module = settings_module()  # type: ignore
 
