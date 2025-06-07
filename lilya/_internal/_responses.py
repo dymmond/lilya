@@ -25,7 +25,30 @@ class BaseHandler:
     Utils to manage the responses of the handlers.
     """
 
-    __body_params__: list[Any] | None = None
+    __body_params__: dict[str, Any] | None = None
+    __query_params__: dict[str, Any] | None = None
+    __path_params__: dict[str, Any] | None = None
+    __header_params__: dict[str, Any] | None = None
+    __cookie_params__: dict[str, Any] | None = None
+
+    async def extract_request_information(self, request: Request) -> None:
+        """
+        Extracts the information and flattens the request dictionaries in the handler.
+        """
+        self.__query_params__ = dict(request.query_params.items())
+        self.__path_params__ = dict(request.path_params.items())
+        self.__header_params__ = dict(request.headers.items())
+        self.__cookie_params__ = dict(request.cookies.items())
+
+        reserved_keys = set(self.__path_params__.keys())
+        reserved_keys.update(self.__query_params__.keys())
+        reserved_keys.update(self.__header_params__.keys())
+        reserved_keys.update(self.__cookie_params__.keys())
+
+        # Store the body params in the handler variable
+        self.__body_params__ = {
+            k: v.annotation for k, v in self.signature.parameters.items() if k not in reserved_keys
+        }
 
     def handle_response(
         self, func: Callable[[Request], Awaitable[Response] | Response]
@@ -79,6 +102,7 @@ class BaseHandler:
                     **params_from_request,
                     **self._extract_context(request=request, signature=signature),
                 }
+                await self.extract_request_information(request=request)
 
                 if signature.parameters:
                     if SignatureDefault.REQUEST in signature.parameters:
