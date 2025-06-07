@@ -8,6 +8,7 @@ import pytest
 from attrs import asdict, has
 from msgspec import Struct
 
+from lilya._utils import is_class_and_subclass  # noqa
 from lilya.encoders import Encoder, register_encoder
 from lilya.testclient import TestClient
 
@@ -23,6 +24,18 @@ def test_client_factory(anyio_backend_name, anyio_backend_options):
 
 class MsgSpecEncoder(Encoder):
     __type__ = Struct
+
+    def is_type(self, value: Any) -> bool:
+        """
+        Check if the value is an instance of msgspec.Struct.
+
+        Args:
+            value (Any): The value to check.
+
+        Returns:
+            bool: True if the value is an instance of msgspec.Struct, False otherwise.
+        """
+        return isinstance(value, Struct) or is_class_and_subclass(value, Struct)
 
     def serialize(self, obj: Any) -> Any:
         return msgspec.json.decode(msgspec.json.encode(obj))
