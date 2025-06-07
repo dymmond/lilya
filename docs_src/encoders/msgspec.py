@@ -21,7 +21,7 @@ class MsgSpecEncoder(Encoder):
         structure: Any,
         obj: Any,
     ) -> Any:
-        return msgspec.json.decode(obj, type=structure)
+        return msgspec.json.decode(msgspec.json.encode(obj), type=structure)
 
 
 # A normal way

@@ -39,7 +39,7 @@ register_encoder(MsgSpecEncoder())
 
 
 class AttrsEncoder(Encoder):
-    def is_type(self, value: Any) -> bool:
+    def is_type_structure(self, value: Any) -> bool:
         return has(value)
 
     def serialize(self, obj: Any) -> Any:

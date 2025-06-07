@@ -209,7 +209,9 @@ def get_openapi(
                     if m_lower in WRITING_STATUS_MAPPING and status_code_int in request_body:
                         operation["requestBody"] = {
                             "content": {
-                                "application/json": {"schema": request_body[status_code_int]}
+                                getattr(response, "media_type", "application/json"): {
+                                    "schema": request_body[status_code_int]
+                                }
                             }
                         }
 

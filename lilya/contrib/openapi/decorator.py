@@ -189,7 +189,7 @@ def openapi(
         def request_body(
             responses_dict: dict[int, OpenAPIResponse] | None = None,
         ) -> dict[str, Any]:
-            body = {} if responses_dict is None else responses_dict
+            body = {} if responses_dict is None else responses_dict.copy()
 
             for status, response in body.items():
                 body[status] = response.annotation.model_json_schema()

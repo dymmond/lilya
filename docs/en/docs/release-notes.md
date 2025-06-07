@@ -80,6 +80,7 @@ Where here the post can be directly sent like:
 
 - Migration to Sayer missed the `run` directive argument required as False.
 - Missing `apps` when generating a project with structure.
+- The parsing of the request body via decorator and BaseHandler if `infer_body` is on.
 
 ## 0.15.1
 
