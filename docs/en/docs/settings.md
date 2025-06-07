@@ -239,7 +239,148 @@ and how Lilya reads them out.
 
 ## Parameters
 
-The parameters available inside `Settings` can be overridden by any custom settings.
+The following are the available parameters you can configure inside your `Settings` object. Each one of them has a specific purpose and can be overridden or extended by custom settings.
+
+### General
+
+* **`debug`**: `bool`
+  Whether to display debug tracebacks on server errors. Not recommended in production.
+
+* **`environment`**: `str | None`
+  Environment name (`development`, `production`, `testing`, etc.). Purely informational.
+
+* **`version`**: `str | int | float`
+  The version of the application. Defaults to Lilya’s internal version if not set.
+
+* **`logging_level`**: `str`
+  The default logging level for the application. Defaults to `"DEBUG"`.
+
+* **`logging_config`**: `LoggingConfig | None`
+  Provides a logging configuration instance. Defaults to `StandardLoggingConfig`.
+
+### OpenAPI
+
+* **`enable_openapi`**: `bool`
+  Enables or disables the OpenAPI schema generation for the application.
+
+* **`openapi_config`**: `OpenAPIConfig | None`
+  Custom configuration for the OpenAPI documentation. See [OpenAPI](https://lilya.dev/openapi/).
+
+* **`include_in_schema`**: `bool`
+  Controls whether routes are included in the OpenAPI schema by default.
+
+### Body Handling
+
+* **`infer_body`**: `bool`
+  If set to `True`, Lilya will attempt to infer body types automatically at runtime.
+
+!!! Warning
+    Lilya has `infer_body` set to `False` by default.
+
+#### Example
+
+```python
+from msgspec import Struct
+from pydantic import BaseModel
+
+
+class User(BaseModel):
+    name: str
+    age: int
+
+
+class Item(Struct):
+    sku: str
+
+
+async def process_body(user: User, item: Item):
+    return {**user.model_dump(), "sku": item.sku}
+```
+
+Where the payload is:
+
+```json
+{
+    "user": {"name": "lilya", "age": 20},
+    "item": {"sku": "test"}
+}
+```
+
+Assuming you have the [encoders](./encoders.md) for Pydantic and Struct installed in your application (or any other) you
+desire.
+
+Lilya uses the internal Encoders to parse and transform them properly.
+
+!!! Note
+    `infer_body` is set to `False` by default but you can override it in the [settings](./settings.md).
+
+Another example can be:
+
+```python
+from pydantic import BaseModel
+
+
+class User(BaseModel):
+    name: str
+    age: int
+
+
+async def process_body(user: User):
+    return user
+```
+
+Where here the post can be directly sent like:
+
+```json
+{
+    "name": "lilya", "age": 20
+}
+```
+
+### Routing
+
+* **`default_route_pattern`**: `str`
+  Default pattern used to locate routes when using the `Include` helper. Defaults to `"route_patterns"`.
+
+* **`enforce_return_annotation`**: `bool`
+  Enforces return type annotations on handlers. Raises `ImproperlyConfigured` if missing.
+
+### Middleware
+
+* **`middleware`**: `Sequence[DefineMiddleware]`
+  List of global middleware applied to the application. All must be wrapped with `DefineMiddleware`.
+
+### Permissions
+
+* **`permissions`**: `Sequence[DefinePermission]`
+  List of global permissions applied to the application. All must be wrapped with `DefinePermission`.
+
+### Security
+
+* **`x_frame_options`**: `str | None`
+  Controls the `X-Frame-Options` response header (`"DENY"`, `"SAMEORIGIN"`, etc.). Used with `XFrameOptionsMiddleware`.
+
+### Events & Lifespan
+
+* **`on_startup`**: `Sequence[Callable[[], Any]]`
+  List of callables executed on application startup.
+
+* **`on_shutdown`**: `Sequence[Callable[[], Any]]`
+  List of callables executed on application shutdown.
+
+* **`lifespan`**: `ApplicationType | None`
+  A lifespan context manager alternative to `on_startup`/`on_shutdown`.
+
+* **`before_request`**: `Sequence[Callable[..., Any]] | None`
+  A list of callables triggered **before** request processing.
+
+* **`after_request`**: `Sequence[Callable[..., Any]] | None`
+  A list of callables triggered **after** request processing.
+
+### Exceptions
+
+* **`exception_handlers`**: `ExceptionHandler | dict[Any, Any]`
+  Global handlers for application exceptions. Can be a dictionary or a single handler.
 
 ## Accessing settings
 

@@ -5,7 +5,7 @@ from typing import Any, get_args, get_origin
 from pydantic.json_schema import GenerateJsonSchema
 
 from lilya import __version__
-from lilya.contrib.openapi.constants import REF_TEMPLATE
+from lilya.contrib.openapi.constants import REF_TEMPLATE, WRITING_METHODS
 from lilya.contrib.openapi.helpers import get_definitions
 from lilya.contrib.openapi.params import Query, ResponseParam
 
@@ -158,6 +158,9 @@ def get_openapi(
 
             if combined_params:
                 operation["parameters"] = combined_params
+
+            if m_lower in WRITING_METHODS:
+                operation["requestBody"] = {"content": {"application/json": {"schema": {}}}}
 
             # Responses and schemas
             responses_obj: dict[str, Any] = {}

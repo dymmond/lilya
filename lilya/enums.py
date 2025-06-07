@@ -143,6 +143,12 @@ class MediaType(StrEnum):
     XML = "application/xml"
 
 
+class EncodingType(StrEnum):
+    JSON = "application/json"
+    MULTI_PART = "multipart/form-data"
+    URL_ENCODED = "application/x-www-form-urlencoded"
+
+
 class WebSocketState(IntEnum):
     CONNECTING = 0
     CONNECTED = 1
