@@ -23,7 +23,6 @@ def test_client_factory(anyio_backend_name, anyio_backend_options):
 
 
 class MsgSpecEncoder(Encoder):
-
     def is_type(self, value: Any) -> bool:
         """
         Check if the value is an instance of msgspec.Struct.
