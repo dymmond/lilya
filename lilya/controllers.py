@@ -73,7 +73,7 @@ class Controller(BaseController):
         self.signature = inspect.signature(handler)
         self.__scope__ = scope
 
-        func_params: dict[str, Any] = self._extract_params_from_request(
+        func_params: dict[str, Any] = await self._extract_params_from_request(
             request=request, signature=self.signature
         )
         if self.signature.parameters:

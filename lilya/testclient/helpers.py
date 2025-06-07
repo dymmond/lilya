@@ -15,7 +15,7 @@ from lilya.types import ApplicationType, ExceptionHandler, Lifespan
 def create_client(
     routes: Sequence[Any] | None = None,
     *,
-    settings_module: Settings | str | None = None,
+    settings_module: type[Settings] | str | None = None,
     base_url: str = "http://testserver",
     backend: Literal["asyncio", "trio"] = "asyncio",
     backend_options: dict[str, Any] | None = None,

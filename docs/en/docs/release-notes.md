@@ -5,6 +5,42 @@ hide:
 
 # Release Notes
 
+## 0.15.3
+
+### Added
+
+- Added optional `infer_body` into the settings. This will allow you to do something like this:
+
+```python
+from msgspec import Struct
+from pydantic import BaseModel
+
+
+class User(BaseModel):
+    name: str
+    age: int
+
+
+class Item(Struct):
+    sku: str
+
+
+async def process_body(user: User, item: Item):
+    return {**user.model_dump(), "sku": item.sku}
+```
+
+Assuming you have the [encoders](./encoders.md) for Pydantic and Struct installed in your application (or any other) you
+desire.
+
+Lilya uses the internal Encoders to parse and transform them properly.
+
+!!! Note
+    `infer_body` is set to `False` by default but you can override it in the [settings](./settings.md).
+
+### Fixed
+
+- Typing for `settings_module` that was not parsing properly.
+
 ## 0.15.2
 
 ### Fixed

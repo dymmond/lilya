@@ -304,7 +304,7 @@ class Settings(_Internal):
 
             Because the inferred type needs to be evaluated at request time, **this can impact slightly** the performance.
             """
-        )
+        ),
     ] = field(default=False)
 
     @property
