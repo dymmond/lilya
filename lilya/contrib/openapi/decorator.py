@@ -1,6 +1,6 @@
 import inspect
 from collections.abc import Callable, Sequence
-from functools import wraps
+from functools import lru_cache, wraps
 from typing import Annotated, Any
 
 from typing_extensions import Doc
@@ -11,6 +11,11 @@ from lilya.contrib.openapi.helpers import convert_annotation_to_pydantic_model
 from lilya.contrib.openapi.params import Query, ResponseParam
 
 SUCCESSFUL_RESPONSE = "Successful response"
+
+
+@lru_cache
+def get_signature(func: Callable[..., Any]) -> inspect.Signature:
+    return inspect.Signature.from_callable(func)
 
 
 def openapi(
@@ -127,22 +132,11 @@ def openapi(
     """
 
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
-        if inspect.iscoroutinefunction(func):
-
-            @wraps(func)
-            async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
-                handler = BaseHandler()
-                signature = inspect.Signature.from_callable(func)
-                return handler.handle_response(func, other_signature=signature)
-
-            wrapper = async_wrapper
-        else:
-
-            @wraps(func)
-            def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
-                return func(*args, **kwargs)
-
-            wrapper = sync_wrapper
+        @wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            handler = BaseHandler()
+            signature = get_signature(func)
+            return handler.handle_response(func, other_signature=signature)
 
         def response_models(responses: dict[int, OpenAPIResponse] | None = None) -> Any:
             responses: dict[int, ResponseParam] = {} if responses is None else responses  # type: ignore
