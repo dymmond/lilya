@@ -34,6 +34,8 @@ def create_client(
     cookies: httpx._types.CookieTypes | None = None,
     before_request: Sequence[Callable[..., Any]] | None = None,
     after_request: Sequence[Callable[..., Any]] | None = None,
+    enable_openapi: bool = True,
+    openapi_config: Any | None = None,
     **kwargs: Any,
 ) -> TestClient:
     """
@@ -64,6 +66,8 @@ def create_client(
             include_in_schema=include_in_schema,
             before_request=before_request,
             after_request=after_request,
+            enable_openapi=enable_openapi,
+            openapi_config=openapi_config,
             **kwargs,
         ),
         base_url=base_url,
