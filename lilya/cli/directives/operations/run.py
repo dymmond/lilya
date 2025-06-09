@@ -129,14 +129,9 @@ async def execute_lifespan(
             if inspect.iscoroutinefunction(directive):
                 await directive()
             else:
-                args_to_parse = sys.argv[position:]
-                args_to_run = []
-
-                for arg in args_to_parse:
-                    if arg in ["-h", "--h"]:
-                        args_to_run.append("--help")
-                        continue
-                    args_to_run.append(arg)
+                args_to_run = [
+                    "--help" if arg in ["-h", "--h"] else arg for arg in sys.argv[position:]
+                ]
 
                 # Build CLI context and parse args
                 ctx = directive.make_context(directive.name, args_to_run, resilient_parsing=False)
