@@ -1,29 +1,30 @@
-import inspect
 from collections.abc import Callable
-from functools import wraps
 from typing import Any
 
 
 def directive(func: Callable[..., Any]) -> Callable:
     """
-    Wrapper of a Sayer command-line directive.
+    Marks a function-based Sayer CLI command as a custom Lilya directive.
+
+    This decorator is used to register user-defined CLI commands that follow the
+    function-based directive pattern. It tags the command with a special attribute
+    (__is_custom_directive__ = True) so Lilya's CLI system can treat it differently
+    from internal class-based directives.
+
+    The command must already be decorated with `@command` from Sayer before applying this.
+
+    Example usage:
+
+        @directive
+        @command(name="create")
+        async def create(name: Annotated[str, Option(help="Your name")]):
+            ...
+
+    Returns:
+        Callable: The original command object, with a marker and registered in the main CLI.
     """
+    from lilya.cli.cli import lilya_cli
 
-    if inspect.iscoroutinefunction(func):
-
-        @wraps(func)
-        async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
-            return await func(*args, **kwargs)
-
-        wrapper = async_wrapper
-    else:
-
-        @wraps(func)
-        def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
-            return func(*args, **kwargs)
-
-        wrapper = sync_wrapper
-
-    # Declare a custom directive property
-    wrapper.__is_custom_directive__ = True
-    return wrapper
+    func.__is_custom_directive__ = True
+    lilya_cli.add_command(func)
+    return func

@@ -73,9 +73,22 @@ def load_directive_class_by_filename(app_name: str, location: str) -> Any:
     if not spec or spec is None:
         printer.write_error(f"{app_name} not found")
         sys.exit(1)
+
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    return module.Directive()
+
+    # If it exports a class called Directive
+    if hasattr(module, "Directive"):
+        return module.Directive()
+
+    # Support: `@directive @command` function
+    for attr in dir(module):
+        obj = getattr(module, attr)
+        if callable(obj) and getattr(obj, "__is_custom_directive__", False):
+            return obj
+
+    printer.write_error(f"No directive found in {app_name}")
+    sys.exit(1)
 
 
 @functools.cache
@@ -141,8 +154,12 @@ def fetch_custom_directive(subdirective: Any, location: str | None) -> Any:
     name = f"{location}/{app_name}.py"
     klass = load_directive_class_by_filename(app_name, name)
 
-    if not isinstance(klass, BaseDirective):
-        raise DirectiveError(detail="The directive must be a subclass of BaseDirective")
+    if not isinstance(klass, BaseDirective) and not getattr(
+        klass, "__is_custom_directive__", False
+    ):
+        raise DirectiveError(
+            detail="The directive must be a subclass of BaseDirective or marked with @directive"
+        )
     return klass
 
 
