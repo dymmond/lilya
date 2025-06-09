@@ -282,7 +282,7 @@ class Settings(_Internal):
             This is used by the `StandardLoggingConfig` to set the logging level.
             """
         ),
-    ] = field(default="DEBUG")
+    ] = field(default="INFO")
     enable_openapi: Annotated[
         bool,
         Doc(

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import os
 import sys
 from enum import Enum
@@ -9,10 +10,10 @@ import click
 from sayer import Argument, Option, command, error
 
 from lilya._internal._events import generate_lifespan_events
+from lilya.cli.base import BaseDirective
 from lilya.cli.constants import APP_PARAMETER, LILYA_DISCOVER_APP
 from lilya.cli.env import DirectiveEnv
 from lilya.cli.utils import fetch_directive
-from lilya.compat import run_sync
 from lilya.types import Lifespan
 
 if TYPE_CHECKING:
@@ -30,12 +31,12 @@ class Position(int, Enum):
     context_settings={
         "ignore_unknown_options": True,
         "allow_extra_args": True,
-    }
+    },
 )
-def run(
-    env: DirectiveEnv,
+async def run(
     directive: Annotated[
-        str, Option(required=True, help="The name of the file of the custom directive to run.")
+        str | None,
+        Option(required=False, help="The name of the file of the custom directive to run."),
     ],
     directive_args: Annotated[
         list[str],
@@ -50,10 +51,23 @@ def run(
     """
     Runs every single custom directive in the system.
 
-    How to run: `lilya --app <APP-LOCATION> run -n <DIRECTIVE NAME> <ARGS>`.
+    How to run:
 
-    Example: `lilya --app myapp:app run -n createsuperuser`
+    ```shell
+    lilya --app <APP-LOCATION> run <DIRECTIVE NAME> <ARGS>
+    ````
+
+    You can also run with the `@directive` on top of a Sayer command.
+
+    ```shell
+    lilya run <directive-name> <ARGS>
+    ```
+
+    Example: `lilya --app myapp:app run createsuperuser`
     """
+    ctx = click.get_current_context()
+    env = ctx.ensure_object(DirectiveEnv)
+
     name = directive
     if name is not None and getattr(env, "app", None) is None:
         error(
@@ -62,8 +76,11 @@ def run(
         )
         sys.exit(1)
 
-    # Loads the directive object
-    directive = fetch_directive(name, env.command_path, True)
+    directive = (
+        fetch_directive(name, env.command_path, True)
+        if name is not None
+        else fetch_directive(directive_args[0], env.command_path, True)
+    )
     if not directive:
         error(f"Unknown directive: {name!r}")
         sys.exit(1)
@@ -80,7 +97,7 @@ def run(
         env.app.router.on_shutdown,
         env.app.router.lifespan_context,
     )
-    run_sync(execute_lifespan(env.app, lifespan, directive, program_name, position))
+    await execute_lifespan(env.app, lifespan, directive, program_name, position)
 
 
 def get_position() -> int:
@@ -106,4 +123,28 @@ async def execute_lifespan(
     Executes the lifespan events and the directive.
     """
     async with lifespan(app):
-        await directive.execute_from_command(sys.argv[:], program_name, position)
+        if isinstance(directive, BaseDirective):
+            await directive.execute_from_command(sys.argv[:], program_name, position)
+        elif callable(directive):
+            if inspect.iscoroutinefunction(directive):
+                await directive()
+            else:
+                args_to_run = [
+                    "--help" if arg in ["-h", "--h"] else arg for arg in sys.argv[position:]
+                ]
+
+                # Build CLI context and parse args
+                ctx = directive.make_context(directive.name, args_to_run, resilient_parsing=False)
+                # Get parsed CLI params
+                kwargs = ctx.params
+                callback = directive.callback
+
+                while hasattr(callback, "__wrapped__"):
+                    callback = callback.__wrapped__
+
+                if inspect.iscoroutinefunction(callback):
+                    await callback(**kwargs)
+                else:
+                    callback(**kwargs)
+        else:
+            raise TypeError("Invalid directive type. Must be a BaseDirective or a callable.")
