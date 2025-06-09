@@ -5,6 +5,18 @@ hide:
 
 # Release Notes
 
+## 0.15.4
+
+### Added
+
+- Support for modern [directives](./directives/custom-directives.md).
+- Support for `@directive` decorator on top of a [Sayer](https://sayer.dymmond.com) command making it a directive as
+long as it still follows the directive lookup for files.
+
+### Fixed
+
+- Internal definitions.
+
 ## 0.15.3
 
 ### Added

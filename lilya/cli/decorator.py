@@ -26,5 +26,6 @@ def directive(func: Callable[..., Any]) -> Callable:
     from lilya.cli.cli import lilya_cli
 
     func.__is_custom_directive__ = True
+    func.get_help = lilya_cli.get_help
     lilya_cli.add_command(func)
     return func

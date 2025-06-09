@@ -7,6 +7,7 @@ import pkgutil
 import sys
 import typing
 from difflib import get_close_matches
+from functools import lru_cache
 from importlib import import_module
 from typing import Any
 
@@ -194,3 +195,10 @@ def fetch_directive(subdirective: Any, location: str | None, is_custom: bool = F
     else:
         klass = load_directive_class(app_name, subdirective)
     return klass
+
+
+@lru_cache
+def get_client() -> Any:
+    from lilya.cli.cli import lilya_cli
+
+    return lilya_cli

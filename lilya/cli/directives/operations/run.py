@@ -31,7 +31,7 @@ class Position(int, Enum):
     context_settings={
         "ignore_unknown_options": True,
         "allow_extra_args": True,
-    }
+    },
 )
 async def run(
     directive: Annotated[
@@ -51,12 +51,23 @@ async def run(
     """
     Runs every single custom directive in the system.
 
-    How to run: `lilya --app <APP-LOCATION> run -n <DIRECTIVE NAME> <ARGS>`.
+    How to run:
 
-    Example: `lilya --app myapp:app run -n createsuperuser`
+    ```shell
+    lilya --app <APP-LOCATION> run <DIRECTIVE NAME> <ARGS>
+    ````
+
+    You can also run with the `@directive` on top of a Sayer command.
+
+    ```shell
+    lilya run <directive-name> <ARGS>
+    ```
+
+    Example: `lilya --app myapp:app run createsuperuser`
     """
     ctx = click.get_current_context()
     env = ctx.ensure_object(DirectiveEnv)
+
     name = directive
     if name is not None and getattr(env, "app", None) is None:
         error(
@@ -65,7 +76,6 @@ async def run(
         )
         sys.exit(1)
 
-    # Loads the directive object
     directive = (
         fetch_directive(name, env.command_path, True)
         if name is not None
@@ -119,7 +129,15 @@ async def execute_lifespan(
             if inspect.iscoroutinefunction(directive):
                 await directive()
             else:
-                args_to_run = sys.argv[position:]
+                args_to_parse = sys.argv[position:]
+                args_to_run = []
+
+                for arg in args_to_parse:
+                    if arg in ["-h", "--h"]:
+                        args_to_run.append("--help")
+                        continue
+                    args_to_run.append(arg)
+
                 # Build CLI context and parse args
                 ctx = directive.make_context(directive.name, args_to_run, resilient_parsing=False)
                 # Get parsed CLI params
@@ -133,6 +151,5 @@ async def execute_lifespan(
                     await callback(**kwargs)
                 else:
                     callback(**kwargs)
-                # directive()
         else:
             raise TypeError("Invalid directive type. Must be a BaseDirective or a callable.")
