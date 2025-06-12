@@ -345,7 +345,7 @@ with the flask `session`, this one acts in the same fashion.
 
 !!! Danger
     When using the `session` object, you **must** install the [SessionMiddleware](./middleware.md#sessioncontextmiddleware)
-    and the [SessionContextMiddleware](./middleware.md#sessioncontextmiddleware) in this specific order as the order matters or an `RuntimeError` exception is raised.
+    and the [SessionContextMiddleware](./middleware.md#sessioncontextmiddleware) in this specific order as the order matters or an `ImproperlyConfigured` exception is raised.
 
 ```python
 {!> ../../../docs_src/context/basic_session.py !}

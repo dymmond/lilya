@@ -406,7 +406,7 @@ class SessionContext:
         try:
             return cls._session_context.get()
         except LookupError:
-            raise RuntimeError(
+            raise ImproperlyConfigured(
                 "Session context not set. Ensure 'SessionContextMiddleware' is properly installed."
             ) from None
 

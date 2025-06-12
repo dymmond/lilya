@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from lilya.context import SessionContext
 from lilya.enums import ScopeType
+from lilya.exceptions import ImproperlyConfigured
 from lilya.protocols.middleware import MiddlewareProtocol
 from lilya.types import ASGIApp, Receive, Scope, Send
 
@@ -32,7 +33,7 @@ class SessionContextMiddleware(MiddlewareProtocol):
             if not isinstance(session, dict):
                 raise KeyError
         except KeyError:
-            raise RuntimeError(
+            raise ImproperlyConfigured(
                 "'session' not set. Ensure 'SessionMiddleware' is properly installed."
             ) from None
 
