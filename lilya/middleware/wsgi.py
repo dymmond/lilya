@@ -39,6 +39,7 @@ class BufferedWSGIResponder(WSGIResponder):
         receive: Receive,
         send: Send,
         app: Lilya,
+        exception_class: type[HTTPException],
     ):
         super().__init__(wsgi_app, executor, send_queue_size)
         self._buffer: list[Any] = []
@@ -46,6 +47,7 @@ class BufferedWSGIResponder(WSGIResponder):
         self._receive = receive
         self._send = send
         self._asgi_app = app
+        self._exception_class = exception_class
 
     def send(self, message: Any) -> None:
         self._buffer.append(message)
@@ -65,8 +67,8 @@ class BufferedWSGIResponder(WSGIResponder):
 
         if start and start["status"] >= 400:
             detail = body_bytes.decode("utf-8", errors="ignore")
-            exc = HTTPException(status_code=start["status"], detail=detail)
-            handler = self._asgi_app.exception_handlers.get(HTTPException)
+            exc = self._exception_class(status_code=start["status"], detail=detail)
+            handler = self._asgi_app.exception_handlers.get(self._exception_class)
             if handler:
                 request = Request(scope, receive=receive)  # type: ignore
                 response = await handler(request, exc)
@@ -84,11 +86,13 @@ class WSGIMiddleware(A2WSGIMiddleware):
         workers: int = 10,
         send_queue_size: int = 10,
         redirect_exceptions: bool = False,
+        exception_class: type[HTTPException] = HTTPException,
     ) -> None:
         if isinstance(app, str):
             app = cast(WSGIApp, import_string(app))
         super().__init__(app, workers, send_queue_size)
         self.redirect_exceptions = redirect_exceptions
+        self._exception_class = exception_class
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         app: Lilya = scope["app"]
@@ -104,5 +108,6 @@ class WSGIMiddleware(A2WSGIMiddleware):
                 receive,
                 send,
                 app=app,
+                exception_class=self._exception_class,
             )
             return await responder(cast(HTTPScope, scope), receive, send)
