@@ -527,6 +527,66 @@ def test_set_cookie_multiple_with_session(test_client_factory, monkeypatch):
     )
 
 
+def test_set_cookie_multiple_with_session_deduped(test_client_factory, monkeypatch):
+    # Mock time used as a reference for `Expires` by stdlib `SimpleCookie`.
+    mocked_now = dt.datetime(2037, 1, 22, 12, 0, 0, tzinfo=dt.timezone.utc)
+    monkeypatch.setattr(time, "time", lambda: mocked_now.timestamp())
+
+    async def home():
+        response = Response("Hello, world!", media_type="text/plain", encoders=[FooEncoder])
+        response.set_cookie(
+            "session",
+            "eyJzb21lIjogImRhdGEifQ==.fiM8QA.mDqNFev_5EcpyyTTNN1iniSc_H0",
+            max_age=10,
+            expires=10,
+            path="/",
+            domain="localhost",
+            secure=True,
+            httponly=True,
+            samesite="lax",
+        )
+        response.set_cookie(
+            "refresh_cookie",
+            "myvalue",
+            max_age=10,
+            expires=10,
+            path="/",
+            domain="localhost",
+            secure=True,
+            httponly=True,
+            samesite="none",
+        )
+        return response
+
+    async def update_session(request: Request) -> JSONResponse:
+        data = await request.json()
+        request.session.update(data)
+        return JSONResponse({"session": request.session})
+
+    lilya_app = Lilya(
+        routes=[
+            Path("/session", update_session, methods=["POST"]),
+            Path("/", home),
+        ],
+        middleware=[
+            DefineMiddleware(SessionMiddleware, secret_key="your-secret-key"),
+        ],
+    )
+
+    client = test_client_factory(lilya_app)
+
+    response = client.post("/session", json={"some": "data"})
+    assert response.json() == {"session": {"some": "data"}}
+
+    response = client.get("/")
+    assert response.text == "Hello, world!"
+    assert response.headers["set-cookie"].count("session") == 1
+    assert (
+        response.headers["set-cookie"]
+        == 'session="eyJzb21lIjogImRhdGEifQ==.fiM8QA.mDqNFev_5EcpyyTTNN1iniSc_H0"; Domain=localhost; expires=Thu, 22 Jan 2037 12:00:10 GMT; HttpOnly; Max-Age=10; Path=/; SameSite=lax; Secure, refresh_cookie=myvalue; Domain=localhost; expires=Thu, 22 Jan 2037 12:00:10 GMT; HttpOnly; Max-Age=10; Path=/; SameSite=none; Secure'
+    )
+
+
 @pytest.mark.parametrize(
     "expires",
     [
