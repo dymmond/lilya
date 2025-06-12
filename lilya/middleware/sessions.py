@@ -130,7 +130,7 @@ class SessionMiddleware(MiddlewareProtocol):
                     data = self.encode_session(scope["session"])
                     data = self.signer.sign(data)
                     header_value = (
-                        "{session_cookie}={data}; path={path}; {max_age}{security_flags}".format(
+                        '{session_cookie}="{data}"; path={path}; {max_age}{security_flags}'.format(
                             session_cookie=self.session_cookie,
                             data=data.decode("utf-8"),
                             path=self.path,
