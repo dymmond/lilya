@@ -24,7 +24,13 @@ def create_app() -> Lilya:
     app = Lilya(
         routes=[
             Path("/", home),
-            Path("/reset", reset),
+            Path(
+                "/reset",
+                reset,
+                middleware=[
+                    DefineMiddleware(SessionContextMiddleware, sub_path="foo"),
+                ],
+            ),
         ],
         middleware=[
             DefineMiddleware(SessionMiddleware, secret_key="your-secret-key"),

@@ -37,8 +37,13 @@ class SessionContextMiddleware(MiddlewareProtocol):
                 "'session' not set. Ensure 'SessionMiddleware' is properly installed."
             ) from None
 
+        cleanup_sub_path: bool = False
         if self.sub_path:
-            session = global_session.setdefault(self.sub_path, {})
+            if self.sub_path not in global_session:
+                session = global_session[self.sub_path] = {}
+                cleanup_sub_path = True
+            else:
+                session = global_session[self.sub_path]
         else:
             session = global_session
 
@@ -48,6 +53,6 @@ class SessionContextMiddleware(MiddlewareProtocol):
             await self.app(scope, receive, send)
         finally:
             # cleanup session, so the main session can get deleted
-            if self.sub_path and not session:
+            if cleanup_sub_path and not session:
                 global_session.pop(self.sub_path, None)
             SessionContext.reset_context(token)
