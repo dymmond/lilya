@@ -42,16 +42,21 @@ class SessionContextMiddleware(MiddlewareProtocol):
         else:
             session = global_session
 
+        send_started: bool = False
+
         def cleanup_session() -> None:
+            nonlocal send_started
             # cleanup session, so the main session can get deleted
-            if self.sub_path:
+            if not send_started and self.sub_path:
                 if not session:
                     global_session.pop(self.sub_path, None)
                 else:
                     global_session[self.sub_path] = session
 
         async def send_wrapper(message: Message) -> None:
+            nonlocal send_started
             cleanup_session()
+            send_started = True
             await send(message)
 
         # Set the session context
@@ -59,5 +64,6 @@ class SessionContextMiddleware(MiddlewareProtocol):
         try:
             await self.app(scope, receive, send_wrapper)
         finally:
+            # may the app didn't sent anything
             cleanup_session()
             SessionContext.reset_context(token)
