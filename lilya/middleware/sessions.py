@@ -123,7 +123,9 @@ class SessionMiddleware(MiddlewareProtocol):
         """
         if message["type"] == "http.response.start":
             headers = Header.ensure_header_instance(scope=message)
-            if "set-cookie" not in (h.lower() for h in headers.keys()):  # Check if already set
+            if all(
+                not h.startswith(f"{self.session_cookie}=") for h in headers.get_all("Set-Cookie")
+            ):  # Check if already set
                 if scope["session"]:
                     data = self.encode_session(scope["session"])
                     data = self.signer.sign(data)

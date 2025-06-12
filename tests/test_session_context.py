@@ -27,9 +27,7 @@ def create_app() -> Lilya:
             Path(
                 "/reset",
                 reset,
-                middleware=[
-                    DefineMiddleware(SessionContextMiddleware, sub_path="foo"),
-                ],
+                middleware=[DefineMiddleware(SessionContextMiddleware, sub_path="foo")],
             ),
         ],
         middleware=[
@@ -99,7 +97,11 @@ def test_session_reset(client):
     assert response.json()["visits"] == 2
 
     # Reset the session
-    client.get("/reset")
+    response = client.get("/reset")
+    assert any(
+        "expires=Thu, 01 Jan 1970 00:00:00 GMT" in h
+        for h in response.headers.get_list("Set-Cookie")
+    )
 
     # Make another request after resetting the session - should be reset
     response = client.get("/")
