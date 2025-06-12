@@ -5,6 +5,17 @@ hide:
 
 # Release Notes
 
+
+## 0.15.5
+
+### Added
+
+- Support for multiplexing a session into multiple session contexts.
+
+### Changed
+
+- `SessionContext` has now the methods `set_session`, `get_session`. No more `get/set_connection` is used.
+
 ## 0.15.4
 
 ### Added

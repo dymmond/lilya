@@ -356,6 +356,15 @@ The `SessionContextMiddleware` **depends** on the [SessionMiddleware](#sessionmi
 {!> ../../../docs_src/middleware/available/session_context_middleware.py !}
 ```
 
+You can multiplex a single session by providing `sub_path`:
+
+```python
+{!> ../../../docs_src/middleware/available/session_context_middleware_sub_path.py !}
+```
+
+!!! Note
+    This doesn't affect `request.session` or `scope["session"]`. Here you have still the original session object.
+
 ### Other middlewares
 
 You can build your own middlewares as explained above but also reuse middlewares directly for any other ASGI application if you wish.

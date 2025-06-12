@@ -5,11 +5,13 @@ from lilya.context import session
 from lilya.middleware import DefineMiddleware
 from lilya.middleware.session_context import SessionContextMiddleware
 from lilya.middleware.sessions import SessionMiddleware
+from lilya.requests import Request
 from lilya.routing import Path
 from lilya.testclient import TestClient
 
 
-async def home():
+async def home(request: Request) -> dict:
+    assert session._session_getter() is request.scope["session"]["foo"]
     session["visits"] = session.get("visits", 0) + 1
     return {"visits": session["visits"]}
 
@@ -18,7 +20,7 @@ async def reset():
     session.reset_context()
 
 
-def create_app():
+def create_app() -> Lilya:
     app = Lilya(
         routes=[
             Path("/", home),
@@ -26,7 +28,7 @@ def create_app():
         ],
         middleware=[
             DefineMiddleware(SessionMiddleware, secret_key="your-secret-key"),
-            DefineMiddleware(SessionContextMiddleware),
+            DefineMiddleware(SessionContextMiddleware, sub_path="foo"),
         ],
     )
 
