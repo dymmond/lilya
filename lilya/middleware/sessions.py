@@ -124,7 +124,7 @@ class SessionMiddleware(MiddlewareProtocol):
         if message["type"] == "http.response.start":
             headers = Header.ensure_header_instance(scope=message)
             if all(
-                not h.startswith(f"{self.session_cookie}=") for h in headers.get_all("Set-Cookie")
+                not h.startswith(f"{self.session_cookie}=") for h in headers.get_all("set-cookie")
             ):  # Check if already set
                 if scope["session"]:
                     data = self.encode_session(scope["session"])
@@ -138,7 +138,7 @@ class SessionMiddleware(MiddlewareProtocol):
                             security_flags=self.security_flags,
                         )
                     )
-                    headers.add("Set-Cookie", header_value)
+                    headers.add("set-cookie", header_value)
                 elif not initial_session_was_empty:
                     header_value = (
                         "{session_cookie}={data}; path={path}; {expires}{security_flags}".format(
@@ -149,6 +149,6 @@ class SessionMiddleware(MiddlewareProtocol):
                             security_flags=self.security_flags,
                         )
                     )
-                    headers.add("Set-Cookie", header_value)
+                    headers.add("set-cookie", header_value)
 
         await send(message)

@@ -520,10 +520,10 @@ def test_set_cookie_multiple_with_session(test_client_factory, monkeypatch):
 
     response = client.get("/")
     assert response.text == "Hello, world!"
-
+    assert response.headers["set-cookie"].count("session") == 1
     assert (
         response.headers["set-cookie"]
-        == "access_cookie=myvalue; Domain=localhost; expires=Thu, 22 Jan 2037 12:00:10 GMT; HttpOnly; Max-Age=10; Path=/; SameSite=none; Secure, refresh_cookie=myvalue; Domain=localhost; expires=Thu, 22 Jan 2037 12:00:10 GMT; HttpOnly; Max-Age=10; Path=/; SameSite=none; Secure"
+        == "access_cookie=myvalue; Domain=localhost; expires=Thu, 22 Jan 2037 12:00:10 GMT; HttpOnly; Max-Age=10; Path=/; SameSite=none; Secure, refresh_cookie=myvalue; Domain=localhost; expires=Thu, 22 Jan 2037 12:00:10 GMT; HttpOnly; Max-Age=10; Path=/; SameSite=none; Secure, session=eyJzb21lIjogImRhdGEifQ==.fiM8QA.mDqNFev_5EcpyyTTNN1iniSc_H0; path=/; Max-Age=1209600; httponly; samesite=lax"
     )
 
 

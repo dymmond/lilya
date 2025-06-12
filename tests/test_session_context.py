@@ -100,7 +100,7 @@ def test_session_reset(client):
     response = client.get("/reset")
     assert any(
         "expires=Thu, 01 Jan 1970 00:00:00 GMT" in h
-        for h in response.headers.get_list("Set-Cookie")
+        for h in response.headers.get_list("set-cookie")
     )
 
     # Make another request after resetting the session - should be reset
