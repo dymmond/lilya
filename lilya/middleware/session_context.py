@@ -29,8 +29,8 @@ class SessionContextMiddleware(MiddlewareProtocol):
             return
 
         try:
-            session = scope["session"]
-            if not isinstance(session, dict):
+            global_session = scope["session"]
+            if not isinstance(global_session, dict):
                 raise KeyError
         except KeyError:
             raise ImproperlyConfigured(
@@ -38,11 +38,16 @@ class SessionContextMiddleware(MiddlewareProtocol):
             ) from None
 
         if self.sub_path:
-            session = session.setdefault(self.sub_path, {})
+            session = global_session.setdefault(self.sub_path, {})
+        else:
+            session = global_session
 
         # Set the session context
         token = SessionContext.set_session(session)
         try:
             await self.app(scope, receive, send)
         finally:
+            # cleanup session, so the main session can get deleted
+            if self.sub_path and not session:
+                global_session.pop(self.sub_path, None)
             SessionContext.reset_context(token)
