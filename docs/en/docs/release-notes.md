@@ -11,6 +11,8 @@ hide:
 ### Added
 
 - Support for multiplexing a session into multiple session contexts.
+- Added support for `redirect_exception` when using [WSGIMiddleware](./middleware.md#wsgimiddleware). This
+flag when passed, you can add a `HTTPException` exception handler that will make Lilya capture the WSGI exceptions.
 
 ### Changed
 
