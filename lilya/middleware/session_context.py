@@ -4,7 +4,7 @@ from lilya.context import SessionContext
 from lilya.enums import ScopeType
 from lilya.exceptions import ImproperlyConfigured
 from lilya.protocols.middleware import MiddlewareProtocol
-from lilya.types import ASGIApp, Receive, Scope, Send
+from lilya.types import ASGIApp, Message, Receive, Scope, Send
 
 
 class SessionContextMiddleware(MiddlewareProtocol):
@@ -37,22 +37,33 @@ class SessionContextMiddleware(MiddlewareProtocol):
                 "'session' not set. Ensure 'SessionMiddleware' is properly installed."
             ) from None
 
-        cleanup_sub_path: bool = False
         if self.sub_path:
-            if self.sub_path not in global_session:
-                session = global_session[self.sub_path] = {}
-                cleanup_sub_path = True
-            else:
-                session = global_session[self.sub_path]
+            session = global_session.setdefault(self.sub_path, {})
         else:
             session = global_session
+
+        send_started: bool = False
+
+        def cleanup_session() -> None:
+            nonlocal send_started
+            # cleanup session, so the main session can get deleted
+            if not send_started and self.sub_path:
+                if not session:
+                    global_session.pop(self.sub_path, None)
+                else:
+                    global_session[self.sub_path] = session
+
+        async def send_wrapper(message: Message) -> None:
+            nonlocal send_started
+            cleanup_session()
+            send_started = True
+            await send(message)
 
         # Set the session context
         token = SessionContext.set_session(session)
         try:
-            await self.app(scope, receive, send)
+            await self.app(scope, receive, send_wrapper)
         finally:
-            # cleanup session, so the main session can get deleted
-            if cleanup_sub_path and not session:
-                global_session.pop(self.sub_path, None)
+            # may the app didn't sent anything
+            cleanup_session()
             SessionContext.reset_context(token)
