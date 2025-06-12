@@ -10,7 +10,6 @@ from lilya.exceptions import ImproperlyConfigured
 from lilya.types import Doc, Scope
 
 if TYPE_CHECKING:
-    from lilya._internal._connection import Connection
     from lilya.requests import Request
     from lilya.routing import BasePath
 
@@ -391,33 +390,25 @@ class SessionContext:
     A context manager for handling session-specific request data using context variables.
     """
 
-    _session_context: contextvars.ContextVar[Connection] = contextvars.ContextVar(
-        "session_context"
-    )
+    _session_context: contextvars.ContextVar[dict] = contextvars.ContextVar("session_context")
 
     # Lazily access the session object
-    lazy_session = LazySessionProxy(lambda: SessionContext._get_session_data())
+    lazy_session = LazySessionProxy(lambda: SessionContext.get_session())
 
     @classmethod
-    def set_connection(cls, connection: Connection) -> contextvars.Token:
+    def set_session(cls, session_dict: dict) -> contextvars.Token:
         """Set the session context for the Connection."""
-        return cls._session_context.set(connection)
+        return cls._session_context.set(session_dict)
 
     @classmethod
-    def get_connection(cls) -> Connection:
+    def get_session(cls) -> dict:
         """Retrieve the current Connection (session context)."""
         try:
             return cls._session_context.get()
         except LookupError:
-            raise RuntimeError(
-                "Session context not set. Ensure 'SessionMiddleware' is properly installed."
+            raise ImproperlyConfigured(
+                "Session context not set. Ensure 'SessionContextMiddleware' is properly installed."
             ) from None
-
-    @classmethod
-    def _get_session_data(cls) -> Any:
-        """Get the session data from the request."""
-        connection = cls.get_connection()
-        return getattr(connection, "session", {})
 
     @classmethod
     def reset_context(cls, token: Any) -> None:

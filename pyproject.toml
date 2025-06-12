@@ -251,9 +251,10 @@ ignore_missing_imports = true
 ignore_errors = true
 
 [[tool.mypy.overrides]]
-module = "lilya.tests.*"
+module = "tests.*"
 ignore_missing_imports = true
 check_untyped_defs = true
+disallow_untyped_defs = false
 
 [[tool.mypy.overrides]]
 module = "docs_src.*"

@@ -347,27 +347,14 @@ with the flask `session`, this one acts in the same fashion.
     When using the `session` object, you **must** install the [SessionMiddleware](./middleware.md#sessioncontextmiddleware)
     and the [SessionContextMiddleware](./middleware.md#sessioncontextmiddleware) in this specific order as the order matters or an `ImproperlyConfigured` exception is raised.
 
+```python
+{!> ../../../docs_src/context/basic_session.py !}
+```
+
+### Multiplexing
+
+For bigger applications you might want to multiplex a session into multiple session contexts. You can do that by providing `sub_path`.
 
 ```python
-from lilya.apps import Lilya
-from lilya.context import session
-from lilya.middleware import DefineMiddleware
-from lilya.middleware.session_context import SessionContextMiddleware
-from lilya.middleware.sessions import SessionMiddleware
-from lilya.routing import Path
-
-
-async def home():
-    session["visits"] = session.get("visits", 0) + 1
-    return {"visits": session["visits"]}
-
-
-app = Lilya(routes=[
-        Path('/show', home)
-    ],
-    middleware=[
-        DefineMiddleware(SessionMiddleware, secret='my_secret'),
-        DefineMiddleware(SessionContextMiddleware),
-    ],
-)
+{!> ../../../docs_src/context/multiplexed_session.py !}
 ```
