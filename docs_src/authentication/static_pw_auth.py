@@ -11,19 +11,16 @@ from lilya.middleware.sessions import SessionMiddleware
 from lilya.middleware.authentication import AuthenticationMiddleware
 from lilya.responses import PlainText
 from lilya.routing import Path
+import secrets
 
 
-class SessionBackend(AuthenticationBackend):
-    async def authenticate(self, connection):
-        if "session" not in connection.scope:
-            return
 
-        if connection.scope["session"].get("username", None):
-            return
-        return AuthCredentials(["authenticated"]), BasicUser(connection.scope["session"]["username"])
+class HardCodedBasicAuthBackend(AuthenticationBackend):
+    def __init__(
+        self, *, username: str = "admin", password: str
+    ) -> None:
+        self.basic_string = base64.b64encode(f"{username}:{password}".encode()).decode()
 
-
-class BasicAuthBackend(AuthenticationBackend):
     async def authenticate(self, connection):
         if "Authorization" not in connection.headers:
             return
@@ -33,11 +30,12 @@ class BasicAuthBackend(AuthenticationBackend):
             scheme, credentials = auth.split()
             if scheme.lower() != 'basic':
                 return
-            decoded = base64.b64decode(credentials).decode("ascii")
+            if not secrets.compare_digest(credentials, self.basic_string):
+                raise ValueError()
+            username = base64.b64decode(credentials).decode("ascii").split(":", 1)[0]
         except (ValueError, UnicodeDecodeError, binascii.Error) as exc:
             raise AuthenticationError('Invalid basic auth credentials')
 
-        username, _, password = decoded.partition(":")
         return AuthCredentials(["authenticated"]), BasicUser(username)
 
 
@@ -52,9 +50,7 @@ routes = [
 ]
 
 middleware = [
-    # must be defined before AuthenticationMiddleware, because of the SessionBackend
-    DefineMiddleware(SessionMiddleware, secret_key=...),
-    DefineMiddleware(AuthenticationMiddleware, backend=[SessionBackend(), BasicAuthBackend()])
+    DefineMiddleware(AuthenticationMiddleware, backend=[HardCodedBasicAuthBackend(password="password")])
 ]
 
 app = Lilya(routes=routes, middleware=middleware)

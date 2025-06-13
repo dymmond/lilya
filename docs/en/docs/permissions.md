@@ -42,7 +42,7 @@ the `__init__` and the `async def __call__`.
 
 Enforcing this protocol also aligns with writing a [Pure ASGI Permission](#pure-asgi-permission).
 
-### Quick sample
+### Quick example
 
 ```python
 {!> ../../../docs_src/permissions/quick_sample.py !}
@@ -77,19 +77,18 @@ ASGI interface directly. This involves creating a chain of ASGI applications tha
 **Example of the most common approach**
 
 ```python
-from lilya.types import ASGIApp, Scope, Receive, Send
-
-
-class MyPermission:
-    def __init__(self, app: ASGIApp):
-        self.app = app
-
-    async def __call__(self, scope: Scope, receive: Receive, send: Send):
-        await self.app(scope, receive, send)
+{!> ../../../docs_src/permissions/plain_permission.py !}
 ```
 
 When implementing a Pure ASGI permission, it is like implementing an ASGI application, the first
 parameter **should always be an app** and the `__call__` should **always return the app**.
+
+Let's use this to implement basic auth Permission:
+
+```python
+{!> ../../../docs_src/permissions/static_pw.py !}
+```
+
 
 ## Permissions and the settings
 
