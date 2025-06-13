@@ -11,6 +11,10 @@ hide:
 
 - Missing `before_request` and `after_request` to `app.include`.
 - `path` to runserver allowing the user to customise the path location of a Lilya app.
+- New `LilyaAPIExceptionMiddleware` that intercepts globally any exception that is not only from the handlers.
+This can be useful if you want to raise an exception in middlewares and be caught by the exception handlers declared.
+You need to also pass a `enable_intercept_global_exceptions` in the `Lilya` instance or [settings](./settings.md) as this
+is disabled by default.
 
 ### Changed
 

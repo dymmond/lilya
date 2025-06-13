@@ -306,6 +306,17 @@ class Settings(_Internal):
             """
         ),
     ] = field(default=False)
+    enable_intercept_global_exceptions: Annotated[
+        bool,
+        Doc(
+            """
+                By default, exception handlers are raised when a handler triggers but not
+                by middlewares.
+
+                With this flag enable, Lilya custom middleware activates those.
+                """
+        ),
+    ] = False
 
     @property
     def routes(self) -> list[Any]:
