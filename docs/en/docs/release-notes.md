@@ -15,6 +15,7 @@ hide:
 ### Changed
 
 - Make `reload` in the runserver `False` by default.
+- Logging configuration can jump the `configure` if necessary.
 
 ## 0.15.5
 
