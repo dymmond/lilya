@@ -12,6 +12,10 @@ hide:
 - Missing `before_request` and `after_request` to `app.include`.
 - `path` to runserver allowing the user to customise the path location of a Lilya app.
 
+### Changed
+
+- Make `reload` in the runserver `False` by default.
+
 ## 0.15.5
 
 ### Added
