@@ -49,7 +49,6 @@ def runserver(
             help="A path to a Python file or package directory with ([blue]__init__.py[/blue] files) containing a [bold]Lilya[/bold] app. If not provided, Lilya will try to discover.",
         ),
     ],
-    # env: DirectiveEnv,
     port: Annotated[
         int, Option(8000, "-p", help="Port to run the development server.", show_default=True)
     ],
