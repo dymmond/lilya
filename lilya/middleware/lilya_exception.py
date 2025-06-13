@@ -18,9 +18,7 @@ class Content:
     detail: str | None = None
     extra: dict[str, Any] | None = None
 
-    def dict(
-        self, exclude_none: bool = False, upper: bool = False, json: bool = False
-    ) -> dict[str, Any]:
+    def dict(self, exclude_none: bool = False, upper: bool = False) -> dict[str, Any]:
         """
         Dumps all the settings into a python dictionary.
         """
