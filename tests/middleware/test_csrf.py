@@ -43,12 +43,15 @@ def test_csrf_successful_flow() -> None:
     "method",
     ["POST", "PUT", "DELETE", "PATCH"],
 )
-def test_unsafe_method_fails_without_csrf_header(method: str) -> None:
+def test_unsafe_method_fails_without_csrf_header_with_enable_intercept_global_exceptions_false(
+    method: str,
+) -> None:
     with create_client(
         routes=[
             Path(path="/", handler=get_handler, methods=["GET", "POST", "PUT", "DELETE", "PATCH"]),
         ],
         middleware=[DefineMiddleware(CSRFMiddleware, secret=get_random_secret_key())],
+        enable_intercept_global_exceptions=False,
     ) as client:
         response = client.get("/")
         assert response.status_code == HTTP_200_OK
@@ -57,7 +60,7 @@ def test_unsafe_method_fails_without_csrf_header(method: str) -> None:
         assert csrf_token is not None
 
         with pytest.raises(PermissionDenied, match="CSRF token verification failed."):
-            response = client.request(method, "/")
+            client.request(method, "/")
 
 
 def test_invalid_csrf_token() -> None:
@@ -66,6 +69,7 @@ def test_invalid_csrf_token() -> None:
             Path(path="/", handler=get_handler, methods=["get", "post"]),
         ],
         middleware=[DefineMiddleware(CSRFMiddleware, secret=get_random_secret_key())],
+        enable_intercept_global_exceptions=False,
     ) as client:
         response = client.get("/")
         assert response.status_code == HTTP_200_OK
@@ -83,6 +87,7 @@ def test_csrf_token_too_short() -> None:
             Path(path="/", handler=get_handler, methods=["GET", "post"]),
         ],
         middleware=[DefineMiddleware(CSRFMiddleware, secret=get_random_secret_key())],
+        enable_intercept_global_exceptions=False,
     ) as client:
         response = client.get("/")
         assert response.status_code == HTTP_200_OK
