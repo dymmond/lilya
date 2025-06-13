@@ -17,6 +17,11 @@ flag when passed, you can add a `HTTPException` exception handler that will make
 ### Changed
 
 - `SessionContext` has now the methods `set_session`, `get_session`. No more `get/set_connection` is used.
+- `infer_body` is more assertive in the error messages.
+
+### Fixed
+
+- Raise proper error when hitting the `inferred` body instead of a broad complicated message.
 
 ## 0.15.4
 

@@ -159,10 +159,10 @@ class BaseHandler:
         - Multi-param style: {"user": {...}, "item": {...}}
         - Single-param style: {"name": "...", "age": ...} -> into a single structured param
         """
-        json_data = await request.json()
+        json_data = await request.json() or {}
         parameters = signature.parameters
 
-        # Determine which parameters are clearly already accounted for
+        # Determine which parameters are already accounted for
         reserved_keys = set(request.path_params.keys())
         reserved_keys.update(request.query_params.keys())
         reserved_keys.update(request.headers.keys())
@@ -179,22 +179,20 @@ class BaseHandler:
 
             try:
                 payload[name] = apply_structure(structure=encoder_object, value=json_data)
-            except Exception:  # noqa
-                # Case 2: body is a dict of param -> value
+            except Exception as exc:  # noqa
                 if name in json_data:
                     payload[name] = apply_structure(
                         structure=encoder_object, value=json_data[name]
                     )
                 else:
-                    raise ValueError(f"Missing expected body key '{name}'.") from None
+                    raise exc
         else:
             for name in body_param_names:
                 if name not in json_data:
-                    raise ValueError(f"Missing expected body key '{name}'.")
+                    raise ValueError(f"Missing expected body key and/or payload for '{name}'.")
                 encoder_object = parameters[name].annotation
                 payload[name] = apply_structure(structure=encoder_object, value=json_data[name])
 
-        # Return the final payload
         return payload
 
     async def _extract_params_from_request(
