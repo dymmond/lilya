@@ -15,12 +15,12 @@ from lilya.datastructures import State, URLPath
 from lilya.logging import LoggingConfig, setup_logging
 from lilya.middleware.asyncexit import AsyncExitStackMiddleware
 from lilya.middleware.base import DefineMiddleware
-from lilya.middleware.exception_api_middleware import LilyaAPIExceptionMiddleware
 from lilya.middleware.exceptions import ExceptionMiddleware
 from lilya.middleware.global_context import (
     GlobalContextMiddleware,
     LifespanGlobalContextMiddleware,
 )
+from lilya.middleware.lilya_exception import LilyaExceptionMiddleware
 from lilya.middleware.server_error import ServerErrorMiddleware
 from lilya.permissions.base import DefinePermission
 from lilya.protocols.middleware import MiddlewareProtocol
@@ -113,7 +113,7 @@ class BaseLilya:
 
         if self.enable_intercept_global_exceptions:
             middleware.insert(
-                1, DefineMiddleware(LilyaAPIExceptionMiddleware, handlers=exception_handlers)
+                1, DefineMiddleware(LilyaExceptionMiddleware, handlers=exception_handlers)
             )
 
         app = self.router

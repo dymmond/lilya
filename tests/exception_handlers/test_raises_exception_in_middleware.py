@@ -46,3 +46,19 @@ def test_cannot_access(test_client_factory):
         assert response.json() == {
             "detail": "401: You do not have authorization to perform this action."
         }
+
+
+def test_cannot_access_using_super_class():
+    with create_client(
+        routes=[
+            Path("/home", handler=home),
+        ],
+        middleware=[InterceptMiddleware],
+    ) as client:
+        response = client.get("/home")
+
+        assert response.status_code == 401
+        assert response.json() == {
+            "detail": "You do not have authorization to perform this action.",
+            "status_code": 401,
+        }
