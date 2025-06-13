@@ -5,7 +5,6 @@ hide:
 
 # Release Notes
 
-
 ## 0.15.5
 
 ### Added
