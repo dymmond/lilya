@@ -36,6 +36,7 @@ def create_client(
     after_request: Sequence[Callable[..., Any]] | None = None,
     enable_openapi: bool = True,
     openapi_config: Any | None = None,
+    enable_intercept_global_exceptions: bool = True,
     **kwargs: Any,
 ) -> TestClient:
     """
@@ -68,6 +69,7 @@ def create_client(
             after_request=after_request,
             enable_openapi=enable_openapi,
             openapi_config=openapi_config,
+            enable_intercept_global_exceptions=enable_intercept_global_exceptions,
             **kwargs,
         ),
         base_url=base_url,

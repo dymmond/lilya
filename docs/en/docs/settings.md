@@ -258,6 +258,12 @@ The following are the available parameters you can configure inside your `Settin
 * **`logging_config`**: `LoggingConfig | None`
   Provides a logging configuration instance. Defaults to `StandardLoggingConfig`.
 
+* **enable_intercept_global_exceptions**: `bool`. This enables the `LilyaAPIExceptionMiddleware` and allow
+global exception handlers to be used in the application besides the normal standard behaviour.
+
+Example: When an exception is thrown inside a global middleware, the exception handlers won't be able to catch it as per
+normal behaviour, this flag enables a unique middleware in Lilya that makes that possible.
+
 ### OpenAPI
 
 * **`enable_openapi`**: `bool`

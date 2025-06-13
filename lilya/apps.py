@@ -15,6 +15,7 @@ from lilya.datastructures import State, URLPath
 from lilya.logging import LoggingConfig, setup_logging
 from lilya.middleware.asyncexit import AsyncExitStackMiddleware
 from lilya.middleware.base import DefineMiddleware
+from lilya.middleware.exception_api_middleware import LilyaAPIExceptionMiddleware
 from lilya.middleware.exceptions import ExceptionMiddleware
 from lilya.middleware.global_context import (
     GlobalContextMiddleware,
@@ -109,6 +110,11 @@ class BaseLilya:
             DefineMiddleware(ExceptionMiddleware, handlers=exception_handlers, debug=self.debug),
             DefineMiddleware(AsyncExitStackMiddleware, debug=self.debug),
         ]
+
+        if self.enable_intercept_global_exceptions:
+            middleware.insert(
+                1, DefineMiddleware(LilyaAPIExceptionMiddleware, handlers=exception_handlers)
+            )
 
         app = self.router
         for middleware_class, args, options in reversed(middleware):
@@ -926,6 +932,17 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
                 """
             ),
         ] = None,
+        enable_intercept_global_exceptions: Annotated[
+            bool,
+            Doc(
+                """
+                By default, exception handlers are raised when a handler triggers but not
+                by middlewares.
+
+                With this flag enable, Lilya custom middleware activates those.
+                """
+            ),
+        ] = False,
     ) -> None:
         self.populate_global_context = populate_global_context
         self.settings_module: Settings | None = None
@@ -973,6 +990,9 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
             "enable_openapi", enable_openapi, is_boolean=True
         )
         self.openapi_config = self.load_settings_value("openapi_config", openapi_config)
+        self.enable_intercept_global_exceptions = self.load_settings_value(
+            "enable_intercept_global_exceptions", enable_intercept_global_exceptions
+        )
 
         if self.router_class is not None:
             self.router = self.router_class(
