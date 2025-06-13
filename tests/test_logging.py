@@ -250,6 +250,11 @@ class AnotherStructlogLoggingConfig(LoggingConfig):
 
 def test_skip_configure():
     sink1: list[str] = []
-    config = CustomLoguruLoggingConfig(sink_list=sink1, skip_setup_configure=True)
 
-    assert config.skip_setup_configure is True
+    config = AnotherStructlogLoggingConfig(sink_list=sink1)
+
+    with pytest.raises(NotImplementedError):
+        setup_logging(config)
+
+    config2 = AnotherStructlogLoggingConfig(sink_list=sink1, skip_setup_configure=True)
+    assert config2.skip_setup_configure is True
