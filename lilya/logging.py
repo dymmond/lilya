@@ -77,8 +77,8 @@ class LoggingConfig(ABC):
 
         self.level = level.upper()
         self.options = kwargs
+        self.skip_setup_configure: bool = kwargs.get("skip_setup_configure", False)
 
-    @abstractmethod
     def configure(self) -> None:
         """
         Configures the logging settings.
@@ -149,7 +149,9 @@ def setup_logging(logging_config: LoggingConfig | None = None) -> None:
         raise ValueError("`logging_config` must be an instance of LoggingConfig.")
 
     config = logging_config or StandardLoggingConfig()
-    config.configure()
+
+    if not config.skip_setup_configure:
+        config.configure()
 
     # Gets the logger instance from the logging_config
     _logger = config.get_logger()

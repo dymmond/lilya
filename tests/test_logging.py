@@ -237,3 +237,24 @@ def test_rebinding_during_logging_keeps_all_threads_happy():
     assert not errors, f"Threads saw errors: {errors}"
     assert any("phase1" in msg for msg in sink1), "No phase1 logs in sink1"
     assert any("phase2" in msg for msg in sink2), "No phase2 logs in sink2"
+
+
+class AnotherStructlogLoggingConfig(LoggingConfig):
+    def __init__(self, sink_list, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.sink_list = sink_list
+
+    def get_logger(self) -> Any:
+        return structlog.get_logger(__name__)
+
+
+def test_skip_configure():
+    sink1: list[str] = []
+
+    config = AnotherStructlogLoggingConfig(sink_list=sink1)
+
+    with pytest.raises(NotImplementedError):
+        setup_logging(config)
+
+    config2 = AnotherStructlogLoggingConfig(sink_list=sink1, skip_setup_configure=True)
+    assert config2.skip_setup_configure is True
