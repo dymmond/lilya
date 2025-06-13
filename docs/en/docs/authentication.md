@@ -8,6 +8,13 @@ interfaces within your endpoints.
 {!> ../../../docs_src/authentication/basic_example.py !}
 ```
 
+When not using an user management we can also do something like:
+
+```python
+{!> ../../../docs_src/authentication/static_pw_auth.py !}
+```
+
+
 ## Backends
 
 For backends you need the AuthenticationMiddleware (not the BaseAuthMiddleware). Only here you can provide them
