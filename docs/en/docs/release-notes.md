@@ -10,6 +10,7 @@ hide:
 ### Added
 
 - Missing `before_request` and `after_request` to `app.include`.
+- `path` to runserver allowing the user to customise the path location of a Lilya app.
 
 ## 0.15.5
 

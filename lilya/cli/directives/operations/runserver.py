@@ -5,8 +5,9 @@ import sys
 from pathlib import Path
 from typing import Annotated, Any, cast
 
+import click
 from rich.tree import Tree
-from sayer import Option, command, error
+from sayer import Argument, Option, command, error
 
 from lilya.cli.env import DirectiveEnv
 from lilya.cli.exceptions import DirectiveError
@@ -41,7 +42,14 @@ def get_app_tree(module_paths: list[Path], discovery_file: str) -> Tree:
 
 @command
 def runserver(
-    env: DirectiveEnv,
+    path: Annotated[
+        str | None,
+        Argument(
+            required=False,
+            help="A path to a Python file or package directory with ([blue]__init__.py[/blue] files) containing a [bold]Lilya[/bold] app. If not provided, Lilya will try to discover.",
+        ),
+    ],
+    # env: DirectiveEnv,
     port: Annotated[
         int, Option(8000, "-p", help="Port to run the development server.", show_default=True)
     ],
@@ -93,6 +101,8 @@ def runserver(
 
     How to run: `lilya runserver`
     """
+    ctx = click.get_current_context()
+    env = ctx.ensure_object(DirectiveEnv)
     with get_ui_toolkit() as toolkit:
         # Analyse the app structure
         toolkit.print(
@@ -183,8 +193,9 @@ def runserver(
             app.debug = debug
 
         toolkit.print_line()
+
         uvicorn.run(
-            app=env.path,
+            app=path or env.path,
             port=port,
             host=host,
             reload=reload,
