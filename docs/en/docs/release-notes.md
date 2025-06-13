@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## Unreleased
+
+### Added
+
+- Missing `before_request` and `after_request` to `app.include`.
+
 ## 0.15.5
 
 ### Added

@@ -1379,6 +1379,7 @@ class BaseRouter:
         include_in_schema: bool = True,
         before_request: Sequence[Callable[..., Any]] | None = None,
         after_request: Sequence[Callable[..., Any]] | None = None,
+        redirect_slashes: bool = True,
     ) -> None:
         """
         Adds an Include application into the routes.
@@ -1395,6 +1396,7 @@ class BaseRouter:
             include_in_schema=include_in_schema,
             before_request=before_request,
             after_request=after_request,
+            redirect_slashes=redirect_slashes,
         )
         self.routes.append(route)
 
