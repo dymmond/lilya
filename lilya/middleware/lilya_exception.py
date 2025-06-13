@@ -93,8 +93,6 @@ class LilyaExceptionMiddleware(MiddlewareProtocol):
             else:
                 response = self.create_exception_response(exc)
             await response(scope, receive, send)
-        else:
-            raise
 
     def create_exception_response(self, exc: Exception) -> Response:
         """
