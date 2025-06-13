@@ -939,7 +939,9 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
 
         self.debug = self.load_settings_value("debug", debug, is_boolean=True)
 
-        self.exception_handlers = {} if exception_handlers is None else dict(exception_handlers)
+        self.exception_handlers = (
+            self.load_settings_value("exception_handlers", exception_handlers) or {}
+        )
         self.custom_middleware = [
             wrap_middleware(middleware)
             for middleware in self.load_settings_value("middleware", middleware) or []
