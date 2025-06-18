@@ -944,7 +944,9 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
             ),
         ] = False,
     ) -> None:
-        self.populate_global_context = populate_global_context
+        self.populate_global_context = (
+            self.load_settings_value("populate_global_context", populate_global_context)
+        )
         self.settings_module: Settings | None = None
 
         if settings_module is not None and isinstance(settings_module, str):
