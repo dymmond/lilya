@@ -73,7 +73,7 @@ class Connection(Mapping[str, Any]):
 
     @property
     def app(self) -> Any:
-        return self.scope["app"]
+        return self.scope.get("app")
 
     @property
     def url(self) -> URL:

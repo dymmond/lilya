@@ -245,9 +245,12 @@ class BaseHandler:
         merged: dict[str, Provide] = {}
 
         # Fetch application-level dependencies, if any, and merge them.
-        app_deps = getattr(request.app, "dependencies", None)
-        if app_deps:
-            merged.update(app_deps)
+        # first see if request.app exists, otherwise look at scope["app"]
+        app_obj = getattr(request, "app", None) or request.scope.get("app")
+        if app_obj is not None:
+            app_deps = getattr(app_obj, "dependencies", None)
+            if app_deps:
+                merged.update(app_deps)
 
         # Fetch scope-level dependencies (e.g., from included routes) and merge them.
         # Dependencies are expected to be a list of mappings.
