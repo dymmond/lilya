@@ -18,7 +18,6 @@ hide:
     2. **Include-level** – sub-application scoping (e.g. per-module configs)
     3. **Route-level** – fine-grained overrides for specific endpoints
 
-
 * **Handler Parameter Injection**
 
     * Automatically resolves `Provides()` parameters by name

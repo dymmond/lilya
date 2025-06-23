@@ -33,7 +33,14 @@ class Provide:
         kwargs: dict[str, Any] = {}
 
         # Resolve each parameter of this dependency
-        for name, _ in sig.parameters.items():
+        for name, param in sig.parameters.items():
+            # Resolve each *named* parameter of this dependency (skip *args/**kwargs)
+            if param.kind in (
+                inspect.Parameter.VAR_POSITIONAL,
+                inspect.Parameter.VAR_KEYWORD,
+            ):
+                continue
+
             if name in dependencies_map:
                 # nested dependency
                 dep = dependencies_map[name]

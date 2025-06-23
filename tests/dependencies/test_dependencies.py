@@ -1,4 +1,6 @@
 import pytest
+from msgspec import Struct
+from pydantic import BaseModel
 
 from lilya.apps import Lilya
 from lilya.dependencies import Provide, Provides
@@ -147,3 +149,42 @@ async def test_caching_behavior():
 
     assert calls["count"] == 1
     assert r1.json() == {"x": "cached"} and r2.json() == {"x": "cached"}
+
+
+class TestModel(BaseModel):
+    def show(self):
+        return "show"
+
+
+class DummyModel:
+    def __init__(self, **kwargs):
+        self.name = None
+
+    def show(self):
+        return "show"
+
+
+class StructDummy(Struct):
+    def show(self):
+        return "show"
+
+
+@pytest.mark.parametrize(
+    "model", [TestModel, DummyModel, StructDummy], ids=["pydantic", "python", "msgspec"]
+)
+async def test_with_models(test_client_factory, model):
+    async def handler(model=Provides()):
+        return {"model": model.show()}
+
+    app = Lilya(
+        routes=[
+            Path("/model", handler=handler),
+        ],
+        dependencies={"model": Provide(model)},
+    )
+
+    client = TestClient(app)
+
+    res = client.get("/model")
+    assert res.status_code == 200
+    assert res.json() == {"model": "show"}
