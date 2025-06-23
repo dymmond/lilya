@@ -6,8 +6,17 @@ from lilya.apps import Lilya
 from lilya.conf.global_settings import Settings
 from lilya.middleware import DefineMiddleware
 from lilya.middleware.clientip import ClientIPMiddleware
+from lilya.routing import Path
+from lilya.responses import Response
+from lilya.requests import Request
 
-routes = [...]
+async def echo_ip_scope(request: Request) -> Response:
+    return Response(f"Your ip is: {request.scope['real-clientip']}")
+
+async def echo_ip_header(request: Request) -> Response:
+    return Response(f"Your ip is: {request.headers['x-real-ip']}")
+
+routes = [Path("/echo_scope", handler=echo_ip_scope), Path("/echo_header", handler=echo_ip_header)]
 
 # Only trust unix (no client ip is set) (default)
 trusted_proxies = ["unix"]

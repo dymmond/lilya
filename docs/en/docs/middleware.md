@@ -188,7 +188,8 @@ If you need to specify parameters in your middleware then you will need to wrap 
 
 * `CSRFMiddleware` - Handles with the CSRF.
 * `CORSMiddleware` - Handles with the CORS.
-* `TrustedHostMiddleware` - Handles with the CORS if a given `allowed_hosts` is populated.
+* `TrustedHostMiddleware` - Restricts the hosts used for connecting if a given `allowed_hosts` is populated. Optionally just provide a `host_is_trusted` parameter in the scope.
+* `TrustedReferrerMiddleware` - Handles with the CORS if a given `allowed_hosts` is populated.
 * `GZipMiddleware` - Compression middleware `gzip`.
 * `HTTPSRedirectMiddleware` - Middleware that handles HTTPS redirects for your application. Very useful to be used
 for production or production like environments.
@@ -260,9 +261,14 @@ the secure schemes instead.
 
 Enforces all requests to have a correct set `Host` header in order to protect against host header attacks.
 
-```python
-{!> ../../../docs_src/middleware/available/trusted_hosts.py !}
-```
+More details in [TrustedHostMiddleware](./middleware/trustedhost.md)
+
+### TrustedReferrerMiddleware
+
+Check `host` and `referer` header to check if the referral was allowed and set the variable in the scope.
+
+More details in [TrustedReferrerMiddleware](./middleware/trustedreferrer.md)
+
 
 ### GZipMiddleware
 
@@ -317,24 +323,47 @@ Provides several security enhancements to the request/response cycle and adds se
 {!> ../../../docs_src/middleware/available/security.py !}
 ```
 
-### ClientIPMiddleware
+### ClientIPMiddleware & ClientIPScopeOnlyMiddleware
 
-Parses the client ip and add it in the request scope at two places: headers ("x-real-ip") and the request scope directly ("real-clientip").
+Parses the client ip and add it in the request scope as `real-clientip` entry.
+It also adds the standard `x-real-ip` to the request headers.
 
 ```python
 {!> ../../../docs_src/middleware/available/clientip.py !}
 ```
 
-There are two special "ip"s: "*" and "unix"
+There are two special "ip"s: "*" and "unix".
 
 The first one is a match all and implies all proxies are trustworthy,
 the second one applies when a unix socket is used or no client ip address was found.
+
+If you don't want an injected header use the `ClientIPScopeOnlyMiddleware`:
+
+```python
+{!> ../../../docs_src/middleware/available/clientip_scope_only.py !}
+```
 
 !!! Note
     If you don't want to use the middleware you can use: `get_ip` from `lilya.clientip` directly.
 
 !!! Note
     It is currently not possible to simulate a client ip address in lilyas TestClient. So you may want to use the Forwarded header and trust "unix" for tests.
+
+
+### SessionFixingMiddleware
+
+Sometimes you want to tie a session to an ip. If the IP changes, the session is resetted and optionally a notification is sent.
+This way we can prevent session stealing / session replay attacks.
+It requires the `SessionMiddleware` and the `ClientIPMiddleware` (or the `ClientIPScopeOnlyMiddleware`).
+
+```python
+{!> ../../../docs_src/middleware/available/session_fixing.py !}
+```
+
+!!! Note
+    Drawback is a periodically logout if you have a client with a changing ip address.
+    E.g. working remotely from trains or using tor.
+
 
 ### RequestContextMiddleware
 

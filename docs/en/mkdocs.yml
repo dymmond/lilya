@@ -81,6 +81,7 @@ nav:
   - context.md
   - authentication.md
   - logging.md
+  - security.md
 - Features:
   - features/index.md
   - tasks.md

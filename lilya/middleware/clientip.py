@@ -8,7 +8,9 @@ from lilya.protocols.middleware import MiddlewareProtocol
 from lilya.types import ASGIApp, Receive, Scope, Send
 
 
-class ClientIPMiddleware(MiddlewareProtocol):
+class ClientIPScopeOnlyMiddleware(MiddlewareProtocol):
+    scope_name: str = "real-clientip"
+
     def __init__(
         self,
         app: ASGIApp,
@@ -27,6 +29,9 @@ class ClientIPMiddleware(MiddlewareProtocol):
         self.app = app
         self.trusted_proxies = trusted_proxies
 
+    def update_scope(self, scope: Scope) -> None:
+        scope[self.scope_name] = get_ip(scope, trusted_proxies=self.trusted_proxies)
+
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
         ASGI application callable.
@@ -36,9 +41,12 @@ class ClientIPMiddleware(MiddlewareProtocol):
             receive (Receive): ASGI receive channel.
             send (Send): ASGI send channel.
         """
-        headers: Header = Header.ensure_header_instance(scope)
-        scope["real-clientip"] = headers["x-real-ip"] = get_ip(
-            scope, trusted_proxies=self.trusted_proxies
-        )
-
+        self.update_scope(scope)
         await self.app(scope, receive, send)
+
+
+class ClientIPMiddleware(ClientIPScopeOnlyMiddleware):
+    def update_scope(self, scope: Scope) -> None:
+        super().update_scope(scope)
+        headers: Header = Header.ensure_header_instance(scope)
+        headers["x-real-ip"] = scope[self.scope_name]
