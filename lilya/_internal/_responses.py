@@ -10,6 +10,7 @@ from lilya.compat import is_async_callable
 from lilya.concurrency import run_in_threadpool
 from lilya.conf import _monkay
 from lilya.context import Context
+from lilya.dependencies import Provide, Provides
 from lilya.enums import SignatureDefault
 from lilya.requests import Request
 from lilya.responses import Ok, Response
@@ -221,6 +222,21 @@ class BaseHandler:
         }
 
         data.update(json_data)
+
+        # pull in the map you stashed on the handler
+        dependencies_map: dict[str, Provide] = getattr(self, "_lilya_dependencies", {})
+        for name, param in signature.parameters.items():
+            # only inject those marked with Provides()
+            if isinstance(param.default, Provides):
+                if name not in dependencies_map:
+                    raise RuntimeError(
+                        f"Missing dependency for parameter '{name}' on handler "
+                        f"'{getattr(self, '__name__', repr(self))}'"
+                    )
+                provider: Provide = dependencies_map[name]
+                # resolve (and await) the dependency factory
+                data[name] = await provider.resolve(request, dependencies_map)
+
         return data
 
     def _extract_context(self, request: Request, signature: inspect.Signature) -> dict[str, Any]:
