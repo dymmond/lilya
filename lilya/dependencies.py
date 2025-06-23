@@ -14,8 +14,12 @@ class Provide:
     Provide instances you’ve registered.
     """
 
-    def __init__(self, dependency: Callable[..., Any], use_cache: bool = False):
+    def __init__(
+        self, dependency: Callable[..., Any], *args: Any, use_cache: bool = False, **kwargs: Any
+    ) -> None:
         self.dependency = dependency
+        self.provided_args = args
+        self.provided_kwargs = kwargs
         self.use_cache = use_cache
         self._cache: Any = None
         self._resolved: bool = False
@@ -29,11 +33,31 @@ class Provide:
         if self.use_cache and self._resolved:
             return self._cache
 
+        # If the user passed explicit args/kwargs *or* pointed us at a class,
+        # just call the factory directly and skip the auto-resolution logic.
+        if self.provided_args or self.provided_kwargs or inspect.isclass(self.dependency):
+            if inspect.iscoroutinefunction(self.dependency):
+                result = await self.dependency(*self.provided_args, **self.provided_kwargs)
+            else:
+                result = self.dependency(*self.provided_args, **self.provided_kwargs)
+
+            if self.use_cache:
+                self._cache = result
+                self._resolved = True
+            return result
+
         sig = inspect.signature(self.dependency)
         kwargs: dict[str, Any] = {}
 
         # Resolve each parameter of this dependency
-        for name, _ in sig.parameters.items():
+        for name, param in sig.parameters.items():
+            # Resolve each *named* parameter of this dependency (skip *args/**kwargs)
+            if param.kind in (
+                inspect.Parameter.VAR_POSITIONAL,
+                inspect.Parameter.VAR_KEYWORD,
+            ):
+                continue
+
             if name in dependencies_map:
                 # nested dependency
                 dep = dependencies_map[name]
@@ -50,12 +74,11 @@ class Provide:
                         f"for dependency '{self.dependency.__name__}'"
                     )
 
-        # Call (and await, if needed) the factory
-        result = (
-            await self.dependency(**kwargs)
-            if inspect.iscoroutinefunction(self.dependency)
-            else self.dependency(**kwargs)
-        )
+        call_kwargs = {**self.provided_kwargs, **kwargs}
+        if inspect.iscoroutinefunction(self.dependency):
+            result = await self.dependency(*self.provided_args, **call_kwargs)
+        else:
+            result = self.dependency(*self.provided_args, **call_kwargs)
 
         if self.use_cache:
             self._cache = result
