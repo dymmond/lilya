@@ -32,6 +32,7 @@ from lilya.types import (
     ApplicationType,
     ASGIApp,
     CallableDecorator,
+    Dependencies,
     Doc,
     ExceptionHandler,
     Lifespan,
@@ -649,6 +650,14 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
                 """
             ),
         ] = None,
+        dependencies: Annotated[
+            Dependencies | None,
+            Doc(
+                """
+                A global dependencies for the application.
+                """
+            ),
+        ] = None,
         permissions: Annotated[
             Sequence[DefinePermission] | None,
             Doc(
@@ -982,6 +991,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
         self.after_request_callbacks = (
             self.load_settings_value("after_request", after_request) or []
         )
+        self.dependencies = self.load_settings_value("dependencies", dependencies) or {}
 
         self.logging_config = self.load_settings_value("logging_config", logging_config)
         self.state = State()
@@ -1051,6 +1061,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        dependencies: Dependencies | None = None,
         include_in_schema: bool = True,
         before_request: Sequence[Callable[..., Any]] | None = None,
         after_request: Sequence[Callable[..., Any]] | None = None,
@@ -1063,6 +1074,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
                 middleware=middleware,
                 permissions=permissions,
                 exception_handlers=exception_handlers,
+                dependencies=dependencies,
                 include_in_schema=include_in_schema,
                 before_request=before_request,
                 after_request=after_request,
@@ -1077,6 +1089,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        dependencies: Dependencies | None = None,
         include_in_schema: bool = True,
         before_request: Sequence[Callable[..., Any]] | None = None,
         after_request: Sequence[Callable[..., Any]] | None = None,
@@ -1091,7 +1104,10 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
             middleware (Sequence[DefineMiddleware] | None, optional): The middleware functions to apply to the route. Defaults to None.
             permissions (Sequence[DefinePermission] | None, optional): The permissions required for the route. Defaults to None.
             exception_handlers (Mapping[Any, ExceptionHandler] | None, optional): The exception handlers for the route. Defaults to None.
+            dependencies (Dependencies | None, optional): Dependencies to be injected into the route. Defaults to None.
             include_in_schema (bool, optional): Whether to include the route in the API schema. Defaults to True.
+            before_request (Sequence[Callable[..., Any]] | None, optional): Callbacks to be executed before the request is processed. Defaults to None.
+            after_request (Sequence[Callable[..., Any]] | None, optional): Callbacks to be executed after the request is processed. Defaults to None.
 
         Returns:
             Callable[[CallableDecorator], CallableDecorator]: The decorated function.
@@ -1104,6 +1120,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
             middleware=middleware,
             permissions=permissions,
             exception_handlers=exception_handlers,
+            dependencies=dependencies,
             include_in_schema=include_in_schema,
             before_request=before_request,
             after_request=after_request,
@@ -1116,6 +1133,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        dependencies: Dependencies | None = None,
         before_request: Sequence[Callable[..., Any]] | None = None,
         after_request: Sequence[Callable[..., Any]] | None = None,
     ) -> Callable[[CallableDecorator], CallableDecorator]:
@@ -1128,6 +1146,9 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
             middleware (Sequence[DefineMiddleware], optional): The middleware to apply to the route. Defaults to None.
             permissions (Sequence[DefinePermission], optional): The permissions required for the route. Defaults to None.
             exception_handlers (Mapping[Any, ExceptionHandler], optional): The exception handlers for the route. Defaults to None.
+            dependencies (Dependencies, optional): Dependencies to be injected into the route. Defaults to None.
+            before_request (Sequence[Callable[..., Any]], optional): Callbacks to be executed before the request is processed. Defaults to None.
+            after_request (Sequence[Callable[..., Any]], optional): Callbacks to be executed after the request is processed. Defaults to None.
 
         Returns:
             Callable[[CallableDecorator], CallableDecorator]: The decorated function.
@@ -1140,6 +1161,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
             middleware=middleware,
             permissions=permissions,
             exception_handlers=exception_handlers,
+            dependencies=dependencies,
             before_request=before_request,
             after_request=after_request,
         )

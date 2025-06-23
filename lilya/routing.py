@@ -33,7 +33,16 @@ from lilya.middleware.base import DefineMiddleware
 from lilya.permissions.base import DefinePermission
 from lilya.requests import Request
 from lilya.responses import PlainText, RedirectResponse, Response
-from lilya.types import ASGIApp, Doc, ExceptionHandler, Lifespan, Receive, Scope, Send
+from lilya.types import (
+    ASGIApp,
+    Dependencies,
+    Doc,
+    ExceptionHandler,
+    Lifespan,
+    Receive,
+    Scope,
+    Send,
+)
 from lilya.websockets import WebSocket, WebSocketClose
 
 T = TypeVar("T")
@@ -294,6 +303,7 @@ class Path(BaseHandler, BasePath):
         "after_request",
         "__handler_app__",
         "_signature",
+        "dependencies",
     )
 
     def __init__(
@@ -307,6 +317,7 @@ class Path(BaseHandler, BasePath):
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        dependencies: Dependencies | None = None,
         before_request: Sequence[Callable[..., Any]] | None = None,
         after_request: Sequence[Callable[..., Any]] | None = None,
         deprecated: bool = False,
@@ -318,6 +329,7 @@ class Path(BaseHandler, BasePath):
         self.include_in_schema = include_in_schema
         self.methods: list[str] | None = methods
         self.deprecated = deprecated
+        self.dependencies = dependencies if dependencies is not None else {}
 
         # Defition of the app
         self.__handler_app__ = handler
@@ -562,6 +574,7 @@ class WebSocketPath(BaseHandler, BasePath):
         "after_request",
         "__handler_app__",
         "_signature",
+        "dependencies",
     )
 
     def __init__(
@@ -574,6 +587,7 @@ class WebSocketPath(BaseHandler, BasePath):
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        dependencies: Dependencies | None = None,
         before_request: Sequence[Callable[..., Any]] | None = None,
         after_request: Sequence[Callable[..., Any]] | None = None,
     ) -> None:
@@ -583,6 +597,7 @@ class WebSocketPath(BaseHandler, BasePath):
         self.handler = handler
         self.name = get_name(handler) if name is None else name
         self.include_in_schema = include_in_schema
+        self.dependencies = dependencies if dependencies is not None else {}
 
         # Defition of the app
         self.__handler_app__ = handler
@@ -1045,6 +1060,7 @@ class BaseRouter:
         "is_sub_router",
         "before_request",
         "after_request",
+        "dependencies",
     )
 
     def __init__(
@@ -1058,6 +1074,7 @@ class BaseRouter:
         *,
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
+        dependencies: Dependencies | None = None,
         before_request: Sequence[Callable[..., Any]] | None = None,
         after_request: Sequence[Callable[..., Any]] | None = None,
         settings_module: Annotated[
@@ -1088,6 +1105,7 @@ class BaseRouter:
 
         self.on_startup = [] if on_startup is None else list(on_startup)
         self.on_shutdown = [] if on_shutdown is None else list(on_shutdown)
+        self.dependencies = dependencies if dependencies is not None else {}
 
         self.lifespan_context = handle_lifespan_events(
             on_startup=on_startup, on_shutdown=on_shutdown, lifespan=lifespan
@@ -1416,6 +1434,7 @@ class BaseRouter:
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        dependencies: Dependencies | None = None,
         include_in_schema: bool = True,
         before_request: Sequence[Callable[..., Any]] | None = None,
         after_request: Sequence[Callable[..., Any]] | None = None,
@@ -1430,6 +1449,7 @@ class BaseRouter:
             middleware=middleware,
             permissions=permissions,
             exception_handlers=exception_handlers,
+            dependencies=dependencies,
             name=name,
             include_in_schema=include_in_schema,
             before_request=before_request,
@@ -1445,6 +1465,7 @@ class BaseRouter:
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        dependencies: Dependencies | None = None,
         before_request: Sequence[Callable[..., Any]] | None = None,
         after_request: Sequence[Callable[..., Any]] | None = None,
     ) -> None:
@@ -1458,6 +1479,7 @@ class BaseRouter:
             permissions=permissions,
             name=name,
             exception_handlers=exception_handlers,
+            dependencies=dependencies,
             before_request=before_request,
             after_request=after_request,
         )
@@ -1524,6 +1546,7 @@ class RoutingMethodsMixin:
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        dependencies: Dependencies | None = None,
         include_in_schema: bool = True,
         before_request: Sequence[Callable[..., Any]] | None = None,
         after_request: Sequence[Callable[..., Any]] | None = None,
@@ -1533,12 +1556,14 @@ class RoutingMethodsMixin:
 
         Args:
             path (str): The URL path pattern for the route.
-            methods (list[str] | None, optional): The HTTP methods allowed for the route. Defaults to None.
             name (str | None, optional): The name of the route. Defaults to None.
             middleware (Sequence[DefineMiddleware] | None, optional): The middleware functions to apply to the route. Defaults to None.
             permissions (Sequence[DefinePermission] | None, optional): The permissions required for the route. Defaults to None.
             exception_handlers (Mapping[Any, ExceptionHandler] | None, optional): The exception handlers for the route. Defaults to None.
+            dependencies (Dependencies | None, optional): Dependencies to inject into the route handler. Defaults to None.
             include_in_schema (bool, optional): Whether to include the route in the API schema. Defaults to True.
+            before_request (Sequence[Callable[..., Any]] | None, optional): Functions to run before the request is processed. Defaults to None.
+            after_request (Sequence[Callable[..., Any]] | None, optional): Functions to run after the request is processed. Defaults to None.
 
         Returns:
             Callable[..., Any]: The decorated function.
@@ -1551,6 +1576,7 @@ class RoutingMethodsMixin:
             middleware=middleware,
             permissions=permissions,
             exception_handlers=exception_handlers,
+            dependencies=dependencies,
             include_in_schema=include_in_schema,
             before_request=before_request,
             after_request=after_request,
@@ -1563,6 +1589,7 @@ class RoutingMethodsMixin:
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        dependencies: Dependencies | None = None,
         include_in_schema: bool = True,
         before_request: Sequence[Callable[..., Any]] | None = None,
         after_request: Sequence[Callable[..., Any]] | None = None,
@@ -1572,12 +1599,14 @@ class RoutingMethodsMixin:
 
         Args:
             path (str): The URL path pattern for the route.
-            methods (list[str] | None, optional): The HTTP methods allowed for the route. Defaults to None.
             name (str | None, optional): The name of the route. Defaults to None.
             middleware (Sequence[DefineMiddleware] | None, optional): The middleware functions to apply to the route. Defaults to None.
             permissions (Sequence[DefinePermission] | None, optional): The permissions required for the route. Defaults to None.
             exception_handlers (Mapping[Any, ExceptionHandler] | None, optional): The exception handlers for the route. Defaults to None.
+            dependencies (Dependencies | None, optional): Dependencies to inject into the route handler. Defaults to None.
             include_in_schema (bool, optional): Whether to include the route in the API schema. Defaults to True.
+            before_request (Sequence[Callable[..., Any]] | None, optional): Functions to run before the request is processed. Defaults to None.
+            after_request (Sequence[Callable[..., Any]] | None, optional): Functions to run after the request is processed. Defaults to None.
 
         Returns:
             Callable[..., Any]: The decorated function.
@@ -1590,6 +1619,7 @@ class RoutingMethodsMixin:
             middleware=middleware,
             permissions=permissions,
             exception_handlers=exception_handlers,
+            dependencies=dependencies,
             include_in_schema=include_in_schema,
             before_request=before_request,
             after_request=after_request,
@@ -1602,6 +1632,7 @@ class RoutingMethodsMixin:
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        dependencies: Dependencies | None = None,
         include_in_schema: bool = True,
         before_request: Sequence[Callable[..., Any]] | None = None,
         after_request: Sequence[Callable[..., Any]] | None = None,
@@ -1611,12 +1642,14 @@ class RoutingMethodsMixin:
 
         Args:
             path (str): The URL path pattern for the route.
-            methods (list[str] | None, optional): The HTTP methods allowed for the route. Defaults to None.
             name (str | None, optional): The name of the route. Defaults to None.
             middleware (Sequence[DefineMiddleware] | None, optional): The middleware functions to apply to the route. Defaults to None.
             permissions (Sequence[DefinePermission] | None, optional): The permissions required for the route. Defaults to None.
             exception_handlers (Mapping[Any, ExceptionHandler] | None, optional): The exception handlers for the route. Defaults to None.
+            dependencies (Dependencies | None, optional): Dependencies to inject into the route handler. Defaults to None.
             include_in_schema (bool, optional): Whether to include the route in the API schema. Defaults to True.
+            before_request (Sequence[Callable[..., Any]] | None, optional): Functions to run before the request is processed. Defaults to None.
+            after_request (Sequence[Callable[..., Any]] | None, optional): Functions to run after the request is processed. Defaults to None.
 
         Returns:
             Callable[..., Any]: The decorated function.
@@ -1629,6 +1662,7 @@ class RoutingMethodsMixin:
             middleware=middleware,
             permissions=permissions,
             exception_handlers=exception_handlers,
+            dependencies=dependencies,
             include_in_schema=include_in_schema,
             before_request=before_request,
             after_request=after_request,
@@ -1641,6 +1675,7 @@ class RoutingMethodsMixin:
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        dependencies: Dependencies | None = None,
         include_in_schema: bool = True,
         before_request: Sequence[Callable[..., Any]] | None = None,
         after_request: Sequence[Callable[..., Any]] | None = None,
@@ -1650,12 +1685,14 @@ class RoutingMethodsMixin:
 
         Args:
             path (str): The URL path pattern for the route.
-            methods (list[str] | None, optional): The HTTP methods allowed for the route. Defaults to None.
             name (str | None, optional): The name of the route. Defaults to None.
             middleware (Sequence[DefineMiddleware] | None, optional): The middleware functions to apply to the route. Defaults to None.
             permissions (Sequence[DefinePermission] | None, optional): The permissions required for the route. Defaults to None.
             exception_handlers (Mapping[Any, ExceptionHandler] | None, optional): The exception handlers for the route. Defaults to None.
+            dependencies (Dependencies | None, optional): Dependencies to inject into the route handler. Defaults to None.
             include_in_schema (bool, optional): Whether to include the route in the API schema. Defaults to True.
+            before_request (Sequence[Callable[..., Any]] | None, optional): Functions to run before the request is processed. Defaults to None.
+            after_request (Sequence[Callable[..., Any]] | None, optional): Functions to run after the request is processed. Defaults to None.
 
         Returns:
             Callable[..., Any]: The decorated function.
@@ -1668,6 +1705,7 @@ class RoutingMethodsMixin:
             middleware=middleware,
             permissions=permissions,
             exception_handlers=exception_handlers,
+            dependencies=dependencies,
             include_in_schema=include_in_schema,
             before_request=before_request,
             after_request=after_request,
@@ -1680,6 +1718,7 @@ class RoutingMethodsMixin:
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        dependencies: Dependencies | None = None,
         include_in_schema: bool = True,
         before_request: Sequence[Callable[..., Any]] | None = None,
         after_request: Sequence[Callable[..., Any]] | None = None,
@@ -1689,12 +1728,14 @@ class RoutingMethodsMixin:
 
         Args:
             path (str): The URL path pattern for the route.
-            methods (list[str] | None, optional): The HTTP methods allowed for the route. Defaults to None.
             name (str | None, optional): The name of the route. Defaults to None.
             middleware (Sequence[DefineMiddleware] | None, optional): The middleware functions to apply to the route. Defaults to None.
             permissions (Sequence[DefinePermission] | None, optional): The permissions required for the route. Defaults to None.
             exception_handlers (Mapping[Any, ExceptionHandler] | None, optional): The exception handlers for the route. Defaults to None.
+            dependencies (Dependencies | None, optional): Dependencies to inject into the route handler. Defaults to None.
             include_in_schema (bool, optional): Whether to include the route in the API schema. Defaults to True.
+            before_request (Sequence[Callable[..., Any]] | None, optional): Functions to run before the request is processed. Defaults to None.
+            after_request (Sequence[Callable[..., Any]] | None, optional): Functions to run after the request is processed. Defaults to None.
 
         Returns:
             Callable[..., Any]: The decorated function.
@@ -1707,6 +1748,7 @@ class RoutingMethodsMixin:
             middleware=middleware,
             permissions=permissions,
             exception_handlers=exception_handlers,
+            dependencies=dependencies,
             include_in_schema=include_in_schema,
             before_request=before_request,
             after_request=after_request,
@@ -1719,6 +1761,7 @@ class RoutingMethodsMixin:
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        dependencies: Dependencies | None = None,
         include_in_schema: bool = True,
         before_request: Sequence[Callable[..., Any]] | None = None,
         after_request: Sequence[Callable[..., Any]] | None = None,
@@ -1728,12 +1771,14 @@ class RoutingMethodsMixin:
 
         Args:
             path (str): The URL path pattern for the route.
-            methods (list[str] | None, optional): The HTTP methods allowed for the route. Defaults to None.
             name (str | None, optional): The name of the route. Defaults to None.
             middleware (Sequence[DefineMiddleware] | None, optional): The middleware functions to apply to the route. Defaults to None.
             permissions (Sequence[DefinePermission] | None, optional): The permissions required for the route. Defaults to None.
             exception_handlers (Mapping[Any, ExceptionHandler] | None, optional): The exception handlers for the route. Defaults to None.
+            dependencies (Dependencies | None, optional): Dependencies to inject into the route handler. Defaults to None.
             include_in_schema (bool, optional): Whether to include the route in the API schema. Defaults to True.
+            before_request (Sequence[Callable[..., Any]] | None, optional): Functions to run before the request is processed. Defaults to None.
+            after_request (Sequence[Callable[..., Any]] | None, optional): Functions to run after the request is processed. Defaults to None.
 
         Returns:
             Callable[..., Any]: The decorated function.
@@ -1746,6 +1791,7 @@ class RoutingMethodsMixin:
             middleware=middleware,
             permissions=permissions,
             exception_handlers=exception_handlers,
+            dependencies=dependencies,
             include_in_schema=include_in_schema,
             before_request=before_request,
             after_request=after_request,
@@ -1758,6 +1804,7 @@ class RoutingMethodsMixin:
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        dependencies: Dependencies | None = None,
         include_in_schema: bool = True,
         before_request: Sequence[Callable[..., Any]] | None = None,
         after_request: Sequence[Callable[..., Any]] | None = None,
@@ -1767,12 +1814,14 @@ class RoutingMethodsMixin:
 
         Args:
             path (str): The URL path pattern for the route.
-            methods (list[str] | None, optional): The HTTP methods allowed for the route. Defaults to None.
             name (str | None, optional): The name of the route. Defaults to None.
             middleware (Sequence[DefineMiddleware] | None, optional): The middleware functions to apply to the route. Defaults to None.
             permissions (Sequence[DefinePermission] | None, optional): The permissions required for the route. Defaults to None.
             exception_handlers (Mapping[Any, ExceptionHandler] | None, optional): The exception handlers for the route. Defaults to None.
+            dependencies (Dependencies | None, optional): Dependencies to inject into the route handler. Defaults to None.
             include_in_schema (bool, optional): Whether to include the route in the API schema. Defaults to True.
+            before_request (Sequence[Callable[..., Any]] | None, optional): Functions to run before the request is processed. Defaults to None.
+            after_request (Sequence[Callable[..., Any]] | None, optional): Functions to run after the request is processed. Defaults to None.
 
         Returns:
             Callable[..., Any]: The decorated function.
@@ -1785,6 +1834,7 @@ class RoutingMethodsMixin:
             middleware=middleware,
             permissions=permissions,
             exception_handlers=exception_handlers,
+            dependencies=dependencies,
             include_in_schema=include_in_schema,
             before_request=before_request,
             after_request=after_request,
@@ -1797,6 +1847,7 @@ class RoutingMethodsMixin:
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        dependencies: Dependencies | None = None,
         include_in_schema: bool = True,
         before_request: Sequence[Callable[..., Any]] | None = None,
         after_request: Sequence[Callable[..., Any]] | None = None,
@@ -1806,12 +1857,14 @@ class RoutingMethodsMixin:
 
         Args:
             path (str): The URL path pattern for the route.
-            methods (list[str] | None, optional): The HTTP methods allowed for the route. Defaults to None.
             name (str | None, optional): The name of the route. Defaults to None.
             middleware (Sequence[DefineMiddleware] | None, optional): The middleware functions to apply to the route. Defaults to None.
             permissions (Sequence[DefinePermission] | None, optional): The permissions required for the route. Defaults to None.
             exception_handlers (Mapping[Any, ExceptionHandler] | None, optional): The exception handlers for the route. Defaults to None.
+            dependencies (Dependencies | None, optional): Dependencies to inject into the route handler. Defaults to None.
             include_in_schema (bool, optional): Whether to include the route in the API schema. Defaults to True.
+            before_request (Sequence[Callable[..., Any]] | None, optional): Functions to run before the request is processed. Defaults to None.
+            after_request (Sequence[Callable[..., Any]] | None, optional): Functions to run after the request is processed. Defaults to None.
 
         Returns:
             Callable[..., Any]: The decorated function.
@@ -1824,6 +1877,7 @@ class RoutingMethodsMixin:
             middleware=middleware,
             permissions=permissions,
             exception_handlers=exception_handlers,
+            dependencies=dependencies,
             include_in_schema=include_in_schema,
             before_request=before_request,
             after_request=after_request,
@@ -1837,6 +1891,7 @@ class RoutingMethodsMixin:
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        dependencies: Dependencies | None = None,
         include_in_schema: bool = True,
         before_request: Sequence[Callable[..., Any]] | None = None,
         after_request: Sequence[Callable[..., Any]] | None = None,
@@ -1849,6 +1904,7 @@ class RoutingMethodsMixin:
             middleware=middleware,
             permissions=permissions,
             exception_handlers=exception_handlers,
+            dependencies=dependencies,
             include_in_schema=include_in_schema,
             before_request=before_request,
             after_request=after_request,
@@ -1862,6 +1918,7 @@ class RoutingMethodsMixin:
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        dependencies: Dependencies | None = None,
         include_in_schema: bool = True,
         before_request: Sequence[Callable[..., Any]] | None = None,
         after_request: Sequence[Callable[..., Any]] | None = None,
@@ -1876,7 +1933,10 @@ class RoutingMethodsMixin:
             middleware (Sequence[DefineMiddleware] | None, optional): The middleware functions to apply to the route. Defaults to None.
             permissions (Sequence[DefinePermission] | None, optional): The permissions required for the route. Defaults to None.
             exception_handlers (Mapping[Any, ExceptionHandler] | None, optional): The exception handlers for the route. Defaults to None.
+            dependencies (Dependencies | None, optional): Dependencies to inject into the route handler. Defaults to None.
             include_in_schema (bool, optional): Whether to include the route in the API schema. Defaults to True.
+            before_request (Sequence[Callable[..., Any]] | None, optional): Functions to run before the request is processed. Defaults to None.
+            after_request (Sequence[Callable[..., Any]] | None, optional): Functions to run after the request is processed. Defaults to None.
 
         Returns:
             Callable[..., Any]: The decorated function.
@@ -1890,6 +1950,7 @@ class RoutingMethodsMixin:
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        dependencies: Dependencies | None = None,
         before_request: Sequence[Callable[..., Any]] | None = None,
         after_request: Sequence[Callable[..., Any]] | None = None,
     ) -> Callable[..., Any]:
@@ -1902,6 +1963,9 @@ class RoutingMethodsMixin:
             middleware (Sequence[DefineMiddleware], optional): The middleware to apply to the route. Defaults to None.
             permissions (Sequence[DefinePermission], optional): The permissions required for the route. Defaults to None.
             exception_handlers (Mapping[Any, ExceptionHandler], optional): The exception handlers for the route. Defaults to None.
+            dependencies (Dependencies | None, optional): Dependencies to inject into the route handler. Defaults to None.
+            before_request (Sequence[Callable[..., Any]] | None, optional): Functions to run before the request is processed. Defaults to None.
+            after_request (Sequence[Callable[..., Any]] | None, optional): Functions to run after the request is processed. Defaults to None.
 
         Returns:
             Callable[..., Any]: The decorated function.
@@ -1922,6 +1986,7 @@ class Router(RoutingMethodsMixin, BaseRouter):
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        dependencies: Dependencies | None = None,
         include_in_schema: bool = True,
         before_request: Sequence[Callable[..., Any]] | None = None,
         after_request: Sequence[Callable[..., Any]] | None = None,
@@ -1936,7 +2001,10 @@ class Router(RoutingMethodsMixin, BaseRouter):
             middleware (Sequence[DefineMiddleware] | None, optional): The middleware functions to apply to the route. Defaults to None.
             permissions (Sequence[DefinePermission] | None, optional): The permissions required for the route. Defaults to None.
             exception_handlers (Mapping[Any, ExceptionHandler] | None, optional): The exception handlers for the route. Defaults to None.
+            dependencies (Dependencies | None, optional): Dependencies to inject into the route handler. Defaults to None.
             include_in_schema (bool, optional): Whether to include the route in the API schema. Defaults to True.
+            before_request (Sequence[Callable[..., Any]] | None, optional): Functions to run before the request is processed. Defaults to None.
+            after_request (Sequence[Callable[..., Any]] | None, optional): Functions to run after the request is processed. Defaults to None.
 
         Returns:
             Callable[..., Any]: The decorated function.
@@ -1951,6 +2019,7 @@ class Router(RoutingMethodsMixin, BaseRouter):
                 middleware=middleware,
                 permissions=permissions,
                 exception_handlers=exception_handlers,
+                dependencies=dependencies,
                 include_in_schema=include_in_schema,
                 before_request=before_request,
                 after_request=after_request,
@@ -1966,6 +2035,7 @@ class Router(RoutingMethodsMixin, BaseRouter):
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        dependencies: Dependencies | None = None,
         before_request: Sequence[Callable[..., Any]] | None = None,
         after_request: Sequence[Callable[..., Any]] | None = None,
     ) -> Callable[..., Any]:
@@ -1978,6 +2048,9 @@ class Router(RoutingMethodsMixin, BaseRouter):
             middleware (Sequence[DefineMiddleware], optional): The middleware to apply to the route. Defaults to None.
             permissions (Sequence[DefinePermission], optional): The permissions required for the route. Defaults to None.
             exception_handlers (Mapping[Any, ExceptionHandler], optional): The exception handlers for the route. Defaults to None.
+            dependencies (Dependencies | None, optional): Dependencies to inject into the route handler. Defaults to None.
+            before_request (Sequence[Callable[..., Any]] | None, optional): Functions to run before the request is processed. Defaults to None.
+            after_request (Sequence[Callable[..., Any]] | None, optional): Functions to run after the request is processed. Defaults to None.
 
         Returns:
             Callable[..., Any]: The decorated function.
@@ -1992,6 +2065,7 @@ class Router(RoutingMethodsMixin, BaseRouter):
                 middleware=middleware,
                 permissions=permissions,
                 exception_handlers=exception_handlers,
+                dependencies=dependencies,
                 before_request=before_request,
                 after_request=after_request,
             )
@@ -2020,6 +2094,7 @@ class Include(BasePath):
         "deprecated",
         "before_request",
         "after_request",
+        "dependencies",
     )
 
     def __init__(
@@ -2034,6 +2109,7 @@ class Include(BasePath):
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        dependencies: Dependencies | None = None,
         before_request: Sequence[Callable[..., Any]] | None = None,
         after_request: Sequence[Callable[..., Any]] | None = None,
         include_in_schema: bool = True,
@@ -2052,6 +2128,8 @@ class Include(BasePath):
             name (Union[str, None]): The name.
             middleware (Union[Sequence[DefineMiddleware], None]): The middleware.
             permissions (Union[Sequence[DefinePermission], None]): The permissions.
+            exception_handlers (Union[Mapping[Any, ExceptionHandler], None]): The exception handlers.
+            dependencies (Dependencies | None): Dependencies to inject.
             include_in_schema (bool): Flag to include in the schema.
             redirect_slashes (bool): (Only namespace or routes) Redirect slashes on mismatch.
 
@@ -2100,6 +2178,7 @@ class Include(BasePath):
         self.middleware = middleware if middleware is not None else []
         self.permissions = permissions if permissions is not None else []
         self.exception_handlers = {} if exception_handlers is None else dict(exception_handlers)
+        self.dependencies = dependencies if dependencies is not None else {}
 
         self.wrapped_permissions = [
             wrap_permission(permission) for permission in permissions or []

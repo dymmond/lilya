@@ -35,6 +35,11 @@ HTTPExceptionHandler = Callable[[Any, Exception], Any | Awaitable[Any]]
 WebSocketExceptionHandler = Callable[[Any, Exception], Awaitable[None]]
 ExceptionHandler = HTTPExceptionHandler | WebSocketExceptionHandler
 CallableDecorator = TypeVar("CallableDecorator", bound=Callable[..., Any])
+AnyCallable = Callable[..., Any]
+Dependencies = dict[str, Callable[..., Any]] | dict[str, Any] | Any
 
 
 class Empty: ...
+
+
+EmptyType = type[Empty]
