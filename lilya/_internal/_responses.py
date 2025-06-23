@@ -12,6 +12,7 @@ from lilya.conf import _monkay
 from lilya.context import Context
 from lilya.dependencies import Provide, Provides
 from lilya.enums import SignatureDefault
+from lilya.exceptions import ImproperlyConfigured
 from lilya.requests import Request
 from lilya.responses import Ok, Response
 from lilya.types import ASGIApp, Receive, Scope, Send
@@ -200,43 +201,96 @@ class BaseHandler:
         self, request: Request, signature: inspect.Signature
     ) -> dict[str, Any]:
         """
-        Extracts parameters from the request and injects them into the function if needed.
+        Extracts and resolves parameters for a function from an incoming request.
+
+        This asynchronous method is responsible for gathering data from various
+        sources within an HTTP request (path parameters, request body, and
+        dependency injection system) and preparing them as arguments suitable
+        for a target function based on its signature. It handles body inference,
+        merging of dependencies from application, scope, and handler levels,
+        and resolves `Provides` dependencies.
 
         Args:
-            request (Request): The incoming request.
-            signature (inspect.Signature): The signature of the target function.
+            request: The incoming `Request` object, containing details about the
+                HTTP request.
+            signature: An `inspect.Signature` object representing the callable's
+                parameters, used to determine what arguments are needed and their
+                default values.
 
         Returns:
-            Dict[str, Any]: A dictionary containing parameters extracted from the request.
-        """
-        is_body_inferred: bool = _monkay.settings.infer_body
+            A dictionary where keys are parameter names and values are the
+            corresponding extracted or resolved arguments.
 
+        Raises:
+            ImproperlyConfigured: If a registered dependency does not correspond
+                to a `Provides` parameter in the function signature, or if a
+                `Provides` parameter is defined but no corresponding dependency
+                is registered.
+        """
+        # Determine if the request body should be inferred and parsed.
+        is_body_inferred: bool = _monkay.settings.infer_body
         json_data: dict[str, Any] = {}
         if is_body_inferred:
+            # If body inference is enabled, attempt to parse the request body.
             json_data = await self._parse_inferred_body(request, signature)
 
+        # Extract path parameters that are present in the function's signature.
         data = {
-            param: value
-            for param, value in request.path_params.items()
-            if param in signature.parameters
+            name: val for name, val in request.path_params.items() if name in signature.parameters
         }
-
+        # Merge the extracted JSON body data into the parameters dictionary.
         data.update(json_data)
 
-        # pull in the map you stashed on the handler
-        dependencies_map: dict[str, Provide] = getattr(self, "_lilya_dependencies", {})
-        for name, param in signature.parameters.items():
-            # only inject those marked with Provides()
-            if isinstance(param.default, Provides):
-                if name not in dependencies_map:
-                    raise RuntimeError(
-                        f"Missing dependency for parameter '{name}' on handler "
-                        f"'{getattr(self, '__name__', repr(self))}'"
-                    )
-                provider: Provide = dependencies_map[name]
-                # resolve (and await) the dependency factory
-                data[name] = await provider.resolve(request, dependencies_map)
+        # Initialize a dictionary to hold merged dependency providers.
+        merged: dict[str, Provide] = {}
 
+        # Fetch application-level dependencies, if any, and merge them.
+        app_deps = getattr(request.app, "dependencies", None)
+        if app_deps:
+            merged.update(app_deps)
+
+        # Fetch scope-level dependencies (e.g., from included routes) and merge them.
+        # Dependencies are expected to be a list of mappings.
+        for inc_map in request.scope.get("dependencies", []):
+            merged.update(inc_map)
+
+        # Fetch handler-specific dependencies, if any, and merge them.
+        handler = request.scope.get("handler")
+        if handler:
+            route_map = getattr(handler, "_lilya_dependencies", None)
+            if route_map:
+                merged.update(route_map)
+
+        # Validate that all registered dependencies correspond to actual
+        # `Provides` parameters in the function signature.
+        for dep_name in merged:
+            param = signature.parameters.get(dep_name)
+            # Raise an error if a dependency is registered but the parameter
+            # is missing or not marked with `Provides()`.
+            if param is None or not isinstance(param.default, Provides):
+                # Get handler name for a more informative error message.
+                hname = handler.__name__ if handler else "<unknown>"
+                raise ImproperlyConfigured(
+                    f"Dependency '{dep_name}' was registered for handler '{hname}', "
+                    "but no parameter defaulted to Provides() exists with that name."
+                )
+
+        # Resolve `Provides` dependencies and inject them into the data dictionary.
+        for name, param in signature.parameters.items():
+            if isinstance(param.default, Provides):
+                # Ensure that a provider exists for every `Provides` parameter.
+                if name not in merged:
+                    # Get handler name for a more informative error message.
+                    hname = handler.__name__ if handler else "<unknown>"
+                    raise ImproperlyConfigured(
+                        f"Missing dependency '{name}' for handler '{hname}'"
+                    )
+                # Retrieve the dependency provider.
+                provider: Provide = merged[name]
+                # Resolve the dependency asynchronously and add its value to data.
+                data[name] = await provider.resolve(request, merged)
+
+        # Return the dictionary of all extracted and resolved parameters.
         return data
 
     def _extract_context(self, request: Request, signature: inspect.Signature) -> dict[str, Any]:

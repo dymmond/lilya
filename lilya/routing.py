@@ -494,7 +494,13 @@ class Path(BaseHandler, BasePath):
             for key, value in match.groupdict().items()
         }
         path_params = {**scope.get("path_params", {}), **matched_params}
-        child_scope = {"handler": self.handler, "path_params": path_params}
+
+        upstream = list(scope.get("dependencies", []))
+        child_scope = {
+            "handler": self.handler,
+            "path_params": path_params,
+            "dependencies": upstream + [self.dependencies],
+        }
 
         if self.methods and scope["method"] not in self.methods:
             return Match.PARTIAL, child_scope
@@ -717,7 +723,13 @@ class WebSocketPath(BaseHandler, BasePath):
             for key, value in match.groupdict().items()
         }
         path_params = {**scope.get("path_params", {}), **matched_params}
-        child_scope = {"handler": self.handler, "path_params": path_params}
+        upstream = list(scope.get("dependencies", []))
+        child_scope = {
+            "handler": self.handler,
+            "path_params": path_params,
+            "dependencies": upstream + [self.dependencies],
+        }
+
         return Match.FULL, child_scope
 
     async def handle_dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
@@ -1392,6 +1404,7 @@ class BaseRouter:
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        dependencies: Dependencies | None = None,
         namespace: str | None = None,
         pattern: str | None = None,
         include_in_schema: bool = True,
@@ -1409,6 +1422,7 @@ class BaseRouter:
             middleware=middleware,
             permissions=permissions,
             exception_handlers=exception_handlers,
+            dependencies=dependencies,
             namespace=namespace,
             pattern=pattern,
             include_in_schema=include_in_schema,
@@ -2024,6 +2038,7 @@ class Router(RoutingMethodsMixin, BaseRouter):
                 before_request=before_request,
                 after_request=after_request,
             )
+            func._lilya_dependencies = dependencies or {}
             return func
 
         return wrapper
@@ -2276,11 +2291,13 @@ class Include(BasePath):
         matched_path = route_path[: -len(remaining_path)]
 
         path_params = {**scope.get("path_params", {}), **matched_params}
+        existing = list(scope.get("dependencies", []))
         child_scope = {
             "path_params": path_params,
             "app_root_path": scope.get("app_root_path", root_path),
             "root_path": root_path + matched_path,
             "handler": self.app,
+            "dependencies": existing + [self.dependencies],
         }
         return Match.FULL, child_scope
 
