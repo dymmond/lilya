@@ -5,6 +5,46 @@ hide:
 
 # Release Notes
 
+## 0.16.0
+
+### Added
+
+* **Dependency Injection API**
+
+  * Introduced `Provide`/`Provides` pair for declarative DI on handlers
+  * Support for three layers of dependencies:
+
+    1. **Application-level** – global services (e.g. database, feature flags)
+    2. **Include-level** – sub-application scoping (e.g. per-module configs)
+    3. **Route-level** – fine-grained overrides for specific endpoints
+
+
+* **Handler Parameter Injection**
+
+    * Automatically resolves `Provides()` parameters by name
+    * Supports async and sync factory functions
+    * Factory chaining: one provider may declare dependencies on another
+
+* **Per-Request Caching**
+    * `Provide(..., use_cache=True)` option to memoize within a request
+
+* **WebSocket Support**
+    * Inject dependencies into WS routes via the same `Provides()` mechanism
+
+## Changed
+
+* **Scope Handling Fixes**
+    * Stabilized `request.scope["app"]` availability across HTTP, WS, and lifespan events
+
+* **Serialization Improvements**
+    * Ensured `Provides()` defaults aren’t accidentally passed to JSON encoders
+
+### Fixed
+
+* Fixed **KeyError: 'app'** in legacy routing tests when mounting nested includes
+* Corrected nested factory resolution so upstream dependencies are auto-wired
+
+
 ## 0.15.6
 
 ### Added
