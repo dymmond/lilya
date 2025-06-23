@@ -188,3 +188,86 @@ async def test_with_models(test_client_factory, model):
     res = client.get("/model")
     assert res.status_code == 200
     assert res.json() == {"model": "show"}
+
+
+async def test_provide_with_positional_and_keyword_args():
+    class Foo:
+        def __init__(self, a, b=0):
+            self.a = a
+            self.b = b
+
+    app = Lilya(dependencies={"foo": Provide(Foo, "hello", b=42)})
+
+    @app.get("/foo")
+    async def handler(foo=Provides()):
+        return {"a": foo.a, "b": foo.b}
+
+    client = TestClient(app)
+    res = client.get("/foo")
+
+    assert res.status_code == 200
+    assert res.json() == {"a": "hello", "b": 42}
+
+
+async def test_provide_with_only_keyword_args():
+    class Bar:
+        def __init__(self, x=1, y=2):
+            self.x = x
+            self.y = y
+
+    app = Lilya(dependencies={"bar": Provide(Bar, y=99)})
+
+    @app.get("/bar")
+    async def handler(bar=Provides()):
+        return {"x": bar.x, "y": bar.y}
+
+    client = TestClient(app)
+    res = client.get("/bar")
+
+    assert res.status_code == 200
+    # x should be its default, y overridden
+    assert res.json() == {"x": 1, "y": 99}
+
+
+async def test_provide_with_pydantic_model_kwargs():
+    class MyModel(BaseModel):
+        id: int
+        name: str
+
+        def describe(self):
+            return f"{self.id}:{self.name}"
+
+    app = Lilya(dependencies={"m": Provide(MyModel, id=7, name="xyz")})
+
+    @app.get("/model")
+    async def handler(m=Provides()):
+        return {"desc": m.describe()}
+
+    client = TestClient(app)
+    res = client.get("/model")
+
+    assert res.status_code == 200
+    assert res.json() == {"desc": "7:xyz"}
+
+
+async def test_provide_with_msgspec_struct_args():
+    from msgspec import Struct
+
+    class Msg(Struct):
+        foo: str
+        bar: int
+
+        def summary(self):
+            return f"{self.foo}-{self.bar}"
+
+    app = Lilya(dependencies={"msg": Provide(Msg, "hi", 123)})
+
+    @app.get("/msg")
+    async def handler(msg=Provides()):
+        return {"sum": msg.summary()}
+
+    client = TestClient(app)
+    res = client.get("/msg")
+
+    assert res.status_code == 200
+    assert res.json() == {"sum": "hi-123"}
