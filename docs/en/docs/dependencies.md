@@ -119,6 +119,52 @@ Ideal for DB sessions, HTTP clients, or feature-flag lookups.
 
 Always match `Provide(...)` names with `Provides()` parameters.
 
+## The Resolve dependency object
+
+Lilya allows also to use what we call a "simpler" dependency injection. This dependency
+injection system does not aim replace the `Provide` or `Provides` sytem but aims to provide another way of using some dependencies
+in a simpler fashion in a non multi-layer fashion.
+
+You can import directly from `lilya.dependencies`:
+
+```python
+from lilya.dependencies import Resolve
+```
+
+!!! Warning
+    `Resolve()` is not designed to work on an [application level](#application-level-dependencies)
+    as is. For application layers and dependencies, you **must still use the normal dependency injection system to make it work**
+    or use the [Requires within the application layers](#resolve-within-the-application-layers)..
+
+### A more detailed explanation
+
+This is what Lilya describes as a simple dependency.
+
+An example how to use `Resolve` would be something like this:
+
+```python
+{!> ../../../docs_src/dependencies/resolve/simple.py !}
+```
+
+This example is very simple but you can extend to whatever you want and need. The `Resolve` is not linked to any external library
+but a pure Python class. You can apply to any other complex example and having a `Resolve` inside more `Resolve`s.
+
+```python
+{!> ../../../docs_src/dependencies/resolve/nested.py !}
+```
+
+### Resolve within the application layers
+
+Now this is where things start to get interesting. Lilya operates in layers and **almost** everything works like that.
+
+What if you want to use the `Resolve` to operate on a layer level? Can you do it? **Yes**.
+
+It works as we normally declare dependencies using the `Provide` and `Provides`.
+
+```python
+{!> ../../../docs_src/dependencies/resolve/layer.py !}
+```
+
 ---
 
 ## Best Practices

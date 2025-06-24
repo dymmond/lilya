@@ -10,7 +10,7 @@ from lilya.compat import is_async_callable
 from lilya.concurrency import run_in_threadpool
 from lilya.conf import _monkay
 from lilya.context import Context
-from lilya.dependencies import Provide, Provides
+from lilya.dependencies import Provide, Provides, Resolve, Security, async_resolve_dependencies
 from lilya.enums import SignatureDefault
 from lilya.exceptions import ImproperlyConfigured, WebSocketException
 from lilya.requests import Request
@@ -102,7 +102,8 @@ class BaseHandler:
                 """
                 signature: inspect.Signature = other_signature or self.signature
                 params_from_request = await self._extract_params_from_request(
-                    request=request, signature=signature
+                    request=request,
+                    signature=signature,
                 )
 
                 func_params: dict[str, Any] = {
@@ -198,7 +199,9 @@ class BaseHandler:
         return payload
 
     async def _extract_params_from_request(
-        self, request: Request, signature: inspect.Signature
+        self,
+        request: Request,
+        signature: inspect.Signature,
     ) -> dict[str, Any]:
         """
         Extracts and resolves parameters for a function from an incoming request.
@@ -259,17 +262,28 @@ class BaseHandler:
             merged.update(route_deps)
 
         # 2) FILTER to only the ones the handler signature actually names as Provides()
-        requested: dict[str, Provide] = {}
+        requested: dict[str, Provide | Resolve | Security] = {}
         for name, param in signature.parameters.items():
             if isinstance(param.default, Provides):
                 # we want to inject “name” if the handler did `foo = Provides()`
                 requested[name] = merged.get(name)
+
+            if isinstance(param.default, (Resolve, Security)):
+                requested[name] = param.default
 
         # 3) RESOLVE exactly those—and error if any are missing
         for name, provider in requested.items():
             if provider is None:
                 hname = handler.__name__ if handler else "<unknown>"
                 raise ImproperlyConfigured(f"Missing dependency '{name}' for handler '{hname}'")
+
+            if isinstance(provider, (Resolve, Security)):
+                data[name] = await async_resolve_dependencies(
+                    request=request,
+                    signature=signature,
+                    func=provider.dependency,
+                )
+                continue
             data[name] = await provider.resolve(request, merged)
 
         # Return the dictionary of all extracted and resolved parameters.
@@ -351,6 +365,7 @@ class BaseHandler:
                 route_map = getattr(func, "_lilya_dependencies", {}) or {}
                 merged.update(route_map)
 
+                websocket = WebSocket(scope, receive, send)
                 # now for each Provides() param, resolve it
                 for name, param in signature.parameters.items():
                     if isinstance(param.default, Provides):
@@ -360,9 +375,23 @@ class BaseHandler:
                                 reason=f"Missing dependency '{name}' for websocket handler '{func.__name__}'",
                             )
                         provider = merged[name]
-                        data = await provider.resolve(WebSocket(scope, receive, send), merged)
+
+                        if isinstance(provider, (Resolve, Security)):
+                            kwargs[name] = await async_resolve_dependencies(
+                                request=websocket,
+                                signature=signature,
+                                func=provider.dependency,
+                            )
+                            continue
+                        data = await provider.resolve(websocket, merged)
                         kwargs[name] = data
 
+                    if isinstance(param.default, (Resolve, Security)):
+                        kwargs[name] = await async_resolve_dependencies(
+                            request=websocket,
+                            signature=signature,
+                            func=param.default.dependency,
+                        )
                 await self._execute_function(func, session, **kwargs)
 
             await wrap_app_handling_exceptions(inner_app, session)(scope, receive, send)

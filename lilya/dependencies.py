@@ -1,10 +1,12 @@
 import inspect
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from typing import Any
 
 from typing_extensions import Self
 
+from lilya.compat import run_sync
 from lilya.requests import Request
+from lilya.websockets import WebSocket
 
 
 class Provide:
@@ -15,7 +17,11 @@ class Provide:
     """
 
     def __init__(
-        self, dependency: Callable[..., Any], *args: Any, use_cache: bool = False, **kwargs: Any
+        self,
+        dependency: Callable[..., Any],
+        *args: Any,
+        use_cache: bool = False,
+        **kwargs: Any,
     ) -> None:
         self.dependency = dependency
         self.provided_args = args
@@ -27,7 +33,7 @@ class Provide:
     async def resolve(
         self,
         request: Request,
-        dependencies_map: dict[str, Self],
+        dependencies_map: dict[str, Self | Any],
     ) -> Any:
         # Return cached value if already resolved
         if self.use_cache and self._resolved:
@@ -58,6 +64,15 @@ class Provide:
             ):
                 continue
 
+            # Making sure we cover the Resolve and Security cases
+            if isinstance(param.default, (Resolve, Security)):
+                kwargs[name] = await async_resolve_dependencies(
+                    request=request,
+                    signature=sig,
+                    func=self.dependency,
+                )
+                continue
+
             if name in dependencies_map:
                 # nested dependency
                 dep = dependencies_map[name]
@@ -70,8 +85,7 @@ class Provide:
                     kwargs[name] = request.query_params[name]
                 else:
                     raise RuntimeError(
-                        f"Could not resolve parameter '{name}' "
-                        f"for dependency '{self.dependency.__name__}'"
+                        f"Could not resolve parameter '{name}' for dependency '{self.dependency.__name__}'"
                     )
 
         call_kwargs = {**self.provided_kwargs, **kwargs}
@@ -94,3 +108,108 @@ class Provides:
     """
 
     def __init__(self) -> None: ...
+
+
+class Resolve(Provide):
+    """
+    Parameter default marker. Use this in your handler signature to
+    signal “please resolve this dependency and inject it here.”
+    """
+
+    def __repr__(self) -> str:
+        return "Resolve()"
+
+
+class Security(Provide):
+    """
+    Parameter default marker. Use this in your handler signature to
+    signal “please resolve this security dependency and inject it here.”
+    """
+
+    def __init__(
+        self,
+        dependency: Callable[..., Any],
+        *args: Any,
+        scopes: Sequence[str] | None = None,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(*args, dependency=dependency, **kwargs)
+        self.scopes = scopes or []
+
+
+async def async_resolve_dependencies(
+    request: Request | WebSocket,
+    signature: inspect.Signature,
+    func: Callable[..., Any],
+    overrides: dict[str, Any] | None = None,
+) -> Any:
+    """
+    Resolves dependencies for an asynchronous function by inspecting its signature and
+    recursively resolving any dependencies specified using the `params.Requires` class.
+    Args:
+        func (Any): The target function whose dependencies need to be resolved.
+        overrides (Union[dict[str, Any]], optional): A dictionary of overrides for dependencies.
+            This can be used for testing or customization. Defaults to None.
+    Returns:
+        Any: The result of the target function with its dependencies resolved.
+    Raises:
+        TypeError: If the target function or any of its dependencies are not callable.
+    """
+    if overrides is None:
+        overrides = {}
+
+    kwargs = {}
+
+    signature = inspect.signature(func)
+
+    for name, param in signature.parameters.items():
+        # If in one of the requirements happens to be Security, we need to resolve it
+        # By passing the Request object to the dependency
+        if isinstance(param.default, Security):
+            kwargs[name] = await param.default.dependency(request)
+        if isinstance(param.default, Resolve):
+            dep_func = param.default.dependency
+            dep_func = overrides.get(dep_func, dep_func)  # type: ignore
+            if inspect.iscoroutinefunction(dep_func):
+                resolved = await async_resolve_dependencies(
+                    request=request,
+                    signature=signature,
+                    func=dep_func,
+                    overrides=overrides,
+                )
+            else:
+                resolved = (
+                    resolve_dependencies(request, signature, dep_func, overrides)
+                    if callable(dep_func)
+                    else dep_func
+                )
+            kwargs[name] = resolved
+    if inspect.iscoroutinefunction(func):
+        return await func(**kwargs)
+    else:
+        return func(**kwargs)
+
+
+def resolve_dependencies(
+    request: Request | WebSocket,
+    signature: inspect.Signature,
+    func: Any,
+    overrides: dict[str, Any] | None = None,
+) -> Any:
+    """
+    Resolves the dependencies for a given function.
+
+    Parameters:
+        func (Any): The function for which dependencies need to be resolved.
+        overrides (Union[dict[str, Any], None], optional): A dictionary of dependency overrides. Defaults to None.
+        Raises:
+        ValueError: If the provided function is asynchronous.
+
+    Returns:
+        Any: The result of running the asynchronous dependency resolution function.
+    """
+    if overrides is None:
+        overrides = {}
+    if inspect.iscoroutinefunction(func):
+        raise ValueError("Function is async. Use resolve_dependencies_async instead.")
+    return run_sync(async_resolve_dependencies(request, signature, func, overrides))
