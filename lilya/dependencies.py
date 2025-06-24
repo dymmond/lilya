@@ -6,6 +6,7 @@ from typing_extensions import Self
 
 from lilya.compat import run_sync
 from lilya.requests import Request
+from lilya.websockets import WebSocket
 
 
 class Provide:
@@ -137,7 +138,7 @@ class Security(Provide):
 
 
 async def async_resolve_dependencies(
-    request: Request,
+    request: Request | WebSocket,
     signature: inspect.Signature,
     func: Callable[..., Any],
     overrides: dict[str, Any] | None = None,
@@ -190,7 +191,7 @@ async def async_resolve_dependencies(
 
 
 def resolve_dependencies(
-    request: Request,
+    request: Request | WebSocket,
     signature: inspect.Signature,
     func: Any,
     overrides: dict[str, Any] | None = None,

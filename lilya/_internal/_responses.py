@@ -365,6 +365,7 @@ class BaseHandler:
                 route_map = getattr(func, "_lilya_dependencies", {}) or {}
                 merged.update(route_map)
 
+                websocket = WebSocket(scope, receive, send)
                 # now for each Provides() param, resolve it
                 for name, param in signature.parameters.items():
                     if isinstance(param.default, Provides):
@@ -374,9 +375,23 @@ class BaseHandler:
                                 reason=f"Missing dependency '{name}' for websocket handler '{func.__name__}'",
                             )
                         provider = merged[name]
-                        data = await provider.resolve(WebSocket(scope, receive, send), merged)
+
+                        if isinstance(provider, (Resolve, Security)):
+                            kwargs[name] = await async_resolve_dependencies(
+                                request=websocket,
+                                signature=signature,
+                                func=provider.dependency,
+                            )
+                            continue
+                        data = await provider.resolve(websocket, merged)
                         kwargs[name] = data
 
+                    if isinstance(param.default, (Resolve, Security)):
+                        kwargs[name] = await async_resolve_dependencies(
+                            request=websocket,
+                            signature=signature,
+                            func=param.default.dependency,
+                        )
                 await self._execute_function(func, session, **kwargs)
 
             await wrap_app_handling_exceptions(inner_app, session)(scope, receive, send)
