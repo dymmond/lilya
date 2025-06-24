@@ -271,3 +271,51 @@ async def test_provide_with_msgspec_struct_args():
 
     assert res.status_code == 200
     assert res.json() == {"sum": "hi-123"}
+
+
+async def test_only_requested_dependency_is_injected():
+    """
+    Even though the app has two dependencies registered, the handler
+    only asks for `second=Provides()`, so `first` should be ignored
+    entirely.
+    """
+
+    async def handler(second=Provides()):
+        return {"second": second}
+
+    def get_second():
+        return "one-two"
+
+    app = Lilya(
+        dependencies={
+            "first": Provide(lambda: "one"),
+            "second": Provide(get_second),
+        },
+        routes=[Path("/only-second", handler=handler)],
+    )
+    client = TestClient(app)
+
+    res = client.get("/only-second")
+    assert res.status_code == 200
+    assert res.json() == {"second": "one-two"}
+
+
+async def test_missing_requested_dependency_raises_500():
+    """
+    If the handler asks for a dependency that hasn’t been registered,
+    we should get a 500/ImproperlyConfigured.
+    """
+
+    async def handler(x=Provides()):
+        return {"x": x}
+
+    app = Lilya(
+        # no 'x' in here
+        dependencies={"y": Provide(lambda: "y")},
+        routes=[Path("/missing-x", handler=handler)],
+    )
+    client = TestClient(app)
+
+    res = client.get("/missing-x")
+
+    assert res.status_code == 500
