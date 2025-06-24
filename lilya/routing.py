@@ -2038,6 +2038,7 @@ class Router(RoutingMethodsMixin, BaseRouter):
                 before_request=before_request,
                 after_request=after_request,
             )
+            func._lilya_dependencies = dependencies or {}
             return func
 
         return wrapper
@@ -2083,6 +2084,7 @@ class Router(RoutingMethodsMixin, BaseRouter):
                 before_request=before_request,
                 after_request=after_request,
             )
+            func._lilya_dependencies = dependencies or {}
             return func
 
         return wrapper
@@ -2192,7 +2194,11 @@ class Include(BasePath):
         self.middleware = middleware if middleware is not None else []
         self.permissions = permissions if permissions is not None else []
         self.exception_handlers = {} if exception_handlers is None else dict(exception_handlers)
-        self.dependencies = dependencies if dependencies is not None else {}
+
+        if dependencies is None and hasattr(self.__base_app__, "dependencies"):
+            self.dependencies = self.__base_app__.dependencies or {}
+        else:
+            self.dependencies = dependencies or {}
 
         self.wrapped_permissions = [
             wrap_permission(permission) for permission in permissions or []

@@ -319,3 +319,70 @@ async def test_missing_requested_dependency_raises_500():
     res = client.get("/missing-x")
 
     assert res.status_code == 500
+
+
+async def test_websocket_app_level_dependency():
+    """
+    An app-level dependency should be injected into a WS handler.
+    """
+    app = Lilya(dependencies={"w": Provide(lambda: "ws_val")})
+
+    @app.websocket("/ws")
+    async def ws_route(websocket, w=Provides()):
+        await websocket.accept()
+        await websocket.send_json({"w": w})
+        await websocket.close()
+
+    client = TestClient(app)
+    with client.websocket_connect("/ws") as ws:
+        data = ws.receive_json()
+    assert data == {"w": "ws_val"}
+
+
+async def test_websocket_include_level_dependency():
+    """
+    An Include-level dependency (on a child Lilya) should be injected.
+    """
+    # child app defines its own WS route and a local dep "y"
+    child = Lilya(dependencies={"y": Provide(lambda: "inc_val")})
+
+    @child.websocket("/echo")
+    async def echo(ws, y=Provides()):
+        await ws.accept()
+        await ws.send_json({"y": y})
+        await ws.close()
+
+    # mount it under /inc
+    app = Lilya(routes=[Include(path="/inc", app=child)])
+    client = TestClient(app)
+
+    with client.websocket_connect("/inc/echo") as ws:
+        data = ws.receive_json()
+    assert data == {"y": "inc_val"}
+
+
+async def test_websocket_nested_include_dependencies():
+    """
+    If you nest two Includes with their own deps, both should apply.
+    """
+    # innermost, has b
+    nested = Lilya(dependencies={"b": Provide(lambda: "B_val")})
+
+    @nested.websocket("/both")
+    async def both(ws, a=Provides(), b=Provides()):
+        await ws.accept()
+        await ws.send_json({"a": a, "b": b})
+        await ws.close()
+
+    # middle, has a and mounts nested at /nested
+    parent = Lilya(
+        dependencies={"a": Provide(lambda: "A_val")}, routes=[Include(path="/nested", app=nested)]
+    )
+
+    # top, just mounts parent at /parent
+    app = Lilya(routes=[Include(path="/parent", app=parent)])
+    client = TestClient(app)
+
+    with client.websocket_connect("/parent/nested/both") as ws:
+        data = ws.receive_json()
+    assert data == {"a": "A_val", "b": "B_val"}

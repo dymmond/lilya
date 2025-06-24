@@ -12,7 +12,7 @@ from lilya.conf import _monkay
 from lilya.context import Context
 from lilya.dependencies import Provide, Provides
 from lilya.enums import SignatureDefault
-from lilya.exceptions import ImproperlyConfigured
+from lilya.exceptions import ImproperlyConfigured, WebSocketException
 from lilya.requests import Request
 from lilya.responses import Ok, Response
 from lilya.types import ASGIApp, Receive, Scope, Send
@@ -253,6 +253,11 @@ class BaseHandler:
         for inc_map in request.scope.get("dependencies", []):
             merged.update(inc_map)
 
+        # from the route handler itself
+        handler = request.scope.get("handler")
+        if handler and (route_deps := getattr(handler, "_lilya_dependencies", None)):
+            merged.update(route_deps)
+
         # 2) FILTER to only the ones the handler signature actually names as Provides()
         requested: dict[str, Provide] = {}
         for name, param in signature.parameters.items():
@@ -261,7 +266,6 @@ class BaseHandler:
                 requested[name] = merged.get(name)
 
         # 3) RESOLVE exactly those—and error if any are missing
-        handler = request.scope.get("handler")
         for name, provider in requested.items():
             if provider is None:
                 hname = handler.__name__ if handler else "<unknown>"
@@ -314,6 +318,8 @@ class BaseHandler:
                 None
             """
             session = WebSocket(scope=scope, receive=receive, send=send)
+            existing = list(scope.get("dependencies", []))
+            scope["dependencies"] = existing + [getattr(self, "dependencies", {})]
 
             async def inner_app(scope: Scope, receive: Receive, send: Send) -> None:
                 """
@@ -327,7 +333,37 @@ class BaseHandler:
                 Returns:
                     None
                 """
-                await self._execute_function(func, session)
+                signature = inspect.signature(func)
+                kwargs: dict[str, Any] = {}
+
+                # merge app/include/route deps exactly like HTTP does:
+                merged: dict[str, Any] = {}
+
+                # app-level
+                app_obj = getattr(scope.get("app", None), "dependencies", {}) or {}
+                merged.update(app_obj)
+
+                # include-level
+                for inc in scope.get("dependencies", []):
+                    merged.update(inc)
+
+                # route-level
+                route_map = getattr(func, "_lilya_dependencies", {}) or {}
+                merged.update(route_map)
+
+                # now for each Provides() param, resolve it
+                for name, param in signature.parameters.items():
+                    if isinstance(param.default, Provides):
+                        if name not in merged:
+                            raise WebSocketException(
+                                code=1011,
+                                reason=f"Missing dependency '{name}' for websocket handler '{func.__name__}'",
+                            )
+                        provider = merged[name]
+                        data = await provider.resolve(WebSocket(scope, receive, send), merged)
+                        kwargs[name] = data
+
+                await self._execute_function(func, session, **kwargs)
 
             await wrap_app_handling_exceptions(inner_app, session)(scope, receive, send)
 
