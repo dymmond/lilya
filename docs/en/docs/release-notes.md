@@ -5,6 +5,14 @@ hide:
 
 # Release Notes
 
+## 0.16.1
+
+### Added
+
+- [Resolve](./dependencies.md#resolve) dependency injection functionality. This resolve acts with the `Provider` and
+`Provides` as well as a standalone operator. This aims to only to provide an alternative to the already powerful native
+dependency injection system of Lilya.
+
 ## 0.16.0
 
 ### Added
