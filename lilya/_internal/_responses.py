@@ -244,28 +244,24 @@ class BaseHandler:
         # 1) COLLECT ALL PROVIDE(...) mappings
         merged: dict[str, Provide] = {}
 
-        # — from the app
+        # from the app
         app_obj = getattr(request, "app", None) or request.scope.get("app")
         if app_obj is not None and (app_deps := getattr(app_obj, "dependencies", None)):
             merged.update(app_deps)
 
-        # — from any Include scopes
+        # from any Include scopes
         for inc_map in request.scope.get("dependencies", []):
             merged.update(inc_map)
-
-        # — from the route handler itself
-        handler = request.scope.get("handler")
-        if handler and (route_deps := getattr(handler, "_lilya_dependencies", None)):
-            merged.update(route_deps)
 
         # 2) FILTER to only the ones the handler signature actually names as Provides()
         requested: dict[str, Provide] = {}
         for name, param in signature.parameters.items():
             if isinstance(param.default, Provides):
-                # we want to inject “name” iff the handler did foo=Provides()
+                # we want to inject “name” if the handler did `foo = Provides()`
                 requested[name] = merged.get(name)
 
         # 3) RESOLVE exactly those—and error if any are missing
+        handler = request.scope.get("handler")
         for name, provider in requested.items():
             if provider is None:
                 hname = handler.__name__ if handler else "<unknown>"

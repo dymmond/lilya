@@ -2038,7 +2038,6 @@ class Router(RoutingMethodsMixin, BaseRouter):
                 before_request=before_request,
                 after_request=after_request,
             )
-            func._lilya_dependencies = dependencies or {}
             return func
 
         return wrapper
