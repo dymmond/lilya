@@ -12,7 +12,7 @@ from lilya.conf import _monkay
 from lilya.context import Context
 from lilya.dependencies import Provide, Provides
 from lilya.enums import SignatureDefault
-from lilya.exceptions import ImproperlyConfigured
+from lilya.exceptions import ImproperlyConfigured, WebSocketException
 from lilya.requests import Request
 from lilya.responses import Ok, Response
 from lilya.types import ASGIApp, Receive, Scope, Send
@@ -241,57 +241,36 @@ class BaseHandler:
         # Merge the extracted JSON body data into the parameters dictionary.
         data.update(json_data)
 
-        # Initialize a dictionary to hold merged dependency providers.
+        # 1) COLLECT ALL PROVIDE(...) mappings
         merged: dict[str, Provide] = {}
 
-        # Fetch application-level dependencies, if any, and merge them.
-        # first see if request.app exists, otherwise look at scope["app"]
+        # from the app
         app_obj = getattr(request, "app", None) or request.scope.get("app")
-        if app_obj is not None:
-            app_deps = getattr(app_obj, "dependencies", None)
-            if app_deps:
-                merged.update(app_deps)
+        if app_obj is not None and (app_deps := getattr(app_obj, "dependencies", None)):
+            merged.update(app_deps)
 
-        # Fetch scope-level dependencies (e.g., from included routes) and merge them.
-        # Dependencies are expected to be a list of mappings.
+        # from any Include scopes
         for inc_map in request.scope.get("dependencies", []):
             merged.update(inc_map)
 
-        # Fetch handler-specific dependencies, if any, and merge them.
+        # from the route handler itself
         handler = request.scope.get("handler")
-        if handler:
-            route_map = getattr(handler, "_lilya_dependencies", None)
-            if route_map:
-                merged.update(route_map)
+        if handler and (route_deps := getattr(handler, "_lilya_dependencies", None)):
+            merged.update(route_deps)
 
-        # Validate that all registered dependencies correspond to actual
-        # `Provides` parameters in the function signature.
-        for dep_name in merged:
-            param = signature.parameters.get(dep_name)
-            # Raise an error if a dependency is registered but the parameter
-            # is missing or not marked with `Provides()`.
-            if param is None or not isinstance(param.default, Provides):
-                # Get handler name for a more informative error message.
-                hname = handler.__name__ if handler else "<unknown>"
-                raise ImproperlyConfigured(
-                    f"Dependency '{dep_name}' was registered for handler '{hname}', "
-                    "but no parameter defaulted to Provides() exists with that name."
-                )
-
-        # Resolve `Provides` dependencies and inject them into the data dictionary.
+        # 2) FILTER to only the ones the handler signature actually names as Provides()
+        requested: dict[str, Provide] = {}
         for name, param in signature.parameters.items():
             if isinstance(param.default, Provides):
-                # Ensure that a provider exists for every `Provides` parameter.
-                if name not in merged:
-                    # Get handler name for a more informative error message.
-                    hname = handler.__name__ if handler else "<unknown>"
-                    raise ImproperlyConfigured(
-                        f"Missing dependency '{name}' for handler '{hname}'"
-                    )
-                # Retrieve the dependency provider.
-                provider: Provide = merged[name]
-                # Resolve the dependency asynchronously and add its value to data.
-                data[name] = await provider.resolve(request, merged)
+                # we want to inject “name” if the handler did `foo = Provides()`
+                requested[name] = merged.get(name)
+
+        # 3) RESOLVE exactly those—and error if any are missing
+        for name, provider in requested.items():
+            if provider is None:
+                hname = handler.__name__ if handler else "<unknown>"
+                raise ImproperlyConfigured(f"Missing dependency '{name}' for handler '{hname}'")
+            data[name] = await provider.resolve(request, merged)
 
         # Return the dictionary of all extracted and resolved parameters.
         return data
@@ -339,6 +318,8 @@ class BaseHandler:
                 None
             """
             session = WebSocket(scope=scope, receive=receive, send=send)
+            existing = list(scope.get("dependencies", []))
+            scope["dependencies"] = existing + [getattr(self, "dependencies", {})]
 
             async def inner_app(scope: Scope, receive: Receive, send: Send) -> None:
                 """
@@ -352,7 +333,37 @@ class BaseHandler:
                 Returns:
                     None
                 """
-                await self._execute_function(func, session)
+                signature = inspect.signature(func)
+                kwargs: dict[str, Any] = {}
+
+                # merge app/include/route deps exactly like HTTP does:
+                merged: dict[str, Any] = {}
+
+                # app-level
+                app_obj = getattr(scope.get("app", None), "dependencies", {}) or {}
+                merged.update(app_obj)
+
+                # include-level
+                for inc in scope.get("dependencies", []):
+                    merged.update(inc)
+
+                # route-level
+                route_map = getattr(func, "_lilya_dependencies", {}) or {}
+                merged.update(route_map)
+
+                # now for each Provides() param, resolve it
+                for name, param in signature.parameters.items():
+                    if isinstance(param.default, Provides):
+                        if name not in merged:
+                            raise WebSocketException(
+                                code=1011,
+                                reason=f"Missing dependency '{name}' for websocket handler '{func.__name__}'",
+                            )
+                        provider = merged[name]
+                        data = await provider.resolve(WebSocket(scope, receive, send), merged)
+                        kwargs[name] = data
+
+                await self._execute_function(func, session, **kwargs)
 
             await wrap_app_handling_exceptions(inner_app, session)(scope, receive, send)
 
