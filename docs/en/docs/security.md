@@ -5,27 +5,29 @@ It explains how to use the security features and common attack vectors.
 
 ## Host limiting
 
-**Problem**
+### Problem
 
 We have no public API and the project should only serve for a specific host (dns name).
 We don't want other traffic which could maybe originate from a ddos.
 
-**Solution**
+### Solution
 
 The `TrustedHostMiddleware` can solve the problem. Here we can either block or mark wrong hosts. Its usage is descriped in
 [TrustedHostMiddleware](./middleware/trustedhost.md).
 
-## GET-based search
+## The Challenge of URL-Reflected Search and Malicious Injections
 
-**Problem**
+### Problem
 
-We want a search which reflects in the url bar like google does. So we can refer to the search in other modules.
-The issue: scammers can inject arbitary text blocks (despite they are proper escaped) and fool users.
-For example by injecting texts like: "Call xy for help.".
-It can be very convincing when the user doesn't understand that the text is only used for the search.
-This is especcially today a problem because search boxes are customized and look fancy.
+We sometimes need to implement a search function where the query is reflected in the URL bar, similar to Google's behavior.
+This allows other modules in a project to easily reference the search term.
 
-**Solution**
+**The Security Risk: Arbitrary Text Injection**
+A significant concern with this approach is the potential for scammers to inject arbitrary text blocks into the URL, even if properly escaped. This can be used to trick users, especially since modern search boxes are often highly customized and visually appealing.
+
+For example, a scammer could inject text like "Call XY for help" into the URL. Users might mistakenly believe this text is part of the legitimate website content rather than solely a component of their search query, leading to convincing and harmful social engineering attacks.
+
+### Solution
 
 The [TrustedReferrerMiddleware](./middleware/trustedreferrer.md) helps here.
 With this middlware we can ensure only legitim hosts can inject parameters via GET parameters and refer. By default, only `referrer_is_trusted` is
@@ -37,27 +39,34 @@ injected in the scope. So a warning or an import dialog can pop up or the get pa
 
 ## Resource exhaustion
 
-**Problem**
+### Problem
 
 Some calls are quite expensive. An automated caller can clog up server resources.
 
-**Solution**
+### Solution
 
-We have currently only the building blocks for ratelimiting in lilya. We can use the clientip middleware to extract the
-ip of the client and use it for ratelimiting purposes.
+**Rate Limiting in Lilya: Leveraging the `ClientIPMiddleware`**
 
-There is however an external project for ratelimiting:
+Currently, Lilya provides foundational building blocks for implementing rate limiting. We can utilize the `ClientIPMiddleware` to extract the client's IP address, which then serves as a crucial identifier for applying rate-limiting policies. This allows us to control the rate of requests based on individual client IPs, preventing abuse and ensuring system stability.
+
+There is however an external project for ASGI ratelimiting which should also work with `ClientIPMiddleware` because this middleware
+inject the `x-real-ip` header:
 
 <a href="https://github.com/abersheeran/asgi-ratelimit">RateLimitMiddleware</a>
 
 ## Session fixing
 
-**Problem**
+### Problem
 
 Session stealing by stealing cookies via malware.
+Especially for sessions with high privileges this is a problem.
 
-**Solution**
+### Solution
 
 This technique works by using the clientip and the session middleware. We limit a session to an ip.
 We have even two options: `ClientIPMiddleware` or `ClientIPScopeOnlyMiddleware`, depending if we need
-headers. Usage is documented in [SessionFixingMiddleware](./middleware.md#sessionfixingmiddleware).
+headers. The usage is documented in [SessionFixingMiddleware](./middleware.md#sessionfixingmiddleware).
+
+!!! Note
+    If the client has an unstable connection, the session can reset from time to time. It is recommended to use the session fixing
+    carefully only for sensitive areas or use the `notify_fn` parameter to port from the old session to the new session when appropiate.

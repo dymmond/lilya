@@ -365,6 +365,9 @@ It requires the `SessionMiddleware` and the `ClientIPMiddleware` (or the `Client
     Drawback is a periodically logout if you have a client with a changing ip address.
     E.g. working remotely from trains or using tor.
 
+!!! Tip
+    You can use the `notify_fn` parameter to update the `new_session` with data from the `old_session` when appropiate.
+
 
 ### RequestContextMiddleware
 
