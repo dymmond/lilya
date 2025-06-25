@@ -11,22 +11,18 @@ hide:
 
 - Missing `dependencies` in the settings.
 - Missing `dependencies` in the `create_client`.
-
-### Fixed
-
-- When adding encoders dependencies with `infer_body` as true, it was not filtering the body params properly.
-
-## 0.16.2
-
-### Added
-
 - Add `TrustedReferrerMiddleware`.
 - Add `SessionFixingMiddleware`.
 - Add `ClientIPScopeOnlyMiddleware` (splitted from `ClientIPMiddleware`).
+- Docs concerning security.
 
 ### Changed
 
 - Add `block_untrusted_hosts` parameter to `TrustedHostMiddleware`.
+
+### Fixed
+
+- When adding encoders dependencies with `infer_body` as true, it was not filtering the body params properly.
 
 ## 0.16.1
 
