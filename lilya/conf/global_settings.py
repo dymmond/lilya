@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Annotated, Any, ClassVar
 from lilya import __version__
 from lilya.conf.enums import EnvironmentType
 from lilya.logging import LoggingConfig, StandardLoggingConfig
-from lilya.types import ApplicationType, Doc, ExceptionHandler
+from lilya.types import ApplicationType, Dependencies, Doc, ExceptionHandler
 
 if TYPE_CHECKING:
     from lilya.middleware.base import DefineMiddleware
@@ -310,11 +310,19 @@ class Settings(_Internal):
         bool,
         Doc(
             """
-                By default, exception handlers are raised when a handler triggers but not
-                by middlewares.
+            By default, exception handlers are raised when a handler triggers but not
+            by middlewares.
 
-                With this flag enable, Lilya custom middleware activates those.
-                """
+            With this flag enable, Lilya custom middleware activates those.
+            """
+        ),
+    ] = False
+    dependencies: Annotated[
+        Dependencies,
+        Doc(
+            """
+            A dictionary of global application dependencies.
+            """
         ),
     ] = False
 
