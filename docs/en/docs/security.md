@@ -29,9 +29,17 @@ For example, a scammer could inject text like "Call XY for help" into the URL. U
 
 ### Solution
 
-The [TrustedReferrerMiddleware](./middleware/trustedreferrer.md) helps here.
-With this middlware we can ensure only legitim hosts can inject parameters via GET parameters and refer. By default, only `referrer_is_trusted` is
-injected in the scope. So a warning or an import dialog can pop up or the get parameters are just ignored.
+**Enhancing Security with TrustedReferrerMiddleware**
+The  [TrustedReferrerMiddleware](./middleware/trustedreferrer.md) is a good tool for mitigating the risk of malicious parameter injection.
+This middleware can be used to validate that a referral was only from a legitimate hosts. So the GET parameters can be used safely.
+
+By default, the middleware injects `referrer_is_trusted` into the request scope. This allows your application to:
+
+- Display a warning to the user.
+- Trigger an import dialog.
+- Simply ignore GET parameters from untrusted referrers.
+
+This provides a robust defense against arbitrary text injection but still allows comfortable linking.
 
 ```python
 {!> ../../../docs_src/middleware/available/trusted_referrers_simple.py !}
