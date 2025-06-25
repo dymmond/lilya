@@ -172,7 +172,11 @@ class BaseHandler:
         reserved_keys.update(request.cookies.keys())
 
         # The remaining parameters are inferred as body-bound
-        body_param_names = [name for name in parameters.keys() if name not in reserved_keys]
+        body_param_names = [
+            name
+            for name, value in parameters.items()
+            if name not in reserved_keys and not isinstance(value.default, (Provides, Resolve))
+        ]
 
         payload: dict[str, Any] = {}
 
