@@ -19,7 +19,7 @@ from lilya.types import ASGIApp, Receive, Scope, Send
 from lilya.websockets import WebSocket
 
 if TYPE_CHECKING:
-    from lilya.routing import BasePath
+    from lilya.routing import BasePath as BasePath  # noqa
 
 
 class BaseHandler:
