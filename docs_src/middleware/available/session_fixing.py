@@ -22,10 +22,9 @@ trusted_proxies = ["unix"]
 
 def notify_fn(old_ip: str | None, new_ip: str, old_session: dict, new_session: dict) -> None:
     if old_ip is None:
-        print(f"New session for ip: {new_ip}")
+        print(f'New session for ip: "{new_ip}".')
     else:
-        print(f"Replace session for ip: {old_ip}. Has new ip {new_ip}")
-
+        print(f'Replace session for ip: "{old_ip}". Has new ip "{new_ip}".')
 
 middleware = [
     DefineMiddleware(ClientIPScopeOnlyMiddleware, trusted_proxies=trusted_proxies),

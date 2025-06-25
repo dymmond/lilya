@@ -194,6 +194,7 @@ If you need to specify parameters in your middleware then you will need to wrap 
 * `HTTPSRedirectMiddleware` - Middleware that handles HTTPS redirects for your application. Very useful to be used
 for production or production like environments.
 * `SessionMiddleware` - Middleware that handles the sessions.
+* `SessionFixingMiddleware` - Middleware that fixes sessions to client ips.
 * `WSGIMiddleware` - Allows to connect WSGI applications and run them inside Lilya. A [great example](./wsgi.md)
 how to use it is available.
 * `XFrameOptionsMiddleware` - Middleware that handles specifically against clickjacking.
