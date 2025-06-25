@@ -3,7 +3,18 @@ hide:
   - navigation
 ---
 
-# Release Notes
+# Release
+
+## 0.16.2
+
+### Added
+
+- Missing `dependencies` in the settings.
+- Missing `dependencies` in the `create_client`.
+
+### Fixed
+
+- When adding encoders dependencies with `infer_body` as true, it was not filtering the body params properly.
 
 ## 0.16.1
 
