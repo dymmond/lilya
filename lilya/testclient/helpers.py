@@ -9,7 +9,7 @@ from lilya.apps import Lilya
 from lilya.conf.global_settings import Settings
 from lilya.permissions.base import Permission
 from lilya.testclient import TestClient
-from lilya.types import ApplicationType, ExceptionHandler, Lifespan
+from lilya.types import ApplicationType, Dependencies, ExceptionHandler, Lifespan
 
 
 def create_client(
@@ -28,6 +28,7 @@ def create_client(
     raise_server_exceptions: bool = True,
     check_asgi_conformance: bool = True,
     lifespan: Lifespan[ApplicationType] | None = None,
+    dependencies: Dependencies | None = None,
     redirect_slashes: bool = True,
     debug: bool = False,
     root_path: str = "",
@@ -60,6 +61,7 @@ def create_client(
             permissions=permissions,
             middleware=middleware,
             exception_handlers=exception_handlers,
+            dependencies=dependencies,
             on_shutdown=on_shutdown,
             on_startup=on_startup,
             lifespan=lifespan,
