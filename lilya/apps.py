@@ -1023,7 +1023,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
         if self.logging_config is not None:
             setup_logging(self.logging_config)
 
-        if enable_openapi:
+        if self.enable_openapi:
             self.configure_openapi(self.openapi_config)
 
         if self.register_as_global_instance:
