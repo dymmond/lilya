@@ -5,6 +5,12 @@ hide:
 
 # Release
 
+## 0.16.3
+
+### Changed
+
+- Move `dependencies` from settings to a property based.
+
 ## 0.16.2
 
 ### Added
