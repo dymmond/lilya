@@ -317,14 +317,6 @@ class Settings(_Internal):
             """
         ),
     ] = False
-    dependencies: Annotated[
-        Dependencies,
-        Doc(
-            """
-            A dictionary of global application dependencies.
-            """
-        ),
-    ] = False
 
     @property
     def routes(self) -> list[Any]:
@@ -332,6 +324,17 @@ class Settings(_Internal):
         The initial Lilya application routes.
         """
         return []
+
+    @property
+    def dependencies(self) -> Dependencies | None:
+        """
+        Returns a dictionary like containing all the dependencies that are globally
+        assigned and can be used across the application layers.
+
+        This can be particularly useful, for example, if a dabatabse session is shared
+        across all the application.
+        """
+        return None
 
     @property
     def middleware(self) -> Sequence[DefineMiddleware]:
