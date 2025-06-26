@@ -98,6 +98,9 @@ class SessionMiddleware(MiddlewareProtocol):
     async def load_session_data(self, scope: Scope, connection: Connection) -> bool:
         """
         Load session data from the session cookie.
+
+        Returns:
+            bool: Was the session empty or invalid? If yes skip the deletion.
         """
         if self.session_cookie in connection.cookies:
             data = connection.cookies[self.session_cookie].encode("utf-8")
@@ -106,6 +109,7 @@ class SessionMiddleware(MiddlewareProtocol):
                 scope["session"] = self.decode_session(data)
                 return False
             except BadSignature:
+                # could be a conflicting session cookie. Ignore if session is not updated.
                 scope["session"] = {}
         else:
             scope["session"] = {}

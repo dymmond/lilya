@@ -11,6 +11,14 @@ hide:
 
 - Missing `dependencies` in the settings.
 - Missing `dependencies` in the `create_client`.
+- Add `TrustedReferrerMiddleware`.
+- Add `SessionFixingMiddleware`.
+- Add `ClientIPScopeOnlyMiddleware` (splitted from `ClientIPMiddleware`).
+- Docs concerning security.
+
+### Changed
+
+- Add `block_untrusted_hosts` parameter to `TrustedHostMiddleware`.
 
 ### Fixed
 
