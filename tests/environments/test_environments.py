@@ -1,14 +1,19 @@
 import os
+import sys
 import typing
 from pathlib import Path
 from typing import Any
 
 import pytest
-from typing_extensions import assert_type
 
 from lilya.datastructures import URL, Secret
 from lilya.environments import EnvironLoader
 from lilya.exceptions import EnvError
+
+if sys.version_info >= (3, 11):
+    from typing import assert_type
+else:
+    from typing_extensions import assert_type
 
 
 def test_load_types_string():

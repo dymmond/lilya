@@ -5,9 +5,8 @@ import threading
 from abc import ABC, abstractmethod
 from typing import Annotated, Any, cast
 
-from typing_extensions import Doc
-
 from lilya.protocols.logging import LoggerProtocol
+from lilya.types import Doc
 
 
 class LoggerProxy:

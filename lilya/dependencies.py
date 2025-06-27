@@ -1,12 +1,16 @@
 import inspect
+import sys
 from collections.abc import Callable, Sequence
 from typing import Any
-
-from typing_extensions import Self
 
 from lilya.compat import run_sync
 from lilya.requests import Request
 from lilya.websockets import WebSocket
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 
 class Provide:
