@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, Generic
 
 from lilya import status
 from lilya.exceptions import MissingDependency, TemplateNotFound
@@ -34,7 +34,7 @@ P = ParamSpec("P")
 PathLike = str | os.PathLike[str]
 
 
-class TemplateRenderer(BaseTemplateRenderer):
+class TemplateRenderer(BaseTemplateRenderer, Generic[P]):
     """
     Custom Template Renderer.
 
@@ -225,7 +225,7 @@ class Jinja2Template:
         Returns:
             TemplateResponse: The rendered template response.
         """
-        template_renderer = TemplateRenderer(
+        template_renderer: TemplateRenderer = TemplateRenderer(
             template=self, render_function_name="render_async" if self.env.is_async else "render"
         )
         return template_renderer(*args, **kwargs)

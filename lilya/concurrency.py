@@ -23,7 +23,7 @@ def enforce_async_callable(func: Callable[..., Any]) -> Callable[..., Awaitable[
     """
     Enforces the callable to be async by returning an AsyncCallable.
     """
-    return func if is_async_callable(func) else AsyncCallable(func)  # type:ignore
+    return func if is_async_callable(func) else AsyncCallable(func)
 
 
 class AsyncCallable:

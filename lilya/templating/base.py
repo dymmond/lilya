@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Generic, ParamSpec, TypeVar
+from typing import Any, Generic, TypeVar
 
 from lilya import status
 from lilya.background import Task
 from lilya.requests import Request
 from lilya.responses import TemplateResponse
 
-P = ParamSpec("P")
 T = TypeVar("T")
 
 PathLike = str | os.PathLike[str]
@@ -22,7 +21,7 @@ class BaseTemplateRenderer(Generic[T]):
     def get_template(self, name: str) -> T:
         return self.template.get_template(name=name)  # type: ignore
 
-    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> T:
+    def __call__(self, *args: Any, **kwargs: Any) -> T:
         raise NotImplementedError()
 
     def prepare_response(

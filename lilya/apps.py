@@ -376,7 +376,7 @@ class BaseLilya:
         )
 
     def add_middleware(
-        self, middleware: type[MiddlewareProtocol], *args: P.args, **kwargs: P.kwargs
+        self, middleware: type[MiddlewareProtocol[P]], *args: P.args, **kwargs: P.kwargs
     ) -> None:
         """
         Adds an external middleware to the stack.
@@ -386,7 +386,7 @@ class BaseLilya:
         self.custom_middleware.insert(0, DefineMiddleware(middleware, *args, **kwargs))
 
     def add_permission(
-        self, permission: type[PermissionProtocol], *args: P.args, **kwargs: P.kwargs
+        self, permission: type[PermissionProtocol[P]], *args: P.args, **kwargs: P.kwargs
     ) -> None:
         """
         Adds an external permissions to the stack.
@@ -969,7 +969,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
             elif isinstance(settings_module, Settings):
                 self.settings_module = settings_module  # type: ignore
             elif is_class_and_subclass(settings_module, Settings):
-                self.settings_module = settings_module()  # type: ignore
+                self.settings_module = settings_module()
 
         self.debug = self.load_settings_value("debug", debug, is_boolean=True)
 

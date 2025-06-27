@@ -35,6 +35,4 @@ def reload_settings() -> None:
     """
     Reloads the global settings.
     """
-    _monkay.settings = os.environ.get(  # type: ignore
-        ENVIRONMENT_VARIABLE, "lilya.conf.global_settings.Settings"
-    )
+    _monkay.settings = os.environ.get(ENVIRONMENT_VARIABLE, "lilya.conf.global_settings.Settings")
