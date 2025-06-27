@@ -3,12 +3,11 @@ from collections.abc import Callable, Sequence
 from functools import lru_cache, wraps
 from typing import Annotated, Any, get_args, get_origin
 
-from typing_extensions import Doc
-
 from lilya._internal._responses import BaseHandler
 from lilya.contrib.openapi.datastructures import OpenAPIResponse
 from lilya.contrib.openapi.helpers import convert_annotation_to_pydantic_model
 from lilya.contrib.openapi.params import Query, ResponseParam
+from lilya.types import Doc
 
 SUCCESSFUL_RESPONSE = "Successful response"
 

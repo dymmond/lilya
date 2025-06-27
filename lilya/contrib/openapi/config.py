@@ -2,7 +2,6 @@ from collections.abc import Sequence
 from typing import Annotated, Any
 
 from pydantic import AnyUrl, BaseModel
-from typing_extensions import Doc
 
 from lilya import __version__
 from lilya.contrib.openapi.docs import (
@@ -15,6 +14,7 @@ from lilya.contrib.openapi.docs import (
 from lilya.contrib.openapi.utils import get_openapi
 from lilya.requests import Request
 from lilya.responses import HTMLResponse, JSONResponse
+from lilya.types import Doc
 
 
 class OpenAPIConfig(BaseModel):

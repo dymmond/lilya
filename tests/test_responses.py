@@ -1,6 +1,5 @@
 import datetime as dt
 import os
-import sys
 import time
 import typing
 from asyncio import Queue
@@ -318,8 +317,6 @@ def test_file_response(tmpdir, test_client_factory):
     ],
 )
 async def test_file_response_optimizations(tmpdir, extensions, result, anyio_backend):
-    if sys.version_info < (3, 10) and anyio_backend == "trio":
-        pytest.skip("Not supported combination of trio, python  < 3.10 and asyncio.Queue")
     path = os.path.join(tmpdir, "xyz")
     content = b"<file content>" * 1000
     with open(path, "wb") as file:

@@ -15,6 +15,7 @@ hide:
 
 - Fix missing default for `notify_fn` in `SessionFixingMiddleware`.
 - Re-add missing dependency `monkay`.
+- Fix dependency to `typing-extensions` for python>=3.11.
 
 ## 0.16.3
 
