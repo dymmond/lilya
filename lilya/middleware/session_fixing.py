@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Protocol, cast
 
+from lilya._internal._module_loading import import_string
 from lilya.enums import ScopeType
 from lilya.exceptions import ImproperlyConfigured
 from lilya.protocols.middleware import MiddlewareProtocol
@@ -18,9 +19,16 @@ class SessionFixingMiddleware(MiddlewareProtocol):
     session_name_clientip: str = "real-clientip"
     scope_name_clientip: str = "real-clientip"
 
-    def __init__(self, app: ASGIApp, notify_fn: NotificationFunctionType | None) -> None:
+    def __init__(
+        self, app: ASGIApp, notify_fn: NotificationFunctionType | str | None = None
+    ) -> None:
         self.app = app
-        self.notify_fn = notify_fn
+        if isinstance(notify_fn, str):
+            self.notify_fn: NotificationFunctionType | None = cast(
+                NotificationFunctionType, import_string(notify_fn)
+            )
+        else:
+            self.notify_fn = notify_fn
         self.scopes: set[str] = {ScopeType.HTTP, ScopeType.WEBSOCKET}
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:

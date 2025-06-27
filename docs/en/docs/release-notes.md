@@ -5,6 +5,17 @@ hide:
 
 # Release
 
+## 0.16.4
+
+### Changed
+
+- Allow providing `notify_fn` as string.
+
+### Fixed
+
+- Fix missing default for `notify_fn` in `SessionFixingMiddleware`.
+- Re-add missing dependency `monkay`.
+
 ## 0.16.3
 
 ### Changed
