@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterator
-from typing import Any, ParamSpec, cast
+from typing import Any, Generic, ParamSpec, cast
 
 from lilya._internal._module_loading import import_string
 from lilya.types import ASGIApp
@@ -9,7 +9,7 @@ from lilya.types import ASGIApp
 P = ParamSpec("P")
 
 
-class DefineMiddleware:
+class DefineMiddleware(Generic[P]):
     """
     Wrapper that create the middleware classes.
     """

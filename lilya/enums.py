@@ -18,7 +18,7 @@ class DefaultPort(IntEnum):
     def __int__(self) -> int:
         return self.value
 
-    def __repr__(self) -> int:  # type: ignore
+    def __repr__(self) -> int:
         return int(self)
 
     @classmethod

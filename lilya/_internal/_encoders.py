@@ -64,7 +64,7 @@ class DataclassEncoder(EncoderProtocol, MoldingProtocol):
     name: str = "DataclassEncoder"
 
     def is_type(self, value: Any) -> bool:
-        return cast(bool, is_dataclass(value))
+        return is_dataclass(value)
 
     is_type_structure = is_type
 

@@ -118,7 +118,7 @@ def register_path_transformer(key: str, transformer: Transformer[Any]) -> None:
     transformers.
     """
     if is_class_and_subclass(transformer, Transformer):
-        transformer = transformer()  # type: ignore
+        transformer = transformer()
 
     TRANSFORMER_TYPES[key] = transformer
     TRANSFORMER_PYTHON_TYPES[transformer.__class__.__name__] = key

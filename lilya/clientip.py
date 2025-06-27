@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import re
 from collections.abc import Sequence
-from typing import cast
 
 from lilya.datastructures import ALL, Header
 from lilya.types import Scope
@@ -59,4 +58,4 @@ def get_ip(scope: Scope, trusted_proxies: None | Sequence[str] = None) -> str:
     else:
         client_ip = _ip6_port_cleanup_regex.sub("", client_ip).strip("[]")
 
-    return cast(str, client_ip)
+    return client_ip
