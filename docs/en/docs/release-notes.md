@@ -11,6 +11,10 @@ hide:
 
 - Move `dependencies` from settings to a property based.
 
+### Fixed
+
+- OpenAPIResponse `model` parameters as list.
+
 ## 0.16.2
 
 ### Added

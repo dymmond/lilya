@@ -74,8 +74,8 @@ class OpenAPIResponse(BaseModel):
         cls,
         model: type[BaseModel] | list[type[BaseModel]] | type[Any] | list[type[Any]],
     ) -> type[BaseModel] | list[type[BaseModel]] | type[Any] | list[type[Any]]:
-        if isinstance(model, list) and len(model) > 1:
+        if isinstance(model, (list, tuple)) and len(model) > 1:
             raise ValueError(
-                "The representation of a list of models in OpenAPI can only be a total of one. Example: OpenAPIResponse(model=[MyModel])."
+                "The representation of a list or a tuple of models in OpenAPI can only be a total of one. Example: OpenAPIResponse(model=[MyModel])."
             )
         return model

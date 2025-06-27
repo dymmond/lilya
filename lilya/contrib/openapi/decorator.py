@@ -1,7 +1,7 @@
 import inspect
 from collections.abc import Callable, Sequence
 from functools import lru_cache, wraps
-from typing import Annotated, Any
+from typing import Annotated, Any, get_args, get_origin
 
 from typing_extensions import Doc
 
@@ -186,7 +186,14 @@ def openapi(
             body = {} if responses_dict is None else responses_dict.copy()
 
             for status, response in body.items():
-                body[status] = response.annotation.model_json_schema()
+                origin_sources = [list, tuple, Sequence]
+                origin = get_origin(response.annotation)
+
+                if origin in origin_sources:
+                    arguments = get_args(response.annotation)
+                    body[status] = [arguments[0].model_json_schema()]  # type: ignore
+                else:
+                    body[status] = response.annotation.model_json_schema()
 
             return body  # type: ignore
 
