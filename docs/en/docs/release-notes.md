@@ -3,7 +3,7 @@ hide:
   - navigation
 ---
 
-# Release
+# Release Notes
 
 ## 0.16.4
 
