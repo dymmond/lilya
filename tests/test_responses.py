@@ -297,6 +297,10 @@ def test_file_response(tmpdir, test_client_factory):
 
     assert filled_by_bg_task == ""
     client = test_client_factory(app)
+    response = client.head("/")
+    expected_disposition = 'attachment; filename="example.png"'
+    assert response.status_code == status.HTTP_200_OK
+    assert response.content == b""
     response = client.get("/")
     expected_disposition = 'attachment; filename="example.png"'
     assert response.status_code == status.HTTP_200_OK
@@ -635,10 +639,20 @@ def test_populate_headers(test_client_factory):
 
 
 def test_head_method(test_client_factory):
-    app = Response("hello, world", media_type="text/plain")
+    executed: bool = False
+
+    async def hello() -> str:
+        nonlocal executed
+        executed = True
+        return "hello, world"
+
+    app = Response(hello(), media_type="text/plain")
+    assert not executed
     client = test_client_factory(app)
     response = client.head("/")
     assert response.text == ""
+    # is executed anyway for content-length
+    assert executed
 
 
 def test_empty_response(test_client_factory):
@@ -717,5 +731,5 @@ async def test_streaming_response_stops_if_receiving_http_disconnect():
     response = StreamingResponse(content=stream_indefinitely())
 
     with anyio.move_on_after(1) as cancel_scope:
-        await response({}, receive_disconnect, send)
+        await response({"type": "http"}, receive_disconnect, send)
     assert not cancel_scope.cancel_called, "Content streaming should stop itself."

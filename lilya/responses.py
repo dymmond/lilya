@@ -39,6 +39,7 @@ from lilya.concurrency import iterate_in_threadpool
 from lilya.datastructures import URL, Header
 from lilya.encoders import ENCODER_TYPES, EncoderProtocol, MoldingProtocol, json_encode
 from lilya.enums import Event, HTTPMethod, MediaType
+from lilya.exceptions import HTTPException
 from lilya.types import Receive, Scope, Send
 
 Content = str | bytes
@@ -287,6 +288,15 @@ class Response:
         prefix = "websocket." if scope["type"] == "websocket" else ""
         await self.resolve_async_content()
         await send(self.message(prefix=prefix))
+        send_header_only = "method" in scope and scope["method"].upper() in {
+            HTTPMethod.HEAD,
+            HTTPMethod.OPTIONS,
+        }
+
+        if send_header_only:
+            await send({"type": "http.response.body", "body": b"", "more_body": False})
+            # no background execution
+            return
         await send({"type": f"{prefix}http.response.body", "body": self.body})
 
         if self.background is not None:
@@ -422,8 +432,6 @@ class StreamingResponse(Response):
                 break
 
     async def stream(self, send: Send) -> None:
-        await send(self.message(prefix=""))
-
         async for chunk in self.body_iterator:
             if not isinstance(chunk, bytes):
                 chunk = chunk.encode(self.charset)
@@ -432,6 +440,17 @@ class StreamingResponse(Response):
         await send({"type": "http.response.body", "body": b"", "more_body": False})
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        prefix = "websocket." if scope["type"] == "websocket" else ""
+        await send(self.message(prefix=prefix))
+        send_header_only = "method" in scope and scope["method"].upper() in {
+            HTTPMethod.HEAD,
+            HTTPMethod.OPTIONS,
+        }
+
+        if send_header_only:
+            await send({"type": "http.response.body", "body": b"", "more_body": False})
+            # no background execution
+            return
         async with anyio.create_task_group() as task_group:
 
             async def wrap(func: Callable[[], Awaitable[None]]) -> None:
@@ -457,16 +476,17 @@ class FileResponse(Response):
         background: Task | None = None,
         filename: str | None = None,
         stat_result: os.stat_result | None = None,
-        method: str | None = None,
         content_disposition_type: str = "attachment",
+        allow_range_requests: bool = True,
         encoders: Sequence[Encoder | type[Encoder]] | None = None,
     ) -> None:
         self.path = path
         self.status_code = status_code
+        self.allow_range_requests = allow_range_requests
         self.filename = filename
-        self.send_header_only = method is not None and method.upper() == HTTPMethod.HEAD
         if media_type is None:
-            media_type = guess_type(filename or path)[0] or MediaType.TEXT
+            # by default it must be octet
+            media_type = guess_type(filename or path)[0] or MediaType.OCTET
         self.media_type = media_type
         self.background = background
 
@@ -474,6 +494,9 @@ class FileResponse(Response):
             encoder() if isclass(encoder) else encoder for encoder in encoders or _empty
         ]
         self.make_headers(headers)
+
+        if self.allow_range_requests:
+            self.headers["accept-ranges"] = "bytes"
 
         if self.filename is not None:
             content_disposition_filename = quote(self.filename)
@@ -498,6 +521,51 @@ class FileResponse(Response):
         self.headers.setdefault("last-modified", last_modified)
         self.headers.setdefault("etag", etag)
 
+    def set_range_headers(self, scope: Scope) -> int | None:
+        received_headers = Header.ensure_header_instance(scope)
+        range_header: str = received_headers.get("range", "").strip()
+        if not range_header:
+            return None
+        if not range_header.startswith("bytes="):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported range request type."
+            )
+        if "," in range_header:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Multipart ranges are not supported yet.",
+            )
+        content_length = int(self.headers["content-length"])
+        try:
+            direct_range = range_header[6:]
+            if direct_range.startswith("-"):
+                range_definition: tuple[int, int] = (0, int(direct_range[1:]))
+            elif direct_range.endswith("-"):
+                range_definition = (int(direct_range[1:]), content_length)
+            else:
+                range_definition = tuple(map(int, direct_range.split("-", 1)))  # type: ignore
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Range definition is not supported.",
+            ) from exc
+        if any(rdef < 0 or rdef >= content_length for rdef in range_definition):
+            raise HTTPException(
+                status_code=status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE,
+                headers={"content-range": f"bytes */{content_length}"},
+            )
+        if range_definition[0] > range_definition[1]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Range is invalid."
+            )
+
+        self.headers["content-range"] = (
+            f"bytes {range_definition[0]}-{range_definition[1]}/{content_length}"
+        )
+        self.headers["content-length"] = f"{range_definition[1] - range_definition[0]}"
+        self.status_code = status.HTTP_206_PARTIAL_CONTENT
+        return range_definition[0]
+
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if self.stat_result is None:
             try:
@@ -510,35 +578,57 @@ class FileResponse(Response):
                 if not stat.S_ISREG(mode):
                     raise RuntimeError(f"File at path {self.path} is not a file.") from None
 
+        send_header_only = "method" in scope and scope["method"].upper() in {
+            HTTPMethod.HEAD,
+            HTTPMethod.OPTIONS,
+        }
         prefix = "websocket." if scope["type"] == "websocket" else ""
-        await send(self.message(prefix=prefix))
-        extensions = scope.get("extensions", {})
+        offset: int | None = None
+        if not send_header_only and self.allow_range_requests:
+            offset = self.set_range_headers(scope)
 
-        if self.send_header_only:
+        await send(self.message(prefix=prefix))
+
+        if send_header_only:
             await send({"type": "http.response.body", "body": b"", "more_body": False})
-        elif "http.response.pathsend" in extensions:
+            # no background execution
+            return
+
+        extensions = scope.get("extensions", {})
+        if offset is None and "http.response.pathsend" in extensions:
             await send({"type": "http.response.pathsend", "path": self.path})
         elif "http.response.zerocopysend" in extensions:
             async with await anyio.open_file(self.path, mode="rb") as file:
                 size = int(self.headers["content-length"])
+                if offset:
+                    await file.seek(offset)
                 more_body = True
                 while more_body:
                     more_body = size > self.chunk_size
+                    count = self.chunk_size
+                    if not more_body:
+                        count = size
                     await send(
                         {
                             "type": "http.response.zerocopysend",
                             "file": file.fileno(),  # type: ignore
-                            "count": self.chunk_size,
+                            "count": count,
                             "more_body": more_body,
                         }
                     )
-                    size -= self.chunk_size
+                    size -= count
         else:
             async with await anyio.open_file(self.path, mode="rb") as file:
+                size = int(self.headers["content-length"])
+                if offset:
+                    await file.seek(offset)
                 more_body = True
                 while more_body:
-                    chunk = await file.read(self.chunk_size)
-                    more_body = len(chunk) == self.chunk_size
+                    more_body = size > self.chunk_size
+                    count = self.chunk_size
+                    if not more_body:
+                        count = size
+                    chunk = await file.read(count)
                     await send(
                         {
                             "type": "http.response.body",
@@ -546,6 +636,7 @@ class FileResponse(Response):
                             "more_body": more_body,
                         }
                     )
+                    size -= count
         if self.background is not None:
             await self.background()
 
