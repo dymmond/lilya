@@ -783,7 +783,8 @@ def test_options_method(test_client_factory):
     assert not executed
     client = test_client_factory(app)
     response = client.options("/")
-    assert response.text == ""
+    # body is allowed for options
+    assert response.text == "hello, world"
     # is executed anyway for content-length
     assert executed
 

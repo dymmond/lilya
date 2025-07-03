@@ -288,18 +288,16 @@ class Response:
         prefix = "websocket." if scope["type"] == "websocket" else ""
         await self.resolve_async_content()
         await send(self.message(prefix=prefix))
-        send_header_only = "method" in scope and scope["method"].upper() in {
+        # should be mutation free for both methods
+        mutation_free = "method" in scope and scope["method"].upper() in {
             HTTPMethod.HEAD,
             HTTPMethod.OPTIONS,
         }
 
-        if send_header_only:
-            await send({"type": "http.response.body", "body": b"", "more_body": False})
-            # no background execution
-            return
+        # don't interfere, in case of bodyless requests like head the message is ignored.
         await send({"type": f"{prefix}http.response.body", "body": self.body})
 
-        if self.background is not None:
+        if self.background is not None and not mutation_free:
             await self.background()
 
     def __repr__(self) -> str:
@@ -442,13 +440,13 @@ class StreamingResponse(Response):
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         prefix = "websocket." if scope["type"] == "websocket" else ""
         await send(self.message(prefix=prefix))
+        # for options and head, we certainly don't want to execute the stream when requesting options
         send_header_only = "method" in scope and scope["method"].upper() in {
             HTTPMethod.HEAD,
             HTTPMethod.OPTIONS,
         }
 
         if send_header_only:
-            await send({"type": "http.response.body", "body": b"", "more_body": False})
             # no background execution
             return
         async with anyio.create_task_group() as task_group:
@@ -557,21 +555,19 @@ class FileResponse(Response):
                 if not stat.S_ISREG(mode):
                     raise RuntimeError(f"File at path {self.path} is not a file.") from None
 
+        # for options and head, we certainly don't want to send the file when requesting options
         send_header_only = "method" in scope and scope["method"].upper() in {
             HTTPMethod.HEAD,
             HTTPMethod.OPTIONS,
         }
         prefix = "websocket." if scope["type"] == "websocket" else ""
         offset: int | None = None
-        if not send_header_only and self.allow_range_requests:
-            ggg = self.check_if_range(scope)
-            if ggg:
-                offset = self.set_range_headers(scope)
+        if not send_header_only and self.allow_range_requests and self.check_if_range(scope):
+            offset = self.set_range_headers(scope)
 
         await send(self.message(prefix=prefix))
 
         if send_header_only:
-            await send({"type": "http.response.body", "body": b"", "more_body": False})
             # no background execution
             return
 

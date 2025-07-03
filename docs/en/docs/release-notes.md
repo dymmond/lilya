@@ -10,6 +10,17 @@ hide:
 ### Added
 
 - Lilya `run` directive now injects the `g` global context for usage in the directives in offline mode.
+- Support for http ranges (bytes).
+- Support if-range header.
+
+### Changed
+
+- Don't execute stream or analyze file for options for FileResponse, StreamingResponse. It is certainly unwanted and expensive.
+- Don't execute background tasks for options and head. This is certainly unwanted.
+
+### Fixed
+
+- FileResponse and StreamResponse can deduce from headers if the request is headless.
 
 ## 0.16.5
 
