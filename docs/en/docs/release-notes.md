@@ -5,6 +5,13 @@ hide:
 
 # Release Notes
 
+## 0.16.5
+
+### Added
+
+- Possibility and alternative way of doing the [dependencies](./dependencies.md) without the need of using the `Provides()`.
+The `Provide` is **always required**.
+
 ## 0.16.4
 
 ### Changed
