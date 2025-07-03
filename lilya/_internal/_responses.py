@@ -268,12 +268,20 @@ class BaseHandler:
         # 2) FILTER to only the ones the handler signature actually names as Provides()
         requested: dict[str, Provide | Resolve | Security] = {}
         for name, param in signature.parameters.items():
-            if isinstance(param.default, Provides):
+            if isinstance(param.default, Provides) or param.name in merged:
                 # we want to inject “name” if the handler did `foo = Provides()`
                 requested[name] = merged.get(name)
 
             if isinstance(param.default, (Resolve, Security)):
                 requested[name] = param.default
+
+        # Check for any missing dependencies:
+        if not requested and merged:
+            for name in merged.keys():
+                # If no Provides() were requested, but we have merged dependencies,
+                # we should raise an error because the handler expects no dependencies.
+                hname = handler.__name__ if handler else "<unknown>"
+                raise ImproperlyConfigured(f"Missing dependency '{name}' for handler '{hname}'")
 
         # 3) RESOLVE exactly those—and error if any are missing
         for name, provider in requested.items():
@@ -372,7 +380,7 @@ class BaseHandler:
                 websocket = WebSocket(scope, receive, send)
                 # now for each Provides() param, resolve it
                 for name, param in signature.parameters.items():
-                    if isinstance(param.default, Provides):
+                    if isinstance(param.default, Provides) or param.name in merged:
                         if name not in merged:
                             raise WebSocketException(
                                 code=1011,

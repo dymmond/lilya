@@ -41,6 +41,10 @@ Use in your handler signature to declare that a parameter should be injected:
 
 Behind the scenes, Lilya collects all `Provide` maps from app → include → route, then calls each factory in dependency order.
 
+!!! Tip
+    As from version 0.16.5, Lilya is able to discover the dependencies in a more automated manner without the need or use
+    of the `Provides` but using the `Provides` will always be available for any possible edge case you might find.
+
 ---
 
 ## Application-Level Dependencies
