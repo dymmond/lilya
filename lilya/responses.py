@@ -7,6 +7,7 @@ import json
 import os
 import stat
 import typing
+import warnings
 from collections.abc import (
     AsyncIterable,
     Awaitable,
@@ -474,10 +475,15 @@ class FileResponse(Response):
         background: Task | None = None,
         filename: str | None = None,
         stat_result: os.stat_result | None = None,
+        method: str | None = None,
         content_disposition_type: str = "attachment",
-        allow_range_requests: bool = True,
         encoders: Sequence[Encoder | type[Encoder]] | None = None,
+        allow_range_requests: bool = True,
     ) -> None:
+        if method:
+            warnings.warn(
+                '"method" parameter is obsolete. It is now automatically deduced.', stacklevel=2
+            )
         self.path = path
         self.status_code = status_code
         self.allow_range_requests = allow_range_requests

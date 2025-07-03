@@ -17,10 +17,12 @@ hide:
 
 - Don't execute stream or analyze file for options for FileResponse, StreamingResponse. It is certainly unwanted and expensive.
 - Don't execute background tasks for options and head. This is certainly unwanted.
+- Add `allow_range_requests` parameter to `FileResponse` for allowing to disable http range serving.
+- Deprecate the undocumented `method` parameter. It has no effect anymore. We infer it correctly from scope.
 
 ### Fixed
 
-- FileResponse and StreamResponse can deduce from headers if the request is headless.
+- FileResponse and StreamResponse can deduce from scope headers if the request is headless.
 
 ## 0.16.5
 
