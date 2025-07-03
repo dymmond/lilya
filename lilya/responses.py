@@ -40,7 +40,7 @@ from lilya.concurrency import iterate_in_threadpool
 from lilya.datastructures import URL, Header
 from lilya.encoders import ENCODER_TYPES, EncoderProtocol, MoldingProtocol, json_encode
 from lilya.enums import Event, HTTPMethod, MediaType
-from lilya.ranges import ContentRanges, parse_range_header
+from lilya.ranges import ContentRanges, parse_range_value
 from lilya.types import Receive, Scope, Send
 
 Content = str | bytes
@@ -534,7 +534,7 @@ class FileResponse(Response):
 
     def set_range_headers(self, scope: Scope) -> ContentRanges | None:
         received_headers = Header.ensure_header_instance(scope)
-        content_ranges = parse_range_header(
+        content_ranges = parse_range_value(
             received_headers.get("range", ""), max_values=int(self.headers["content-length"]) - 1
         )
         if content_ranges is None or len(content_ranges.ranges) != 1:

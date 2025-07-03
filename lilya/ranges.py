@@ -39,20 +39,34 @@ def _parse_range(rangedef: str, max_value: int) -> Range:
     return range_val
 
 
-def parse_range_header(
+def parse_range_value(
     header_value: bytes | str | None, max_values: dict[str, int] | int, *, enforce_asc: bool = True
 ) -> None | ContentRanges:
+    """
+    Parse a value in the format of http-range.
+
+    Kwargs:
+        header_value: A value in the format of http-range.
+                      In case of some custom protocols without the `bytes=` prefix, you can drop in
+                      `max_values={'': value}`
+        max_values: A dict with maximal values for any unit. You can just pass an int for the default bytes unit.
+        enforce_asc: Enforce that the ranges are consecutive ascending. Otherwise they are sorted and checked afterwards.
+
+    Return:
+        ContentRanges, with ascending ordered ranges.
+    """
     # WARNING: max_values is content-length -1 for bytes
     # max_values == int is shortcut for {"bytes": value}
     if not header_value:
         return None
     if not isinstance(header_value, str):
         header_value = header_value.decode("utf8")
-    if "=" not in header_value:
-        return None
     if isinstance(max_values, int):
         max_values = {"bytes": max_values}
-    unit, rest = header_value.split("=", 1)
+    if "=" not in header_value:
+        unit, rest = "", header_value
+    else:
+        unit, rest = header_value.split("=", 1)
     if unit not in max_values:
         return None
     max_value = max_values[unit]
