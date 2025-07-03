@@ -39,7 +39,7 @@ from lilya.concurrency import iterate_in_threadpool
 from lilya.datastructures import URL, Header
 from lilya.encoders import ENCODER_TYPES, EncoderProtocol, MoldingProtocol, json_encode
 from lilya.enums import Event, HTTPMethod, MediaType
-from lilya.exceptions import HTTPException
+from lilya.ranges import parse_range_header
 from lilya.types import Receive, Scope, Send
 
 Content = str | bytes
@@ -521,48 +521,27 @@ class FileResponse(Response):
         self.headers.setdefault("last-modified", last_modified)
         self.headers.setdefault("etag", etag)
 
+    def check_if_range(self, scope: Scope) -> bool:
+        """Is the if-range matching and the byte ranges are valid?"""
+        received_headers = Header.ensure_header_instance(scope)
+        if_range: str = received_headers.get("if-range", "")
+        # succeeds if_range is matching or empty
+        return not if_range or if_range == cast(str, self.headers["etag"])
+
     def set_range_headers(self, scope: Scope) -> int | None:
         received_headers = Header.ensure_header_instance(scope)
-        range_header: str = received_headers.get("range", "").strip()
-        if not range_header:
+        content_range = parse_range_header(
+            received_headers.get("range", ""), max_values=int(self.headers["content-length"]) - 1
+        )
+        if content_range is None or len(content_range.ranges) != 1:
+            # TODO: support multipart ranges
             return None
-        if not range_header.startswith("bytes="):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported range request type."
-            )
-        if "," in range_header:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Multipart ranges are not supported yet.",
-            )
-        content_length = int(self.headers["content-length"])
-        try:
-            direct_range = range_header[6:]
-            if direct_range.startswith("-"):
-                range_definition: tuple[int, int] = (0, int(direct_range[1:]))
-            elif direct_range.endswith("-"):
-                range_definition = (int(direct_range[1:]), content_length)
-            else:
-                range_definition = tuple(map(int, direct_range.split("-", 1)))  # type: ignore
-        except Exception as exc:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Range definition is not supported.",
-            ) from exc
-        if any(rdef < 0 or rdef >= content_length for rdef in range_definition):
-            raise HTTPException(
-                status_code=status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE,
-                headers={"content-range": f"bytes */{content_length}"},
-            )
-        if range_definition[0] > range_definition[1]:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Range is invalid."
-            )
+        range_definition = content_range.ranges[0]
 
         self.headers["content-range"] = (
-            f"bytes {range_definition[0]}-{range_definition[1]}/{content_length}"
+            f"bytes {range_definition[0]}-{range_definition[1]}/{content_range.max_value + 1}"
         )
-        self.headers["content-length"] = f"{range_definition[1] - range_definition[0]}"
+        self.headers["content-length"] = f"{range_definition[1] - range_definition[0] + 1}"
         self.status_code = status.HTTP_206_PARTIAL_CONTENT
         return range_definition[0]
 
@@ -585,7 +564,9 @@ class FileResponse(Response):
         prefix = "websocket." if scope["type"] == "websocket" else ""
         offset: int | None = None
         if not send_header_only and self.allow_range_requests:
-            offset = self.set_range_headers(scope)
+            ggg = self.check_if_range(scope)
+            if ggg:
+                offset = self.set_range_headers(scope)
 
         await send(self.message(prefix=prefix))
 

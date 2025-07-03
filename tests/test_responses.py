@@ -11,6 +11,8 @@ import pytest
 from lilya import status
 from lilya.apps import Lilya
 from lilya.background import Task
+from lilya.compat import md5_hexdigest
+from lilya.datastructures import Header
 from lilya.encoders import Encoder
 from lilya.middleware import DefineMiddleware
 from lilya.middleware.sessions import SessionMiddleware
@@ -328,7 +330,7 @@ async def test_file_response_optimizations(tmpdir, extensions, result, anyio_bac
 
     fresponse = FileResponse(path=path, filename="example.png")
     fresponse.chunk_size = 10
-    responses = Queue()
+    responses: Queue[typing.Any] = Queue()
     await fresponse({"extensions": extensions, "type": "response"}, None, responses.put)
     response1 = await responses.get()
     response2 = await responses.get()
@@ -346,6 +348,80 @@ async def test_file_response_optimizations(tmpdir, extensions, result, anyio_bac
         while response2["more_body"]:
             response2 = await responses.get()
         assert not response2["more_body"]
+
+
+@pytest.mark.parametrize(
+    "extensions,extpath",
+    [
+        ({}, "none"),
+        ({"http.response.pathsend": {}}, "http.response.pathsend"),
+        ({"http.response.zerocopysend": {}, "http.response.pathsend": {}}, "both"),
+        ({"http.response.zerocopysend": {}}, "http.response.zerocopysend"),
+    ],
+)
+@pytest.mark.parametrize("matching_ifrange", [True, False, None])
+@pytest.mark.parametrize(
+    "byterange,start,end",
+    [
+        ("bytes=1-10", 1, 10),
+        ("bytes=1-", 1, 999),
+        ("bytes=-10", 989, 999),
+    ],
+)
+async def test_file_response_byte_range(
+    tmpdir, extensions, extpath, byterange, start, end, matching_ifrange, anyio_backend
+):
+    path = os.path.join(tmpdir, "xyz")
+    content = os.urandom(1000)
+    with open(path, "wb") as file:
+        file.write(content)
+    stat_result = os.stat(path)
+    if matching_ifrange:
+        etag_base = str(stat_result.st_mtime) + "-" + str(stat_result.st_size)
+        ifrange = md5_hexdigest(etag_base.encode(), usedforsecurity=False)
+    elif matching_ifrange is None:
+        ifrange = ""
+    else:
+        ifrange = "123456"
+
+    fresponse = FileResponse(path=path, filename="example.png")
+    responses: Queue[typing.Any] = Queue()
+
+    async def put(message: typing.Any) -> None:
+        if "file" in message:
+            rob = await anyio.open_file(message["file"], "rb", closefd=False)
+            message["body"] = await rob.read(message["count"])
+        await responses.put(message)
+
+    await fresponse(
+        {
+            "extensions": extensions,
+            "type": "response",
+            "headers": [("range", byterange), ("if-range", ifrange.encode())],
+        },
+        None,
+        put,
+    )
+    response1 = await responses.get()
+    headers = Header.from_scope(response1)
+    response2 = await responses.get()
+    # test only one response, don't want to merge for tests
+    if "path" not in response2:
+        assert not response2["more_body"]
+    if matching_ifrange or matching_ifrange is None:
+        assert int(headers["content-length"]) == end - start + 1
+        if extpath == "http.response.zerocopysend" or extpath == "both":
+            assert response2["body"] == content[start : end + 1]
+        else:
+            assert response2["body"] == content[start : end + 1]
+    else:
+        if extpath == "http.response.pathsend" or extpath == "both":
+            assert response2["path"] == path
+        elif extpath == "http.response.zerocopysend":
+            assert response2["count"] == int(headers["content-length"])
+            assert response2["body"] == content
+        else:
+            assert response2["body"] == content
 
 
 def test_file_response_with_directory_raises_error(tmpdir, test_client_factory):
@@ -650,6 +726,23 @@ def test_head_method(test_client_factory):
     assert not executed
     client = test_client_factory(app)
     response = client.head("/")
+    assert response.text == ""
+    # is executed anyway for content-length
+    assert executed
+
+
+def test_options_method(test_client_factory):
+    executed: bool = False
+
+    async def hello() -> str:
+        nonlocal executed
+        executed = True
+        return "hello, world"
+
+    app = Response(hello(), media_type="text/plain")
+    assert not executed
+    client = test_client_factory(app)
+    response = client.options("/")
     assert response.text == ""
     # is executed anyway for content-length
     assert executed
