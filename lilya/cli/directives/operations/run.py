@@ -14,6 +14,7 @@ from lilya.cli.base import BaseDirective
 from lilya.cli.constants import APP_PARAMETER, LILYA_DISCOVER_APP
 from lilya.cli.env import DirectiveEnv
 from lilya.cli.utils import fetch_directive
+from lilya.context import G, g_context
 from lilya.types import Lifespan
 
 if TYPE_CHECKING:
@@ -112,6 +113,27 @@ def get_position() -> int:
     return Position.BACK
 
 
+async def set_global_context() -> Any:
+    """
+    Sets the global context for the directive.
+    This is used to store any global variables that can be accessed
+    by the directive.
+    """
+    initial_context: Any = None
+
+    # Set the global context to an empty dictionary
+    token = g_context.set(G(initial_context))
+    return token
+
+
+async def reset_global_context(token: Any) -> None:
+    """
+    Resets the global context for the directive.
+    This is used to clear any global variables that were set by the directive.
+    """
+    g_context.reset(token)
+
+
 async def execute_lifespan(
     app: Lilya | ChildLilya | None,
     lifespan: Lifespan,
@@ -123,6 +145,7 @@ async def execute_lifespan(
     Executes the lifespan events and the directive.
     """
     async with lifespan(app):
+        token = await set_global_context()
         if isinstance(directive, BaseDirective):
             await directive.execute_from_command(sys.argv[:], program_name, position)
         elif callable(directive):
@@ -148,3 +171,5 @@ async def execute_lifespan(
                     callback(**kwargs)
         else:
             raise TypeError("Invalid directive type. Must be a BaseDirective or a callable.")
+
+        await reset_global_context(token)
