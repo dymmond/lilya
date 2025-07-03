@@ -331,7 +331,7 @@ async def test_file_response_optimizations(tmpdir, extensions, result, anyio_bac
     fresponse = FileResponse(path=path, filename="example.png")
     fresponse.chunk_size = 10
     responses: Queue[typing.Any] = Queue()
-    await fresponse({"extensions": extensions, "type": "response"}, None, responses.put)
+    await fresponse({"extensions": extensions, "type": "http.request"}, None, responses.put)
     response1 = await responses.get()
     response2 = await responses.get()
 
@@ -365,6 +365,7 @@ async def test_file_response_optimizations(tmpdir, extensions, result, anyio_bac
     [
         ("bytes=1-10", 1, 10),
         ("bytes=1-", 1, 999),
+        ("bytes=0", 0, 0),
         ("bytes=-10", 989, 999),
     ],
 )
@@ -396,7 +397,7 @@ async def test_file_response_byte_range(
     await fresponse(
         {
             "extensions": extensions,
-            "type": "response",
+            "type": "http.request",
             "headers": [("range", byterange), ("if-range", ifrange.encode())],
         },
         None,
@@ -405,6 +406,7 @@ async def test_file_response_byte_range(
     response1 = await responses.get()
     headers = Header.from_scope(response1)
     response2 = await responses.get()
+    assert headers["accept-ranges"] == "bytes"
     # test only one response, don't want to merge for tests
     if "path" not in response2:
         assert not response2["more_body"]
@@ -415,6 +417,7 @@ async def test_file_response_byte_range(
         else:
             assert response2["body"] == content[start : end + 1]
     else:
+        assert int(headers["content-length"]) == len(content)
         if extpath == "http.response.pathsend" or extpath == "both":
             assert response2["path"] == path
         elif extpath == "http.response.zerocopysend":
@@ -422,6 +425,43 @@ async def test_file_response_byte_range(
             assert response2["body"] == content
         else:
             assert response2["body"] == content
+
+
+@pytest.mark.parametrize(
+    "byterange",
+    [
+        ("megabytes=1-10"),
+        ("bytes=1-10, 1-1"),
+        ("bytes=100-10"),
+        # not supported yet, despite no error
+        ("bytes=1-10, 10-29"),
+    ],
+)
+async def test_file_response_byte_range_error(tmpdir, byterange, anyio_backend):
+    path = os.path.join(tmpdir, "xyz")
+    content = os.urandom(1000)
+    with open(path, "wb") as file:
+        file.write(content)
+
+    fresponse = FileResponse(path=path, filename="example.png")
+    responses: Queue[typing.Any] = Queue()
+    await fresponse(
+        {
+            "extensions": {},
+            "type": "http.request",
+            "headers": [("range", byterange)],
+        },
+        None,
+        responses.put,
+    )
+    response1 = await responses.get()
+    headers = Header.from_scope(response1)
+    response2 = await responses.get()
+    assert headers["accept-ranges"] == "bytes"
+    assert int(headers["content-length"]) == len(content)
+    assert "range" not in headers
+    assert not response2["more_body"]
+    assert response2["body"] == content
 
 
 def test_file_response_with_directory_raises_error(tmpdir, test_client_factory):

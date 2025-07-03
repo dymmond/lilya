@@ -43,6 +43,7 @@ def parse_range_header(
     header_value: bytes | str | None, max_values: dict[str, int] | int, *, enforce_asc: bool = True
 ) -> None | ContentRanges:
     # WARNING: max_values is content-length -1 for bytes
+    # max_values == int is shortcut for {"bytes": value}
     if not header_value:
         return None
     if not isinstance(header_value, str):
