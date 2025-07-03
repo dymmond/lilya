@@ -40,7 +40,7 @@ from lilya.concurrency import iterate_in_threadpool
 from lilya.datastructures import URL, Header
 from lilya.encoders import ENCODER_TYPES, EncoderProtocol, MoldingProtocol, json_encode
 from lilya.enums import Event, HTTPMethod, MediaType
-from lilya.ranges import parse_range_header
+from lilya.ranges import ContentRanges, parse_range_header
 from lilya.types import Receive, Scope, Send
 
 Content = str | bytes
@@ -532,22 +532,22 @@ class FileResponse(Response):
         # succeeds if_range is matching or empty
         return not if_range or if_range == cast(str, self.headers["etag"])
 
-    def set_range_headers(self, scope: Scope) -> int | None:
+    def set_range_headers(self, scope: Scope) -> ContentRanges | None:
         received_headers = Header.ensure_header_instance(scope)
-        content_range = parse_range_header(
+        content_ranges = parse_range_header(
             received_headers.get("range", ""), max_values=int(self.headers["content-length"]) - 1
         )
-        if content_range is None or len(content_range.ranges) != 1:
+        if content_ranges is None or len(content_ranges.ranges) != 1:
             # TODO: support multipart ranges
             return None
-        range_definition = content_range.ranges[0]
+        range_definition = content_ranges.ranges[0]
 
         self.headers["content-range"] = (
-            f"bytes {range_definition[0]}-{range_definition[1]}/{content_range.max_value + 1}"
+            f"bytes {range_definition[0]}-{range_definition[1]}/{content_ranges.max_value + 1}"
         )
         self.headers["content-length"] = f"{range_definition[1] - range_definition[0] + 1}"
         self.status_code = status.HTTP_206_PARTIAL_CONTENT
-        return range_definition[0]
+        return content_ranges
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if self.stat_result is None:
@@ -569,7 +569,10 @@ class FileResponse(Response):
         prefix = "websocket." if scope["type"] == "websocket" else ""
         offset: int | None = None
         if not send_header_only and self.allow_range_requests and self.check_if_range(scope):
-            offset = self.set_range_headers(scope)
+            crange = self.set_range_headers(scope)
+            if crange is not None:
+                # TODO: support multipart ranges
+                offset = crange.ranges[0].start
 
         await send(self.message(prefix=prefix))
 
