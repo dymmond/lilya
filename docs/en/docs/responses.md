@@ -222,6 +222,7 @@ Streams a file asynchronously as the response, employing a distinct set of argum
 - `filename` - If specified, included in the response Content-Disposition.
 - `content_disposition_type` - Included in the response Content-Disposition. Can be set to `attachment` (default) or `inline`.
 - `background` - A [task](./tasks.md) instance.
+- `allow_range_requests` - Should enable support for http ranges? By default `True`. You certainly want this for continuing downloads.
 
 **Example**
 
