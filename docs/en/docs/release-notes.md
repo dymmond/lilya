@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.16.6
+
+### Added
+
+- Lilya `run` directive now injects the `g` global context for usage in the directives in offline mode.
+
 ## 0.16.5
 
 ### Added
