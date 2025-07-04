@@ -88,7 +88,7 @@ def parse_range_value(
             range_val = _parse_range(rangedef, max_value)
         except ValueError:
             return None
-        if enforce_asc and range_val.start < last_stop:
+        if enforce_asc and range_val.start <= last_stop:
             return None
         last_stop = range_val.stop
         if last_stop > max_value:
@@ -99,14 +99,20 @@ def parse_range_value(
         crange.ranges.append(range_val)
 
     if not enforce_asc:
-        crange.ranges.sort()
+        old_ranges = crange.ranges
+        old_ranges.sort()
+        crange.ranges = []
         # check that ranges are ascending afterwards, otherwise we have the danger of
         # malicious clients requesting the same range again and again
-        last_stop = 0
-        for range_val in crange.ranges:
-            if range_val.start < last_stop:
-                return None
-            last_stop = range_val.stop
-            crange.size += range_val.stop - range_val.start + 1
+        last_range: Range = None
+        for range_val in old_ranges:
+            # ensure ascending order
+            if range_val.start <= last_range.stop:
+                range_val.start = min(last_range.stop + 1, max_value)
+            # only add if range is valid
+            if range_val.stop >= range_val.start:
+                crange.ranges.append(range_val)
+                crange.size += range_val.stop - range_val.start + 1
+                last_range = range_val
 
     return crange
