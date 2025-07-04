@@ -546,7 +546,8 @@ class FileResponse(Response):
         received_headers = Header.ensure_header_instance(scope)
         range_header = received_headers.get("range", "")
         kwargs.setdefault("max_values", int(self.headers["content-length"]) - 1)
-        kwargs.setdefault("max_ranges", None if self.range_multipart_boundary else 1)
+        # limit to maximal 5 requested ranges for security reasons
+        kwargs.setdefault("max_ranges", 5 if self.range_multipart_boundary else 1)
         content_ranges = parse_range_value(range_header, **kwargs)
         if content_ranges is None or not content_ranges.ranges:
             return None, False
@@ -554,8 +555,16 @@ class FileResponse(Response):
         # overwrites are free to use a different logic or enforcing multipart/single range responses
         return content_ranges, "," in range_header
 
-    def set_range_headers(self, scope: Scope) -> ContentRanges | None:
-        content_ranges, use_multipart_response = self.get_content_ranges_and_multipart(scope)
+    def set_range_headers(
+        self,
+        scope: Scope,
+        *,
+        provided_ranges_and_multipart: tuple[ContentRanges | None, bool] | None = None,
+    ) -> ContentRanges | None:
+        if provided_ranges_and_multipart:
+            content_ranges, use_multipart_response = provided_ranges_and_multipart
+        else:
+            content_ranges, use_multipart_response = self.get_content_ranges_and_multipart(scope)
         if content_ranges is None:
             return None
         if use_multipart_response and not self.range_multipart_boundary:

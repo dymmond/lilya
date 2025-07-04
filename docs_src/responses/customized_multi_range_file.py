@@ -12,6 +12,8 @@ class CustomFileResponse(FileResponse):
         self, scope: Scope, /, **kwargs: Any
     ) -> tuple[ContentRanges | None, bool]:
         kwargs.setdefault("enforce_asc", False)
+        # unlimit the amount of requested ranges and do security later
+        kwargs.setdefault("max_ranges", None if self.range_multipart_boundary else 1)
         content_ranges, multipart = super().get_content_ranges_and_multipart(scope, **kwargs)
 
         # check that ranges are not too small, resource abuse by using protocol overhead
@@ -28,7 +30,7 @@ class CustomFileResponse(FileResponse):
         # by default multipart is used when a "," is in the range header
         return content_ranges, len(content_ranges.ranges) > 1
 
-def home():
+def home() -> CustomFileResponse:
     return CustomFileResponse(
         "files/something.csv",
         filename="something",
