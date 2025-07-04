@@ -45,6 +45,55 @@ Behind the scenes, Lilya collects all `Provide` maps from app → include → ro
     As from version 0.16.5, Lilya is able to discover the dependencies in a more automated manner without the need or use
     of the `Provides` but using the `Provides` will always be available for any possible edge case you might find.
 
+#### Dependency Injection Behavior
+
+Lilya supports flexible dependency injection for both HTTP and WebSocket handlers. Dependencies can be declared explicitly using `Provides()` or injected implicitly via fallback if defined in the app or route configuration.
+
+##### Injection Scenarios
+
+The following table summarizes how dependencies are handled based on how they are declared in the handler and whether they are available in the app's `dependencies` mapping.
+
+##### HTTP & WebSocket Handlers
+
+Here is an example using `session` (can be a database session) as a dependency.
+
+| Declaration Style                  | Declared in handler | Declared in `dependencies` | Injected? | Error if missing? | Notes                        |
+|-----------------------------------|----------------------|-----------------------------|-----------|-------------------|------------------------------|
+| `session=Provides()`              | ✅ Yes               | ✅ Yes                      | ✅ Yes    | ❌ No             | Explicit opt-in              |
+| `session=Provides()`              | ✅ Yes               | ❌ No                       | ❌ No     | ✅ Yes            | Required but missing         |
+| `session: Any`                    | ❌ No                | ✅ Yes                      | ✅ Yes    | ❌ No             | Fallback injection           |
+| `session: Any`                    | ❌ No                | ❌ No                       | ❌ No     | ❌ No             | Skipped silently             |
+| `session: Any = None`            | ❌ No                | ✅ Yes                      | ✅ Yes    | ❌ No             | Fallback + default value     |
+| `session` (no type, no default)   | ❌ No                | ✅ Yes                      | ✅ Yes    | ❌ No             | Fallback injection           |
+
+##### Key Rules
+
+- **Explicit injection** using `Provides()` makes the dependency required. If it's missing, an error is raised.
+- **Fallback injection** occurs when a parameter is:
+    - Present in `dependencies`, and
+    - Declared in the handler without a default (`inspect.Parameter.empty`).
+- If a fallback dependency is not found, it is **silently skipped**.
+- You can still provide default values (e.g. `= None`) to make parameters optional even if not injected.
+
+##### Example
+
+```python
+# App config
+app = Lilya(dependencies={"session": Provide(get_session)})
+
+# Handler with explicit injection
+async def handler(session=Provides()):
+    ...
+
+# Handler with fallback injection
+async def handler(session: Session):
+    ...
+
+# Handler with fallback + default
+async def handler(session: Session = None):
+    ...
+```
+
 ---
 
 ## Application-Level Dependencies

@@ -268,12 +268,15 @@ class BaseHandler:
         # 2) FILTER to only the ones the handler signature actually names as Provides()
         requested: dict[str, Provide | Resolve | Security] = {}
         for name, param in signature.parameters.items():
-            if isinstance(param.default, Provides) or param.name in merged:
+            if isinstance(param.default, Provides):
                 # we want to inject “name” if the handler did `foo = Provides()`
                 requested[name] = merged.get(name)
 
-            if isinstance(param.default, (Resolve, Security)):
+            elif isinstance(param.default, (Resolve, Security)):
                 requested[name] = param.default
+
+            elif param.name in merged and param.default is inspect.Parameter.empty:
+                requested[name] = merged.get(name)
 
         # Check for any missing dependencies:
         if not requested and merged:
@@ -380,7 +383,7 @@ class BaseHandler:
                 websocket = WebSocket(scope, receive, send)
                 # now for each Provides() param, resolve it
                 for name, param in signature.parameters.items():
-                    if isinstance(param.default, Provides) or param.name in merged:
+                    if isinstance(param.default, Provides):
                         if name not in merged:
                             raise WebSocketException(
                                 code=1011,
@@ -398,12 +401,17 @@ class BaseHandler:
                         data = await provider.resolve(websocket, merged)
                         kwargs[name] = data
 
-                    if isinstance(param.default, (Resolve, Security)):
+                    elif isinstance(param.default, (Resolve, Security)):
                         kwargs[name] = await async_resolve_dependencies(
                             request=websocket,
                             signature=signature,
                             func=param.default.dependency,
                         )
+
+                    elif param.name in merged and param.default is inspect.Parameter.empty:
+                        provider = merged[name]
+                        kwargs[name] = await provider.resolve(websocket, merged)
+
                 await self._execute_function(func, session, **kwargs)
 
             await wrap_app_handling_exceptions(inner_app, session)(scope, receive, send)
