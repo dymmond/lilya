@@ -6,6 +6,7 @@ import http.cookies
 import json
 import os
 import stat
+import time
 import typing
 import warnings
 from collections.abc import (
@@ -40,7 +41,7 @@ from lilya.concurrency import iterate_in_threadpool
 from lilya.datastructures import URL, Header
 from lilya.encoders import ENCODER_TYPES, EncoderProtocol, MoldingProtocol, json_encode
 from lilya.enums import Event, HTTPMethod, MediaType
-from lilya.ranges import ContentRanges, parse_range_value
+from lilya.ranges import ContentRanges, Range, parse_range_value
 from lilya.types import Receive, Scope, Send
 
 Content = str | bytes
@@ -479,6 +480,7 @@ class FileResponse(Response):
         content_disposition_type: str = "attachment",
         encoders: Sequence[Encoder | type[Encoder]] | None = None,
         allow_range_requests: bool = True,
+        range_multipart_boundary: bool | str = False,
     ) -> None:
         if method:
             warnings.warn(
@@ -487,6 +489,9 @@ class FileResponse(Response):
         self.path = path
         self.status_code = status_code
         self.allow_range_requests = allow_range_requests
+        if not allow_range_requests:
+            range_multipart_boundary = False
+        self.range_multipart_boundary = range_multipart_boundary
         self.filename = filename
         if media_type is None:
             # by default it must be octet
@@ -515,6 +520,9 @@ class FileResponse(Response):
         if stat_result is not None:
             self.set_stat_headers(stat_result)
 
+    def make_boundary(self) -> str:
+        return f"{time.time()}-{self.headers['etag']}"
+
     def set_stat_headers(self, stat_result: os.stat_result) -> None:
         content_length = str(stat_result.st_size)
         last_modified = formatdate(stat_result.st_mtime, usegmt=True)
@@ -532,20 +540,58 @@ class FileResponse(Response):
         # succeeds if_range is matching or empty
         return not if_range or if_range == cast(str, self.headers["etag"])
 
-    def set_range_headers(self, scope: Scope) -> ContentRanges | None:
+    def get_content_ranges_and_multipart(
+        self, scope: Scope, /, **kwargs: Any
+    ) -> tuple[ContentRanges | None, bool]:
         received_headers = Header.ensure_header_instance(scope)
-        content_ranges = parse_range_value(
-            received_headers.get("range", ""), max_values=int(self.headers["content-length"]) - 1
-        )
-        if content_ranges is None or len(content_ranges.ranges) != 1:
-            # TODO: support multipart ranges
-            return None
-        range_definition = content_ranges.ranges[0]
+        range_header = received_headers.get("range", "")
+        kwargs.setdefault("max_values", int(self.headers["content-length"]) - 1)
+        # limit to maximal 5 requested ranges for security reasons
+        kwargs.setdefault("max_ranges", 5 if self.range_multipart_boundary else 1)
+        content_ranges = parse_range_value(range_header, **kwargs)
+        if content_ranges is None or not content_ranges.ranges:
+            return None, False
+        # comma counting ensures no single range response is send for a multirange request
+        # overwrites are free to use a different logic or enforcing multipart/single range responses
+        return content_ranges, "," in range_header
 
-        self.headers["content-range"] = (
-            f"bytes {range_definition[0]}-{range_definition[1]}/{content_ranges.max_value + 1}"
-        )
-        self.headers["content-length"] = f"{range_definition[1] - range_definition[0] + 1}"
+    def set_range_headers(
+        self,
+        scope: Scope,
+        *,
+        provided_ranges_and_multipart: tuple[ContentRanges | None, bool] | None = None,
+    ) -> ContentRanges | None:
+        if provided_ranges_and_multipart:
+            content_ranges, use_multipart_response = provided_ranges_and_multipart
+        else:
+            content_ranges, use_multipart_response = self.get_content_ranges_and_multipart(scope)
+        if content_ranges is None:
+            return None
+        if use_multipart_response and not self.range_multipart_boundary:
+            return None
+
+        if use_multipart_response:
+            if self.range_multipart_boundary is True:
+                self.range_multipart_boundary = self.make_boundary()
+            self.headers["content-type"] = (
+                f"multipart/byteranges; boundary={self.range_multipart_boundary}"
+            )
+        else:
+            assert content_ranges.ranges, (
+                "Empty content ranges are not supported for single range responses."
+            )
+            # allow conversion in a single range, when the client supports this.
+            if len(content_ranges.ranges) > 1:
+                new_range = Range(
+                    start=content_ranges.ranges[0].start, stop=content_ranges.ranges[-1].stop
+                )
+                new_size = new_range.stop - new_range.start + 1
+                content_ranges.ranges = [new_range]
+                content_ranges.size = new_size
+            self.headers["content-range"] = (
+                f"bytes {content_ranges.ranges[0].start}-{content_ranges.ranges[0].stop}/{content_ranges.max_value + 1}"
+            )
+        self.headers["content-length"] = f"{content_ranges.size}"
         self.status_code = status.HTTP_206_PARTIAL_CONTENT
         return content_ranges
 
@@ -567,62 +613,119 @@ class FileResponse(Response):
             HTTPMethod.OPTIONS,
         }
         prefix = "websocket." if scope["type"] == "websocket" else ""
-        offset: int | None = None
+        content_ranges: ContentRanges | None = None
         if not send_header_only and self.allow_range_requests and self.check_if_range(scope):
-            crange = self.set_range_headers(scope)
-            if crange is not None:
-                # TODO: support multipart ranges
-                offset = crange.ranges[0].start
-
+            content_ranges = self.set_range_headers(scope)
         await send(self.message(prefix=prefix))
 
         if send_header_only:
             # no background execution
             return
 
+        ranges = (
+            [Range(start=0, stop=int(self.headers["content-length"]) - 1)]
+            if content_ranges is None
+            else content_ranges.ranges
+        )
+        subheader: str = ""
+        if content_ranges and "content-range" not in self.headers:
+            # TODO: check if there is a better way to escape media_type
+            media_type = self.media_type.replace(" ", "").replace("\n", "")
+            subheader = (
+                f"--{self.range_multipart_boundary}\ncontent-type: {media_type}\n"
+                "content-range: bytes {start}-{stop}/{fullsize}\n\n"
+            )
+
         extensions = scope.get("extensions", {})
-        if offset is None and "http.response.pathsend" in extensions:
+        if content_ranges is None and "http.response.pathsend" in extensions:
             await send({"type": "http.response.pathsend", "path": self.path})
         elif "http.response.zerocopysend" in extensions:
             async with await anyio.open_file(self.path, mode="rb") as file:
-                size = int(self.headers["content-length"])
-                if offset:
-                    await file.seek(offset)
-                more_body = True
-                while more_body:
-                    more_body = size > self.chunk_size
-                    count = self.chunk_size
-                    if not more_body:
-                        count = size
-                    await send(
-                        {
-                            "type": "http.response.zerocopysend",
-                            "file": file.fileno(),  # type: ignore
-                            "count": count,
-                            "more_body": more_body,
-                        }
-                    )
-                    size -= count
+                last_stop = 0
+                for rangedef in ranges:
+                    if last_stop != rangedef.start:
+                        await file.seek(rangedef.start, os.SEEK_SET)
+                    size = rangedef.stop - rangedef.start + 1
+                    if subheader:
+                        await send(
+                            {
+                                "type": "http.response.body",
+                                "body": subheader.format(
+                                    start=rangedef.start,
+                                    stop=rangedef.stop,
+                                    fullsize=content_ranges.max_value + 1,
+                                ).encode(),
+                                "more_body": True,
+                            }
+                        )
+                    more_chunks = True
+                    while more_chunks:
+                        more_chunks = size > self.chunk_size
+                        count = self.chunk_size
+                        if not more_chunks:
+                            count = size
+                        await send(
+                            {
+                                "type": "http.response.zerocopysend",
+                                "file": file.fileno(),  # type: ignore
+                                "count": count,
+                                "more_body": bool(more_chunks or subheader),
+                            }
+                        )
+                        size -= count
+                    last_stop = rangedef.stop
+            # subheader = more than 1 range
+            if subheader:
+                await send(
+                    {
+                        "type": "http.response.body",
+                        "body": b"",
+                        "more_body": False,
+                    }
+                )
         else:
             async with await anyio.open_file(self.path, mode="rb") as file:
-                size = int(self.headers["content-length"])
-                if offset:
-                    await file.seek(offset)
-                more_body = True
-                while more_body:
-                    more_body = size > self.chunk_size
-                    count = self.chunk_size
-                    if not more_body:
-                        count = size
-                    chunk = await file.read(count)
+                last_stop = 0
+                for rangedef in ranges:
+                    if last_stop != rangedef.start:
+                        await file.seek(rangedef.start, os.SEEK_SET)
+                    size = rangedef.stop - rangedef.start + 1
+                    if subheader:
+                        await send(
+                            {
+                                "type": "http.response.body",
+                                "body": subheader.format(
+                                    start=rangedef.start,
+                                    stop=rangedef.stop,
+                                    fullsize=content_ranges.max_value + 1,
+                                ).encode(),
+                                "more_body": True,
+                            }
+                        )
+                    more_chunks = True
+                    while more_chunks:
+                        more_chunks = size > self.chunk_size
+                        count = self.chunk_size
+                        if not more_chunks:
+                            count = size
+                        await send(
+                            {
+                                "type": "http.response.body",
+                                "body": await file.read(count),
+                                "more_body": bool(more_chunks or subheader),
+                            }
+                        )
+                        size -= count
+                    last_stop = rangedef.stop
+                # subheader = more than 1 range
+                if subheader:
                     await send(
                         {
                             "type": "http.response.body",
-                            "body": chunk,
-                            "more_body": more_body,
+                            "body": b"",
+                            "more_body": False,
                         }
                     )
-                    size -= count
         if self.background is not None:
             await self.background()
 
