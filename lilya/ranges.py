@@ -79,8 +79,8 @@ def parse_range_value(
     max_value = max_values[unit]
     crange: ContentRanges = ContentRanges(unit=unit, max_value=max_value)
     last_range: Range | None = None
-    for succeeding_count, rangedef in enumerate(rest.split(","), start=1):
-        if max_ranges is not None and succeeding_count > max_ranges:
+    for range_object_count, rangedef in enumerate(rest.split(","), start=1):
+        if max_ranges is not None and range_object_count > max_ranges:
             return None
         try:
             range_val = _parse_range(rangedef, max_value)
