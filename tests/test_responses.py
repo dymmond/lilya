@@ -35,6 +35,10 @@ from lilya.testclient import TestClient
 class Foo: ...
 
 
+def to_position_labeled_params(inp: list[tuple], pos: int) -> list[pytest.param]:
+    return [pytest.param(*param, id=param[pos]) for param in inp]
+
+
 # check that encoders are saved as instances on responses
 class FooEncoder(Encoder):
     __type__ = Foo
@@ -318,10 +322,13 @@ def test_file_response(tmpdir, test_client_factory):
 
 @pytest.mark.parametrize(
     "extensions,result",
-    [
-        ({"http.response.pathsend": {}}, "http.response.pathsend"),
-        ({"http.response.zerocopysend": {}}, "http.response.zerocopysend"),
-    ],
+    to_position_labeled_params(
+        [
+            ({"http.response.pathsend": {}}, "http.response.pathsend"),
+            ({"http.response.zerocopysend": {}}, "http.response.zerocopysend"),
+        ],
+        1,
+    ),
 )
 async def test_file_response_optimizations(tmpdir, extensions, result, anyio_backend):
     path = os.path.join(tmpdir, "xyz")
@@ -353,23 +360,29 @@ async def test_file_response_optimizations(tmpdir, extensions, result, anyio_bac
 
 @pytest.mark.parametrize(
     "extensions,extpath",
-    [
-        ({}, "none"),
-        ({"http.response.pathsend": {}}, "http.response.pathsend"),
-        ({"http.response.zerocopysend": {}, "http.response.pathsend": {}}, "both"),
-        ({"http.response.zerocopysend": {}}, "http.response.zerocopysend"),
-    ],
+    to_position_labeled_params(
+        [
+            ({}, "none"),
+            ({"http.response.pathsend": {}}, "http.response.pathsend"),
+            ({"http.response.zerocopysend": {}, "http.response.pathsend": {}}, "both"),
+            ({"http.response.zerocopysend": {}}, "http.response.zerocopysend"),
+        ],
+        1,
+    ),
 )
 @pytest.mark.parametrize("matching_ifrange", [True, False, None])
 @pytest.mark.parametrize("multipart", [True, False, "sdfdafadfaöfa"])
 @pytest.mark.parametrize(
     "byterange,start,end",
-    [
-        ("bytes=1-10", 1, 10),
-        ("bytes=1-", 1, 999),
-        ("bytes=0", 0, 0),
-        ("bytes=-10", 989, 999),
-    ],
+    to_position_labeled_params(
+        [
+            ("bytes=1-10", 1, 10),
+            ("bytes=1-", 1, 999),
+            ("bytes=0", 0, 0),
+            ("bytes=-10", 989, 999),
+        ],
+        0,
+    ),
 )
 async def test_file_response_byte_range(
     tmpdir, extensions, extpath, byterange, start, end, matching_ifrange, multipart, anyio_backend
@@ -431,21 +444,27 @@ async def test_file_response_byte_range(
 
 @pytest.mark.parametrize(
     "extensions,extpath",
-    [
-        ({}, "none"),
-        ({"http.response.pathsend": {}}, "http.response.pathsend"),
-        ({"http.response.zerocopysend": {}, "http.response.pathsend": {}}, "both"),
-        ({"http.response.zerocopysend": {}}, "http.response.zerocopysend"),
-    ],
+    to_position_labeled_params(
+        [
+            ({}, "none"),
+            ({"http.response.pathsend": {}}, "http.response.pathsend"),
+            ({"http.response.zerocopysend": {}, "http.response.pathsend": {}}, "both"),
+            ({"http.response.zerocopysend": {}}, "http.response.zerocopysend"),
+        ],
+        1,
+    ),
 )
 @pytest.mark.parametrize(
     "byterange,ranges",
-    [
-        ("bytes=1-10, 20-30", [Range(1, 10), Range(20, 30)]),
-        ("bytes=10,20-", [Range(10, 10), Range(20, 999)]),
-        ("bytes=0,4", [Range(0, 0), Range(4, 4)]),
-        ("bytes=0", [Range(0, 0)]),
-    ],
+    to_position_labeled_params(
+        [
+            ("bytes=1-10, 20-30", [Range(1, 10), Range(20, 30)]),
+            ("bytes=10,20-", [Range(10, 10), Range(20, 999)]),
+            ("bytes=0,4", [Range(0, 0), Range(4, 4)]),
+            ("bytes=0", [Range(0, 0)]),
+        ],
+        0,
+    ),
 )
 async def test_file_response_byte_range_multipart(
     tmpdir, extensions, extpath, byterange, ranges, anyio_backend
@@ -498,11 +517,11 @@ async def test_file_response_byte_range_multipart(
 @pytest.mark.parametrize(
     "byterange",
     [
-        ("megabytes=1-10"),
-        ("bytes=1-10, 1-1"),
-        ("bytes=100-10"),
+        "megabytes=1-10",
+        "bytes=1-10, 1-1",
+        "bytes=100-10",
         # not supported by default
-        ("bytes=1-10, 10-29"),
+        "bytes=1-10, 10-29",
     ],
 )
 async def test_file_response_byte_range_error(tmpdir, byterange, anyio_backend):

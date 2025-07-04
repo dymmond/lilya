@@ -78,7 +78,7 @@ def parse_range_value(
         return None
     max_value = max_values[unit]
     crange: ContentRanges = ContentRanges(unit=unit, max_value=max_value)
-    last_stop: int = 0
+    last_stop: int = -1
     succeeding_count: int = 1
     for rangedef in rest.split(","):
         if max_ranges is not None and succeeding_count > max_ranges:
