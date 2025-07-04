@@ -11,10 +11,12 @@ class Range(NamedTuple):
 class ContentRanges:
     unit: str
     max_value: int
+    size: int = 0
     ranges: list[Range] = field(default_factory=list)
 
 
 def _parse_range_intern(rangedef: str, max_value: int) -> Range:
+    # don't hick up on whitespaces
     rangedef = rangedef.strip()
     if rangedef.startswith("-"):
         return Range(start=max_value + int(rangedef), stop=max_value)
@@ -40,7 +42,11 @@ def _parse_range(rangedef: str, max_value: int) -> Range:
 
 
 def parse_range_value(
-    header_value: bytes | str | None, max_values: dict[str, int] | int, *, enforce_asc: bool = True
+    header_value: bytes | str | None,
+    max_values: dict[str, int] | int,
+    *,
+    enforce_asc: bool = True,
+    max_ranges: int | None = None,
 ) -> None | ContentRanges:
     """
     Parse a value in the format of http-range.
@@ -51,6 +57,7 @@ def parse_range_value(
                       `max_values={'': value}`
         max_values: A dict with maximal values for any unit. You can just pass an int for the default bytes unit.
         enforce_asc: Enforce that the ranges are consecutive ascending. Otherwise they are sorted and checked afterwards.
+        max_ranges: Optional early bail out.
 
     Return:
         ContentRanges, with ascending ordered ranges.
@@ -72,7 +79,11 @@ def parse_range_value(
     max_value = max_values[unit]
     crange: ContentRanges = ContentRanges(unit=unit, max_value=max_value)
     last_stop: int = 0
+    succeeding_count: int = 1
     for rangedef in rest.split(","):
+        if max_ranges is not None and succeeding_count > max_ranges:
+            return None
+        succeeding_count += 1
         try:
             range_val = _parse_range(rangedef, max_value)
         except ValueError:
@@ -81,7 +92,9 @@ def parse_range_value(
             return None
         last_stop = range_val.stop
         if last_stop > max_value:
-            return None
+            last_stop = range_val.stop = max_value
+        if enforce_asc:
+            crange.size += range_val.stop - range_val.start + 1
 
         crange.ranges.append(range_val)
 
@@ -94,5 +107,6 @@ def parse_range_value(
             if range_val.start < last_stop:
                 return None
             last_stop = range_val.stop
+            crange.size += range_val.stop - range_val.start + 1
 
     return crange
