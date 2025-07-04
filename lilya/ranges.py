@@ -107,7 +107,7 @@ def parse_range_value(
         last_range: Range = None
         for range_val in old_ranges:
             # ensure ascending order
-            if range_val.start <= last_range.stop:
+            if last_range is not None and range_val.start <= last_range.stop:
                 range_val.start = min(last_range.stop + 1, max_value)
             # only add if range is valid
             if range_val.stop >= range_val.start:
