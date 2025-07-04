@@ -26,7 +26,7 @@ def _parse_range_intern(rangedef: str, max_value: int) -> Range:
         # this will cause an error in case of a wrong format, e.g.: 3--3
         # this accepts also defs like 3
         splitted = rangedef.rsplit("-", 1)
-        return Range(start=int(splitted[0]), stop=int(splitted[-1]))
+        return Range(start=int(splitted[0]), stop=min(max_value, int(splitted[-1])))
 
 
 def _parse_range(rangedef: str, max_value: int) -> Range:
@@ -35,8 +35,6 @@ def _parse_range(rangedef: str, max_value: int) -> Range:
         raise ValueError("Invalid range, stop < start")
     if range_val.start < 0:
         raise ValueError("Invalid range, start negative")
-    if range_val.stop > max_value:
-        raise ValueError("Invalid range, stop bigger than max_value")
 
     return range_val
 
@@ -47,6 +45,7 @@ def parse_range_value(
     *,
     enforce_asc: bool = True,
     max_ranges: int | None = None,
+    merge_ranges: bool = True,
 ) -> None | ContentRanges:
     """
     Parse a value in the format of http-range.
@@ -58,6 +57,7 @@ def parse_range_value(
         max_values: A dict with maximal values for any unit. You can just pass an int for the default bytes unit.
         enforce_asc: Enforce that the ranges are consecutive ascending. Otherwise they are sorted and checked afterwards.
         max_ranges: Optional early bail out.
+        merge_ranges: Merge consecutive ranges.
 
     Return:
         ContentRanges, with ascending ordered ranges.
@@ -78,23 +78,23 @@ def parse_range_value(
         return None
     max_value = max_values[unit]
     crange: ContentRanges = ContentRanges(unit=unit, max_value=max_value)
-    last_stop: int = -1
-    succeeding_count: int = 1
-    for rangedef in rest.split(","):
+    last_range: Range | None = None
+    for succeeding_count, rangedef in enumerate(rest.split(","), start=1):
         if max_ranges is not None and succeeding_count > max_ranges:
             return None
-        succeeding_count += 1
         try:
             range_val = _parse_range(rangedef, max_value)
         except ValueError:
             return None
-        if enforce_asc and range_val.start <= last_stop:
-            return None
-        last_stop = range_val.stop
-        if last_stop > max_value:
-            last_stop = range_val.stop = max_value
-        if enforce_asc:
-            crange.size += range_val.stop - range_val.start + 1
+        crange.size += range_val.stop - range_val.start + 1
+        if last_range is not None and enforce_asc:
+            if range_val.start <= last_range.stop:
+                return None
+        if merge_ranges and last_range is not None and last_range.stop == range_val.start - 1:
+            # merge ranges
+            last_range.stop = range_val.stop
+            continue
+        last_range = range_val
 
         crange.ranges.append(range_val)
 
@@ -104,15 +104,22 @@ def parse_range_value(
         crange.ranges = []
         # check that ranges are ascending afterwards, otherwise we have the danger of
         # malicious clients requesting the same range again and again
-        last_range: Range = None
+        last_range = None
         for range_val in old_ranges:
             # ensure ascending order
             if last_range is not None and range_val.start <= last_range.stop:
                 range_val.start = min(last_range.stop + 1, max_value)
-            # only add if range is valid
+            # only add/merge if range is valid
             if range_val.stop >= range_val.start:
+                if (
+                    merge_ranges
+                    and last_range is not None
+                    and last_range.stop == range_val.start - 1
+                ):
+                    # merge ranges
+                    last_range.stop = range_val.stop
+                    continue
                 crange.ranges.append(range_val)
                 crange.size += range_val.stop - range_val.start + 1
                 last_range = range_val
-
     return crange
