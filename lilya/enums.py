@@ -47,6 +47,11 @@ class EventType(StrEnum):
 class SignatureDefault(StrEnum):
     REQUEST = "request"
     WEBSOCKET = "websocket"
+    CONTEXT = "context"
+
+    @classmethod
+    def to_list(cls) -> list[str]:
+        return [cls.REQUEST, cls.WEBSOCKET, cls.CONTEXT]
 
 
 class HTTPType(StrEnum):

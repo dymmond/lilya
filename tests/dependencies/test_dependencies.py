@@ -3,11 +3,29 @@ from msgspec import Struct
 from pydantic import BaseModel
 
 from lilya.apps import Lilya
+from lilya.conf import settings
 from lilya.dependencies import Provide, Provides
+from lilya.requests import Request
 from lilya.routing import Include, Path
 from lilya.testclient import TestClient
 
 pytestmark = pytest.mark.anyio
+
+
+async def test_app_level_dependency_with_body_inferred():
+    settings.infer_body = True
+    app = Lilya(dependencies={"x": Provide(lambda: "app_value")})
+
+    @app.get("/test_app")
+    async def handler(request: Request, x: str):
+        return {"x": x}
+
+    client = TestClient(app)
+    res = client.get("/test_app")
+    assert res.status_code == 200
+    assert res.json() == {"x": "app_value"}
+
+    settings.infer_body = False
 
 
 async def test_app_level_dependency():

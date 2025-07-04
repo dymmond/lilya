@@ -5,6 +5,16 @@ hide:
 
 # Release Notes
 
+## 0.16.7
+
+!!! Note
+    There was a part of the commit that was not properly pushed and this could cause inconsistencies and therefore
+    a quick small release was done.
+
+### Changed
+
+- Dependencies with `infer_body` consistency check.
+
 ## 0.16.6
 
 ### Added
