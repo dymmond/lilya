@@ -1005,7 +1005,6 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
         self.enable_intercept_global_exceptions = self.load_settings_value(
             "enable_intercept_global_exceptions", enable_intercept_global_exceptions
         )
-
         if self.router_class is not None:
             self.router = self.router_class(
                 routes=routes,

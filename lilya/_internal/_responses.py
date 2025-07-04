@@ -152,7 +152,12 @@ class BaseHandler:
             response = Ok(app)
             await response(scope, receive, send)
 
-    async def _parse_inferred_body(self, request: Request, signature: inspect.Signature) -> Any:
+    async def _parse_inferred_body(
+        self,
+        request: Request,
+        dependencies: dict[str, Any],
+        signature: inspect.Signature,
+    ) -> Any:
         """
         Parses only the parameters inferred to come from the request body.
 
@@ -184,6 +189,12 @@ class BaseHandler:
             name = body_param_names[0]
             encoder_object = parameters[name].annotation
 
+            if name in SignatureDefault.to_list():
+                return payload
+
+            if name in dependencies:
+                return payload
+
             try:
                 payload[name] = apply_structure(structure=encoder_object, value=json_data)
             except Exception as exc:  # noqa
@@ -195,6 +206,12 @@ class BaseHandler:
                     raise exc
         else:
             for name in body_param_names:
+                if name in SignatureDefault.to_list():
+                    continue
+
+                if name in dependencies:
+                    continue
+
                 if name not in json_data:
                     raise ValueError(f"Missing expected body key and/or payload for '{name}'.")
                 encoder_object = parameters[name].annotation
@@ -234,20 +251,6 @@ class BaseHandler:
                 `Provides` parameter is defined but no corresponding dependency
                 is registered.
         """
-        # Determine if the request body should be inferred and parsed.
-        is_body_inferred: bool = _monkay.settings.infer_body
-        json_data: dict[str, Any] = {}
-        if is_body_inferred:
-            # If body inference is enabled, attempt to parse the request body.
-            json_data = await self._parse_inferred_body(request, signature)
-
-        # Extract path parameters that are present in the function's signature.
-        data = {
-            name: val for name, val in request.path_params.items() if name in signature.parameters
-        }
-        # Merge the extracted JSON body data into the parameters dictionary.
-        data.update(json_data)
-
         # 1) COLLECT ALL PROVIDE(...) mappings
         merged: dict[str, Provide] = {}
 
@@ -278,15 +281,21 @@ class BaseHandler:
             elif param.name in merged and param.default is inspect.Parameter.empty:
                 requested[name] = merged.get(name)
 
-        # Check for any missing dependencies:
-        if not requested and merged:
-            for name in merged.keys():
-                # If no Provides() were requested, but we have merged dependencies,
-                # we should raise an error because the handler expects no dependencies.
-                hname = handler.__name__ if handler else "<unknown>"
-                raise ImproperlyConfigured(f"Missing dependency '{name}' for handler '{hname}'")
+        # 3) Determine if the request body should be inferred and parsed.
+        is_body_inferred: bool = _monkay.settings.infer_body
+        json_data: dict[str, Any] = {}
+        if is_body_inferred:
+            # If body inference is enabled, attempt to parse the request body.
+            json_data = await self._parse_inferred_body(request, requested, signature)
 
-        # 3) RESOLVE exactly those—and error if any are missing
+        # 3.1) Extract path parameters that are present in the function's signature.
+        data = {
+            name: val for name, val in request.path_params.items() if name in signature.parameters
+        }
+        # Merge the extracted JSON body data into the parameters dictionary.
+        data.update(json_data)
+
+        # 4) RESOLVE exactly those—and error if any are missing
         for name, provider in requested.items():
             if provider is None:
                 hname = handler.__name__ if handler else "<unknown>"

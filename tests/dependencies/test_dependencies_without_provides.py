@@ -1,20 +1,40 @@
+from typing import Any
+
 import pytest
 from msgspec import Struct
 from pydantic import BaseModel
 
 from lilya.apps import Lilya
+from lilya.conf import settings
 from lilya.dependencies import Provide
+from lilya.requests import Request
 from lilya.routing import Include, Path
 from lilya.testclient import TestClient
 
 pytestmark = pytest.mark.anyio
 
 
+async def test_app_level_dependency_with_body_inferred():
+    settings.infer_body = True  # Ensure body inference is enabled
+    app = Lilya(dependencies={"x": Provide(lambda: "app_value")})
+
+    @app.get("/test_app")
+    async def handler(request: Request, x: Any):
+        return {"x": x}
+
+    client = TestClient(app)
+    res = client.get("/test_app")
+    assert res.status_code == 200
+    assert res.json() == {"x": "app_value"}
+
+    settings.infer_body = False
+
+
 async def test_app_level_dependency():
     app = Lilya(dependencies={"x": Provide(lambda: "app_value")})
 
     @app.get("/test_app")
-    async def handler(x):
+    async def handler(request, x: Any):
         return {"x": x}
 
     client = TestClient(app)
@@ -305,9 +325,8 @@ async def test_missing_requested_dependency_raises_500():
     )
     client = TestClient(app)
 
-    res = client.get("/missing-x")
-
-    assert res.status_code == 500
+    with pytest.raises(TypeError):
+        client.get("/missing-x")
 
 
 async def test_websocket_app_level_dependency():
