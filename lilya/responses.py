@@ -540,32 +540,47 @@ class FileResponse(Response):
         # succeeds if_range is matching or empty
         return not if_range or if_range == cast(str, self.headers["etag"])
 
-    def set_range_headers(self, scope: Scope) -> ContentRanges | None:
+    def get_content_ranges_and_multipart(
+        self, scope: Scope, /, **kwargs: Any
+    ) -> tuple[ContentRanges | None, bool]:
         received_headers = Header.ensure_header_instance(scope)
-        is_multipart_range = False
-        content_ranges = parse_range_value(
-            received_headers.get("range", ""),
-            max_values=int(self.headers["content-length"]) - 1,
-            max_ranges=None if self.range_multipart_boundary else 1,
-        )
+        range_header = received_headers.get("range", "")
+        kwargs.setdefault("max_values", int(self.headers["content-length"]) - 1)
+        kwargs.setdefault("max_ranges", None if self.range_multipart_boundary else 1)
+        content_ranges = parse_range_value(range_header, **kwargs)
         if content_ranges is None or not content_ranges.ranges:
-            return None
-        if len(content_ranges.ranges) > 1:
-            if not self.range_multipart_boundary:
-                return None
-            else:
-                is_multipart_range = True
-        range_definition = content_ranges.ranges[0]
+            return None, False
+        # comma counting ensures no single range response is send for a multirange request
+        # overwrites are free to use a different logic or enforcing multipart/single range responses
+        return content_ranges, range_header.count(",") > 0
 
-        if is_multipart_range:
+    def set_range_headers(self, scope: Scope) -> ContentRanges | None:
+        content_ranges, use_multipart_response = self.get_content_ranges_and_multipart(scope)
+        if content_ranges is None:
+            return None
+        if use_multipart_response and not self.range_multipart_boundary:
+            return None
+
+        if use_multipart_response:
             if self.range_multipart_boundary is True:
                 self.range_multipart_boundary = self.make_boundary()
             self.headers["content-type"] = (
                 f"multipart/byteranges; boundary={self.range_multipart_boundary}"
             )
         else:
+            assert content_ranges.ranges, (
+                "Empty content ranges are not supported for single range responses."
+            )
+            # allow conversion in a single range, when the client supports this.
+            if len(content_ranges.ranges) > 1:
+                new_range = Range(
+                    start=content_ranges.ranges[0].start, stop=content_ranges.ranges[-1].stop
+                )
+                new_size = new_range.stop - new_range.start + 1
+                content_ranges.ranges = [new_range]
+                content_ranges.size = new_size
             self.headers["content-range"] = (
-                f"bytes {range_definition[0]}-{range_definition[1]}/{content_ranges.max_value + 1}"
+                f"bytes {content_ranges.ranges[0].start}-{content_ranges.ranges[0].stop}/{content_ranges.max_value + 1}"
             )
         self.headers["content-length"] = f"{content_ranges.size}"
         self.status_code = status.HTTP_206_PARTIAL_CONTENT
@@ -604,9 +619,11 @@ class FileResponse(Response):
             else content_ranges.ranges
         )
         subheader: str = ""
-        if content_ranges and len(ranges) > 1:
+        if content_ranges and "content-range" not in self.headers:
+            # TODO: check if there is a better way to escape media_type
+            media_type = self.media_type.replace(" ", "").replace("\n", "")
             subheader = (
-                f"--{self.range_multipart_boundary}\ncontent-type: {self.media_type}\n"
+                f"--{self.range_multipart_boundary}\ncontent-type: {media_type}\n"
                 "content-range: bytes {start}-{stop}/{fullsize}\n\n"
             )
 

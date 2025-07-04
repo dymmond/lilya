@@ -371,7 +371,7 @@ async def test_file_response_optimizations(tmpdir, extensions, result, anyio_bac
     ),
 )
 @pytest.mark.parametrize("matching_ifrange", [True, False, None])
-@pytest.mark.parametrize("multipart", [True, False, "sdfdafadfaöfa"])
+@pytest.mark.parametrize("multipart", [True, False, "sdfdafadfaofa"])
 @pytest.mark.parametrize(
     "byterange,start,end",
     to_position_labeled_params(
@@ -426,12 +426,14 @@ async def test_file_response_byte_range(
     if "path" not in response2:
         assert not response2["more_body"]
     if matching_ifrange or matching_ifrange is None:
+        assert headers.get("content-range")
         assert int(headers["content-length"]) == end - start + 1
         if extpath == "http.response.zerocopysend" or extpath == "both":
             assert response2["body"] == content[start : end + 1]
         else:
             assert response2["body"] == content[start : end + 1]
     else:
+        assert not headers.get("content-range")
         assert int(headers["content-length"]) == len(content)
         if extpath == "http.response.pathsend" or extpath == "both":
             assert response2["path"] == path
@@ -461,7 +463,9 @@ async def test_file_response_byte_range(
             ("bytes=1-10, 20-30", [Range(1, 10), Range(20, 30)]),
             ("bytes=10,20-", [Range(10, 10), Range(20, 999)]),
             ("bytes=0,4", [Range(0, 0), Range(4, 4)]),
+            # single ranges
             ("bytes=0", [Range(0, 0)]),
+            ("bytes=8-19", [Range(8, 19)]),
         ],
         0,
     ),
@@ -494,6 +498,9 @@ async def test_file_response_byte_range_multipart(
     )
     response1 = await responses.get()
     headers = Header.from_scope(response1)
+    assert response1["status"] == 206
+    if len(ranges) > 1:
+        assert not headers.get("content-range")
     assert headers["accept-ranges"] == "bytes"
     subheader = (
         f"--{fresponse.range_multipart_boundary}\ncontent-type: {fresponse.media_type}\n"
