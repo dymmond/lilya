@@ -104,6 +104,7 @@ def parse_range_value(
         old_ranges = crange.ranges
         old_ranges.sort()
         crange.ranges = []
+        crange.size = 0
         # check that ranges are ascending afterwards, otherwise we have the danger of
         # malicious clients requesting the same range again and again
         last_range = None
