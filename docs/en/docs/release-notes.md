@@ -12,6 +12,10 @@ hide:
 - Lilya `run` directive now injects the `g` global context for usage in the directives in offline mode.
 - Support for http ranges (bytes).
 - Support if-range header.
+- **Added fallback dependency injection**: Handlers can now receive dependencies even without explicitly using `Provides()`,
+as long as they are defined in the app or route.
+- **Improved optional injection logic**: Dependencies declared with `Provides()` are treated as required, while others are injected only if available—ensuring flexibility and safety.
+- **Unified behavior across HTTP and WebSocket handlers**: Dependency resolution logic now consistently supports both explicit and fallback injection in all handler types.
 
 ### Changed
 
