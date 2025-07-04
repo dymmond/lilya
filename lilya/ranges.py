@@ -92,11 +92,13 @@ def parse_range_value(
                 return None
         if merge_ranges and last_range is not None and last_range.stop == range_val.start - 1:
             # merge ranges
-            last_range.stop = range_val.stop
+            last_range = Range(last_range.start, range_val.stop)
             continue
+        if last_range:
+            crange.ranges.append(last_range)
         last_range = range_val
-
-        crange.ranges.append(range_val)
+    if last_range:
+        crange.ranges.append(last_range)
 
     if not enforce_asc:
         old_ranges = crange.ranges
@@ -108,7 +110,7 @@ def parse_range_value(
         for range_val in old_ranges:
             # ensure ascending order
             if last_range is not None and range_val.start <= last_range.stop:
-                range_val.start = min(last_range.stop + 1, max_value)
+                range_val = Range(min(last_range.stop + 1, max_value), range_val.stop)
             # only add/merge if range is valid
             if range_val.stop >= range_val.start:
                 if (
@@ -117,9 +119,12 @@ def parse_range_value(
                     and last_range.stop == range_val.start - 1
                 ):
                     # merge ranges
-                    last_range.stop = range_val.stop
+                    last_range = Range(last_range.start, range_val.stop)
                     continue
-                crange.ranges.append(range_val)
                 crange.size += range_val.stop - range_val.start + 1
+                if last_range:
+                    crange.ranges.append(last_range)
                 last_range = range_val
+        if last_range:
+            crange.ranges.append(last_range)
     return crange

@@ -552,7 +552,7 @@ class FileResponse(Response):
             return None, False
         # comma counting ensures no single range response is send for a multirange request
         # overwrites are free to use a different logic or enforcing multipart/single range responses
-        return content_ranges, range_header.count(",") > 0
+        return content_ranges, "," in range_header
 
     def set_range_headers(self, scope: Scope) -> ContentRanges | None:
         content_ranges, use_multipart_response = self.get_content_ranges_and_multipart(scope)
