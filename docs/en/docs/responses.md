@@ -232,17 +232,21 @@ Streams a file asynchronously as the response, employing a distinct set of argum
 ```
 
 By default multipart ranges are disabled as it is a bit more expensive (cpu and data usage), you can enable it by setting
-`range_multipart_boundary` to True or an explicit boundary value.
+`range_multipart_boundary` to `True` or an explicit boundary value.
 
 ```python
 {!> ../../../docs_src/responses/multi_range_file.py !}
 ```
 
-For more security or different multipart parsing you can modify the `FileResponse`
+By default we limit the maximal amount of requested ranges to 5. For a different security approach
+or different multipart parsing you can modify the `FileResponse`
 
 ```python
 {!> ../../../docs_src/responses/customized_multi_range_file.py !}
 ```
+
+Note however that some clients doesn't behave well (or just fallback to non-range download) if multi-range requests are answered
+with a single range response and vice versa.
 
 ## Importing the appropriate class
 
