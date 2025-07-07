@@ -238,7 +238,7 @@ By default multipart ranges are disabled as it is a bit more expensive (cpu and 
 {!> ../../../docs_src/responses/multi_range_file.py !}
 ```
 
-By default we limit the maximum amount of requested ranges to 5. For a different security approach
+By default we limit the maximum amount of requested ranges to five. For a different security approach
 or different multipart parsing you can modify the `FileResponse`
 
 ```python

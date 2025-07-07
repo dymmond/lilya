@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from typing import NamedTuple
 
+from lilya.exceptions import ContentRangeNotSatisfiable
+
 
 class Range(NamedTuple):
     start: int
@@ -26,16 +28,18 @@ def _parse_range_intern(rangedef: str, max_value: int) -> Range:
         # this will cause an error in case of a wrong format, e.g.: 3--3
         # this accepts also defs like 3
         splitted = rangedef.rsplit("-", 1)
-        return Range(start=int(splitted[0]), stop=min(max_value, int(splitted[-1])))
+        return Range(start=int(splitted[0]), stop=int(splitted[-1]))
 
 
-def _parse_range(rangedef: str, max_value: int) -> Range:
+def _parse_range(rangedef: str, max_value: int, unit: str) -> Range | None:
     range_val = _parse_range_intern(rangedef, max_value)
     if range_val.start > range_val.stop:
         raise ValueError("Invalid range, stop < start")
     if range_val.start < 0:
+        # fails earlier when parsing but keep this as a failsafe
         raise ValueError("Invalid range, start negative")
-
+    if range_val.start > max_value or range_val.stop > max_value:
+        raise ContentRangeNotSatisfiable(range_def=range_val, unit=unit, size=max_value + 1)
     return range_val
 
 
@@ -60,7 +64,10 @@ def parse_range_value(
         merge_ranges: Merge consecutive ranges.
 
     Return:
-        ContentRanges, with ascending ordered ranges.
+        ContentRanges, with ascending ordered ranges,  if the definition is correct and the unit is known. Otherwise None.
+
+    Raises:
+        ContentRangeNotSatisfiable: For content ranges out of range (over maximum value). This exception leads to a 416 error, signaling the client it is out of range (e.g. size of file changes).
     """
     # WARNING: max_values is content-length -1 for bytes
     # max_values == int is shortcut for {"bytes": value}
@@ -83,8 +90,10 @@ def parse_range_value(
         if max_ranges is not None and range_object_count > max_ranges:
             return None
         try:
-            range_val = _parse_range(rangedef, max_value)
+            # this raises the right exception of over max access. E.g. file shrinks.
+            range_val = _parse_range(rangedef, max_value=max_value, unit=unit)
         except ValueError:
+            # parse and logic errors cause None return
             return None
         crange.size += range_val.stop - range_val.start + 1
         if last_range is not None and enforce_asc:
