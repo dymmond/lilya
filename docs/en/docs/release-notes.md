@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.16.8
+
+### Added
+
+- Add support for multi-byterange requests and responses.
+
 ## 0.16.7
 
 !!! Note

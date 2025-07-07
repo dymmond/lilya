@@ -16,6 +16,7 @@ from lilya.datastructures import Header
 from lilya.encoders import Encoder
 from lilya.middleware import DefineMiddleware
 from lilya.middleware.sessions import SessionMiddleware
+from lilya.ranges import Range
 from lilya.requests import Request
 from lilya.responses import (
     Error,
@@ -34,6 +35,10 @@ from lilya.testclient import TestClient
 class Foo: ...
 
 
+def to_position_labeled_params(inp: list[tuple], pos: int) -> list[pytest.param]:
+    return [pytest.param(*param, id=param[pos]) for param in inp]
+
+
 # check that encoders are saved as instances on responses
 class FooEncoder(Encoder):
     __type__ = Foo
@@ -44,8 +49,8 @@ class FooEncoder(Encoder):
     def encode(
         self,
         structure: type[Foo],
-        obj,
-    ):
+        obj: typing.Any,
+    ) -> bool:
         return True
 
 
@@ -61,7 +66,7 @@ def test_text_response(test_client_factory):
 
 
 def test_async_text_response(test_client_factory):
-    async def create_hello_world():
+    async def create_hello_world() -> str:
         return "hello, world"
 
     async def app(scope, receive, send):
@@ -317,10 +322,13 @@ def test_file_response(tmpdir, test_client_factory):
 
 @pytest.mark.parametrize(
     "extensions,result",
-    [
-        ({"http.response.pathsend": {}}, "http.response.pathsend"),
-        ({"http.response.zerocopysend": {}}, "http.response.zerocopysend"),
-    ],
+    to_position_labeled_params(
+        [
+            ({"http.response.pathsend": {}}, "http.response.pathsend"),
+            ({"http.response.zerocopysend": {}}, "http.response.zerocopysend"),
+        ],
+        1,
+    ),
 )
 async def test_file_response_optimizations(tmpdir, extensions, result, anyio_backend):
     path = os.path.join(tmpdir, "xyz")
@@ -352,25 +360,32 @@ async def test_file_response_optimizations(tmpdir, extensions, result, anyio_bac
 
 @pytest.mark.parametrize(
     "extensions,extpath",
-    [
-        ({}, "none"),
-        ({"http.response.pathsend": {}}, "http.response.pathsend"),
-        ({"http.response.zerocopysend": {}, "http.response.pathsend": {}}, "both"),
-        ({"http.response.zerocopysend": {}}, "http.response.zerocopysend"),
-    ],
+    to_position_labeled_params(
+        [
+            ({}, "none"),
+            ({"http.response.pathsend": {}}, "http.response.pathsend"),
+            ({"http.response.zerocopysend": {}, "http.response.pathsend": {}}, "both"),
+            ({"http.response.zerocopysend": {}}, "http.response.zerocopysend"),
+        ],
+        1,
+    ),
 )
 @pytest.mark.parametrize("matching_ifrange", [True, False, None])
+@pytest.mark.parametrize("multipart", [True, False, "sdfdafadfaofa"])
 @pytest.mark.parametrize(
     "byterange,start,end",
-    [
-        ("bytes=1-10", 1, 10),
-        ("bytes=1-", 1, 999),
-        ("bytes=0", 0, 0),
-        ("bytes=-10", 989, 999),
-    ],
+    to_position_labeled_params(
+        [
+            ("bytes=1-10", 1, 10),
+            ("bytes=1-", 1, 999),
+            ("bytes=0", 0, 0),
+            ("bytes=-10", 989, 999),
+        ],
+        0,
+    ),
 )
 async def test_file_response_byte_range(
-    tmpdir, extensions, extpath, byterange, start, end, matching_ifrange, anyio_backend
+    tmpdir, extensions, extpath, byterange, start, end, matching_ifrange, multipart, anyio_backend
 ):
     path = os.path.join(tmpdir, "xyz")
     content = os.urandom(1000)
@@ -385,7 +400,7 @@ async def test_file_response_byte_range(
     else:
         ifrange = "123456"
 
-    fresponse = FileResponse(path=path, filename="example.png")
+    fresponse = FileResponse(path=path, filename="example.png", range_multipart_boundary=multipart)
     responses: Queue[typing.Any] = Queue()
 
     async def put(message: typing.Any) -> None:
@@ -411,12 +426,14 @@ async def test_file_response_byte_range(
     if "path" not in response2:
         assert not response2["more_body"]
     if matching_ifrange or matching_ifrange is None:
+        assert headers.get("content-range")
         assert int(headers["content-length"]) == end - start + 1
         if extpath == "http.response.zerocopysend" or extpath == "both":
             assert response2["body"] == content[start : end + 1]
         else:
             assert response2["body"] == content[start : end + 1]
     else:
+        assert not headers.get("content-range")
         assert int(headers["content-length"]) == len(content)
         if extpath == "http.response.pathsend" or extpath == "both":
             assert response2["path"] == path
@@ -428,13 +445,90 @@ async def test_file_response_byte_range(
 
 
 @pytest.mark.parametrize(
+    "extensions,extpath",
+    to_position_labeled_params(
+        [
+            ({}, "none"),
+            ({"http.response.pathsend": {}}, "http.response.pathsend"),
+            ({"http.response.zerocopysend": {}, "http.response.pathsend": {}}, "both"),
+            ({"http.response.zerocopysend": {}}, "http.response.zerocopysend"),
+        ],
+        1,
+    ),
+)
+@pytest.mark.parametrize(
+    "byterange,ranges",
+    to_position_labeled_params(
+        [
+            ("bytes=1-10, 20-30", [Range(1, 10), Range(20, 30)]),
+            ("bytes=10,20-", [Range(10, 10), Range(20, 999)]),
+            ("bytes=0,4", [Range(0, 0), Range(4, 4)]),
+            # single ranges
+            ("bytes=0", [Range(0, 0)]),
+            ("bytes=8-19", [Range(8, 19)]),
+        ],
+        0,
+    ),
+)
+async def test_file_response_byte_range_multipart(
+    tmpdir, extensions, extpath, byterange, ranges, anyio_backend
+):
+    path = os.path.join(tmpdir, "xyz")
+    content = os.urandom(1000)
+    with open(path, "wb") as file:
+        file.write(content)
+
+    fresponse = FileResponse(path=path, filename="example.png", range_multipart_boundary=True)
+    responses: Queue[typing.Any] = Queue()
+
+    async def put(message: typing.Any) -> None:
+        if "file" in message:
+            rob = await anyio.open_file(message["file"], "rb", closefd=False)
+            message["body"] = await rob.read(message["count"])
+        await responses.put(message)
+
+    await fresponse(
+        {
+            "extensions": extensions,
+            "type": "http.request",
+            "headers": [("range", byterange)],
+        },
+        None,
+        put,
+    )
+    response1 = await responses.get()
+    headers = Header.from_scope(response1)
+    assert response1["status"] == 206
+    if len(ranges) > 1:
+        assert not headers.get("content-range")
+    assert headers["accept-ranges"] == "bytes"
+    subheader = (
+        f"--{fresponse.range_multipart_boundary}\ncontent-type: {fresponse.media_type}\n"
+        "content-range: bytes {start}-{stop}/{fullsize}\n\n"
+    )
+    for rdef in ranges:
+        response = await responses.get()
+        if len(ranges) > 1:
+            assert response["more_body"]
+            encoded = subheader.format(start=rdef.start, stop=rdef.stop, fullsize=1000).encode()
+            assert response["body"].startswith(encoded)
+            response = await responses.get()
+        assert response["body"] == content[rdef.start : rdef.stop + 1]
+
+    if len(ranges) > 1:
+        response = await responses.get()
+        assert response["body"] == b""
+        assert not response["more_body"]
+
+
+@pytest.mark.parametrize(
     "byterange",
     [
-        ("megabytes=1-10"),
-        ("bytes=1-10, 1-1"),
-        ("bytes=100-10"),
-        # not supported yet, despite no error
-        ("bytes=1-10, 10-29"),
+        "megabytes=1-10",
+        "bytes=1-10, 1-1",
+        "bytes=100-10",
+        # not supported by default
+        "bytes=1-10, 10-29",
     ],
 )
 async def test_file_response_byte_range_error(tmpdir, byterange, anyio_backend):

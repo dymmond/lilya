@@ -223,12 +223,30 @@ Streams a file asynchronously as the response, employing a distinct set of argum
 - `content_disposition_type` - Included in the response Content-Disposition. Can be set to `attachment` (default) or `inline`.
 - `background` - A [task](./tasks.md) instance.
 - `allow_range_requests` - Should enable support for http ranges? By default `True`. You certainly want this for continuing downloads.
+- `range_multipart_boundary` - Enable multipart http ranges. Either bool or explicit string value used for the boundary. By default `False` (multipart is disabled).
 
 **Example**
 
 ```python
 {!> ../../../docs_src/responses/file.py !}
 ```
+
+By default multipart ranges are disabled as it is a bit more expensive (cpu and data usage), you can enable it by setting
+`range_multipart_boundary` to `True` or an explicit boundary value.
+
+```python
+{!> ../../../docs_src/responses/multi_range_file.py !}
+```
+
+By default we limit the maximum amount of requested ranges to five. For a different security approach
+or different multipart parsing you can modify the `FileResponse`
+
+```python
+{!> ../../../docs_src/responses/customized_multi_range_file.py !}
+```
+
+Note however that some clients doesn't behave well (or just fallback to non-range download) if multi-range requests are answered
+with a single range response and vice versa.
 
 ## Importing the appropriate class
 

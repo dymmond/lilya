@@ -110,6 +110,25 @@ class TemplateNotFound(HTTPException):
         super().__init__(*args, detail=f"Template {name} not found.")
 
 
+class ContentRangeNotSatisfiable(HTTPException):
+    status_code = status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE
+
+    def __init__(self, *args: Any, range_def: tuple[int, int] | None = None, size: int, unit: str):
+        """Requested range out of bounds."""
+        self.unit = unit
+        self.size = size
+        detail = (
+            "Requested range ({range_def[0]}-{range_def[1]}) is not satisfiable."
+            if range_def
+            else "Requested range is not satisfiable."
+        )
+        super().__init__(
+            *args,
+            detail=detail,
+            headers={"content-range": f"{unit} */{size}"},
+        )
+
+
 class WebSocketRuntimeError(RuntimeError): ...
 
 
