@@ -172,7 +172,7 @@ check_types = "mypy -p lilya"
 [tool.hatch.envs.hatch-static-analysis]
 # disables custom ruff rules, required to align with pre-commit
 config-path = "none"
-dependencies = ["ruff==0.11.10"]
+dependencies = ["ruff==0.12.2"]
 
 [tool.hatch.envs.hatch-test]
 features = ['testing', "cli"]
