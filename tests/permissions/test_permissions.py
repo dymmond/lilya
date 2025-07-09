@@ -1,3 +1,5 @@
+import pytest
+
 from lilya.apps import ChildLilya
 from lilya.exceptions import PermissionDenied
 from lilya.permissions import DefinePermission
@@ -24,6 +26,16 @@ class DenyAccess(PermissionProtocol):
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         raise PermissionDenied()
+
+
+class AllowAnyAccess(PermissionProtocol):
+    def __init__(self, app: ASGIApp, *args, **kwargs):
+        super().__init__(app, *args, **kwargs)
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        await self.app(scope, receive, send)
+        return
 
 
 class AllowAccess(PermissionProtocol):
@@ -204,3 +216,39 @@ def test_nested_apps_permissions(test_client_factory):
         response = client.get("/include/child/lilya")
         assert response.status_code == 403
         assert response.text == "You do not have permission to perform this action."
+
+
+@pytest.mark.parametrize(
+    "permissions,result",
+    [
+        pytest.param([DefinePermission(AllowAnyAccess)], 200, id="allow"),
+        pytest.param([], 200, id="empty"),
+        pytest.param([DefinePermission(DenyAccess)], 403, id="deny"),
+    ],
+)
+def test_include_permissions_exist(permissions, result, test_client_factory):
+    app = ChildLilya(routes=[Path("/allow", handler=home)])
+    with create_client(
+        routes=[Include(path="/admin", app=app, permissions=permissions)]
+    ) as client:
+        response = client.get("/admin/allow")
+        assert response.status_code == result
+
+
+@pytest.mark.parametrize(
+    "permissions,result",
+    [
+        pytest.param([DefinePermission(AllowAnyAccess)], 404, id="allow"),
+        pytest.param([], 404, id="empty"),
+        pytest.param([DefinePermission(DenyAccess)], 403, id="deny"),
+    ],
+)
+def test_include_permissions_not_exist(permissions, result, test_client_factory):
+    app = ChildLilya(routes=[Path("/allow", handler=home)])
+    with create_client(
+        routes=[Include(path="/admin", app=app, permissions=permissions)]
+    ) as client:
+        response = client.get("/fsasfadjkdsojafkjiosad")
+        assert response.status_code == 404
+        response = client.get("/admin/fsasfadjkdsojafkjiosad")
+        assert response.status_code == result
