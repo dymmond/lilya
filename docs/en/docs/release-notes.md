@@ -10,6 +10,8 @@ hide:
 ### Added
 
 - Add support for multi-byterange requests and responses.
+- Add retro-compatibility for `path_for` with an alias `url_for`. This allows easier integration with other libraries
+that use `url_for` as the method to generate URLs.
 
 ## 0.16.7
 

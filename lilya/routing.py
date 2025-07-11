@@ -128,6 +128,12 @@ class BasePath:
         """
         raise NotImplementedError()  # pragma: no cover
 
+    def url_for(self, name: str, /, **path_params: Any) -> URLPath:
+        """
+        Returns a URL of a matching route.
+        """
+        raise NotImplementedError()  # pragma: no cover
+
     async def dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
         Dispatches the request to the appropriate handler.
@@ -441,6 +447,9 @@ class Path(BaseHandler, BasePath):
         assert not remaining_params
 
         return URLPath(path=path, protocol=ScopeType.HTTP.value)
+
+    def url_for(self, name: str, /, **path_params: Any) -> URLPath:
+        return self.path_for(name, **path_params)
 
     def validate_params(self, name: str, path_params: dict) -> None:
         """
@@ -767,7 +776,7 @@ class WebSocketPath(BaseHandler, BasePath):
         except Exception as ex:
             await self.handle_exception_handlers(scope, receive, send, ex)
 
-    def path_for(self, name: str, /, **path_params: Any) -> URLPath:
+    def path_for(self, name: str, **path_params: Any) -> URLPath:
         """
         Generates a URL path for the specified route name and parameters.
 
@@ -789,6 +798,9 @@ class WebSocketPath(BaseHandler, BasePath):
         )
         assert not remaining_params
         return URLPath(path=path, protocol=ScopeType.WEBSOCKET.value)
+
+    def url_for(self, name: str, /, **path_params: Any) -> URLPath:
+        return self.path_for(name, **path_params)
 
     def validate_params(self, name: str, path_params: dict) -> None:
         """
@@ -1013,6 +1025,9 @@ class Host(BasePath):
 
         raise NoMatchFound(self.name, path_params)
 
+    def url_for_with_name(self, path_params: dict) -> URLPath:
+        return self.path_for_with_name(path_params)
+
     def path_for_without_name(self, name: str, path_params: dict) -> URLPath:
         """
         Generate a URLPath for a route without a specific name and with path parameters.
@@ -1044,6 +1059,9 @@ class Host(BasePath):
                 pass
 
         raise NoMatchFound(name, path_params)
+
+    def url_for_without_name(self, name: str, /, **path_params: Any) -> URLPath:
+        return self.path_for_without_name(name, path_params)
 
     def __repr__(self) -> str:
         name = self.name or ""
@@ -1184,6 +1202,9 @@ class BaseRouter:
             except NoMatchFound:
                 ...
         raise NoMatchFound(name, path_params)
+
+    def url_for(self, name: str, /, **path_params: Any) -> URLPath:
+        return self.path_for(name, **path_params)
 
     async def startup(self) -> None:
         """
@@ -2367,6 +2388,9 @@ class Include(BasePath):
             return self._path_for_without_name(name, path_params)
 
         raise NoMatchFound(name, path_params)
+
+    def url_for(self, name: str, /, **path_params: Any) -> URLPath:
+        return self.path_for(name, **path_params)
 
     def _path_for_without_name(self, name: str, path_params: dict) -> URLPath:
         """

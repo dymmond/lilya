@@ -91,6 +91,9 @@ class BaseLilya:
     def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         return self.router.path_for(name, **path_params)
 
+    def url_for(self, name: str, /, **path_params: Any) -> str:
+        return self.path_for(name, **path_params)
+
     def build_middleware_stack(self) -> ASGIApp:
         """
         Build the optimized middleware stack for the Lilya application.

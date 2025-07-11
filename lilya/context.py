@@ -177,6 +177,37 @@ class Context:
         url: URL = self.request.path_for(name, **path_params)
         return str(url)
 
+    def url_for(
+        self,
+        name: Annotated[
+            str,
+            Doc(
+                """
+                The `name` given in a `Gateway` or `Include` objects.
+
+                **Example**
+
+                ```python
+                from lilya import Lilya, Gateway
+
+                Gateway(handler=..., name="view-users")
+                ```
+                """
+            ),
+        ],
+        **path_params: Annotated[
+            Any,
+            Doc(
+                """
+                Any additional *path_params* declared in the URL of the
+                handler and are needed to *reverse* the names and return
+                the proper URL.
+                """
+            ),
+        ],
+    ) -> str:
+        return self.path_for(name, **path_params)
+
 
 class G:
     """
