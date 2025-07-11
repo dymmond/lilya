@@ -17,6 +17,8 @@ that use `url_for` as the method to generate URLs.
 
 - Add `lru_cache` to some of the methods that are used to generate URLs. This allows for better performance
 when generating URLs that are frequently used.
+- **Automatic Generator Unwrapping**: `Provide` and `async_resolve_dependencies` now detect both sync and async generator dependencies,
+advance them to yield the real return value, and inject that into handlers.
 
 ## 0.16.7
 

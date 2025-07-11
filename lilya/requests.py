@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import inspect
 import json
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Callable
 from typing import Any, cast
 
 import anyio
@@ -48,6 +49,7 @@ class Request(Connection):
         "_content_type",
         "_body",
         "_media",
+        "_cleanup_callbacks",
     )
 
     _form: FormData | None = None
@@ -74,6 +76,10 @@ class Request(Connection):
         self._json = Empty
         self._content_type: bytes | type[Empty] = Empty
         self._body = Empty
+        self._cleanup_callbacks: list[Callable[[], Any]] = []
+
+    def add_cleanup(self, fn: Callable[[], Any]) -> None:
+        self._cleanup_callbacks.append(fn)
 
     def _assert_multipart(self) -> None:
         """
@@ -321,6 +327,11 @@ class Request(Connection):
         """
         if self._form is not None:
             await self._form.close()
+
+        for fn in self._cleanup_callbacks:
+            maybe_await = fn()
+            if inspect.isawaitable(maybe_await):
+                await maybe_await
 
     async def is_disconnected(self) -> bool:
         """

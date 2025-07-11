@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import inspect
 import json
-from collections.abc import AsyncIterator, Iterable
+from collections.abc import AsyncIterator, Callable, Iterable
 from typing import Any, cast
 
 from lilya._internal._connection import Connection
@@ -25,6 +26,7 @@ class WebsocketMixin(Connection):
         self._accepted = False
         self.client_state = WebSocketState.CONNECTING
         self.application_state = WebSocketState.CONNECTING
+        self._cleanup_callbacks: list[Callable[[], Any]] = []
 
     def raise_for_disconnect(self, message: Message) -> None:
         if message["type"] == Event.WEBSOCKET_DISCONNECT:
@@ -67,6 +69,9 @@ class WebSocket(WebsocketMixin):
                 else self.client_state
             )
         return message
+
+    def add_cleanup(self, fn: Callable[[], Any]) -> None:
+        self._cleanup_callbacks.append(fn)
 
     async def send(self, message: Message) -> None:
         """
@@ -193,6 +198,11 @@ class WebSocket(WebsocketMixin):
 
     async def close(self, code: int = 1000, reason: str | None = None) -> None:
         await self.send({"type": Event.WEBSOCKET_CLOSE, "code": code, "reason": reason or ""})
+
+        for fn in self._cleanup_callbacks:
+            maybe_await = fn()
+            if inspect.isawaitable(maybe_await):
+                await maybe_await
 
 
 class WebSocketClose:

@@ -304,7 +304,6 @@ class BaseHandler:
             if isinstance(provider, (Resolve, Security)):
                 data[name] = await async_resolve_dependencies(
                     request=request,
-                    signature=signature,
                     func=provider.dependency,
                 )
                 continue
@@ -403,7 +402,6 @@ class BaseHandler:
                         if isinstance(provider, (Resolve, Security)):
                             kwargs[name] = await async_resolve_dependencies(
                                 request=websocket,
-                                signature=signature,
                                 func=provider.dependency,
                             )
                             continue
@@ -413,7 +411,6 @@ class BaseHandler:
                     elif isinstance(param.default, (Resolve, Security)):
                         kwargs[name] = await async_resolve_dependencies(
                             request=websocket,
-                            signature=signature,
                             func=param.default.dependency,
                         )
 
