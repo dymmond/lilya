@@ -199,3 +199,6 @@ class Connection(Mapping[str, Any]):
         router: Router = self.scope["router"]
         url_path = router.path_for(name, **path_params)
         return url_path.make_absolute_url(base_url=self.base_url)
+
+    def url_for(self, name: str, /, **path_params: Any) -> URL:
+        return self.path_for(name, **path_params)
