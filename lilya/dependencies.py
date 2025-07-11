@@ -1,6 +1,7 @@
 import inspect
 import sys
 from collections.abc import Callable, Sequence
+from types import GeneratorType
 from typing import Any
 
 from lilya.compat import run_sync
@@ -72,7 +73,6 @@ class Provide:
             if isinstance(param.default, (Resolve, Security)):
                 kwargs[name] = await async_resolve_dependencies(
                     request=request,
-                    signature=sig,
                     func=self.dependency,
                 )
                 continue
@@ -101,6 +101,23 @@ class Provide:
         if self.use_cache:
             self._cache = result
             self._resolved = True
+
+        # We need to account for generators
+        if isinstance(result, GeneratorType):
+            try:
+                value = next(result)
+            except StopIteration:
+                return None
+            request.add_cleanup(result.close)  # noqa
+            return value
+
+        if inspect.isasyncgen(result):
+            try:
+                value = await result.__anext__()
+            except StopAsyncIteration:
+                return None
+            request.add_cleanup(result.aclose)  # noqa
+            return value
 
         return result
 
@@ -143,7 +160,6 @@ class Security(Provide):
 
 async def async_resolve_dependencies(
     request: Request | WebSocket,
-    signature: inspect.Signature,
     func: Callable[..., Any],
     overrides: dict[str, Any] | None = None,
 ) -> Any:
@@ -177,26 +193,42 @@ async def async_resolve_dependencies(
             if inspect.iscoroutinefunction(dep_func):
                 resolved = await async_resolve_dependencies(
                     request=request,
-                    signature=signature,
                     func=dep_func,
                     overrides=overrides,
                 )
             else:
                 resolved = (
-                    resolve_dependencies(request, signature, dep_func, overrides)
+                    resolve_dependencies(request, dep_func, overrides)
                     if callable(dep_func)
                     else dep_func
                 )
             kwargs[name] = resolved
     if inspect.iscoroutinefunction(func):
-        return await func(**kwargs)
+        result = await func(**kwargs)
     else:
-        return func(**kwargs)
+        result = func(**kwargs)
+
+    if isinstance(result, GeneratorType):
+        try:
+            value = next(result)
+        except StopIteration:
+            return None
+        request.add_cleanup(result.close)
+        return value
+
+    if inspect.isasyncgen(result):
+        try:
+            value = await result.__anext__()
+        except StopAsyncIteration:
+            return None
+        request.add_cleanup(result.aclose)
+        return value
+
+    return result
 
 
 def resolve_dependencies(
     request: Request | WebSocket,
-    signature: inspect.Signature,
     func: Any,
     overrides: dict[str, Any] | None = None,
 ) -> Any:
@@ -216,4 +248,4 @@ def resolve_dependencies(
         overrides = {}
     if inspect.iscoroutinefunction(func):
         raise ValueError("Function is async. Use resolve_dependencies_async instead.")
-    return run_sync(async_resolve_dependencies(request, signature, func, overrides))
+    return run_sync(async_resolve_dependencies(request, func, overrides))
