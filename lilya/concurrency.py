@@ -12,7 +12,7 @@ T = TypeVar("T")
 
 async def run_in_threadpool(func: Callable[..., T], *args: Any, **kwargs: Any) -> T:
     """
-    Runs a callable in a threapool.
+    Runs a callable in a threadpool.
     Make sure the callable is always async.
     """
     def_func = AsyncCallable(func)

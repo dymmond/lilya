@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from collections import namedtuple
 from collections.abc import Iterable
+from functools import lru_cache
 from re import Pattern
 from typing import Any, TypeVar, cast
 
@@ -89,6 +90,7 @@ def replace_params(
     return updated_path, remaining_params
 
 
+@lru_cache(maxsize=1024)
 def compile_path(path: str) -> tuple[Pattern[str], str, dict[str, Transformer[Any]], str]:
     """
     Compile a path or host string into a three-tuple of (regex, format, {param_name:convertor}).

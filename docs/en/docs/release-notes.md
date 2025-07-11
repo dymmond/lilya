@@ -13,6 +13,11 @@ hide:
 - Add retro-compatibility for `path_for` with an alias `url_for`. This allows easier integration with other libraries
 that use `url_for` as the method to generate URLs.
 
+### Changed
+
+- Add `lru_cache` to some of the methods that are used to generate URLs. This allows for better performance
+when generating URLs that are frequently used.
+
 ## 0.16.7
 
 !!! Note

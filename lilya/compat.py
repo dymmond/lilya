@@ -6,6 +6,7 @@ import hashlib
 from collections.abc import Awaitable, Generator
 from concurrent import futures
 from concurrent.futures import Future
+from functools import lru_cache
 from typing import Any, Generic, Protocol, TypeVar
 
 from lilya._internal._urls import reverse as reverse
@@ -34,6 +35,7 @@ except TypeError:  # pragma: no cover
         return hashlib.md5(data).hexdigest()
 
 
+@lru_cache(maxsize=1024)
 def is_async_callable(obj: Any) -> bool:
     """
     Validates if a given object is an async callable or not.
