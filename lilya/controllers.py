@@ -78,12 +78,14 @@ class Controller(BaseController):
         )
         if self.signature.parameters:
             if SignatureDefault.REQUEST in self.signature.parameters:
-                response = await self._execute_function(handler, request, **func_params)
+                func_params.update({"request": request})
+                response = await self._execute_function(handler, **func_params)
             else:
                 response = await self._execute_function(handler, **func_params)
         else:
             response = await self._execute_function(handler, **func_params)
-        await response(scope, receive, send)
+
+        await self._handle_response_content(response, scope, receive, send)
 
     async def handle_not_allowed(self) -> Response:
         headers = {"Allow": ", ".join(self.__allowed_methods__)}
