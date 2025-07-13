@@ -5,6 +5,13 @@ hide:
 
 # Release Notes
 
+## 0.16.9
+
+### Changed
+
+- Unify dependency injection logic for both Controller and handlers.
+- Unify logic for body inferring for Controller and handlers.
+
 ## 0.16.8
 
 ### Added
