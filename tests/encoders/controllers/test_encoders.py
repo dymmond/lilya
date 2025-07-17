@@ -35,26 +35,26 @@ class User(BaseModel):
     age: int
 
 
-class TestModel(Controller):
+class ControllerTestModel(Controller):
     def get(self) -> User:
         return User(name="lilya", age=24)
 
 
 def test_pydantic_custom_response():
-    with create_client(routes=[Path("/", TestModel)]) as client:
+    with create_client(routes=[Path("/", ControllerTestModel)]) as client:
         response = client.get("/")
 
         assert response.status_code == 200
         assert response.json() == {"name": "lilya", "age": 24}
 
 
-class TestModelList(Controller):
+class ControllerTestModelList(Controller):
     def get(self) -> list[User]:
         return [User(name="lilya", age=24)]
 
 
 def test_pydantic_custom_response_list():
-    with create_client(routes=[Path("/", TestModelList)]) as client:
+    with create_client(routes=[Path("/", ControllerTestModelList)]) as client:
         response = client.get("/")
 
         assert response.status_code == 200
@@ -66,26 +66,26 @@ class Item(Struct):
     age: int
 
 
-class TestStruct(Controller):
+class ControllerTestStruct(Controller):
     def get(self):
         return Item(name="lilya", age=24)
 
 
 def test_msgspec_custom_response():
-    with create_client(routes=[Path("/", TestStruct)]) as client:
+    with create_client(routes=[Path("/", ControllerTestStruct)]) as client:
         response = client.get("/")
 
         assert response.status_code == 200
         assert response.json() == {"name": "lilya", "age": 24}
 
 
-class TestStructList(Controller):
+class ControllerTestStructList(Controller):
     def get(self):
         return [Item(name="lilya", age=24)]
 
 
 def test_msgspec_custom_response_list():
-    with create_client(routes=[Path("/", TestStructList)]) as client:
+    with create_client(routes=[Path("/", ControllerTestStructList)]) as client:
         response = client.get("/")
 
         assert response.status_code == 200
