@@ -170,7 +170,7 @@ async def test_caching_behavior():
     assert r1.json() == {"x": "cached"} and r2.json() == {"x": "cached"}
 
 
-class TestModel(BaseModel):
+class PydanticTestModel(BaseModel):
     def show(self):
         return "show"
 
@@ -189,7 +189,7 @@ class StructDummy(Struct):
 
 
 @pytest.mark.parametrize(
-    "model", [TestModel, DummyModel, StructDummy], ids=["pydantic", "python", "msgspec"]
+    "model", [PydanticTestModel, DummyModel, StructDummy], ids=["pydantic", "python", "msgspec"]
 )
 async def test_with_models(test_client_factory, model):
     class Test(Controller):
