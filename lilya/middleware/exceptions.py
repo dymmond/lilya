@@ -126,7 +126,7 @@ class ExceptionMiddleware(MiddlewareProtocol):
         connection = _get_connection(scope_handler)
         await wrap_app_handling_exceptions(self.app, connection)(scope, receive, send)
 
-    def http_exception(self, request: Request, exc: Exception) -> Response:
+    async def http_exception(self, request: Request, exc: Exception) -> Response:
         """
         Handle HTTP exceptions.
 

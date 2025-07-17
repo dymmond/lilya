@@ -5,6 +5,10 @@ hide:
 
 # Release Notes
 
+## 0.17.0
+
+### Mark `http_exception` in the `Exception` as `async` to avoid thread creation.
+
 ## 0.16.10
 
 ### Fixed
