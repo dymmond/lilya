@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-import asyncio
 import functools
 import hashlib
+import inspect
 from collections.abc import Awaitable, Generator
 from concurrent import futures
-from concurrent.futures import Future
 from typing import Any, Generic, Protocol, TypeVar
 
-from lilya._internal._urls import reverse as reverse
+import anyio
+
+from lilya._internal._urls import reverse as reverse  # noqa
 
 T = TypeVar("T")
 
@@ -41,21 +42,22 @@ def is_async_callable(obj: Any) -> bool:
     while isinstance(obj, functools.partial):
         obj = obj.func
 
-    return asyncio.iscoroutinefunction(obj) or (
-        callable(obj) and asyncio.iscoroutinefunction(obj.__call__)
+    return inspect.iscoroutinefunction(obj) or (
+        callable(obj) and inspect.iscoroutinefunction(obj.__call__)
     )
 
 
-def run_sync(async_function: Awaitable) -> Any:
+def run_sync(async_function: Awaitable, *args: Any, **kwargs: Any) -> Any:
     """
     Runs the queries in sync mode
     """
     try:
-        return asyncio.run(async_function)  # type: ignore
+        return anyio.run(async_function, *args, **kwargs)
     except RuntimeError:
         with futures.ThreadPoolExecutor(max_workers=1) as executor:
-            future: Future = executor.submit(asyncio.run, async_function)  # type: ignore
-            return future.result()
+            return executor.submit(
+                lambda: anyio.run(lambda: async_function, *args, **kwargs)
+            ).result()
 
 
 class AsyncResourceHandler(Generic[SupportsAsyncCloseType]):

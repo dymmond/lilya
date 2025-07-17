@@ -5,6 +5,15 @@ hide:
 
 # Release Notes
 
+## 0.17.0
+
+### Changed
+
+- Mark `http_exception` in the `Exception` as `async` to avoid thread creation.
+- Replace `asyncio.iscoroutinefunction` with `inspect.iscoroutinefunction`.
+- Replace `asyncio` in `run_sync` with anyio.
+- Refactor `run_sync` from `lilya.compat`.
+
 ## 0.16.10
 
 ### Fixed

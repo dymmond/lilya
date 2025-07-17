@@ -8,6 +8,8 @@ from lilya.background import Task, Tasks
 from lilya.responses import Response
 from lilya.testclient import TestClient
 
+pytestmark = pytest.mark.anyio
+
 
 class TaskException(Exception): ...
 
@@ -96,7 +98,6 @@ def test_multi_tasks_failure_avoids_next_execution(
     assert TASK_COUNTER == 1
 
 
-@pytest.mark.asyncio
 async def test_background_tasks_as_group() -> None:
     values: set[str] = set()
 

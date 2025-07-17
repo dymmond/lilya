@@ -82,6 +82,7 @@ nav:
   - authentication.md
   - logging.md
   - security.md
+  - threadpool.md
 - Features:
   - features/index.md
   - tasks.md
