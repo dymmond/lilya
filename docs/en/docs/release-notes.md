@@ -7,7 +7,10 @@ hide:
 
 ## 0.17.0
 
-### Mark `http_exception` in the `Exception` as `async` to avoid thread creation.
+### Changed
+
+- Mark `http_exception` in the `Exception` as `async` to avoid thread creation.
+- Replace `asyncio.iscoroutinefunction` with `inspect.iscoroutinefunction`.
 
 ## 0.16.10
 

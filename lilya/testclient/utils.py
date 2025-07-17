@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import asyncio
 from collections.abc import Callable
 from functools import wraps
 from typing import TYPE_CHECKING, Any
 
+from lilya.compat import is_async_callable
 from lilya.conf import _monkay as monkay_for_settings
 
 if TYPE_CHECKING:
@@ -108,7 +108,7 @@ class override_settings:
             Any: The result of the test function.
 
         """
-        if asyncio.iscoroutinefunction(func):
+        if is_async_callable(func):
 
             @wraps(func)
             async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
