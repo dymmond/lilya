@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.16.10
+
+### Fixed
+
+- `infer_body` with complex dependencies and path params evaluation when `infer_body=True`
+
 ## 0.16.9
 
 ### Changed

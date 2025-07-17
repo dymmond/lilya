@@ -180,7 +180,9 @@ class BaseHandler:
         body_param_names = [
             name
             for name, value in parameters.items()
-            if name not in reserved_keys and not isinstance(value.default, (Provides, Resolve))
+            if name not in reserved_keys
+            and not isinstance(value.default, (Provides, Resolve))
+            and name not in dependencies
         ]
 
         payload: dict[str, Any] = {}
