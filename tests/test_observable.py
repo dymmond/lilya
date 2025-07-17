@@ -8,6 +8,8 @@ from lilya.decorators import observable
 from lilya.routing import Path
 from lilya.testclient import create_client
 
+pytestmark = pytest.mark.asyncio
+
 logger = get_logger()
 
 # Global counters to track event triggers
@@ -123,7 +125,6 @@ async def assign_default_roles(**kwargs: Any):
     role_event.set()
 
 
-@pytest.mark.asyncio
 async def test_observable():
     """Runs the test within a proper AnyIO-managed event loop."""
     with create_client(
@@ -151,7 +152,6 @@ async def test_observable():
         assert TOTAL_EXTRA == 1  # Only one listener for "extra_event"
 
 
-@pytest.mark.asyncio
 async def test_no_listeners():
     """Test case where an event is emitted but has no listeners."""
     await anyio.sleep(0.1)  # Ensure previous tests don't interfere
@@ -166,7 +166,6 @@ async def test_no_listeners():
     assert TOTAL_EXTRA == 1
 
 
-@pytest.mark.asyncio
 async def test_multiple_executions():
     """Ensure multiple event emissions increment counters correctly."""
     with create_client(routes=[Path("/", handler=get_item)]) as client:
@@ -183,7 +182,6 @@ async def test_multiple_executions():
         assert TOTAL_EXTRA == 1 + 3  # 1 previous + 3 new executions
 
 
-@pytest.mark.asyncio
 async def test_user_registration():
     """Test the user registration event and its listeners."""
     with create_client(
@@ -207,7 +205,6 @@ async def test_user_registration():
         assert TOTAL_ROLE_ASSIGNMENTS == 1  # One role assigned for the new user
 
 
-@pytest.mark.asyncio
 async def test_multiple_user_registrations():
     """Ensure multiple user registrations increment counters correctly."""
     with create_client(
