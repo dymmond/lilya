@@ -5,7 +5,6 @@ import hashlib
 import inspect
 from collections.abc import Awaitable, Generator
 from concurrent import futures
-from concurrent.futures import Future
 from typing import Any, Generic, Protocol, TypeVar
 
 import anyio
@@ -48,16 +47,17 @@ def is_async_callable(obj: Any) -> bool:
     )
 
 
-def run_sync(async_function: Awaitable) -> Any:
+def run_sync(async_function: Awaitable, *args: Any, **kwargs: Any) -> Any:
     """
     Runs the queries in sync mode
     """
     try:
-        return anyio.run(async_function)  # type: ignore
+        return anyio.run(async_function, *args, **kwargs)
     except RuntimeError:
         with futures.ThreadPoolExecutor(max_workers=1) as executor:
-            future: Future = executor.submit(lambda: anyio.run(lambda: async_function))
-            return future.result()
+            return executor.submit(
+                lambda: anyio.run(lambda: async_function, *args, **kwargs)
+            ).result()
 
 
 class AsyncResourceHandler(Generic[SupportsAsyncCloseType]):
