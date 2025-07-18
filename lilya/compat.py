@@ -3,7 +3,7 @@ from __future__ import annotations
 import functools
 import hashlib
 import inspect
-from collections.abc import Awaitable, Generator
+from collections.abc import Awaitable, Callable, Generator
 from concurrent import futures
 from typing import Any, Generic, Protocol, TypeVar
 
@@ -47,17 +47,31 @@ def is_async_callable(obj: Any) -> bool:
     )
 
 
-def run_sync(async_function: Awaitable, *args: Any, **kwargs: Any) -> Any:
+def run_sync(fn: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
     """
-    Runs the queries in sync mode
+    Run an async function or coroutine object in sync code.
+
+    - If you pass a coroutine function + args, e.g. run_sync(fetch_data, 42),
+      it will call `anyio.run(fetch_data, 42)`.
+    - If you pass a coroutine object, e.g. run_sync(fetch_data(42)), it will
+      call `anyio.run(lambda: fetch_data(42))`.
+
+    Falls back to a ThreadPoolExecutor if we detect an existing running loop.
     """
+    if inspect.iscoroutine(fn):
+        wrapper_fn: Callable[[], Awaitable[Any]] = lambda: fn  # noqa: E731
+    elif inspect.iscoroutinefunction(fn):
+        wrapper_fn = lambda: fn(*args, **kwargs)  # noqa: E731
+    else:
+        raise TypeError(
+            f"run_sync() expects an async function or coroutine object; got {type(fn)}"
+        )
     try:
-        return anyio.run(async_function, *args, **kwargs)
+        return anyio.run(wrapper_fn)
     except RuntimeError:
         with futures.ThreadPoolExecutor(max_workers=1) as executor:
-            return executor.submit(
-                lambda: anyio.run(lambda: async_function, *args, **kwargs)
-            ).result()
+            future: futures.Future = executor.submit(anyio.run, wrapper_fn)
+            return future.result()
 
 
 class AsyncResourceHandler(Generic[SupportsAsyncCloseType]):

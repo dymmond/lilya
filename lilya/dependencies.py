@@ -248,4 +248,4 @@ def resolve_dependencies(
         overrides = {}
     if inspect.iscoroutinefunction(func):
         raise ValueError("Function is async. Use resolve_dependencies_async instead.")
-    return run_sync(async_resolve_dependencies(request, func, overrides))
+    return run_sync(async_resolve_dependencies(request, func, overrides))  # type: ignore
