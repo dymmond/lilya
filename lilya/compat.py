@@ -47,7 +47,7 @@ def is_async_callable(obj: Any) -> bool:
     )
 
 
-def run_sync(fn: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+def run_sync(fn: Callable[..., Any] | Awaitable, *args: Any, **kwargs: Any) -> Any:
     """
     Run an async function or coroutine object in sync code.
 
