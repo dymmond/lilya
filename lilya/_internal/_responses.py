@@ -183,6 +183,7 @@ class BaseHandler:
             if name not in reserved_keys
             and not isinstance(value.default, (Provides, Resolve))
             and name not in dependencies
+            and name not in SignatureDefault.to_list()
         ]
 
         payload: dict[str, Any] = {}

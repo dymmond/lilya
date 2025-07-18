@@ -3,8 +3,10 @@ from typing import Any
 from msgspec import Struct
 from pydantic import BaseModel
 
+from lilya.context import Context
 from lilya.dependencies import Provide
 from lilya.encoders import Encoder, register_encoder
+from lilya.requests import Request
 from lilya.routing import Path
 from lilya.testclient import create_client
 from tests.encoders.settings import EncoderSettings
@@ -133,6 +135,90 @@ def test_process_body_simple(test_client_factory):
             Path(
                 "/infer",
                 handler=process_body_simple,
+                methods=["POST"],
+                dependencies={
+                    "service": Provide(ATestService),
+                },
+            )
+        ],
+        settings_module=NewSettings,
+    ) as client:
+        response = client.post("/infer", json=data)
+
+        assert response.status_code == 200
+        assert response.json() == {"name": "lilya", "age": 10}
+
+
+async def process_body_simple_with_request(
+    user: User, request: Request, service: ATestService, session: Any
+):
+    return {"name": user.name, "age": user.age}
+
+
+def test_process_body_simple_with_request(test_client_factory):
+    data = {"name": "lilya", "age": 10}
+
+    with create_client(
+        routes=[
+            Path(
+                "/infer",
+                handler=process_body_simple_with_request,
+                methods=["POST"],
+                dependencies={
+                    "service": Provide(ATestService),
+                },
+            )
+        ],
+        settings_module=NewSettings,
+    ) as client:
+        response = client.post("/infer", json=data)
+
+        assert response.status_code == 200
+        assert response.json() == {"name": "lilya", "age": 10}
+
+
+async def process_body_simple_with_context(
+    user: User, context: Context, service: ATestService, session: Any
+):
+    return {"name": user.name, "age": user.age}
+
+
+def test_process_body_simple_with_context(test_client_factory):
+    data = {"name": "lilya", "age": 10}
+
+    with create_client(
+        routes=[
+            Path(
+                "/infer",
+                handler=process_body_simple_with_context,
+                methods=["POST"],
+                dependencies={
+                    "service": Provide(ATestService),
+                },
+            )
+        ],
+        settings_module=NewSettings,
+    ) as client:
+        response = client.post("/infer", json=data)
+
+        assert response.status_code == 200
+        assert response.json() == {"name": "lilya", "age": 10}
+
+
+async def process_body_simple_with_context_and_request(
+    user: User, context: Context, request: Request, service: ATestService, session: Any
+):
+    return {"name": user.name, "age": user.age}
+
+
+def test_process_body_simple_with_context_and_request(test_client_factory):
+    data = {"name": "lilya", "age": 10}
+
+    with create_client(
+        routes=[
+            Path(
+                "/infer",
+                handler=process_body_simple_with_context_and_request,
                 methods=["POST"],
                 dependencies={
                     "service": Provide(ATestService),
