@@ -45,7 +45,6 @@ def test_use_requires_in_function_dependencies_using_provide(test_client_factory
                 },
             ),
         ],
-        debug=True,
     ) as client:
         response = client.get("/requires")
 
