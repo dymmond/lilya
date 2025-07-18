@@ -5,6 +5,18 @@ hide:
 
 # Release Notes
 
+## 0.17.1
+
+### Changed
+
+* **Dual‑mode support in run_sync:** Now accepts either an async function with args or a standalone coroutine object.
+* **Input normalization:** Uses `inspect` to detect and wrap calls into a zero‑argument coroutine factory.
+* **Seamless execution:** Drives work on the main thread via `anyio.run`,
+with a clean fallback to `ThreadPoolExecutor` if an event loop is active.
+* **Error clarity:** Raises a precise `TypeError` when the argument is neither a coroutine function nor object.
+* **Simplified API:** Eliminates nested lambdas by centralizing logic into a single `wrapper_fn`
+passed to `anyio.run`.
+
 ## 0.17.0
 
 ### Added
