@@ -7,6 +7,10 @@ hide:
 
 ## 0.17.0
 
+### Added
+
+- Missing validation that was supposed to go on the version 0.16.10 and it was not pushed.
+
 ### Changed
 
 - Mark `http_exception` in the `Exception` as `async` to avoid thread creation.
