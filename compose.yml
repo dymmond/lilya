@@ -13,3 +13,11 @@ services:
         --jit=false
     ports:
       - "127.0.0.1:5432:5432"
+
+  redis:
+    restart: always
+    image: redis:latest
+    expose:
+      - 6379
+    ports:
+      - "6379:6379"
