@@ -76,6 +76,7 @@ nav:
   - controllers.md
   - requests.md
   - responses.md
+  - caching.md
   - websockets.md
   - encoders.md
   - context.md

@@ -25,9 +25,8 @@ class LoggerProxy:
     def __getattr__(self, item: str) -> Any:
         with self._lock:
             if not self._logger:
-                raise RuntimeError(
-                    "Logger is not configured yet. Please call setup_logging() first."
-                )
+                setup_logging()
+                return getattr(self._logger, item)
             return getattr(self._logger, item)
 
 

@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.17.2
+
+### Added
+
+- Support for native [cache](./caching.md) with default to `InMemory`.
+
 ## 0.17.1
 
 ### Changed

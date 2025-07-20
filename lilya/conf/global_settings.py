@@ -5,6 +5,7 @@ from dataclasses import asdict, dataclass, field
 from typing import TYPE_CHECKING, Annotated, Any, ClassVar
 
 from lilya import __version__
+from lilya.caches.memory import InMemoryCache
 from lilya.conf.enums import EnvironmentType
 from lilya.logging import LoggingConfig, StandardLoggingConfig
 from lilya.types import ApplicationType, Dependencies, Doc, ExceptionHandler
@@ -12,6 +13,7 @@ from lilya.types import ApplicationType, Dependencies, Doc, ExceptionHandler
 if TYPE_CHECKING:
     from lilya.middleware.base import DefineMiddleware
     from lilya.permissions.base import DefinePermission
+    from lilya.protocols.cache import CacheBackend
 
 
 @dataclass
@@ -52,7 +54,31 @@ class _BaseSettings:
 
 
 @dataclass
-class _Internal(_BaseSettings):
+class CacheSettings(_BaseSettings):
+    cache_backend: Annotated[
+        CacheBackend,
+        Doc(
+            """
+            Defines the cache backend to be used for caching operations within the application.
+            By default, an in-memory cache is used, but this can be replaced with other
+            implementations such as Redis or Memcached.
+
+            The cache backend should implement the necessary methods for storing, retrieving,
+            and invalidating cached data.
+
+            Read more about this in the official [Esmerald documentation](https://esmerald.dev/caching/).
+
+            !!! Tip
+                For distributed applications, consider using an external caching backend
+                like Redis instead of the default in-memory cache.
+            """
+        ),
+    ] = field(default=InMemoryCache())
+    cache_default_ttl: Annotated[int, Doc("Default time-to-live (TTL) for cached items.")] = 300
+
+
+@dataclass
+class _Internal(CacheSettings):
     debug: Annotated[
         bool,
         Doc(

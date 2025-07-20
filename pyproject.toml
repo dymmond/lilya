@@ -98,6 +98,7 @@ testing = [
     "typing_extensions>=3.10.0",
     "ipython",
     "ptpython",
+    "redis",
     "ipdb",
     "pdbpp",
     "structlog",
