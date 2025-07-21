@@ -1,60 +1,202 @@
 from __future__ import annotations
 
+import inspect
+import os
 from collections.abc import Callable, Sequence
-from dataclasses import asdict, dataclass, field
-from typing import TYPE_CHECKING, Annotated, Any, ClassVar
+from functools import cached_property
+from types import UnionType
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    ClassVar,
+    Union,
+    get_args,
+    get_origin,
+    get_type_hints,
+)
 
 from lilya import __version__
 from lilya.caches.memory import InMemoryCache
 from lilya.conf.enums import EnvironmentType
 from lilya.logging import LoggingConfig, StandardLoggingConfig
+from lilya.protocols.cache import CacheBackend
 from lilya.types import ApplicationType, Dependencies, Doc, ExceptionHandler
 
 if TYPE_CHECKING:
     from lilya.middleware.base import DefineMiddleware
     from lilya.permissions.base import DefinePermission
-    from lilya.protocols.cache import CacheBackend
 
 
-@dataclass
-class _BaseSettings:
+def safe_get_type_hints(cls: type) -> dict[str, Any]:
+    """
+    Safely get type hints for a class, handling potential errors.
+    This function attempts to retrieve type hints for the given class,
+    and if it fails, it prints a warning and returns the class annotations.
+    Args:
+        cls (type): The class to get type hints for.
+    Returns:
+        dict[str, Any]: A dictionary of type hints for the class.
+    """
+    try:
+        return get_type_hints(cls, include_extras=True)
+    except Exception:
+        return cls.__annotations__
+
+
+class BaseSettings:
     """
     Base of all the settings for any system.
     """
 
-    def dict(self, exclude_none: bool = False, upper: bool = False) -> dict[str, Any]:
+    __type_hints__: dict[str, Any] = None
+    __truthy__: set[str] = {"true", "1", "yes", "on", "y"}
+
+    def __init__(self, **kwargs: Any) -> None:
+        """
+        Initializes the settings by loading environment variables
+        and casting them to the appropriate types.
+        This method uses type hints from the class attributes to determine
+        the expected types of the settings.
+        It will look for environment variables with the same name as the class attributes,
+        converted to uppercase, and cast them to the specified types.
+        If an environment variable is not set, it will use the default value
+        defined in the class attributes.
+        """
+        cls = self.__class__
+        if cls.__type_hints__ is None:
+            cls.__type_hints__ = safe_get_type_hints(cls)
+
+        if kwargs:
+            for key, value in kwargs.items():
+                setattr(self, key, value)
+
+        for key, typ in cls.__type_hints__.items():
+            base_type = self._extract_base_type(typ)
+
+            env_value = os.getenv(key.upper(), None)
+            if env_value is not None:
+                value = self._cast(env_value, base_type)
+            else:
+                value = getattr(self, key, None)
+            setattr(self, key, value)
+
+        # Call post_init if it exists
+        self.post_init()
+
+    def post_init(self) -> None:
+        """
+        Post-initialization method that can be overridden by subclasses.
+        This method is called after all settings have been initialized.
+        """
+        ...
+
+    def _extract_base_type(self, typ: Any) -> Any:
+        origin = get_origin(typ)
+        if origin is Annotated:
+            return get_args(typ)[0]
+        return typ
+
+    def _cast(self, value: str, typ: type[Any]) -> Any:
+        """
+        Casts the value to the specified type.
+        If the type is `bool`, it checks for common truthy values.
+        Raises a ValueError if the value cannot be cast to the type.
+
+        Args:
+            value (str): The value to cast.
+            typ (type): The type to cast the value to.
+        Returns:
+            Any: The casted value.
+        Raises:
+            ValueError: If the value cannot be cast to the specified type.
+        """
+        try:
+            origin = get_origin(typ)
+            if origin is Union or origin is UnionType:
+                non_none_types = [t for t in get_args(typ) if t is not type(None)]
+                if len(non_none_types) == 1:
+                    typ = non_none_types[0]
+                else:
+                    raise ValueError(f"Cannot cast to ambiguous Union type: {typ}")
+
+            if typ is bool:
+                return value.lower() in self.__truthy__
+            return typ(value)
+        except Exception:
+            if get_origin(typ) is Union or get_origin(UnionType):
+                type_name = " | ".join(
+                    t.__name__ if hasattr(t, "__name__") else str(t) for t in get_args(typ)
+                )
+            else:
+                type_name = getattr(typ, "__name__", str(typ))
+            raise ValueError(f"Cannot cast value '{value}' to type '{type_name}'") from None
+
+    def dict(
+        self,
+        exclude_none: bool = False,
+        upper: bool = False,
+        exclude: set[str] | None = None,
+        include_properties: bool = False,
+    ) -> dict[str, Any]:
         """
         Dumps all the settings into a python dictionary.
         """
-        original = asdict(self)
+        result = {}
+        exclude = exclude or set()
 
-        if not exclude_none:
-            if not upper:
-                return original
-            return {k.upper(): v for k, v in original.items()}
+        for key in self.__annotations__:
+            if key in exclude:
+                continue
+            value = getattr(self, key, None)
+            if exclude_none and value is None:
+                continue
+            result_key = key.upper() if upper else key
+            result[result_key] = value
 
-        if not upper:
-            return {k: v for k, v in original.items() if v is not None}
-        return {k.upper(): v for k, v in original.items() if v is not None}
+        if include_properties:
+            for name, _ in inspect.getmembers(
+                type(self),
+                lambda o: isinstance(
+                    o,
+                    (property, cached_property),
+                ),
+            ):
+                if name in exclude or name in self.__annotations__:
+                    continue
+                try:
+                    value = getattr(self, name)
+                    if exclude_none and value is None:
+                        continue
+                    result_key = name.upper() if upper else name
+                    result[result_key] = value
+                except Exception:
+                    # Skip properties that raise errors
+                    continue
 
-    def tuple(self, exclude_none: bool = False, upper: bool = False) -> list[tuple[str, Any]]:
+        return result
+
+    def tuple(
+        self,
+        exclude_none: bool = False,
+        upper: bool = False,
+        exclude: set[str] | None = None,
+        include_properties: bool = False,
+    ) -> list[tuple[str, Any]]:
         """
         Dumps all the settings into a tuple.
         """
-        original = asdict(self)
-
-        if not exclude_none:
-            if not upper:
-                return list(original.items())
-            return list({k.upper(): v for k, v in original.items()}.items())
-
-        if not upper:
-            return [(k, v) for k, v in original.items() if v is not None]
-        return [(k.upper(), v) for k, v in original.items() if v is not None]
+        return list(
+            self.dict(
+                exclude_none=exclude_none,
+                upper=upper,
+                exclude=exclude,
+                include_properties=include_properties,
+            ).items()
+        )
 
 
-@dataclass
-class CacheSettings(_BaseSettings):
+class CacheSettings(BaseSettings):
     cache_backend: Annotated[
         CacheBackend,
         Doc(
@@ -73,42 +215,11 @@ class CacheSettings(_BaseSettings):
                 like Redis instead of the default in-memory cache.
             """
         ),
-    ] = field(default=InMemoryCache())
+    ] = InMemoryCache()
     cache_default_ttl: Annotated[int, Doc("Default time-to-live (TTL) for cached items.")] = 300
 
 
-@dataclass
-class _Internal(CacheSettings):
-    debug: Annotated[
-        bool,
-        Doc(
-            """
-            Boolean indicating if the application should return the debug tracebacks on
-            server errors, in other words, if you want to have debug errors being displayed.
-
-            !!! Tip
-                Do not use this in production as `True`.
-            """
-        ),
-    ] = field(default=False)
-    environment: Annotated[
-        str | None,
-        Doc(
-            """
-            Optional string indicating the environment where the settings are running.
-            You won't probably need this but it is here in case you might want to use.
-            """
-        ),
-    ] = field(default=EnvironmentType.PRODUCTION)
-    version: Annotated[
-        str | int | float,
-        Doc(
-            """
-            The version of the application and defaults to the current version of the settings
-            system if not set.
-            """
-        ),
-    ] = field(default=__version__)
+class Internal(CacheSettings):
     ipython_args: ClassVar[list[str]] = ["--no-banner"]
     ptpython_config_file: Annotated[
         str,
@@ -120,8 +231,7 @@ class _Internal(CacheSettings):
     ] = "~/.config/ptpython/config.py"
 
 
-@dataclass
-class Settings(_Internal):
+class Settings(Internal):
     debug: Annotated[
         bool,
         Doc(
@@ -133,7 +243,7 @@ class Settings(_Internal):
                 Do not use this in production as `True`.
             """
         ),
-    ] = field(default=False)
+    ] = False
     environment: Annotated[
         str | None,
         Doc(
@@ -142,7 +252,7 @@ class Settings(_Internal):
             You won't probably need this but it is here in case you might want to use.
             """
         ),
-    ] = field(default=EnvironmentType.PRODUCTION)
+    ] = EnvironmentType.PRODUCTION
     version: Annotated[
         str | int | float,
         Doc(
@@ -151,7 +261,7 @@ class Settings(_Internal):
             not set.
             """
         ),
-    ] = field(default=__version__)
+    ] = __version__
 
     include_in_schema: Annotated[
         bool,
@@ -160,7 +270,7 @@ class Settings(_Internal):
             If all the APIs of a Lylia Application should be included in the OpenAPI Schema.
             """
         ),
-    ] = field(default=True)
+    ] = True
 
     default_route_pattern: Annotated[
         str,
@@ -179,7 +289,7 @@ class Settings(_Internal):
             ```
             """
         ),
-    ] = field(default="route_patterns")
+    ] = "route_patterns"
     enforce_return_annotation: Annotated[
         bool,
         Doc(
@@ -308,7 +418,7 @@ class Settings(_Internal):
             This is used by the `StandardLoggingConfig` to set the logging level.
             """
         ),
-    ] = field(default="INFO")
+    ] = "INFO"
     enable_openapi: Annotated[
         bool,
         Doc(
@@ -319,7 +429,7 @@ class Settings(_Internal):
             Read more about the [OpenAPI](https://lilya.dev/openapi/).
             """
         ),
-    ] = field(default=False)
+    ] = False
     infer_body: Annotated[
         bool,
         Doc(
@@ -331,7 +441,7 @@ class Settings(_Internal):
             Because the inferred type needs to be evaluated at request time, **this can impact slightly** the performance.
             """
         ),
-    ] = field(default=False)
+    ] = False
     enable_intercept_global_exceptions: Annotated[
         bool,
         Doc(

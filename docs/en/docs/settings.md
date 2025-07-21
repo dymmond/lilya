@@ -6,7 +6,8 @@ As a project grows in complexity, and settings become dispersed throughout the c
 managing them can become challenging, leading to a potential organizational mess.
 
 !!! warning
-    All the settings in Lilya use Python dataclasses.
+    Prior to version 0.18.0, all the settings in Lilya use Python dataclasses but now they are using a cleaner and more familiar API,
+    so you simply just need to inherit from the `Settings` object of Lilya and override.
 
 ## How to use
 
@@ -419,14 +420,11 @@ When you instantiate an application **or you pass parameters directly or you use
 Passing parameters in the object will always override the values from the default settings.
 
 ```python
-from dataclasses import dataclass
-
 from lilya.conf.global_settings import Settings
 from lilya.middleware.httpsredirect import HTTPSRedirectMiddleware
 from lilya.middleware import DefineMiddleware
 
 
-@dataclass
 class AppSettings(Settings):
     debug: bool = False
 

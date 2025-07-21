@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-import logging
 import sys
-from dataclasses import dataclass
+import logging
 from typing import Any
 
 from loguru import logger
@@ -37,7 +36,6 @@ class InterceptHandler(logging.Handler):  # pragma: no cover
         )
 
 
-@dataclass
 class DevelopmentSettings(AppSettings):
     # the environment can be names to whatever you want.
     environment: bool = "develpoment"

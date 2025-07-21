@@ -53,14 +53,11 @@ Existem várias formas de fazer isso, mas na documentação do Pydantic (e até 
 ```python
 from typing import ClassVar
 
-from dataclasses import dataclass, field
-
 from lilya.conf.global_settings import Settings
 
 
-@dataclass
 class AppSettings(Settings):
-    allowed_hosts: list[str] | str = field(default=os.environ.get("ALLOWED_HOSTS", []))
+    allowed_hosts: list[str] | str = os.environ.get("ALLOWED_HOSTS", [])
 
     def __post_init__(self) -> None:
         self.allowed_hosts = self.allowed_hosts.split(",")

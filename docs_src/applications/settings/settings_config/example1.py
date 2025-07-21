@@ -1,11 +1,8 @@
-from dataclasses import dataclass
-
 from lilya.apps import ChildLilya, Lilya
 from lilya.conf.global_settings import Settings
 from lilya.routing import Include
 
 
-@dataclass
 class ChildLilyaSettings(Settings):
     debug: bool = True
     secret_key: str = "a child secret"

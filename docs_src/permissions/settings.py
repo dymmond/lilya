@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 from lilya.conf.global_settings import Settings
 from lilya.exceptions import PermissionDenied
 from lilya.permissions import DefinePermission
@@ -24,7 +22,6 @@ class AllowAccess(PermissionProtocol):
         raise PermissionDenied()
 
 
-@dataclass
 class AppSettings(Settings):
     @property
     def permissions(self) -> list[DefinePermission]:

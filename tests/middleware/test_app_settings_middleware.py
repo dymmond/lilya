@@ -1,5 +1,3 @@
-from dataclasses import dataclass
-
 from lilya.apps import Lilya
 from lilya.conf import settings
 from lilya.conf.global_settings import Settings
@@ -13,13 +11,11 @@ async def home() -> JSONResponse:
     return JSONResponse({"title": title, "debug": settings.debug})
 
 
-@dataclass
 class NewSettings(Settings):
     title: str = "Settings being parsed by the middleware and make it app global"
     debug: bool = False
 
 
-@dataclass
 class NestedAppSettings(Settings):
     title: str = "Nested app title"
     debug: bool = True

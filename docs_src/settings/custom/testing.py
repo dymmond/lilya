@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 from lilya.types import LifespanEvent
 
 from ..configs.base import AppSettings
@@ -13,7 +11,6 @@ async def start_database(): ...
 async def close_database(): ...
 
 
-@dataclass
 class TestingSettings(AppSettings):
     # the environment can be names to whatever you want.
     environment: bool = "testing"

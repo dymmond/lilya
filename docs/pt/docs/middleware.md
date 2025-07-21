@@ -113,7 +113,6 @@ para torná-lo disponível em cada pedido.
 === "A partir das definições"
 
     ```python
-    from dataclasses import dataclass
     from typing import List
 
     from lilya.conf.global_settings import Settings
@@ -121,7 +120,6 @@ para torná-lo disponível em cada pedido.
     from .middleware.jwt import JWTAuthMiddleware
 
 
-    @dataclass
     class AppSettings(Settings):
 
         @property

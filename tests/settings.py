@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
 from functools import cached_property
 
 from edgy import Registry
@@ -14,7 +13,6 @@ TEST_DATABASE_URL = os.environ.get(
 )
 
 
-@dataclass
 class TestSettings(Settings):
     debug: bool = True
     environment: str = EnvironmentType.TESTING.value
