@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from lilya.conf.global_settings import Settings  # Replace with actual import
+from lilya.conf.global_settings import Settings
 from lilya.protocols.cache import CacheBackend
 
 
@@ -26,9 +26,6 @@ class MySettings(Settings):
     timeout: float = 5.5
     optional: str | None = None
     cache_backend: CacheBackend = FileBackend()
-
-
-# --- Initialization Tests ---
 
 
 def test_defaults():
