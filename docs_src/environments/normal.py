@@ -1,12 +1,9 @@
-from dataclasses import dataclass
-
 from lilya.conf.global_settings import Settings
 from lilya.environments import EnvironLoader
 
 loader = EnvironLoader()
 
 
-@dataclass
 class DatabaseSettings(Settings):
     database_name: str = loader("DATABASE_NAME", cast=str, default="mydb")
     database_user: str = loader("DATABASE_USER", cast=str, default="postgres")
