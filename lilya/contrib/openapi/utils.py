@@ -5,9 +5,20 @@ from typing import Any, get_args, get_origin
 from pydantic.json_schema import GenerateJsonSchema
 
 from lilya import __version__
+from lilya._utils import is_class_and_subclass
 from lilya.contrib.openapi.constants import REF_TEMPLATE, WRITING_METHODS, WRITING_STATUS_MAPPING
 from lilya.contrib.openapi.helpers import get_definitions
 from lilya.contrib.openapi.params import Query, ResponseParam
+from lilya.controllers import Controller
+from lilya.enums import HTTPMethod
+
+
+def extract_http_methods_from_endpoint(cls: type) -> list[str]:
+    """
+    Extracts the HTTP methods from a Controller class.
+    Returns a list of method names in uppercase.
+    """
+    return [method.upper() for method in HTTPMethod.to_list() if callable(getattr(cls, method.lower(), None))]
 
 
 def get_openapi(
@@ -102,13 +113,25 @@ def get_openapi(
         if not raw_path:
             continue
 
-        methods = getattr(route, "methods", ["GET"])
-        for method in methods:
+        if is_class_and_subclass(route.handler, Controller):
+            # If this is a Controller, use its methods directly
+            methods = extract_http_methods_from_endpoint(route.handler)
+        else:
+            methods = getattr(route, "methods", ["GET"])
+
+        for method in methods or []:
             if method.upper() == "HEAD":
                 continue
 
             m_lower = method.lower()
-            handler: Callable[..., Any] = getattr(route, "handler", None)
+
+            handler: Callable[..., Any] = None
+            if is_class_and_subclass(route.handler, Controller):
+                # If this is a Controller, use the method directly
+                handler = getattr(route.handler, m_lower, None)
+            else:
+                handler = getattr(route, "handler", None)
+
             meta: dict[str, Any] = getattr(handler, "openapi_meta", {}) or {}
 
             # Path parameters
@@ -234,18 +257,14 @@ def get_openapi(
                             }
                         else:
                             ref_name = ann.__name__
-                            content_obj[media] = {
-                                "schema": {"$ref": f"#/components/schemas/{ref_name}"}
-                            }
+                            content_obj[media] = {"schema": {"$ref": f"#/components/schemas/{ref_name}"}}
 
                     responses_obj[status_code] = {"description": desc or "Successful response"}
                     if content_obj:
                         responses_obj[status_code]["content"] = content_obj
             else:
                 # Default 200 without schemas
-                responses_obj["200"] = {
-                    "description": meta.get("response_description") or "Successful response"
-                }
+                responses_obj["200"] = {"description": meta.get("response_description") or "Successful response"}
 
             operation["responses"] = responses_obj
             spec["paths"].setdefault(raw_path, {})[m_lower] = operation

@@ -133,7 +133,14 @@ def openapi(
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            handler = BaseHandler()
+            if args and len(args) == 1:
+                # If the first argument is a BaseHandler, we assume it's a handler method
+                # and we can pass it directly to handle_response.
+                handler: BaseHandler = args[0]
+                signature = get_signature(getattr(handler, func.__name__, func))
+                return handler.handle_response(func, other_signature=signature)
+            else:
+                handler = BaseHandler()
             signature = get_signature(func)
             return handler.handle_response(func, other_signature=signature)
 
@@ -175,9 +182,7 @@ def openapi(
                     elif isinstance(v, dict):
                         data[k] = Query(**v)
                 return data
-            raise TypeError(
-                "Query must be a dict or set or a dict of key-pair value of str and Query"
-            )
+            raise TypeError("Query must be a dict or set or a dict of key-pair value of str and Query")
 
         def request_body(
             responses_dict: dict[int, OpenAPIResponse] | None = None,

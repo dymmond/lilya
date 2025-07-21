@@ -32,10 +32,9 @@ class BaseHandler:
     __path_params__: dict[str, Any] | None = None
     __header_params__: dict[str, Any] | None = None
     __cookie_params__: dict[str, Any] | None = None
+    signature: inspect.Signature | None = None
 
-    async def extract_request_information(
-        self, request: Request, signature: inspect.Signature
-    ) -> None:
+    async def extract_request_information(self, request: Request, signature: inspect.Signature) -> None:
         """
         Extracts the information and flattens the request dictionaries in the handler.
         """
@@ -50,9 +49,7 @@ class BaseHandler:
         reserved_keys.update(self.__cookie_params__.keys())
 
         # Store the body params in the handler variable
-        self.__body_params__ = {
-            k: v.annotation for k, v in signature.parameters.items() if k not in reserved_keys
-        }
+        self.__body_params__ = {k: v.annotation for k, v in signature.parameters.items() if k not in reserved_keys}
 
     def handle_response(
         self,
@@ -127,9 +124,7 @@ class BaseHandler:
 
         return app
 
-    async def _handle_response_content(
-        self, app: ASGIApp, scope: Scope, receive: Receive, send: Send
-    ) -> None:
+    async def _handle_response_content(self, app: ASGIApp, scope: Scope, receive: Receive, send: Send) -> None:
         """
         Generates the app response, ensuring it is in the form of an ASGI application.
         When a special type is passed, it tries to convert to a json format and generate
@@ -185,7 +180,6 @@ class BaseHandler:
             and name not in dependencies
             and name not in SignatureDefault.to_list()
         ]
-
         payload: dict[str, Any] = {}
 
         if len(body_param_names) == 1:
@@ -202,9 +196,7 @@ class BaseHandler:
                 payload[name] = apply_structure(structure=encoder_object, value=json_data)
             except Exception as exc:  # noqa
                 if name in json_data:
-                    payload[name] = apply_structure(
-                        structure=encoder_object, value=json_data[name]
-                    )
+                    payload[name] = apply_structure(structure=encoder_object, value=json_data[name])
                 else:
                     raise exc
         else:
@@ -292,9 +284,7 @@ class BaseHandler:
             json_data = await self._parse_inferred_body(request, requested, signature)
 
         # 3.1) Extract path parameters that are present in the function's signature.
-        data = {
-            name: val for name, val in request.path_params.items() if name in signature.parameters
-        }
+        data = {name: val for name, val in request.path_params.items() if name in signature.parameters}
         # Merge the extracted JSON body data into the parameters dictionary.
         data.update(json_data)
 

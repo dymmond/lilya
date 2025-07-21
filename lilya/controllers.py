@@ -9,7 +9,7 @@ from typing import Any, cast
 from lilya import status
 from lilya._internal._responses import BaseHandler
 from lilya.conf import settings
-from lilya.enums import Event, HTTPMethod, ScopeType, SignatureDefault
+from lilya.enums import Event, HTTPMethod, ScopeType
 from lilya.exceptions import HTTPException, ImproperlyConfigured
 from lilya.requests import Request
 from lilya.responses import PlainText, Response
@@ -43,20 +43,14 @@ class Controller(BaseController):
 
     __scope__: Scope | None = None
 
-    signature: inspect.Signature | None = None
+    # signature: inspect.Signature | None = None
 
     @cached_property
     def __allowed_methods__(self) -> list[str]:
-        return [
-            method
-            for method in HTTPMethod.to_list()
-            if getattr(self, method.lower(), None) is not None
-        ]
+        return [method for method in HTTPMethod.to_list() if getattr(self, method.lower(), None) is not None]
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        assert scope["type"] == ScopeType.HTTP, (
-            f"{self.__class__.__name__} classes must be in the http scope."
-        )
+        assert scope["type"] == ScopeType.HTTP, f"{self.__class__.__name__} classes must be in the http scope."
 
         await self.handle_dispatch(scope=scope, receive=receive, send=send)
 
@@ -68,32 +62,23 @@ class Controller(BaseController):
             else request.method.lower()
         )
         handler: Callable[[], Coroutine[Any, Any, Response]] = getattr(
-            self, name, self.handle_not_allowed
+            self,
+            name,
+            self.handle_not_allowed,
         )
-        self.signature = inspect.signature(handler)
         self.__scope__ = scope
+        self.signature = inspect.signature(handler)
 
-        func_params: dict[str, Any] = await self._extract_params_from_request(
-            request=request, signature=self.signature
-        )
-        if self.signature.parameters:
-            if SignatureDefault.REQUEST in self.signature.parameters:
-                func_params.update({"request": request})
-                response = await self._execute_function(handler, **func_params)
-            else:
-                response = await self._execute_function(handler, **func_params)
-        else:
-            response = await self._execute_function(handler, **func_params)
+        if hasattr(handler, "openapi_meta"):
+            handler.openapi_meta["__parent_cls__"] = self
 
-        await self._handle_response_content(response, scope, receive, send)
+        await self.handle_response(handler)(scope, receive, send)
 
     async def handle_not_allowed(self) -> Response:
         headers = {"Allow": ", ".join(self.__allowed_methods__)}
         if "app" in self.__scope__:
             raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED)
-        return PlainText(
-            "Method Not Allowed", status_code=status.HTTP_405_METHOD_NOT_ALLOWED, headers=headers
-        )
+        return PlainText("Method Not Allowed", status_code=status.HTTP_405_METHOD_NOT_ALLOWED, headers=headers)
 
 
 class WebSocketController(BaseController):
@@ -113,9 +98,7 @@ class WebSocketController(BaseController):
         self.send = send
 
     def __await__(self) -> Generator[Any, None, None]:
-        return self.handle_dispatch(
-            scope=self.scope, receive=self.receive, send=self.send
-        ).__await__()
+        return self.handle_dispatch(scope=self.scope, receive=self.receive, send=self.send).__await__()
 
     async def handle_dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -210,11 +193,7 @@ class WebSocketController(BaseController):
         Returns:
             Any: Decoded JSON message data.
         """
-        text = (
-            message["text"]
-            if message.get("text") is not None
-            else message["bytes"].decode("utf-8")
-        )
+        text = message["text"] if message.get("text") is not None else message["bytes"].decode("utf-8")
         try:
             return json.loads(text)
         except json.decoder.JSONDecodeError:
