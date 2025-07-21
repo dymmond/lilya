@@ -5,9 +5,24 @@ from typing import Any, get_args, get_origin
 from pydantic.json_schema import GenerateJsonSchema
 
 from lilya import __version__
+from lilya._utils import is_class_and_subclass
 from lilya.contrib.openapi.constants import REF_TEMPLATE, WRITING_METHODS, WRITING_STATUS_MAPPING
 from lilya.contrib.openapi.helpers import get_definitions
 from lilya.contrib.openapi.params import Query, ResponseParam
+from lilya.controllers import Controller
+from lilya.enums import HTTPMethod
+
+
+def extract_http_methods_from_endpoint(cls: type) -> list[str]:
+    """
+    Extracts the HTTP methods from a Controller class.
+    Returns a list of method names in uppercase.
+    """
+    return [
+        method.upper()
+        for method in HTTPMethod.to_list()
+        if callable(getattr(cls, method.lower(), None))
+    ]
 
 
 def get_openapi(
@@ -102,13 +117,25 @@ def get_openapi(
         if not raw_path:
             continue
 
-        methods = getattr(route, "methods", ["GET"])
-        for method in methods:
+        if is_class_and_subclass(route.handler, Controller):
+            # If this is a Controller, use its methods directly
+            methods = extract_http_methods_from_endpoint(route.handler)
+        else:
+            methods = getattr(route, "methods", ["GET"])
+
+        for method in methods or []:
             if method.upper() == "HEAD":
                 continue
 
             m_lower = method.lower()
-            handler: Callable[..., Any] = getattr(route, "handler", None)
+
+            handler: Callable[..., Any] = None
+            if is_class_and_subclass(route.handler, Controller):
+                # If this is a Controller, use the method directly
+                handler = getattr(route.handler, m_lower, None)
+            else:
+                handler = getattr(route, "handler", None)
+
             meta: dict[str, Any] = getattr(handler, "openapi_meta", {}) or {}
 
             # Path parameters
@@ -141,6 +168,11 @@ def get_openapi(
                 merged_query.append(p)
 
             combined_params = path_parameters + merged_query
+
+            # Checks for descriptors like the OpenAPIMethod
+            # For class-based handlers, we need to ensure we get the correct function
+            if hasattr(handler, "func"):
+                handler = handler.func
 
             operation: dict[str, Any] = {
                 "operationId": meta.get("operation_id", handler.__name__ if handler else ""),

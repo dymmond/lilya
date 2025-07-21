@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import inspect
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Coroutine
 from typing import TYPE_CHECKING, Any, cast
 
 from lilya._internal._encoders import apply_structure, json_encode
@@ -32,6 +32,7 @@ class BaseHandler:
     __path_params__: dict[str, Any] | None = None
     __header_params__: dict[str, Any] | None = None
     __cookie_params__: dict[str, Any] | None = None
+    signature: inspect.Signature | None = None
 
     async def extract_request_information(
         self, request: Request, signature: inspect.Signature
@@ -56,7 +57,8 @@ class BaseHandler:
 
     def handle_response(
         self,
-        func: Callable[[Request], Awaitable[Response] | Response],
+        func: Callable[[Request], Awaitable[Response] | Response]
+        | Callable[[], Coroutine[Any, Any, Response]],
         other_signature: inspect.Signature | None = None,
     ) -> ASGIApp:
         """
@@ -185,7 +187,6 @@ class BaseHandler:
             and name not in dependencies
             and name not in SignatureDefault.to_list()
         ]
-
         payload: dict[str, Any] = {}
 
         if len(body_param_names) == 1:

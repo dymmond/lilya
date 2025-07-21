@@ -817,20 +817,3 @@ def test_multiple_siblings_child_apps():
 
     assert "/c1/one" in spec["paths"]
     assert "/c2/two" in spec["paths"]
-
-
-def xtest_param_collision_nested_includes():
-    @openapi()
-    async def coll(request, id: str):
-        return {"id": id}
-
-    # Nested includes where same {id} appears at two levels
-    app = Lilya(routes=[Include("/a/{id}", routes=[Path("/b/{id}", coll)])], enable_openapi=True)
-    spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
-    )
-    # We expect two 'id' path parameters in sequence
-    params = spec["paths"]["/a/{id}/b/{id}"]["get"]["parameters"]
-    names = [p["name"] for p in params if p["in"] == "path"]
-
-    assert names == ["id", "id"]

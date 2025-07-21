@@ -11,6 +11,7 @@ hide:
 
 - Support for native [cache](./caching.md) with default to `InMemory`.
 - Add support for relative urls from the `URL` datastructure.
+- Support for OpenAPI on Controllers by applying internal identity descriptors.
 
 ### Changed
 
