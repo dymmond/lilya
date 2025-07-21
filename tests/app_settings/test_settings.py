@@ -1,4 +1,5 @@
 import os
+from functools import cached_property
 from typing import Annotated
 from unittest.mock import patch
 
@@ -161,3 +162,47 @@ def test_dict_keys_are_strings():
     settings = MySettings()
 
     assert all(isinstance(k, str) for k in settings.dict().keys())
+
+
+class CustomSettings(MySettings):
+    values: tuple[str] = ("value1", "value2")
+    values_dict: dict[str, str] = {"key1": "value1", "key2": "value2"}
+    values_list: list[str] = ["item1", "item2"]
+
+    @property
+    def custom_property(self) -> str:
+        return "custom_value"
+
+    @cached_property
+    def cached_property_example(self) -> str:
+        return "cached_value"
+
+
+def test_custom_settings():
+    settings = CustomSettings()
+
+    assert settings.values == ("value1", "value2")
+    assert settings.values_dict == {"key1": "value1", "key2": "value2"}
+    assert settings.values_list == ["item1", "item2"]
+    assert settings.custom_property == "custom_value"
+
+    d = settings.dict(include_properties=False)
+    assert d["values"] == ("value1", "value2")
+    assert d["values_dict"] == {"key1": "value1", "key2": "value2"}
+    assert d["values_list"] == ["item1", "item2"]
+
+    d = settings.dict(include_properties=True)
+    assert "custom_property" in d
+    assert "cached_property_example" in d
+
+
+def test_tuple_with_properties():
+    settings = CustomSettings()
+
+    t = settings.tuple(include_properties=True)
+    assert ("custom_property", "custom_value") in t
+    assert ("cached_property_example", "cached_value") in t
+
+    t = settings.tuple(include_properties=False)
+    assert ("custom_property", "custom_value") not in t
+    assert ("cached_property_example", "cached_value") not in t

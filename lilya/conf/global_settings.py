@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import inspect
 import os
 from collections.abc import Callable, Sequence
+from functools import cached_property
 from types import UnionType
 from typing import (
     TYPE_CHECKING,
@@ -135,26 +137,63 @@ class BaseSettings:
         exclude_none: bool = False,
         upper: bool = False,
         exclude: set[str] | None = None,
+        include_properties: bool = False,
     ) -> dict[str, Any]:
         """
         Dumps all the settings into a python dictionary.
         """
         result = {}
+        exclude = exclude or set()
+
         for key in self.__annotations__:
-            if key in (exclude or set()):
+            if key in exclude:
                 continue
             value = getattr(self, key, None)
             if exclude_none and value is None:
                 continue
             result_key = key.upper() if upper else key
             result[result_key] = value
+
+        if include_properties:
+            for name, _ in inspect.getmembers(
+                type(self),
+                lambda o: isinstance(
+                    o,
+                    (property, cached_property),
+                ),
+            ):
+                if name in exclude or name in self.__annotations__:
+                    continue
+                try:
+                    value = getattr(self, name)
+                    if exclude_none and value is None:
+                        continue
+                    result_key = name.upper() if upper else name
+                    result[result_key] = value
+                except Exception:
+                    # Skip properties that raise errors
+                    continue
+
         return result
 
-    def tuple(self, exclude_none: bool = False, upper: bool = False) -> list[tuple[str, Any]]:
+    def tuple(
+        self,
+        exclude_none: bool = False,
+        upper: bool = False,
+        exclude: set[str] | None = None,
+        include_properties: bool = False,
+    ) -> list[tuple[str, Any]]:
         """
         Dumps all the settings into a tuple.
         """
-        return list(self.dict(exclude_none=exclude_none, upper=upper).items())
+        return list(
+            self.dict(
+                exclude_none=exclude_none,
+                upper=upper,
+                exclude=exclude,
+                include_properties=include_properties,
+            ).items()
+        )
 
 
 class CacheSettings(BaseSettings):
