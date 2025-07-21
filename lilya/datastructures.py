@@ -582,6 +582,24 @@ class URL:
         query = urlencode(values)
         return self.replace(query=query)
 
+    def relative_url(self) -> URL:
+        """
+        Creates a relative URL from the current URL.
+
+        Returns:
+            URL: A new URL instance with the same path, query, and fragment.
+        """
+        url = urlunsplit(
+            SplitResult(
+                scheme="",
+                netloc="",
+                path=self.path,
+                query=self.query,
+                fragment=self.fragment,
+            )
+        )
+        return self.__class__(url)
+
     def __eq__(self, other: Any) -> bool:
         """
         Checks if two URLs are equal.

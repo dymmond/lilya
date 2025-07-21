@@ -98,6 +98,17 @@ def test_secret():
     assert str(value) == "a-value-being-passed"
 
 
+def test_relative_url():
+    u = URL("https://lilya.dev/path/to/something")
+    assert u.relative_url() == URL("/path/to/something")
+
+    u = URL("https://username:password@lilya.dev/path/to/something?abc=123")
+    assert u.relative_url() == URL("/path/to/something?abc=123")
+
+    u = URL("https://[fe::2]:12345/path/to/something?abc=123#anchor")
+    assert u.relative_url() == URL("/path/to/something?abc=123#anchor")
+
+
 def test_multidict():
     query = MultiDict([("a", "123"), ("a", "456"), ("b", "789")])
     assert "a" in query
