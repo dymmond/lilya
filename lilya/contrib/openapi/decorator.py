@@ -1,15 +1,37 @@
 import inspect
 from collections.abc import Callable, Sequence
 from functools import lru_cache, wraps
-from typing import Annotated, Any, get_args, get_origin
+from typing import Annotated, Any, cast, get_args, get_origin
 
 from lilya._internal._responses import BaseHandler
+from lilya._utils import is_function
 from lilya.contrib.openapi.datastructures import OpenAPIResponse
 from lilya.contrib.openapi.helpers import convert_annotation_to_pydantic_model
 from lilya.contrib.openapi.params import Query, ResponseParam
 from lilya.types import Doc
 
 SUCCESSFUL_RESPONSE = "Successful response"
+
+
+class OpenAPIMethod:
+    def __init__(self, func: Callable[..., Any], metadata: dict[str, Any]) -> None:
+        """
+        Initialize OpenAPIMethod with a function and its metadata.
+        """
+        self.func = func
+        self.metadata = metadata
+
+    def __get__(self, instance: Any, owner: Any) -> Callable[..., Any]:
+        bound_func = self.func.__get__(instance, owner)
+
+        @wraps(bound_func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            handler = instance if isinstance(instance, BaseHandler) else BaseHandler()
+            signature = get_signature(bound_func)
+            return handler.handle_response(bound_func, other_signature=signature)
+
+        wrapper.openapi_meta = self.metadata
+        return wrapper
 
 
 @lru_cache
@@ -133,14 +155,7 @@ def openapi(
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            if args and len(args) == 1:
-                # If the first argument is a BaseHandler, we assume it's a handler method
-                # and we can pass it directly to handle_response.
-                handler: BaseHandler = args[0]
-                signature = get_signature(getattr(handler, func.__name__, func))
-                return handler.handle_response(func, other_signature=signature)
-            else:
-                handler = BaseHandler()
+            handler = BaseHandler()
             signature = get_signature(func)
             return handler.handle_response(func, other_signature=signature)
 
@@ -182,7 +197,9 @@ def openapi(
                     elif isinstance(v, dict):
                         data[k] = Query(**v)
                 return data
-            raise TypeError("Query must be a dict or set or a dict of key-pair value of str and Query")
+            raise TypeError(
+                "Query must be a dict or set or a dict of key-pair value of str and Query"
+            )
 
         def request_body(
             responses_dict: dict[int, OpenAPIResponse] | None = None,
@@ -218,8 +235,11 @@ def openapi(
         }
 
         body_fields = request_body(wrapper.openapi_meta["responses"])
+
         wrapper.openapi_meta["request_body"] = body_fields
 
-        return wrapper
+        if is_function(func) and not inspect.ismethod(func):
+            return wrapper
+        return cast(Callable[..., Any], OpenAPIMethod(func, wrapper.openapi_meta))
 
     return decorator

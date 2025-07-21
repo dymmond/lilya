@@ -18,7 +18,11 @@ def extract_http_methods_from_endpoint(cls: type) -> list[str]:
     Extracts the HTTP methods from a Controller class.
     Returns a list of method names in uppercase.
     """
-    return [method.upper() for method in HTTPMethod.to_list() if callable(getattr(cls, method.lower(), None))]
+    return [
+        method.upper()
+        for method in HTTPMethod.to_list()
+        if callable(getattr(cls, method.lower(), None))
+    ]
 
 
 def get_openapi(
@@ -165,6 +169,11 @@ def get_openapi(
 
             combined_params = path_parameters + merged_query
 
+            # Checks for descriptors like the OpenAPIMethod
+            # For class-based handlers, we need to ensure we get the correct function
+            if hasattr(handler, "func"):
+                handler = handler.func
+
             operation: dict[str, Any] = {
                 "operationId": meta.get("operation_id", handler.__name__ if handler else ""),
             }
@@ -257,14 +266,18 @@ def get_openapi(
                             }
                         else:
                             ref_name = ann.__name__
-                            content_obj[media] = {"schema": {"$ref": f"#/components/schemas/{ref_name}"}}
+                            content_obj[media] = {
+                                "schema": {"$ref": f"#/components/schemas/{ref_name}"}
+                            }
 
                     responses_obj[status_code] = {"description": desc or "Successful response"}
                     if content_obj:
                         responses_obj[status_code]["content"] = content_obj
             else:
                 # Default 200 without schemas
-                responses_obj["200"] = {"description": meta.get("response_description") or "Successful response"}
+                responses_obj["200"] = {
+                    "description": meta.get("response_description") or "Successful response"
+                }
 
             operation["responses"] = responses_obj
             spec["paths"].setdefault(raw_path, {})[m_lower] = operation

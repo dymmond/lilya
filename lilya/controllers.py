@@ -42,19 +42,37 @@ class Controller(BaseController):
     """
 
     __scope__: Scope | None = None
+    __handler_signatures__: dict[str, inspect.Signature] = {}
 
-    # signature: inspect.Signature | None = None
+    signature: inspect.Signature | None = None
 
     @cached_property
     def __allowed_methods__(self) -> list[str]:
-        return [method for method in HTTPMethod.to_list() if getattr(self, method.lower(), None) is not None]
+        return [
+            method
+            for method in HTTPMethod.to_list()
+            if getattr(self, method.lower(), None) is not None
+        ]
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        assert scope["type"] == ScopeType.HTTP, f"{self.__class__.__name__} classes must be in the http scope."
+        assert scope["type"] == ScopeType.HTTP, (
+            f"{self.__class__.__name__} classes must be in the http scope."
+        )
 
         await self.handle_dispatch(scope=scope, receive=receive, send=send)
 
     async def handle_dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """
+        Handle HTTP request and dispatch to the appropriate handler method based on the HTTP
+        method.
+
+        This method is called when the controller is invoked as an ASGI application.
+
+        Args:
+            scope (Scope): ASGI scope.
+            receive (Receive): ASGI receive channel.
+            send (Send): ASGI send channel.
+        """
         request = Request(scope=scope, receive=receive, send=send)
         name = (
             HTTPMethod.GET.lower()
@@ -68,6 +86,7 @@ class Controller(BaseController):
         )
         self.__scope__ = scope
         self.signature = inspect.signature(handler)
+        self.__handler_signatures__[name] = self.signature
 
         if hasattr(handler, "openapi_meta"):
             handler.openapi_meta["__parent_cls__"] = self
@@ -78,7 +97,9 @@ class Controller(BaseController):
         headers = {"Allow": ", ".join(self.__allowed_methods__)}
         if "app" in self.__scope__:
             raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED)
-        return PlainText("Method Not Allowed", status_code=status.HTTP_405_METHOD_NOT_ALLOWED, headers=headers)
+        return PlainText(
+            "Method Not Allowed", status_code=status.HTTP_405_METHOD_NOT_ALLOWED, headers=headers
+        )
 
 
 class WebSocketController(BaseController):
@@ -98,7 +119,9 @@ class WebSocketController(BaseController):
         self.send = send
 
     def __await__(self) -> Generator[Any, None, None]:
-        return self.handle_dispatch(scope=self.scope, receive=self.receive, send=self.send).__await__()
+        return self.handle_dispatch(
+            scope=self.scope, receive=self.receive, send=self.send
+        ).__await__()
 
     async def handle_dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -193,7 +216,11 @@ class WebSocketController(BaseController):
         Returns:
             Any: Decoded JSON message data.
         """
-        text = message["text"] if message.get("text") is not None else message["bytes"].decode("utf-8")
+        text = (
+            message["text"]
+            if message.get("text") is not None
+            else message["bytes"].decode("utf-8")
+        )
         try:
             return json.loads(text)
         except json.decoder.JSONDecodeError:

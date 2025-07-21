@@ -100,6 +100,9 @@ def get_name(handler: Callable[..., Any]) -> str:
     """
     Returns the name of a given handler.
     """
+    if hasattr(handler, "func"):
+        handler = handler.func
+
     return (
         handler.__name__
         if inspect.isroutine(handler) or inspect.isclass(handler)
@@ -1129,8 +1132,7 @@ class BaseRouter:
 
         if inspect.isasyncgenfunction(lifespan) or inspect.isgeneratorfunction(lifespan):
             raise ImproperlyConfigured(
-                "async function generators are not allowed. "
-                "Use @contextlib.asynccontextmanager instead."
+                "async function generators are not allowed. Use @contextlib.asynccontextmanager instead."
             )
 
         self.on_startup = [] if on_startup is None else list(on_startup)

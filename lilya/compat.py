@@ -18,7 +18,9 @@ class SupportsAsyncClose(Protocol):
     async def close(self) -> None: ...  # pragma: no cover
 
 
-SupportsAsyncCloseType = TypeVar("SupportsAsyncCloseType", bound=SupportsAsyncClose, covariant=False)
+SupportsAsyncCloseType = TypeVar(
+    "SupportsAsyncCloseType", bound=SupportsAsyncClose, covariant=False
+)
 
 
 try:
@@ -40,7 +42,9 @@ def is_async_callable(obj: Any) -> bool:
     while isinstance(obj, functools.partial):
         obj = obj.func
 
-    return inspect.iscoroutinefunction(obj) or (callable(obj) and inspect.iscoroutinefunction(obj.__call__))
+    return inspect.iscoroutinefunction(obj) or (
+        callable(obj) and inspect.iscoroutinefunction(obj.__call__)
+    )
 
 
 def run_sync(fn: Callable[..., Any] | Awaitable, *args: Any, **kwargs: Any) -> Any:
@@ -59,7 +63,9 @@ def run_sync(fn: Callable[..., Any] | Awaitable, *args: Any, **kwargs: Any) -> A
     elif inspect.iscoroutinefunction(fn):
         wrapper_fn = lambda: fn(*args, **kwargs)  # noqa: E731
     else:
-        raise TypeError(f"run_sync() expects an async function or coroutine object; got {type(fn)}")
+        raise TypeError(
+            f"run_sync() expects an async function or coroutine object; got {type(fn)}"
+        )
     try:
         return anyio.run(wrapper_fn)
     except RuntimeError:
