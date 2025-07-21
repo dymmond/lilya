@@ -6,7 +6,8 @@ Em cada aplicação, surge a necessidade de definições específicas do project
 geri-las pode se tornar um desafio, levando a uma possível desordem.
 
 !!! warning
-    Todas as definições no Lilya usam dataclasses em Python.
+    Todas as definições no Lilya antes da release 0.18.0 usavam dataclasses em Python, mas neste momento usam uma interface
+    mais limpa, clara e familiar.
 
 ## Como utilizar
 
@@ -258,14 +259,11 @@ Quando instancia uma aplicação **ou passa parâmetros diretamente ou usa as de
 Passar parâmetros no objecto substituirá sempre os valores das definições padrão.
 
 ```python
-from dataclasses import dataclass
-
 from lilya.conf.global_settings import Settings
 from lilya.middleware.httpsredirect import HTTPSRedirectMiddleware
 from lilya.middleware import DefineMiddleware
 
 
-@dataclass
 class AppSettings(Settings):
     debug: bool = False
 

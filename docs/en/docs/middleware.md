@@ -127,14 +127,12 @@ See [Authentication](./authentication.md) for more details.
 === "From the settings"
 
     ```python
-    from dataclasses import dataclass
     from typing import List
 
     from lilya.conf.global_settings import Settings
     from lilya.middleware import DefineMiddleware
 
 
-    @dataclass
     class AppSettings(Settings):
 
         @property
