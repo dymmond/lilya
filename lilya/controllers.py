@@ -9,7 +9,7 @@ from typing import Any, cast
 from lilya import status
 from lilya._internal._responses import BaseHandler
 from lilya.conf import settings
-from lilya.enums import Event, HTTPMethod, ScopeType
+from lilya.enums import Event, HTTPMethod, ScopeType, SignatureDefault
 from lilya.exceptions import HTTPException, ImproperlyConfigured
 from lilya.requests import Request
 from lilya.responses import PlainText, Response
@@ -42,7 +42,6 @@ class Controller(BaseController):
     """
 
     __scope__: Scope | None = None
-    __handler_signatures__: dict[str, inspect.Signature] = {}
 
     signature: inspect.Signature | None = None
 
@@ -62,17 +61,6 @@ class Controller(BaseController):
         await self.handle_dispatch(scope=scope, receive=receive, send=send)
 
     async def handle_dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
-        """
-        Handle HTTP request and dispatch to the appropriate handler method based on the HTTP
-        method.
-
-        This method is called when the controller is invoked as an ASGI application.
-
-        Args:
-            scope (Scope): ASGI scope.
-            receive (Receive): ASGI receive channel.
-            send (Send): ASGI send channel.
-        """
         request = Request(scope=scope, receive=receive, send=send)
         name = (
             HTTPMethod.GET.lower()
@@ -80,18 +68,24 @@ class Controller(BaseController):
             else request.method.lower()
         )
         handler: Callable[[], Coroutine[Any, Any, Response]] = getattr(
-            self,
-            name,
-            self.handle_not_allowed,
+            self, name, self.handle_not_allowed
         )
-        self.__scope__ = scope
         self.signature = inspect.signature(handler)
-        self.__handler_signatures__[name] = self.signature
+        self.__scope__ = scope
 
-        if hasattr(handler, "openapi_meta"):
-            handler.openapi_meta["__parent_cls__"] = self
+        func_params: dict[str, Any] = await self._extract_params_from_request(
+            request=request, signature=self.signature
+        )
+        if self.signature.parameters:
+            if SignatureDefault.REQUEST in self.signature.parameters:
+                func_params.update({"request": request})
+                response = await self._execute_function(handler, **func_params)
+            else:
+                response = await self._execute_function(handler, **func_params)
+        else:
+            response = await self._execute_function(handler, **func_params)
 
-        await self.handle_response(handler)(scope, receive, send)
+        await self._handle_response_content(response, scope, receive, send)
 
     async def handle_not_allowed(self) -> Response:
         headers = {"Allow": ", ".join(self.__allowed_methods__)}
