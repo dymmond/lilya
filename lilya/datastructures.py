@@ -277,14 +277,15 @@ class State:
         super().__setattr__("_state", state)
 
     def __setattr__(self, key: Any, value: Any) -> None:
-        self._state[key] = value
+        object.__getattribute__(self, "_state")[key] = value
 
-    def __getattr__(self, key: Any) -> Any:
-        try:
-            return self._state[key]
-        except KeyError:
-            message = "'{}' object has no attribute '{}'"
-            raise AttributeError(message.format(self.__class__.__name__, key)) from None
+    def __getattribute__(self, key: Any) -> Any:
+        state = object.__getattribute__(self, "_state")
+
+        if key in state:
+            return state[key]
+
+        return object.__getattribute__(self, key)
 
     def __delattr__(self, key: Any) -> None:
         del self._state[key]
@@ -743,12 +744,7 @@ class DataUpload:
         return self.file.close()
 
     def __repr__(self) -> str:
-        return (
-            f"{self.__class__.__name__}("
-            f"filename={self.filename!r}, "
-            f"size={self.size!r}, "
-            f"headers={self.headers!r})"
-        )
+        return f"{self.__class__.__name__}(filename={self.filename!r}, size={self.size!r}, headers={self.headers!r})"
 
 
 class Cookie:
