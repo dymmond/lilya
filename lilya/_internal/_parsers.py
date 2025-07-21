@@ -512,5 +512,4 @@ class MultiPartParser:
         """
         Close all files if there was an error during parsing.
         """
-        for file in self._files_to_close_on_error:
-            file.close()
+        await self._files_to_close_on_error.aclose()
