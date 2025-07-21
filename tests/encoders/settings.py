@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from json import loads
 from typing import Any
 
@@ -24,7 +23,6 @@ async def validation_error_exception_handler(
     return JSONResponse({"detail": loads(exc.json())}, status_code=status_code)
 
 
-@dataclass
 class EncoderSettings(TestSettings):
     infer_body: bool = True
 
