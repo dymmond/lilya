@@ -4,10 +4,10 @@ from abc import ABC
 from collections.abc import Generator, Iterable, Mapping, Sequence
 from copy import copy
 from http.cookies import SimpleCookie
-from typing import Any, BinaryIO, Final, Generic, Literal, TypeVar, cast
+from typing import Any, Final, Generic, Literal, TypeVar, cast
 from urllib.parse import SplitResult, parse_qsl, urlencode, urlsplit, urlunsplit
 
-from anyio.to_thread import run_sync
+import anyio
 from multidict import CIMultiDict, MultiDict as BaseMultiDict, MultiDictProxy, MultiMapping
 
 from lilya.enums import DefaultPort, HTTPType, ScopeType, WebsocketType
@@ -720,7 +720,7 @@ class DataUpload:
     def __init__(
         self,
         *,
-        file: BinaryIO,
+        file: anyio.SpooledTemporaryFile,
         size: int | None = None,
         filename: str | None = None,
         headers: Header | None = None,
@@ -734,32 +734,19 @@ class DataUpload:
     def content_type(self) -> str | None:
         return self.headers.get("content-type", None)
 
-    @property
-    def in_memory(self) -> bool:
-        return getattr(self.file, "_rolled", False)
-
-    async def write(self, data: bytes) -> int:
+    async def write(self, data: bytes) -> None:
         if self.size is not None:
             self.size += len(data)
-
-        if self.in_memory:
-            return await run_sync(self.file.write, data)
-        return self.file.write(data)
+        await self.file.write(data)
 
     async def read(self, size: int = -1) -> bytes:
-        if self.in_memory:
-            return self.file.read(size)
-        return await run_sync(self.file.read, size)
+        return cast(bytes, await self.file.read(size))
 
-    async def seek(self, offset: int) -> int:
-        if self.in_memory:
-            return await run_sync(self.file.seek, offset)
-        return self.file.seek(offset)
+    async def seek(self, offset: int) -> None:
+        await self.file.seek(offset)
 
-    async def close(self) -> int:
-        if self.in_memory:
-            return await run_sync(self.file.close)
-        return self.file.close()
+    async def close(self) -> None:
+        await self.file.aclose()
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(filename={self.filename!r}, size={self.size!r}, headers={self.headers!r})"

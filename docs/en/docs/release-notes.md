@@ -10,6 +10,7 @@ hide:
 ### Added
 
 - Support for native [cache](./caching.md) with default to `InMemory`.
+- Add support for relative urls from the `URL` datastructure.
 
 ### Changed
 
@@ -42,6 +43,8 @@ class MyCustomSettings(Settings):
 ```
 
 This makes the code cleaner and readable.
+
+- Apply AnyIO to `DataUpload` instead of using BinaryIO.
 
 ## 0.17.1
 

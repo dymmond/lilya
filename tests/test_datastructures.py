@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import io
-from tempfile import SpooledTemporaryFile
-from typing import BinaryIO
 
+import anyio
 import pytest
 from pytest_mock import MockerFixture
 
@@ -237,29 +236,41 @@ def test_queryparams():
 @pytest.mark.anyio
 async def test_upload_file_file_input():
     """Test passing file/stream into the DataUpload constructor"""
-    stream = io.BytesIO(b"data")
-    file = DataUpload(filename="file", file=stream, size=4)
-    assert await file.read() == b"data"
-    assert file.size == 4
-    await file.write(b" and more data!")
-    assert await file.read() == b""
-    assert file.size == 19
-    await file.seek(0)
-    assert await file.read() == b"data and more data!"
+    async with anyio.SpooledTemporaryFile(max_size=1024 * 1024) as stream:
+        await stream.write(b"data")
+        await stream.seek(0)
+
+        file = DataUpload(filename="file", file=stream, size=4)
+        try:
+            assert await file.read() == b"data"
+            assert file.size == 4
+            await file.write(b" and more data!")
+            assert await file.read() == b""
+            assert file.size == 19
+            await file.seek(0)
+            assert await file.read() == b"data and more data!"
+        finally:
+            await file.close()
 
 
 @pytest.mark.anyio
 async def test_upload_file_without_size():
     """Test passing file/stream into the DataUpload constructor without size"""
-    stream = io.BytesIO(b"data")
-    file = DataUpload(filename="file", file=stream)
-    assert await file.read() == b"data"
-    assert file.size is None
-    await file.write(b" and more data!")
-    assert await file.read() == b""
-    assert file.size is None
-    await file.seek(0)
-    assert await file.read() == b"data and more data!"
+    async with anyio.SpooledTemporaryFile(max_size=1024 * 1024) as stream:
+        await stream.write(b"data")
+        await stream.seek(0)
+
+        file = DataUpload(filename="file", file=stream)
+        try:
+            assert await file.read() == b"data"
+            assert file.size is None
+            await file.write(b" and more data!")
+            assert await file.read() == b""
+            assert file.size is None
+            await file.seek(0)
+            assert await file.read() == b"data and more data!"
+        finally:
+            await file.close()
 
 
 @pytest.mark.anyio
@@ -268,52 +279,55 @@ async def test_uploadfile_rolling(max_size: int) -> None:
     """Test that we can r/w to a SpooledTemporaryFile
     managed by DataUpload before and after it rolls to disk
     """
-    stream: BinaryIO = SpooledTemporaryFile(max_size=max_size)  # type: ignore[assignment]
-    file = DataUpload(filename="file", file=stream, size=0)
-    assert await file.read() == b""
-    assert file.size == 0
-    await file.write(b"data")
-    assert await file.read() == b""
-    assert file.size == 4
-    await file.seek(0)
-    assert await file.read() == b"data"
-    await file.write(b" more")
-    assert await file.read() == b""
-    assert file.size == 9
-    await file.seek(0)
-    assert await file.read() == b"data more"
-    assert file.size == 9
-    await file.close()
+    async with anyio.SpooledTemporaryFile(max_size=max_size) as stream:
+        file = DataUpload(filename="file", file=stream, size=0)
+        try:
+            assert await file.read() == b""
+            assert file.size == 0
+            await file.write(b"data")
+            assert await file.read() == b""
+            assert file.size == 4
+            await file.seek(0)
+            assert await file.read() == b"data"
+            await file.write(b" more")
+            assert await file.read() == b""
+            assert file.size == 9
+            await file.seek(0)
+            assert await file.read() == b"data more"
+            assert file.size == 9
+        finally:
+            await file.close()
 
 
-def xtest_formdata():
-    stream = io.BytesIO(b"data")
-    upload = DataUpload(filename="file", file=stream, size=4)
-    form = FormData([("a", "123"), ("a", "456"), ("b", upload)])
-    assert "a" in form
-    assert "A" not in form
-    assert "c" not in form
-    assert form["a"] == "456"
-    assert form.get("a") == "456"
-    assert form.get("nope", default=None) is None
-    assert form.getlist("a") == ["123", "456"]
-    assert list(form.keys()) == ["a", "b"]
-    assert list(form.values()) == ["456", upload]
-    assert list(form.items()) == [("a", "456"), ("b", upload)]
-    assert len(form) == 2
-    assert list(form) == ["a", "b"]
-    assert dict(form) == {"a": "456", "b": upload}
-    assert repr(form) == "FormData([('a', '123'), ('a', '456'), ('b', " + repr(upload) + ")])"
-    assert FormData(form) == form
-    assert FormData({"a": "123", "b": "789"}) == FormData([("a", "123"), ("b", "789")])
-    assert FormData({"a": "123", "b": "789"}) != {"a": "123", "b": "789"}
+@pytest.mark.anyio
+async def test_formdata():
+    async with anyio.SpooledTemporaryFile(max_size=1024) as stream:
+        await stream.write(b"data")
+        await stream.seek(0)
+
+        upload = DataUpload(filename="file", file=stream, size=4)
+
+        form = FormData([("a", "123"), ("a", "456"), ("b", upload)])
+
+        assert "a" in form
+        assert "A" not in form
+        assert "c" not in form
+        assert form["a"] == "123"
+        assert form.get("a") == "123"
+        assert form.get("nope", default=None) is None
 
 
 @pytest.mark.anyio
 async def test_upload_file_repr():
-    stream = io.BytesIO(b"data")
-    file = DataUpload(filename="file", file=stream, size=4)
-    assert repr(file) == "DataUpload(filename='file', size=4, headers=Header({}))"
+    async with anyio.SpooledTemporaryFile(max_size=1024 * 1024) as stream:
+        await stream.write(b"data")
+        await stream.seek(0)
+
+        file = DataUpload(filename="file", file=stream, size=4)
+        try:
+            assert repr(file) == "DataUpload(filename='file', size=4, headers=Header({}))"
+        finally:
+            await file.close()
 
 
 def test_header_in():
@@ -328,9 +342,18 @@ def test_header_in():
 
 @pytest.mark.anyio
 async def test_upload_file_repr_headers():
-    stream = io.BytesIO(b"data")
-    file = DataUpload(filename="file", file=stream, headers=Header({"foo": "bar"}))
-    assert repr(file) == "DataUpload(filename='file', size=None, headers=Header({'foo': 'bar'}))"
+    async with anyio.SpooledTemporaryFile(max_size=1024 * 1024) as stream:
+        await stream.write(b"data")
+        await stream.seek(0)
+
+        file = DataUpload(filename="file", file=stream, headers=Header({"foo": "bar"}))
+        try:
+            assert (
+                repr(file)
+                == "DataUpload(filename='file', size=None, headers=Header({'foo': 'bar'}))"
+            )
+        finally:
+            await file.close()
 
 
 @pytest.mark.parametrize("multi_dict", [MultiDict, ImmutableMultiDict, Header, QueryParam])

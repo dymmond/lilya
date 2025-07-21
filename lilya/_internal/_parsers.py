@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import http.cookies
 from collections.abc import AsyncGenerator, Callable
+from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
 from functools import lru_cache
-from tempfile import SpooledTemporaryFile
-from typing import Any, BinaryIO, cast
+from typing import Any, cast
 from urllib.parse import unquote, unquote_plus
+
+import anyio
+from anyio import SpooledTemporaryFile
 
 from lilya.datastructures import DataUpload, FormData, Header
 from lilya.enums import FormMessage
@@ -231,7 +234,7 @@ class MultiPartParser:
         self._charset = ""
         self._file_parts_to_write: list[tuple[MultipartPart, bytes]] = []
         self._file_parts_to_finish: list[MultipartPart] = []
-        self._files_to_close_on_error: list[SpooledTemporaryFile[bytes]] = []
+        self._files_to_close_on_error: AsyncExitStack = AsyncExitStack()
 
     def on_part_begin(self) -> None:
         """
@@ -369,7 +372,7 @@ class MultiPartParser:
             SpooledTemporaryFile[bytes]: Created temporary file.
         """
         tempfile = SpooledTemporaryFile(max_size=self.max_file_size)
-        self._files_to_close_on_error.append(tempfile)
+        self._files_to_close_on_error.push_async_callback(tempfile.aclose)
         return tempfile
 
     def _create_upload_file(
@@ -386,7 +389,7 @@ class MultiPartParser:
             DataUpload: Created DataUpload instance.
         """
         return DataUpload(
-            file=cast(BinaryIO, tempfile),
+            file=cast(anyio.SpooledTemporaryFile, tempfile),
             size=0,
             filename=filename,
             headers=Header(self._current_part.item_headers),
@@ -425,7 +428,7 @@ class MultiPartParser:
             async for chunk in self.stream:
                 parser.write(chunk)
                 await self._write_file_data()
-        except MultiPartException as exc:
+        except BaseException as exc:
             await self._close_files_on_error()
             raise exc
 
