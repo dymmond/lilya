@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.18.1
+
+### Changed
+
+- Update directives to reflect the new settings.
+
 ## 0.18.0
 
 ### Added
