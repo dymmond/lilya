@@ -11,6 +11,10 @@ hide:
 
 - Update directives to reflect the new settings.
 
+### Fixed
+
+- Cache dependency on `json` native library.
+
 ## 0.18.0
 
 ### Added

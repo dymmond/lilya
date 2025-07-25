@@ -1,10 +1,9 @@
 from __future__ import annotations
 
+import json
 import logging
 import time
 from typing import Any
-
-import orjson
 
 from lilya.protocols.cache import CacheBackend
 
@@ -92,7 +91,7 @@ class InMemoryCache(CacheBackend):
                 self.sync_delete(key)
                 return None
 
-            return orjson.loads(value)
+            return json.loads(value)
         except Exception as e:
             logger.exception(f"Cache get error: {e}")
             return None
@@ -100,7 +99,7 @@ class InMemoryCache(CacheBackend):
     def sync_set(self, key: str, value: Any, ttl: int | None = None) -> None:
         """Store a value in cache synchronously with an optional TTL.
 
-        The value is serialized using `orjson` and stored in `_store` along with
+        The value is serialized using `json` and stored in `_store` along with
         an expiration timestamp if TTL is provided.
 
         Args:
@@ -113,7 +112,7 @@ class InMemoryCache(CacheBackend):
         """
         try:
             expiry = time.time() + ttl if ttl else None
-            self._store[key] = (orjson.dumps(value), expiry)
+            self._store[key] = (json.dumps(value).encode("utf-8"), expiry)
         except Exception as e:
             logger.exception(f"Cache set error: {e}")
 
