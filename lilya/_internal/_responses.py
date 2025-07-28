@@ -12,7 +12,8 @@ from lilya.conf import _monkay
 from lilya.context import Context
 from lilya.dependencies import Provide, Provides, Resolve, Security, async_resolve_dependencies
 from lilya.enums import SignatureDefault
-from lilya.exceptions import ImproperlyConfigured, WebSocketException
+from lilya.exceptions import ImproperlyConfigured, UnprocessableEntity, WebSocketException
+from lilya.params import Query
 from lilya.requests import Request
 from lilya.responses import Ok, Response
 from lilya.types import ASGIApp, Receive, Scope, Send
@@ -20,6 +21,8 @@ from lilya.websockets import WebSocket
 
 if TYPE_CHECKING:
     from lilya.routing import BasePath as BasePath  # noqa
+
+SIGNATURE_TO_LIST = SignatureDefault.to_list()
 
 
 class BaseHandler:
@@ -32,6 +35,7 @@ class BaseHandler:
     __path_params__: dict[str, Any] | None = None
     __header_params__: dict[str, Any] | None = None
     __cookie_params__: dict[str, Any] | None = None
+    __reserved_data__: dict[str, Any] | None = None
     signature: inspect.Signature | None = None
 
     async def extract_request_information(
@@ -49,6 +53,13 @@ class BaseHandler:
         reserved_keys.update(self.__query_params__.keys())
         reserved_keys.update(self.__header_params__.keys())
         reserved_keys.update(self.__cookie_params__.keys())
+
+        self.__reserved_data__ = {
+            "path_params": self.__path_params__,
+            "header_params": self.__header_params__,
+            "cookie_params": self.__cookie_params__,
+            "query_params": self.__query_params__,
+        }
 
         # Store the body params in the handler variable
         self.__body_params__ = {
@@ -103,16 +114,22 @@ class BaseHandler:
                     None
                 """
                 signature: inspect.Signature = other_signature or self.signature
+                await self.extract_request_information(request=request, signature=signature)
+
                 params_from_request = await self._extract_params_from_request(
                     request=request,
                     signature=signature,
                 )
 
+                request_information = await self._extract_query_params_information(
+                    request=request, signature=signature
+                )
+
                 func_params: dict[str, Any] = {
                     **params_from_request,
                     **self._extract_context(request=request, signature=signature),
+                    **request_information,
                 }
-                await self.extract_request_information(request=request, signature=signature)
 
                 if signature.parameters:
                     if SignatureDefault.REQUEST in signature.parameters:
@@ -154,6 +171,54 @@ class BaseHandler:
             response = Ok(app)
             await response(scope, receive, send)
 
+    async def _extract_query_params_information(
+        self, request: Request, signature: inspect.Signature
+    ) -> dict[str, Any]:
+        """
+        Extracts the request information from the request and populates the
+        request information.
+        """
+
+        query_params: dict[str, Any] = {}
+        parameters = signature.parameters
+
+        for name, parameter in parameters.items():
+            field = parameter.default
+            if field is inspect._empty:
+                continue
+
+            if field and isinstance(field, Query):
+                key = field.alias or name
+                raw_value = request.query_params.get(key)
+
+                # Handle missing required field
+                if field.required and raw_value is None:
+                    raise UnprocessableEntity(
+                        f"Missing mandatory query parameter '{key}'"
+                    ) from None
+
+                # Fallback to default
+                if raw_value is None:
+                    query_params[name] = field.default
+                    continue
+
+                # Apply casting if defined
+                try:
+                    if field.cast:
+                        query_params[name] = field.cast(raw_value)
+                    else:
+                        query_params[name] = raw_value
+                except (TypeError, ValueError):
+                    raise UnprocessableEntity(
+                        f"Invalid value for query parameter '{key}': expected {field.cast.__name__}"
+                    ) from None
+
+        return query_params
+
+    def is_explicitly_bound(self, param: inspect.Parameter) -> bool:
+        default = param.default
+        return isinstance(default, Query)
+
     async def _parse_inferred_body(
         self,
         request: Request,
@@ -184,16 +249,18 @@ class BaseHandler:
             for name, value in parameters.items()
             if name not in reserved_keys
             and not isinstance(value.default, (Provides, Resolve))
+            and not self.is_explicitly_bound(value)
             and name not in dependencies
-            and name not in SignatureDefault.to_list()
+            and name not in SIGNATURE_TO_LIST
         ]
+
         payload: dict[str, Any] = {}
 
         if len(body_param_names) == 1:
             name = body_param_names[0]
             encoder_object = parameters[name].annotation
 
-            if name in SignatureDefault.to_list():
+            if name in SIGNATURE_TO_LIST:
                 return payload
 
             if name in dependencies:
@@ -210,7 +277,7 @@ class BaseHandler:
                     raise exc
         else:
             for name in body_param_names:
-                if name in SignatureDefault.to_list():
+                if name in SIGNATURE_TO_LIST:
                     continue
 
                 if name in dependencies:

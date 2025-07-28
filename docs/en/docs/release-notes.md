@@ -5,6 +5,15 @@ hide:
 
 # Release Notes
 
+## 0.18.2
+
+### Added
+
+Added support for `Query`  parameter markers.
+* Implemented `alias` support for query parameters to map custom keys.
+* Introduced `cast` field in `Query` for runtime type coercion with validation.
+* Improved error handling for missing and invalid query parameter types.
+
 ## 0.18.1
 
 ### Changed

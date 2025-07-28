@@ -76,6 +76,13 @@ class Controller(BaseController):
         func_params: dict[str, Any] = await self._extract_params_from_request(
             request=request, signature=self.signature
         )
+
+        # Assign query params automatically.
+        request_information = await self._extract_query_params_information(
+            request=request, signature=self.signature
+        )
+        func_params.update(**request_information)
+
         if self.signature.parameters:
             if SignatureDefault.REQUEST in self.signature.parameters:
                 func_params.update({"request": request})

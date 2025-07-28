@@ -102,6 +102,10 @@ class PermissionDenied(HTTPException):
 class MissingDependency(LilyaException, ImportError): ...
 
 
+class UnprocessableEntity(HTTPException):
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
 class TemplateNotFound(HTTPException):
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
 

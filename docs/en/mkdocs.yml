@@ -96,6 +96,7 @@ nav:
   - templates.md
   - server-push.md
   - exceptions.md
+  - parameters.md
   - wsgi.md
   - environments.md
 - Clients:
