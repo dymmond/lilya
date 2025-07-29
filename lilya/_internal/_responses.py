@@ -13,7 +13,7 @@ from lilya.context import Context
 from lilya.dependencies import Provide, Provides, Resolve, Security, async_resolve_dependencies
 from lilya.enums import SignatureDefault
 from lilya.exceptions import ImproperlyConfigured, UnprocessableEntity, WebSocketException
-from lilya.params import Query
+from lilya.params import Cookie, Header, Query
 from lilya.requests import Request
 from lilya.responses import Ok, Response
 from lilya.types import ASGIApp, Receive, Scope, Send
@@ -121,7 +121,7 @@ class BaseHandler:
                     signature=signature,
                 )
 
-                request_information = await self._extract_query_params_information(
+                request_information = await self.extract_request_params_information(
                     request=request, signature=signature
                 )
 
@@ -171,7 +171,7 @@ class BaseHandler:
             response = Ok(app)
             await response(scope, receive, send)
 
-    async def _extract_query_params_information(
+    async def extract_request_params_information(
         self, request: Request, signature: inspect.Signature
     ) -> dict[str, Any]:
         """
@@ -179,7 +179,7 @@ class BaseHandler:
         request information.
         """
 
-        query_params: dict[str, Any] = {}
+        request_params: dict[str, Any] = {}
         parameters = signature.parameters
 
         for name, parameter in parameters.items():
@@ -187,37 +187,51 @@ class BaseHandler:
             if field is inspect._empty:
                 continue
 
-            if field and isinstance(field, Query):
+            if isinstance(field, Query):
+                source = request.query_params
                 key = field.alias or name
-                raw_value = request.query_params.get(key)
+            elif isinstance(field, Header):
+                source = request.headers  # type: ignore
+                key = field.value
+            elif isinstance(field, Cookie):
+                source = request.cookies  # type: ignore
+                key = field.value
+            else:
+                continue
 
-                # Handle missing required field
-                if field.required and raw_value is None:
-                    raise UnprocessableEntity(
-                        f"Missing mandatory query parameter '{key}'"
-                    ) from None
+            raw_value = source.get(key)
 
-                # Fallback to default
-                if raw_value is None:
-                    query_params[name] = field.default
-                    continue
+            if field.required and raw_value is None:
+                raise UnprocessableEntity(f"Missing mandatory query parameter '{key}'") from None
 
-                # Apply casting if defined
-                try:
-                    if field.cast:
-                        query_params[name] = field.cast(raw_value)
-                    else:
-                        query_params[name] = raw_value
-                except (TypeError, ValueError):
-                    raise UnprocessableEntity(
-                        f"Invalid value for query parameter '{key}': expected {field.cast.__name__}"
-                    ) from None
+            # Fallback to default
+            if raw_value is None:
+                request_params[name] = field.default
+                continue
 
-        return query_params
+            # Apply casting if defined
+            try:
+                if field.cast:
+                    request_params[name] = field.cast(raw_value)
+                else:
+                    request_params[name] = raw_value
+            except (TypeError, ValueError):
+                raise UnprocessableEntity(
+                    f"Invalid value for query parameter '{key}': expected {field.cast.__name__}"
+                ) from None
+
+        return request_params
 
     def is_explicitly_bound(self, param: inspect.Parameter) -> bool:
-        default = param.default
-        return isinstance(default, Query)
+        """
+        Checks for explicitly bound parameter from the default.
+        """
+        default = None
+        if hasattr(param, "default"):
+            default = param.default
+        if hasattr(param, "value"):
+            default = param.value
+        return isinstance(default, (Query, Header, Cookie))
 
     async def _parse_inferred_body(
         self,

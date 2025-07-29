@@ -1,112 +1,146 @@
-# Query Parameters
+# Parameters
 
-Query parameters are an essential part of API development in Lilya, allowing you to extract dynamic
-values from the **query string** of an HTTP request. This guide explains what query parameters are,
-why and when to use them, and how Lilya makes it simple and elegant to declare and inject them into your
-endpoint logic.
+Lilya supports **Query**, **Header**, and **Cookie** parameters to cleanly and declaratively extract data
+from HTTP requests.
+
+1. **What** each parameter type is
+2. **Why** and **when** to use them
+3. **Benefits** of Lilya’s parameter system
+4. **How** to declare and inject them
 
 ---
 
-## What Are Query Parameters?
+## What Are Request Parameters?
 
-Query parameters are key-value pairs passed at the end of a URL after the `?` symbol.
-They are used to filter, search, paginate, or otherwise customize the data returned by an API.
+* **Query Parameters**: Key‑value pairs in the URL after `?`, used for filtering, searching, pagination, and optional flags.
+* **Header Parameters**: Metadata in HTTP headers (like `Authorization`, `X‑API‑TOKEN`), used for authentication, content negotiation, and custom flags.
+* **Cookie Parameters**: Key‑value pairs stored in cookies, used for sessions, CSRF tokens, user preferences, and stateful data.
 
-For example:
+---
 
+## ✅ Why Use Them?
+
+* **Separation of concerns**: Clearly distinguish URL modifiers (query) from metadata (headers) and state (cookies).
+* **Type safety**: Lilya casts and validates values automatically.
+* **Declarative design**: Declare parameters in your function signature, not inside your handler code.
+* **Consistency**: Uniform API for all parameter types with `required`, `default`, `alias`/`value`, and `cast` options.
+
+---
+
+## Benefits of Lilya’s Parameter System
+
+* **Clean signatures**: No manual extraction from `request`; Lilya handles it.
+* **Automatic validation**: Missing required fields or invalid types immediately return 422.
+* **Rich metadata**: Control `required`, set `default` or `alias`/`value`, and perform runtime `cast`.
+* **Unified API**: Same workflow for `Query`, `Header`, and `Cookie` with minimal boilerplate.
+
+---
+
+## Declaration Syntax
+
+### Query
+
+```python
+from lilya.params import Query
+
+async def handler(
+    q: str = Query(default=None, alias="q", required=False, cast=str)
+):
+    ...
 ```
 
-GET /items?category=books\&limit=10
-
-````
-
-Here, `category` and `limit` are query parameters.
-
----
-
-## Why Use Query Parameters?
-
-- **Filtering results:** e.g., `?status=active`
-- **Pagination:** e.g., `?page=2&limit=20`
-- **Searching:** e.g., `?query=laptop`
-- **Optional values:** for things that are not required in the URL path
-- **Stateless design:** clients can change the request behavior without altering the endpoint structure
+| Option     | Type   | Description                    |
+| ---------- | ------ | ------------------------------ |
+| `default`  | `Any`  | Fallback if not present        |
+| `alias`    | `str`  | Query key name in URL          |
+| `required` | `bool` | Whether to enforce presence    |
+| `cast`     | `type` | Callable to convert raw string |
 
 ---
 
-## Benefits of Lilya's Parameter System
-
-- **Declarative:** Declare query parameters directly in your function signature
-- **Type-safe:** Parameters are automatically cast to the correct types
-- **Optional and required support:** You can control whether a param is optional or required
-- **Cleaner APIs:** Avoid manual extraction from the request object
-
----
-
-## Declaring Query Parameters
-
-You can declare a query parameter using the `Query` class:
+### Header
 
 ```python
-from lilya.params import Query
+from lilya.params import Header
 
-async def get_user(name: str = Query(), age: int = Query(default=30)):
+async def handler(
+    token: str = Header(value="X-API-TOKEN", required=True, cast=str)
+):
     ...
-````
+```
 
-* If you omit `default`, it will default to `None`.
-* You can also use `required=True` to enforce presence.
+| Option     | Type   | Description                    |
+| ---------- | ------ | ------------------------------ |
+| `value`    | `str`  | Header key name (required)     |
+| `required` | `bool` | Whether to enforce presence    |
+| `cast`     | `type` | Callable to convert raw string |
 
 ---
 
-## Examples
-
-### Example 1: Basic Query Injection
+### Cookie
 
 ```python
-from lilya.params import Query
+from lilya.params import Cookie
 
-async def search_books(query: str = Query()):
+async def handler(
+    session: str = Cookie(value="csrftoken", required=True, cast=str)
+):
+    ...
+```
+
+| Option     | Type   | Description                    |
+| ---------- | ------ | ------------------------------ |
+| `value`    | `str`  | Cookie name (required)         |
+| `required` | `bool` | Whether to enforce presence    |
+| `cast`     | `type` | Callable to convert raw string |
+
+---
+
+## 🔍 Real‑World Examples
+
+### 1. Basic Query Injection
+
+```python
+async def search_books(query: str = Query()) -> dict:
     return {"query": query}
 ```
 
-Request:
-
-```
+```http
 GET /search?query=python
 ```
 
-Response:
-
-```json
-{
-  "query": "python"
-}
-```
-
----
-
-### Example 2: Required vs Optional Parameters
+### 2. Header‑Based Auth
 
 ```python
-async def search(
-    q: str = Query(required=True),
-    page: int = Query(default=1),
-):
-    return {"q": q, "page": page}
+async def get_user(
+    token: str = Header(value="Authorization", required=True)
+) -> dict:
+    return {"user": validate_token(token)}
 ```
 
-* `q` is **required** — missing it will raise an error
-* `page` defaults to `1` if not provided
+```http
+GET /profile
+Authorization: Bearer TOKEN123
+```
 
----
-
-### Example 3: Query + Path + Body + Dependency
+### 3. Cookie‑Based Session
 
 ```python
-from lilya.apps import Lilya
-from lilya.routing import Path
-from lilya.params import Query
+async def dashboard(
+    session_id: str = Cookie(value="sessionid", required=True)
+) -> dict:
+    return {"session": load_session(session_id)}
+```
+
+```http
+GET /dashboard
+Cookie: sessionid=abc123
+```
+
+### 4. Combined Query, Header, Cookie, Body, Dependency
+
+```python
+from lilya.params import Query, Header, Cookie
 from lilya.dependencies import Provide
 from pydantic import BaseModel
 
@@ -116,70 +150,40 @@ class User(BaseModel):
 
 class Service:
     def show(self):
-        return "test"
+        return "ok"
 
-async def handle_user(
-    user: User,                # Inferred from body
-    name: str,                 # Inferred from path
-    service: Service,          # Injected via Provide(...)
-    q: str = Query()           # Inferred from query string
+async def handle(
+    user: User,                          # from JSON body
+    q: str = Query(alias="q", default="none"),
+    token: str = Header(value="X-TOKEN", required=True),
+    session: str = Cookie(value="csrftoken"),
+    svc: Service = Provide(Service)      # injected dependency
 ):
     return {
         "user": user.model_dump(),
-        "name": name,
-        "service": service.show(),
-        "search": q
+        "q": q,
+        "token": token,
+        "session": session,
+        "svc": svc.show(),
     }
-
-app = Lilya(
-    routes=[
-        Path("/", handle_user)
-    ],
-    dependencies={
-        "service": Provide(Service)
-    }
-)
 ```
 
-Request:
+Request example:
 
 ```
-GET /lilya?q=python
-Body: {"name": "lilya", "age": 2}
-```
-
-Response:
-
-```json
-{
-  "user": {"name": "lilya", "age": 2},
-  "name": "lilya",
-  "service": "test",
-  "search": "python"
-}
+GET /?q=hello
+Headers: X-TOKEN: tok
+Cookies: csrftoken=sess
+Body: {"name": "tiago", "age": 35}
 ```
 
 ---
 
-## How Lilya Resolves Parameters
+## Summary
 
-When Lilya resolves parameters, it classifies them by:
-
-* **Path-bound**: Automatically from the route (`/{name}`)
-* **Query-bound**: If declared with `Query(...)`
-* **Body-bound**: Any `BaseModel` not matched to another source
-* **Dependencies**: Declared via `Provide(...)` or `Provides(...)`
-
-This helps prevent incorrect assumptions and ensures each parameter comes from the correct place in the request
-lifecycle.
-
----
-
-## 📌 Summary
-
-* Use `Query()` to declare query-bound parameters
-* Control optionality with `default` and `required`
-* Combine with path and body params for powerful, clean APIs
-* Lilya automatically wires everything with type safety
-
----
+* **Query**: URL-based filters/flags
+* **Header**: HTTP metadata
+* **Cookie**: Client‑stored data
+* **Declare** with `Query`, `Header`, `Cookie` in signature
+* **Control** `required`, `default`, `alias`/`value`, and `cast`
+* **Combine** freely with path, body, and dependencies

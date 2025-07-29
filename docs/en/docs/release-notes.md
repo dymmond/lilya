@@ -9,10 +9,13 @@ hide:
 
 ### Added
 
-Added support for `Query`  parameter markers.
-* Implemented `alias` support for query parameters to map custom keys.
-* Introduced `cast` field in `Query` for runtime type coercion with validation.
-* Improved error handling for missing and invalid query parameter types.
+- Added support for `Query`  parameter markers.
+    * Implemented `alias` support for query parameters to map custom keys.
+    * Introduced `cast` field in `Query` for runtime type coercion with validation.
+    * Improved error handling for missing and invalid query parameter types.
+
+- Introduced `Header` and `Cookie` parameter markers with `value`, `required`, and `cast` support.
+- Expanded documentation into a comprehensive “Request Parameters” guide covering declaration, options, and real-world examples for all three types.
 
 ## 0.18.1
 
