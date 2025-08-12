@@ -5,6 +5,13 @@ hide:
 
 # Release Notes
 
+## 0.18.3
+
+### Added
+
+- Lilya being agnostic to everything still has a contrib to integrate with the whole ecosystem so a native [AsyncZ](https://asyncz.dymmond.com)
+was added to support that same integration in a clean fashion.
+
 ## 0.18.2
 
 ### Added
