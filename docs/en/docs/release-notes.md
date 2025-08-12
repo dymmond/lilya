@@ -11,6 +11,7 @@ hide:
 
 - Lilya being agnostic to everything still has a contrib to integrate with the whole ecosystem so a native [AsyncZ](https://asyncz.dymmond.com)
 was added to support that same integration in a clean fashion.
+- New `Contrib` section in the documentation to make it clear the separation of concerns.
 
 ## 0.18.2
 
