@@ -219,7 +219,22 @@ class CacheSettings(BaseSettings):
     cache_default_ttl: Annotated[int, Doc("Default time-to-live (TTL) for cached items.")] = 300
 
 
-class Internal(CacheSettings):
+class ContribSettings(CacheSettings):
+    timezone: Annotated[
+        str,
+        Doc(
+            """
+            Object of time `datetime.timezone` or string indicating the
+            timezone for the application.
+
+            **Note** - The timezone is internally used for the supported
+            scheduler.
+            """
+        ),
+    ] = "UTC"
+
+
+class Internal(ContribSettings):
     ipython_args: ClassVar[list[str]] = ["--no-banner"]
     ptpython_config_file: Annotated[
         str,

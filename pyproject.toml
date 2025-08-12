@@ -42,7 +42,7 @@ dependencies = [
     "typing_extensions>=3.10.0; python_version < '3.11'",
     "rich_toolkit>=0.14.7",
     "sayer>=0.3.4,<1.0.0",
-    "monkay>=0.4.0"
+    "monkay>=0.4.0",
 ]
 keywords = ["lilya"]
 
@@ -62,7 +62,7 @@ all = [
     "httpx>=0.22.0",
     "ipython",
     "ptpython",
-    "rich-toolkit>=0.14.7"
+    "rich-toolkit>=0.14.7",
 ]
 
 cli = [
@@ -75,6 +75,7 @@ cli = [
 
 test = ["httpx>=0.22.0"]
 testing = [
+    "asyncz",
     "lilya[test]",
     "a2wsgi>=1.10.0,<2.0.0",
     "autoflake>=2.0.2,<3.0.0",
@@ -118,9 +119,7 @@ docs = [
     "typing_extensions>=3.10.0",
 ]
 
-openapi = [
-    "pydantic>=2.11.5,<3",
-]
+openapi = ["pydantic>=2.11.5,<3"]
 
 [tool.hatch.version]
 path = "lilya/__init__.py"
@@ -228,7 +227,7 @@ ignore = [
     "C901",  # too complex
     "B026",  # too complex
     "UP006",
-    "UP038"
+    "UP038",
 ]
 
 
