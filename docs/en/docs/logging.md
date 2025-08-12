@@ -95,7 +95,7 @@ app = Lilya(settings_config=AppSettings())
 ```
 
 !!! Tip
-    You can also initialise Lilya settings via `ESMERALD_SETTINGS_MODULE` as you can see in [settings](./settings.md)
+    You can also initialise Lilya settings via `LILYA_SETTINGS_MODULE` as you can see in [settings](./settings.md)
     documentation. This is useful for separating your settings from the application instance.
 
 Lilya will automatically extract and configure the logger from your settings class.
