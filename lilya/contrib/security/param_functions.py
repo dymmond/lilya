@@ -1,0 +1,60 @@
+from collections.abc import Callable
+from typing import Any
+
+from pydantic.fields import AliasChoices, AliasPath, FieldInfo
+from pydantic_core import PydanticUndefined
+
+_PyUndefined: Any = PydanticUndefined
+
+
+def Form(
+    default: Any = _PyUndefined,
+    *,
+    annotation: Any | None = None,
+    default_factory: Callable[..., Any] | None = _PyUndefined,
+    alias: str | None = None,
+    alias_priority: int | None = _PyUndefined,
+    title: str | None = None,
+    description: str | None = None,
+    gt: float | None = None,
+    ge: float | None = None,
+    lt: float | None = None,
+    le: float | None = None,
+    min_length: int | None = None,
+    max_length: int | None = None,
+    pattern: str | None = None,
+    examples: list[Any] | None = None,
+    validation_alias: str | AliasPath | AliasChoices | None = None,
+    discriminator: str | None = None,
+    max_digits: int | None = _PyUndefined,
+    strict: bool | None = _PyUndefined,
+    frozen: bool | None = None,
+    validate_default: bool = True,
+    init_var: bool = True,
+    kw_only: bool = True,
+) -> Any:
+    return FieldInfo(
+        default=default,
+        annotation=annotation,
+        default_factory=default_factory,
+        alias=alias,
+        alias_priority=alias_priority,
+        title=title,
+        description=description,
+        gt=gt,
+        ge=ge,
+        lt=lt,
+        le=le,
+        min_length=min_length,
+        max_length=max_length,
+        pattern=pattern,
+        examples=examples,
+        validation_alias=validation_alias,
+        discriminator=discriminator,
+        max_digits=max_digits,
+        strict=strict,
+        frozen=frozen,
+        validate_default=validate_default,
+        init_var=init_var,
+        kw_only=kw_only,
+    )
