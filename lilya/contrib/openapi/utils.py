@@ -65,6 +65,7 @@ def get_openapi(
         spec["webhooks"] = list(webhooks)
 
     used_security_schemes = set()
+    securitySchemes: dict[str, Any] = {}
 
     def _gather_routes(routes_list: Sequence[Any], prefix: str) -> list[tuple[str, Any]]:
         gathered = []
@@ -122,8 +123,10 @@ def get_openapi(
 
             if meta.get("security"):
                 for sec in meta["security"]:
-                    for scheme_name in sec:
-                        used_security_schemes.add(scheme_name)
+                    for name in sec:
+                        if name not in used_security_schemes:
+                            used_security_schemes.add(name)
+                            securitySchemes[name] = sec[name]
 
             path_param_names = re.findall(r"\{([^}]+)\}", raw_path)
             for name in path_param_names:
@@ -221,10 +224,6 @@ def get_openapi(
             operation["responses"] = responses_obj
             spec["paths"].setdefault(raw_path, {})[m_lower] = operation
 
-    security_definitions = {
-        "BearerAuth": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"},
-    }
-
-    if used_security_schemes:
-        spec["components"]["securitySchemes"] = security_definitions  # type: ignore
+    if securitySchemes:
+        spec["components"]["securitySchemes"] = securitySchemes  # type: ignore
     return spec
