@@ -1,11 +1,10 @@
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict
 
 import pytest
-from pydantic import BaseModel, __version__
-
 from esmerald import Gateway, Inject, Injects, Security, get, post
 from esmerald.security.oauth2 import OAuth2, OAuth2PasswordRequestFormStrict
 from esmerald.testclient import create_client
+from pydantic import BaseModel, __version__
 
 pydantic_version = ".".join(__version__.split(".")[:2])
 
@@ -25,7 +24,7 @@ class User(BaseModel):
     username: str
 
 
-def get_current_user(oauth_header: Union[str, Any] = Security(reusable_oauth2)):
+def get_current_user(oauth_header: str | Any = Security(reusable_oauth2)):
     if oauth_header is None:
         return None
     user = User(username=oauth_header)
@@ -46,7 +45,7 @@ def login(form_data: OAuth2PasswordRequestFormStrict = Injects()) -> Dict[str, A
     dependencies={"current_user": Inject(get_current_user)},
     security=[reusable_oauth2],
 )
-def read_users_me(current_user: Optional[User] = Injects()) -> Dict[str, Any]:
+def read_users_me(current_user: User | None = Injects()) -> Dict[str, Any]:
     if current_user is None:
         return {"msg": "Create an account first"}
     return current_user

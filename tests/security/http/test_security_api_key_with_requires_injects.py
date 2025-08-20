@@ -1,12 +1,12 @@
 from typing import Any
 
-from lilya.middleware import DefineMiddleware
-from lilya.middleware.request_context import RequestContextMiddleware
-from pydantic import BaseModel
-
 from esmerald import Gateway, Inject, Injects, Requires, Security, get
 from esmerald.security.api_key import APIKeyInCookie
 from esmerald.testclient import create_client
+from pydantic import BaseModel
+
+from lilya.middleware import DefineMiddleware
+from lilya.middleware.request_context import RequestContextMiddleware
 
 api_key = APIKeyInCookie(name="key")
 

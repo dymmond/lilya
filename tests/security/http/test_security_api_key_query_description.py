@@ -1,10 +1,9 @@
 from typing import Any
 
-from pydantic import BaseModel
-
 from esmerald import Gateway, Include, Inject, Injects, Security, get
 from esmerald.security.api_key import APIKeyInQuery
 from esmerald.testclient import create_client
+from pydantic import BaseModel
 
 api_key = APIKeyInQuery(name="key", description="API Key Query")
 

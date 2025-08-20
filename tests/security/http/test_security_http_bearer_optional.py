@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from esmerald import Inject, Injects, get
 from esmerald.security.http import HTTPAuthorizationCredentials, HTTPBearer
@@ -12,7 +12,7 @@ security = HTTPBearer(auto_error=False)
     security=[security],
     dependencies={"credentials": Inject(security)},
 )
-def read_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Injects()) -> Any:
+def read_current_user(credentials: HTTPAuthorizationCredentials | None = Injects()) -> Any:
     if credentials is None:
         return {"msg": "Create an account first"}
     return {"scheme": credentials.scheme, "credentials": credentials.credentials}

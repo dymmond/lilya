@@ -2,9 +2,12 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from esmerald import Gateway, Inject, Injects, Security, get
-from esmerald.security.api_key import APIKeyInCookie
-from esmerald.testclient import create_client
+from lilya.conf import settings
+from lilya.contrib.openapi.decorator import openapi
+from lilya.contrib.security.api_key import APIKeyInCookie
+from lilya.dependencies import Provide, Provides, Security
+from lilya.routing import Path
+from lilya.testclient import create_client
 
 api_key = APIKeyInCookie(name="key", description="An API Cookie Key")
 
@@ -14,19 +17,21 @@ class User(BaseModel):
 
 
 def get_current_user(oauth_header: str = Security(api_key)):
-    user = User(username=oauth_header)
-    return user
+    if not isinstance(oauth_header, BaseModel):
+        user = User(username=oauth_header)
+        return user
+    return oauth_header
 
 
-@get("/users/me", security=[api_key], dependencies={"current_user": Inject(get_current_user)})
-def read_current_user(current_user: User = Injects()) -> Any:
+@openapi(security=[api_key])
+def read_current_user(current_user: User = Provides()) -> Any:
     return current_user
 
 
 def test_security_api_key():
     with create_client(
         routes=[
-            Gateway(handler=read_current_user),
+            Path("/users/me", handler=read_current_user, dependencies={"current_user": Provide(get_current_user)}),
         ],
     ) as client:
         response = client.get("/users/me", cookies={"key": "secret"})
@@ -37,18 +42,19 @@ def test_security_api_key():
 def test_security_api_key_no_key():
     with create_client(
         routes=[
-            Gateway(handler=read_current_user),
+            Path("/users/me", handler=read_current_user, dependencies={"current_user": Provide(get_current_user)}),
         ],
+        enable_intercept_global_exceptions=True,
     ) as client:
         response = client.get("/users/me")
         assert response.status_code == 403, response.text
-        assert response.json() == {"detail": "Not authenticated"}
+        assert response.text == "Not authenticated"
 
 
 def test_openapi_schema():
     with create_client(
         routes=[
-            Gateway(handler=read_current_user),
+            Path("/users/me", handler=read_current_user, dependencies={"current_user": Provide(get_current_user)}),
         ],
         enable_openapi=True,
     ) as client:
@@ -58,20 +64,20 @@ def test_openapi_schema():
         assert response.json() == {
             "openapi": "3.1.0",
             "info": {
-                "title": "Esmerald",
-                "summary": "Esmerald application",
-                "description": "Highly scalable, performant, easy to learn and for every application.",
-                "contact": {"name": "admin", "email": "admin@myapp.com"},
-                "version": client.app.version,
+                "title": "Lilya",
+                "version": settings.version,
+                "summary": "Lilya application",
+                "description": "Yet another framework/toolkit that delivers.",
+                "contact": {"name": "Lilya", "url": "https://lilya.dev", "email": "admin@myapp.com"},
             },
-            "servers": [{"url": "/"}],
             "paths": {
                 "/users/me": {
                     "get": {
-                        "summary": "Read Current User",
-                        "description": "",
-                        "operationId": "read_current_user_users_me_get",
-                        "deprecated": False,
+                        "operationId": None,
+                        "summary": None,
+                        "description": None,
+                        "tags": None,
+                        "deprecated": None,
                         "security": [
                             {
                                 "APIKeyInCookie": {
@@ -83,23 +89,22 @@ def test_openapi_schema():
                                 }
                             }
                         ],
-                        "responses": {
-                            "200": {
-                                "description": "Successful response",
-                                "content": {"application/json": {"schema": {"type": "string"}}},
-                            }
-                        },
+                        "parameters": [],
+                        "responses": {"200": {"description": "Successful response"}},
                     }
                 }
             },
             "components": {
+                "schemas": {},
                 "securitySchemes": {
                     "APIKeyInCookie": {
                         "type": "apiKey",
                         "description": "An API Cookie Key",
                         "name": "key",
                         "in": "cookie",
+                        "scheme_name": "APIKeyInCookie",
                     }
-                }
+                },
             },
+            "servers": [{"url": "/"}],
         }

@@ -1,10 +1,9 @@
 from typing import Any
 
-from pydantic import BaseModel
-
 from esmerald import Gateway, Inject, Injects, Security, get
 from esmerald.security.open_id import OpenIdConnect
 from esmerald.testclient import create_client
+from pydantic import BaseModel
 
 oid = OpenIdConnect(openIdConnectUrl="/openid")
 

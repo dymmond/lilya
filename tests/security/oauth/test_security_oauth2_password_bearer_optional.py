@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from esmerald import Gateway, Inject, Injects, get
 from esmerald.security.oauth2 import OAuth2PasswordBearer
@@ -8,7 +8,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token", auto_error=False)
 
 
 @get("/items/", security=[oauth2_scheme], dependencies={"token": Inject(oauth2_scheme)})
-async def read_items(token: Optional[str] = Injects()) -> Dict[str, Any]:
+async def read_items(token: str | None = Injects()) -> Dict[str, Any]:
     if token is None:
         return {"msg": "Create an account first"}
     return {"token": token}

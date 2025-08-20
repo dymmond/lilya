@@ -2,7 +2,7 @@ from datetime import datetime
 
 from freezegun import freeze_time
 
-from esmerald.security.jwt.token import Token
+from lilya.contrib.security.jwt.token import Token
 
 
 @freeze_time("2022-03-03")

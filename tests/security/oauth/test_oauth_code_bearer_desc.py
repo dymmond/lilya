@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from esmerald import Gateway, Inject, Injects, get
 from esmerald.security.oauth2 import OAuth2AuthorizationCodeBearer
@@ -13,7 +13,7 @@ oauth2_scheme = OAuth2AuthorizationCodeBearer(
 
 
 @get("/items", dependencies={"token": Inject(oauth2_scheme)}, security=[oauth2_scheme])
-async def read_items(token: Optional[str] = Injects()) -> dict[str, Any]:
+async def read_items(token: str | None = Injects()) -> dict[str, Any]:
     return {"token": token}
 
 

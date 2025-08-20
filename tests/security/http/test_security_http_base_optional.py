@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from esmerald import Gateway, Inject, Injects, get
 from esmerald.security.http import HTTPAuthorizationCredentials, HTTPBase
@@ -13,7 +13,7 @@ security = HTTPBase(scheme="Other", auto_error=False)
     security=[security],
 )
 def read_current_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Injects(),
+    credentials: HTTPAuthorizationCredentials | None = Injects(),
 ) -> Any:
     if credentials is None:
         return {"msg": "Create an account first"}

@@ -1,5 +1,5 @@
 from base64 import b64encode
-from typing import Any, Optional
+from typing import Any
 
 from esmerald import Gateway, Inject, Injects, get
 from esmerald.security.http import HTTPBasic, HTTPBasicCredentials
@@ -13,7 +13,7 @@ security = HTTPBasic(auto_error=False)
     security=[security],
     dependencies={"credentials": Inject(security)},
 )
-def read_current_user(credentials: Optional[HTTPBasicCredentials] = Injects()) -> Any:
+def read_current_user(credentials: HTTPBasicCredentials | None = Injects()) -> Any:
     if credentials is None:
         return {"msg": "Create an account first"}
     return {"username": credentials.username, "password": credentials.password}

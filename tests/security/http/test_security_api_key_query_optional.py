@@ -1,10 +1,9 @@
-from typing import Any, Optional
-
-from pydantic import BaseModel
+from typing import Any
 
 from esmerald import Gateway, Inject, Injects, Security, get
 from esmerald.security.api_key import APIKeyInQuery
 from esmerald.testclient import create_client
+from pydantic import BaseModel
 
 api_key = APIKeyInQuery(name="key", auto_error=False)
 
@@ -13,7 +12,7 @@ class User(BaseModel):
     username: str
 
 
-def get_current_user(oauth_header: Optional[str] = Security(api_key)):
+def get_current_user(oauth_header: str | None = Security(api_key)):
     if oauth_header is None:
         return None
     user = User(username=oauth_header)
@@ -21,7 +20,7 @@ def get_current_user(oauth_header: Optional[str] = Security(api_key)):
 
 
 @get("/users/me", dependencies={"current_user": Inject(get_current_user)}, security=[api_key])
-def read_current_user(current_user: Optional[User] = Injects()) -> Any:
+def read_current_user(current_user: User | None = Injects()) -> Any:
     if current_user is None:
         return {"msg": "Create an account first"}
     else:
