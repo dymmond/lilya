@@ -8,7 +8,7 @@ config = OpenAPIConfig(
     redoc_url="/docs/redocpage",
     servers=[{"url": "https://api.mycompany.com"}],
     tags=["users", "items"],
-    security=[{"BearerAuth": []}],
+    security=[{"BearerAuth": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}}],
     # … override any other fields as needed …
 )
 

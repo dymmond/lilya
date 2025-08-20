@@ -35,7 +35,7 @@ class Person(BaseModel):
         404: OpenAPIResponse(model=Person, description="User not found")
     },
     tags=["items", "users"],
-    security=[{"BearerAuth": []}],
+    security=[{"BearerAuth": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}}],
 )
 async def list_user_items(request, user_id: str):
     ...

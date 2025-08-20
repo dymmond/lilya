@@ -225,10 +225,6 @@ def get_openapi(
         "BearerAuth": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"},
     }
 
-    spec["components"]["securitySchemes"] = {  # type: ignore
-        name: security_definitions[name]
-        for name in used_security_schemes
-        if name in security_definitions
-    }
-
+    if used_security_schemes:
+        spec["components"]["securitySchemes"] = security_definitions  # type: ignore
     return spec

@@ -513,7 +513,7 @@ The `OpenAPIConfig` model encapsulates all settings that control how Lilya gener
 * **Description**: Global security requirements for the API, following OpenAPI’s security requirement object format. For example, to require a Bearer token on every endpoint:
 
   ```python
-  [{"BearerAuth": []}]
+  [{"BearerAuth": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}}]
   ```
 * **Type**: Any valid OpenAPI‐compliant security requirement or `None`
 * **Default**: `None`
@@ -522,7 +522,7 @@ The `OpenAPIConfig` model encapsulates all settings that control how Lilya gener
   * Included at the root of the JSON as
 
     ```json
-    "security": [{ "BearerAuth": [] }]
+    "securitySchemes": [{ "BearerAuth": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"} }]
     ```
   * Most UI tools show a “lock” icon and allow users to authorize once for all endpoints.
 
