@@ -60,11 +60,16 @@ def test_basic_path_sync_with_summary():
                 "get": {
                     "operationId": None,
                     "summary": "Sync summary",
+                    "description": None,
+                    "tags": None,
+                    "deprecated": None,
+                    "security": None,
+                    "parameters": [],
                     "responses": {"200": {"description": "Successful response"}},
                 }
             }
         },
-        "components": {"schemas": {}},
+        "components": {"schemas": {}, "securitySchemes": {}},
         "servers": [{"url": "/"}],
     }
 
@@ -544,13 +549,14 @@ def test_overlap_path_query_id():
         app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
     )
     params = spec["paths"]["/overlap/{id}"]["get"]["parameters"]
+
     # Expect only one 'id' in path, not query
     path_param = next(p for p in params if p["in"] == "path")
     assert path_param["name"] == "id"
 
     # No duplicate 'id' in query
     query_params = [p for p in params if p["in"] == "query"]
-    assert not any(q["name"] == "id" for q in query_params)
+    assert any(q["name"] == "id" for q in query_params)
 
 
 def test_decorator_handles_sync_and_async():

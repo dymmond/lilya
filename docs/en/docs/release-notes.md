@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.18.4
+
+### Fixed
+
+- Internals and refactor the OpenAPI spec to match the missing internals.
+
 ## 0.18.3
 
 ### Added
