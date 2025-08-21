@@ -7,9 +7,14 @@ hide:
 
 ## 0.19.1
 
+### Changed
+
+- Root path for auto detection behind reverse proxies.
+
 ### Fixed
 
 - Typo in the error for the security.
+- Servers for `openapi` were not being detected automatically.
 
 ## 0.19.0
 

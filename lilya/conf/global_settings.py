@@ -286,7 +286,6 @@ class Settings(Internal):
             """
         ),
     ] = True
-
     default_route_pattern: Annotated[
         str,
         Doc(
@@ -468,6 +467,26 @@ class Settings(Internal):
             """
         ),
     ] = False
+    root_path_in_servers: Annotated[
+        bool,
+        Doc(
+            """
+            Boolean flag use to disable the automatic URL generation in the `servers` field
+            in the OpenAPI documentation.
+            """
+        ),
+    ] = True
+    root_path: Annotated[
+        str | None,
+        Doc(
+            """
+            A path prefix that is handled by a proxy not seen in the
+            application but seen by external libraries.
+
+            This affects the tools like the OpenAPI documentation.
+            """
+        ),
+    ] = ""
 
     @property
     def routes(self) -> list[Any]:

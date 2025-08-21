@@ -465,6 +465,9 @@ class BaseLilya:
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         scope["app"] = self
         with _monkay.with_settings(self.settings), _monkay.with_instance(self):
+            if self.root_path:
+                scope["root_path"] = self.root_path
+
             if self.middleware_stack is None:
                 self.middleware_stack = self.build_middleware_stack()
             await self.middleware_stack(scope, receive, send)
@@ -957,6 +960,25 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
                 """
             ),
         ] = False,
+        root_path: Annotated[
+            str | None,
+            Doc(
+                """
+                A path prefix that is handled by a proxy not seen in the
+                application but seen by external libraries.
+
+                This affects the tools like the OpenAPI documentation.
+
+                **Example**
+
+                ```python
+                from lilya.apps import Lilya
+
+                app = Lilya(root_path="/api/v3")
+                ```
+                """
+            ),
+        ] = None,
     ) -> None:
         self.populate_global_context = populate_global_context
         self.settings_module: Settings | None = None
@@ -1008,6 +1030,8 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
         self.enable_intercept_global_exceptions = self.load_settings_value(
             "enable_intercept_global_exceptions", enable_intercept_global_exceptions
         )
+        self.root_path = self.load_settings_value("root_path", root_path)
+
         if self.router_class is not None:
             self.router = self.router_class(
                 routes=routes,
