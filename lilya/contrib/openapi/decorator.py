@@ -236,7 +236,7 @@ def openapi(
 
                 if not isinstance(security_requirement, (SecurityBase, SecurityScheme)):
                     raise ValueError(
-                        "Security schemes must subclass from `esmerald.openapi.models.SecurityScheme`"
+                        "Security schemes must subclass from `lilya.contrib.security.base.SecurityScheme`"
                     )
 
                 # Means it uses the security scheme directly
