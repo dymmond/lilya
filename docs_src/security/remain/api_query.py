@@ -1,18 +1,21 @@
-from typing import Any, Dict
+from typing import Any
 
-from esmerald import Inject, Injects, Esmerald, get, Gateway
-from esmerald.security.api_key import APIKeyInQuery
+from lilya.apps import Lilya
+from lilya.contrib.security.api_key import APIKeyInQuery
+from lilya.contrib.openapi.decorator import openapi
+from lilya.dependencies import Provides, Provide
+from lilya.routing import Path
 
 security = APIKeyInQuery(name="api_key")
 
 
-@get("/items", dependencies={"api_key": Inject(security)}, security=[security])
-async def get_items(api_key: str = Injects()) -> Dict[str, Any]:
+@openapi(security=[security])
+async def get_items(api_key: str = Provides()) -> dict[str, Any]:
     return {"api_key": api_key}
 
 
-app = Esmerald(
+app = Lilya(
     routes=[
-        Gateway(handler=get_items),
+        Path("/items", handler=get_items, dependencies={"api_key": Provide(security)}),
     ]
 )

@@ -1,10 +1,13 @@
 import secrets
-from typing import Dict
 
-
-from esmerald import Esmerald, Gateway, HTTPException, Inject, Injects, Security, get, status
-from esmerald.param_functions import Security
-from esmerald.security.http import HTTPBasic, HTTPBasicCredentials
+from lilya import status
+from lilya.apps import Lilya
+from lilya.exceptions import HTTPException
+from lilya.routing import Path
+from lilya.dependencies import Provide, Provides, Security
+from lilya.dependencies import Security
+from lilya.contrib.security.http import HTTPBasic, HTTPBasicCredentials
+from lilya.contrib.openapi.decorator import openapi
 
 security = HTTPBasic()
 
@@ -25,13 +28,17 @@ def get_username(credentials: HTTPBasicCredentials = Security(security)):
     return credentials.username
 
 
-@get("/users/me", dependencies={"username": Inject(get_username)}, security=[security])
-def get_current_user(username: str = Injects()) -> Dict[str, str]:
+@openapi(security=[security])
+def get_current_user(username: str = Provides()) -> dict[str, str]:
     return {"username": username}
 
 
-app = Esmerald(
+app = Lilya(
     routes=[
-        Gateway(handler=get_current_user),
+        Path(
+            "/users/me",
+            handler=get_current_user,
+            dependencies={"username": Provide(get_username)},
+        ),
     ],
 )

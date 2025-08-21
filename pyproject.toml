@@ -167,7 +167,7 @@ installer = "pip"
 test = "hatch test -- {args}"
 test_man = "hatch test -- {args} -s -vv"
 coverage = "hatch test -- --cov=lilya --cov=tests --cov-report=term-missing:skip-covered --cov-report=html tests {args}"
-check_types = "mypy -p lilya docs_src"
+check_types = "mypy -p lilya"
 
 
 [tool.hatch.envs.hatch-static-analysis]

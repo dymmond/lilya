@@ -1,24 +1,19 @@
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List
 
 import jwt
 from jwt.exceptions import InvalidTokenError
 from passlib.context import CryptContext
 from pydantic import BaseModel
 
-from esmerald import (
-    Esmerald,
-    Gateway,
-    HTTPException,
-    Inject,
-    Injects,
-    Security,
-    get,
-    post,
-    status,
-)
-from esmerald.params import Form
-from esmerald.security.oauth2 import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from lilya import status
+from lilya.apps import Lilya
+from lilya.exceptions import HTTPException
+from lilya.routing import Path
+from lilya.dependencies import Provide, Provides
+from lilya.contrib.security.param_functions import Form
+from lilya.dependencies import Security
+from lilya.contrib.security.oauth2 import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from lilya.contrib.openapi.decorator import openapi
 
 
 SECRET_KEY = "adec4de83525abdd446b258d0df8a3cc151ee65e95ae8b8ccf51b643df71afcf"
@@ -69,7 +64,7 @@ def get_password_hash(password: str) -> str:
     return password_context.hash(password)
 
 
-def get_user(db: Dict[str, Dict[str, str]], username: str) -> User | None:
+def get_user(db: dict[str, dict[str, str]], username: str) -> User | None:
     user_dict = db.get(username)
     return User(**user_dict) if user_dict else None
 
@@ -108,12 +103,8 @@ async def get_current_user(token: str = Security(oauth2_scheme)) -> User:
     return user
 
 
-@post(
-    "/token",
-    dependencies={"form_data": Inject(OAuth2PasswordRequestForm)},
-    security=[oauth2_scheme],
-)
-async def login(form_data: OAuth2PasswordRequestForm = Form()) -> Dict[str, str]:
+@openapi(security=[oauth2_scheme])
+async def login(form_data: OAuth2PasswordRequestForm = Form()) -> dict[str, str]:
     user = authenticate_user(fake_users_db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -128,30 +119,35 @@ async def login(form_data: OAuth2PasswordRequestForm = Form()) -> Dict[str, str]
     return Token(access_token=access_token, token_type="bearer")
 
 
-@get(
-    "/users/me",
-    dependencies={"current_user": Inject(get_current_user)},
-    security=[oauth2_scheme],
-)
+@openapi(security=[oauth2_scheme])
 async def me(
-    current_user: User = Injects(),
+    current_user: User = Provides(),
 ) -> User:
     return current_user
 
 
-@get(
-    "/users/me/items",
-    dependencies={"current_user": Inject(get_current_user)},
-    security=[oauth2_scheme],
-)
-async def get_user_items(current_user: User = Injects()) -> List[Dict[str, str]]:
+@openapi(security=[oauth2_scheme])
+async def get_user_items(current_user: User = Provides()) -> list[dict[str, str]]:
     return [{"item_id": "Foo", "owner": current_user.username}]
 
 
-app = Esmerald(
+app = Lilya(
     routes=[
-        Gateway(handler=login),
-        Gateway(handler=me),
-        Gateway(handler=get_user_items),
+        Path(
+            "/token",
+            handler=login,
+            dependencies={"form_data": Provide(OAuth2PasswordRequestForm)},
+            methods=["POST"],
+        ),
+        Path(
+            "/users/me",
+            handler=me,
+            dependencies={"current_user": Provide(get_current_user)},
+        ),
+        Path(
+            "/users/me/items",
+            handler=get_user_items,
+            dependencies={"current_user": Provide(get_current_user)},
+        ),
     ],
 )

@@ -1,18 +1,22 @@
-from typing import Any, Dict
+from typing import Any
 
-from esmerald import Inject, Injects, Esmerald, get, Gateway
-from esmerald.security.open_id import OpenIdConnect
+from lilya.apps import Lilya
+from lilya.contrib.security.open_id import OpenIdConnect
+from lilya.contrib.openapi.decorator import openapi
+from lilya.dependencies import Provides, Provide
+from lilya.routing import Path
+
 
 security = OpenIdConnect(openIdConnectUrl="/openid", description="OpenIdConnect security scheme")
 
 
-@get("/items", dependencies={"auth": Inject(security)}, security=[security])
-async def get_items(auth: str = Injects()) -> Dict[str, Any]:
+@openapi(security=[security])
+async def get_items(auth: str = Provides()) -> dict[str, Any]:
     return {"auth": auth}
 
 
-app = Esmerald(
+app = Lilya(
     routes=[
-        Gateway(handler=get_items),
+        Path("/items", handler=get_items, dependencies={"auth": Provide(security)}),
     ]
 )

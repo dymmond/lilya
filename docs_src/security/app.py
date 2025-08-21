@@ -1,18 +1,21 @@
-from typing import Any, Dict
+from typing import Any
 
-from esmerald import Inject, Injects, Esmerald, get, Gateway
-from esmerald.security.oauth2 import OAuth2PasswordBearer
+from lilya.apps import Lilya
+from lilya.contrib.security.oauth2 import OAuth2PasswordBearer
+from lilya.contrib.openapi.decorator import openapi
+from lilya.dependencies import Provides, Provide
+from lilya.routing import Path
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-@get("/items", dependencies={"token": Inject(oauth2_scheme)}, security=[oauth2_scheme])
-async def get_items(token: str = Injects()) -> Dict[str, Any]:
+@openapi(security=[oauth2_scheme])
+async def get_items(token: str = Provides()) -> dict[str, Any]:
     return {"token": token}
 
 
-app = Esmerald(
+app = Lilya(
     routes=[
-        Gateway(handler=get_items),
+        Path("/items", handler=get_items, dependencies={"token": Provide(oauth2_scheme)}),
     ]
 )

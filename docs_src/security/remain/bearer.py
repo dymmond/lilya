@@ -1,18 +1,21 @@
-from typing import Any, Dict
+from typing import Any
 
-from esmerald import Inject, Injects, Esmerald, get, Gateway
-from esmerald.security.http import HTTPBearer, HTTPAuthorizationCredentials
+from lilya.apps import Lilya
+from lilya.contrib.security.http import HTTPBearer, HTTPAuthorizationCredentials
+from lilya.contrib.openapi.decorator import openapi
+from lilya.dependencies import Provides, Provide
+from lilya.routing import Path
 
 security = HTTPBearer()
 
 
-@get("/items", dependencies={"credentials": Inject(security)}, security=[security])
-async def get_items(credentials: HTTPAuthorizationCredentials = Injects()) -> Dict[str, Any]:
+@openapi(security=[security])
+async def get_items(credentials: HTTPAuthorizationCredentials = Provides()) -> dict[str, Any]:
     return {"scheme": credentials.scheme, "credentials": credentials.credentials}
 
 
-app = Esmerald(
+app = Lilya(
     routes=[
-        Gateway(handler=get_items),
+        Path("/items", handler=get_items, dependencies={"auth": Provide(security)}),
     ]
 )
