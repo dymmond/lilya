@@ -55,12 +55,8 @@ def test_responses_decorator(test_client_factory):
             "paths": {
                 "/create": {
                     "post": {
-                        "operationId": None,
                         "summary": "A test",
                         "description": "A test",
-                        "tags": None,
-                        "deprecated": None,
-                        "security": None,
                         "parameters": [],
                         "responses": {
                             "400": {

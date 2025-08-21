@@ -1,9 +1,10 @@
 import re
 from collections.abc import Sequence
-from typing import Any, get_args, get_origin
+from typing import Any, cast, get_args, get_origin
 
 from pydantic.json_schema import GenerateJsonSchema
 
+from lilya._internal._encoders import json_encode
 from lilya._utils import is_class_and_subclass
 from lilya.contrib.openapi.constants import REF_TEMPLATE, WRITING_METHODS
 from lilya.contrib.openapi.helpers import get_definitions
@@ -226,4 +227,4 @@ def get_openapi(
 
     if securitySchemes:
         spec["components"]["securitySchemes"] = securitySchemes  # type: ignore
-    return spec
+    return cast(dict[str, Any], json_encode(spec, exclude_none=True))

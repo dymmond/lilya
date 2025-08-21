@@ -58,12 +58,7 @@ def test_basic_path_sync_with_summary():
         "paths": {
             "/sync": {
                 "get": {
-                    "operationId": None,
                     "summary": "Sync summary",
-                    "description": None,
-                    "tags": None,
-                    "deprecated": None,
-                    "security": None,
                     "parameters": [],
                     "responses": {"200": {"description": "Successful response"}},
                 }
