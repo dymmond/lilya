@@ -1,5 +1,9 @@
-from esmerald import Inject, Injects, get, Security
-from esmerald.security.oauth2 import OAuth2PasswordBearer
+from lilya.apps import Lilya
+from lilya.contrib.security.oauth2 import OAuth2PasswordBearer
+from lilya.contrib.openapi.decorator import openapi
+from lilya.dependencies import Security
+from lilya.dependencies import Provides, Provide
+from lilya.routing import Path
 from pydantic import BaseModel
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -19,10 +23,17 @@ async def get_current_user(token: str = Security(oauth2_scheme)):
     return user
 
 
-@get(
-    "/users/me",
-    dependencies={"current_user": Inject(get_current_user)},
-    security=[oauth2_scheme],
-)
-async def users_me(current_user: User = Injects()) -> User:
+@openapi(security=[oauth2_scheme])
+async def users_me(current_user: User = Provides()) -> User:
     return current_user
+
+
+app = Lilya(
+    routes=[
+        Path(
+            "/users/me",
+            handler=users_me,
+            dependencies={"current_user": Provide(get_current_user)}
+        ),
+    ],
+)

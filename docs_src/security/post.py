@@ -1,8 +1,14 @@
 from typing import Dict
 from pydantic import BaseModel
 
-from esmerald import Esmerald, Gateway, HTTPException, Inject, Injects, Security, get, post, status
-from esmerald.security.oauth2 import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from lilya import status
+from lilya.apps import Lilya
+from lilya.exceptions import HTTPException
+from lilya.routing import Path
+from lilya.dependencies import Provide, Provides
+from lilya.dependencies import Security
+from lilya.contrib.security.oauth2 import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from lilya.contrib.openapi.decorator import openapi
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -65,12 +71,10 @@ async def get_current_user(token: str = Security(oauth2_scheme)):
     return user
 
 
-@post(
-    "/token",
-    dependencies={"form_data": Inject(OAuth2PasswordRequestForm)},
-    security=[oauth2_scheme],
+@openapi(
+    security=[oauth2_scheme]
 )
-async def login(form_data: OAuth2PasswordRequestForm = Injects()) -> Dict[str, str]:
+async def login(form_data: OAuth2PasswordRequestForm = Provides()) -> Dict[str, str]:
     user_dict = fake_users_db.get(form_data.username)
     if not user_dict:
         raise HTTPException(status_code=400, detail="Incorrect username or password")
@@ -82,17 +86,16 @@ async def login(form_data: OAuth2PasswordRequestForm = Injects()) -> Dict[str, s
     return {"access_token": user.username, "token_type": "bearer"}
 
 
-@get("/users/me", dependencies={"current_user": Inject(get_current_user)})
+@openapi()
 async def read_users_me(
-    current_user: User = Injects(),
+    current_user: User = Provides(),
 ) -> User:
     return current_user
 
 
-app = Esmerald(
+app = Lilya(
     routes=[
-        Gateway(handler=login),
-        Gateway(handler=read_users_me),
+        Path("/token", handler=login, methods=["POST"], dependencies={"form_data": Provide(OAuth2PasswordRequestForm)}),
+        Path("/users/me", handler=read_users_me, dependencies={"current_user": Provide(get_current_user)}),
     ],
-    debug=True,
 )
