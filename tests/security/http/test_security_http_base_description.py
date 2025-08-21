@@ -1,53 +1,63 @@
 from typing import Any
 
-from esmerald import Gateway, Inject, Injects, get
-from esmerald.security.http import HTTPAuthorizationCredentials, HTTPBase
-from esmerald.testclient import create_client
+from lilya.contrib.openapi.decorator import openapi
+from lilya.contrib.security.http import HTTPAuthorizationCredentials, HTTPBase
+from lilya.dependencies import Provide, Provides
+from lilya.routing import Path
+from lilya.testclient import create_client
 
 security = HTTPBase(scheme="Other", description="Other Security Scheme")
 
 
-@get("/users/me", dependencies={"credentials": Inject(security)}, security=[security])
-def read_current_user(credentials: HTTPAuthorizationCredentials = Injects()) -> Any:
+@openapi(security=[security])
+def read_current_user(credentials: HTTPAuthorizationCredentials = Provides()) -> Any:
     return {"scheme": credentials.scheme, "credentials": credentials.credentials}
 
 
-def xtest_security_http_base():
-    with create_client(routes=[Gateway(handler=read_current_user)]) as client:
+def test_security_http_base():
+    with create_client(
+        routes=[Path("/users/me", handler=read_current_user, dependencies={"credentials": Provide(security)})],
+        debug=True,
+    ) as client:
         response = client.get("/users/me", headers={"Authorization": "Other foobar"})
         assert response.status_code == 200, response.text
         assert response.json() == {"scheme": "Other", "credentials": "foobar"}
 
 
 def test_security_http_base_no_credentials():
-    with create_client(routes=[Gateway(handler=read_current_user)]) as client:
+    with create_client(
+        routes=[Path("/users/me", handler=read_current_user, dependencies={"credentials": Provide(security)})]
+    ) as client:
         response = client.get("/users/me")
         assert response.status_code == 403, response.text
-        assert response.json() == {"detail": "Not authenticated"}
+        assert response.text == "Not authenticated"
 
 
 def test_openapi_schema():
-    with create_client(routes=[Gateway(handler=read_current_user)], enable_openapi=True) as client:
+    with create_client(
+        routes=[Path("/users/me", handler=read_current_user, dependencies={"credentials": Provide(security)})],
+        enable_openapi=True,
+    ) as client:
         response = client.get("/openapi.json")
         assert response.status_code == 200, response.text
 
         assert response.json() == {
             "openapi": "3.1.0",
             "info": {
-                "title": "Esmerald",
-                "summary": "Esmerald application",
-                "description": "Highly scalable, performant, easy to learn and for every application.",
-                "contact": {"name": "admin", "email": "admin@myapp.com"},
+                "title": "Lilya",
                 "version": client.app.version,
+                "summary": "Lilya application",
+                "description": "Yet another framework/toolkit that delivers.",
+                "contact": {"name": "Lilya", "url": "https://lilya.dev", "email": "admin@myapp.com"},
             },
-            "servers": [{"url": "/"}],
             "paths": {
                 "/users/me": {
                     "get": {
-                        "summary": "Read Current User",
-                        "description": "",
-                        "operationId": "read_current_user_users_me_get",
-                        "deprecated": False,
+                        "operationId": None,
+                        "summary": None,
+                        "description": None,
+                        "tags": None,
+                        "deprecated": None,
                         "security": [
                             {
                                 "HTTPBase": {
@@ -58,22 +68,21 @@ def test_openapi_schema():
                                 }
                             }
                         ],
-                        "responses": {
-                            "200": {
-                                "description": "Successful response",
-                                "content": {"application/json": {"schema": {"type": "string"}}},
-                            }
-                        },
+                        "parameters": [],
+                        "responses": {"200": {"description": "Successful response"}},
                     }
                 }
             },
             "components": {
+                "schemas": {},
                 "securitySchemes": {
                     "HTTPBase": {
                         "type": "http",
                         "description": "Other Security Scheme",
                         "scheme": "Other",
+                        "scheme_name": "HTTPBase",
                     }
-                }
+                },
             },
+            "servers": [{"url": "/"}],
         }

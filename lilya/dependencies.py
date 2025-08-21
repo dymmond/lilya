@@ -4,9 +4,12 @@ from collections.abc import Callable, Sequence
 from types import GeneratorType
 from typing import Any
 
-from lilya.compat import run_sync
+from lilya.compat import is_async_callable, run_sync
+from lilya.enums import SignatureDefault
 from lilya.requests import Request
 from lilya.websockets import WebSocket
+
+SIGNATURE_TO_LIST = SignatureDefault.to_list()
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -87,13 +90,18 @@ class Provide:
                     kwargs[name] = getattr(request, name)
                 elif name in request.query_params:
                     kwargs[name] = request.query_params[name]
+                elif name in SIGNATURE_TO_LIST:
+                    kwargs[name] = request
                 else:
                     raise RuntimeError(
                         f"Could not resolve parameter '{name}' for dependency '{self.dependency.__name__}'"
                     )
 
         call_kwargs = {**self.provided_kwargs, **kwargs}
-        if inspect.iscoroutinefunction(self.dependency):
+
+        # If the dependency is a coroutine function, await it; otherwise, call it directly.
+        # This allows for both synchronous and asynchronous dependencies.
+        if inspect.iscoroutinefunction(self.dependency) or is_async_callable(self.dependency):
             result = await self.dependency(*self.provided_args, **call_kwargs)
         else:
             result = self.dependency(*self.provided_args, **call_kwargs)
@@ -197,11 +205,7 @@ async def async_resolve_dependencies(
                     overrides=overrides,
                 )
             else:
-                resolved = (
-                    resolve_dependencies(request, dep_func, overrides)
-                    if callable(dep_func)
-                    else dep_func
-                )
+                resolved = resolve_dependencies(request, dep_func, overrides) if callable(dep_func) else dep_func
             kwargs[name] = resolved
     if inspect.iscoroutinefunction(func):
         result = await func(**kwargs)
