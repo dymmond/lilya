@@ -9,7 +9,7 @@ from lilya.dependencies import Provide, Provides, Security
 from lilya.routing import Path
 from lilya.testclient import create_client
 
-api_key = APIKeyInCookie(name="key", description="An API Cookie Key")
+api_key = APIKeyInCookie(name="key", auto_error=False)
 
 
 class User(BaseModel):
@@ -44,7 +44,7 @@ def test_security_api_key():
         assert response.json() == {"username": "secret"}
 
 
-def xtest_security_api_key_no_key():
+def test_security_api_key_no_key():
     with create_client(
         routes=[
             Path("/users/me", handler=read_current_user, dependencies={"current_user": Provide(get_current_user)}),
@@ -86,7 +86,6 @@ def test_openapi_schema():
                             {
                                 "APIKeyInCookie": {
                                     "type": "apiKey",
-                                    "description": "An API Cookie Key",
                                     "name": "key",
                                     "in": "cookie",
                                     "scheme_name": "APIKeyInCookie",
@@ -103,7 +102,6 @@ def test_openapi_schema():
                 "securitySchemes": {
                     "APIKeyInCookie": {
                         "type": "apiKey",
-                        "description": "An API Cookie Key",
                         "name": "key",
                         "in": "cookie",
                         "scheme_name": "APIKeyInCookie",
