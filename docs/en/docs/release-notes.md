@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.19.1
+
+### Fixed
+
+- Typo in the error for the security.
+
 ## 0.19.0
 
 ### Added
