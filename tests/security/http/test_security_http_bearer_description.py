@@ -1,64 +1,72 @@
 from typing import Any
 
-from esmerald import Inject, Injects, get
-from esmerald.security.http import HTTPAuthorizationCredentials, HTTPBearer
-from esmerald.testclient import create_client
+from lilya.contrib.openapi.decorator import openapi
+from lilya.contrib.security.http import HTTPAuthorizationCredentials, HTTPBearer
+from lilya.dependencies import Provide, Provides
+from lilya.routing import Path
+from lilya.testclient import create_client
 
 security = HTTPBearer(description="HTTP Bearer token scheme")
 
 
-@get(
-    "/users/me",
+@openapi(
     security=[security],
-    dependencies={"credentials": Inject(security)},
 )
-def read_current_user(credentials: HTTPAuthorizationCredentials = Injects()) -> Any:
+def read_current_user(credentials: HTTPAuthorizationCredentials = Provides()) -> Any:
     return {"scheme": credentials.scheme, "credentials": credentials.credentials}
 
 
 def test_security_http_bearer():
-    with create_client(routes=[read_current_user]) as client:
+    with create_client(
+        routes=[Path("/users/me", read_current_user, dependencies={"credentials": Provide(security)})]
+    ) as client:
         response = client.get("/users/me", headers={"Authorization": "Bearer foobar"})
         assert response.status_code == 200, response.text
         assert response.json() == {"scheme": "Bearer", "credentials": "foobar"}
 
 
 def test_security_http_bearer_no_credentials():
-    with create_client(routes=[read_current_user]) as client:
+    with create_client(
+        routes=[Path("/users/me", read_current_user, dependencies={"credentials": Provide(security)})]
+    ) as client:
         response = client.get("/users/me")
         assert response.status_code == 403, response.text
-        assert response.json() == {"detail": "Not authenticated"}
+        assert response.text == "Not authenticated"
 
 
 def test_security_http_bearer_incorrect_scheme_credentials():
-    with create_client(routes=[read_current_user]) as client:
+    with create_client(
+        routes=[Path("/users/me", read_current_user, dependencies={"credentials": Provide(security)})]
+    ) as client:
         response = client.get("/users/me", headers={"Authorization": "Basic notreally"})
         assert response.status_code == 403, response.text
-        assert response.json() == {"detail": "Invalid authentication credentials"}
+        assert response.text == "Invalid authentication credentials"
 
 
 def test_openapi_schema():
-    with create_client(routes=[read_current_user]) as client:
+    with create_client(
+        routes=[Path("/users/me", read_current_user, dependencies={"credentials": Provide(security)})]
+    ) as client:
         response = client.get("/openapi.json")
         assert response.status_code == 200, response.text
 
         assert response.json() == {
             "openapi": "3.1.0",
             "info": {
-                "title": "Esmerald",
-                "summary": "Esmerald application",
-                "description": "Highly scalable, performant, easy to learn and for every application.",
-                "contact": {"name": "admin", "email": "admin@myapp.com"},
+                "title": "Lilya",
                 "version": client.app.version,
+                "summary": "Lilya application",
+                "description": "Yet another framework/toolkit that delivers.",
+                "contact": {"name": "Lilya", "url": "https://lilya.dev", "email": "admin@myapp.com"},
             },
-            "servers": [{"url": "/"}],
             "paths": {
                 "/users/me": {
                     "get": {
-                        "summary": "Read Current User",
-                        "description": "",
-                        "operationId": "read_current_user_users_me_get",
-                        "deprecated": False,
+                        "operationId": None,
+                        "summary": None,
+                        "description": None,
+                        "tags": None,
+                        "deprecated": None,
                         "security": [
                             {
                                 "HTTPBearer": {
@@ -69,22 +77,21 @@ def test_openapi_schema():
                                 }
                             }
                         ],
-                        "responses": {
-                            "200": {
-                                "description": "Successful response",
-                                "content": {"application/json": {"schema": {"type": "string"}}},
-                            }
-                        },
+                        "parameters": [],
+                        "responses": {"200": {"description": "Successful response"}},
                     }
                 }
             },
             "components": {
+                "schemas": {},
                 "securitySchemes": {
                     "HTTPBearer": {
                         "type": "http",
                         "description": "HTTP Bearer token scheme",
                         "scheme": "bearer",
+                        "scheme_name": "HTTPBearer",
                     }
-                }
+                },
             },
+            "servers": [{"url": "/"}],
         }

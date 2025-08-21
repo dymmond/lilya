@@ -1,22 +1,28 @@
 from base64 import b64encode
 from typing import Any
 
-from esmerald import Gateway, Inject, Injects, get
-from esmerald.security.http import HTTPBasic, HTTPBasicCredentials
-from esmerald.testclient import create_client
+from lilya.contrib.openapi.decorator import openapi
+from lilya.contrib.security.http import HTTPBasic, HTTPBasicCredentials
+from lilya.dependencies import Provide, Provides
+from lilya.routing import Path
+from lilya.testclient import create_client
 
 security = HTTPBasic(realm="simple")
 
 
-@get("/users/me", security=[security], dependencies={"credentials": Inject(security)})
-def read_current_user(credentials: HTTPBasicCredentials = Injects()) -> Any:
+@openapi(
+    security=[security],
+)
+def read_current_user(credentials: HTTPBasicCredentials | None = Provides()) -> Any:
+    if credentials is None:
+        return {"msg": "Create an account first"}
     return {"username": credentials.username, "password": credentials.password}
 
 
 def test_security_http_basic():
     with create_client(
         routes=[
-            Gateway(handler=read_current_user),
+            Path("/users/me", handler=read_current_user, dependencies={"credentials": Provide(security)}),
         ],
     ) as client:
         response = client.get("/users/me", auth=("john", "secret"))
@@ -27,25 +33,25 @@ def test_security_http_basic():
 def test_security_http_basic_no_credentials():
     with create_client(
         routes=[
-            Gateway(handler=read_current_user),
+            Path("/users/me", handler=read_current_user, dependencies={"credentials": Provide(security)}),
         ],
     ) as client:
         response = client.get("/users/me")
-        assert response.json() == {"detail": "Not authenticated"}
         assert response.status_code == 401, response.text
         assert response.headers["WWW-Authenticate"] == 'Basic realm="simple"'
+        assert response.text == "Not authenticated"
 
 
 def test_security_http_basic_invalid_credentials():
     with create_client(
         routes=[
-            Gateway(handler=read_current_user),
+            Path("/users/me", handler=read_current_user, dependencies={"credentials": Provide(security)}),
         ],
     ) as client:
         response = client.get("/users/me", headers={"Authorization": "Basic notabase64token"})
         assert response.status_code == 401, response.text
         assert response.headers["WWW-Authenticate"] == 'Basic realm="simple"'
-        assert response.json() == {"detail": "Invalid authentication credentials"}
+        assert response.text == "Invalid authentication credentials"
 
 
 def test_security_http_basic_non_basic_credentials():
@@ -54,19 +60,19 @@ def test_security_http_basic_non_basic_credentials():
 
     with create_client(
         routes=[
-            Gateway(handler=read_current_user),
+            Path("/users/me", handler=read_current_user, dependencies={"credentials": Provide(security)}),
         ],
     ) as client:
         response = client.get("/users/me", headers={"Authorization": auth_header})
         assert response.status_code == 401, response.text
         assert response.headers["WWW-Authenticate"] == 'Basic realm="simple"'
-        assert response.json() == {"detail": "Invalid authentication credentials"}
+        assert response.text == "Invalid authentication credentials"
 
 
 def test_openapi_schema():
     with create_client(
         routes=[
-            Gateway(handler=read_current_user),
+            Path("/users/me", handler=read_current_user, dependencies={"credentials": Provide(security)}),
         ],
     ) as client:
         response = client.get("/openapi.json")
@@ -75,20 +81,20 @@ def test_openapi_schema():
         assert response.json() == {
             "openapi": "3.1.0",
             "info": {
-                "title": "Esmerald",
-                "summary": "Esmerald application",
-                "description": "Highly scalable, performant, easy to learn and for every application.",
-                "contact": {"name": "admin", "email": "admin@myapp.com"},
+                "title": "Lilya",
                 "version": client.app.version,
+                "summary": "Lilya application",
+                "description": "Yet another framework/toolkit that delivers.",
+                "contact": {"name": "Lilya", "url": "https://lilya.dev", "email": "admin@myapp.com"},
             },
-            "servers": [{"url": "/"}],
             "paths": {
                 "/users/me": {
                     "get": {
-                        "summary": "Read Current User",
-                        "description": "",
-                        "operationId": "read_current_user_users_me_get",
-                        "deprecated": False,
+                        "operationId": None,
+                        "summary": None,
+                        "description": None,
+                        "tags": None,
+                        "deprecated": None,
                         "security": [
                             {
                                 "HTTPBasic": {
@@ -99,14 +105,16 @@ def test_openapi_schema():
                                 }
                             }
                         ],
-                        "responses": {
-                            "200": {
-                                "description": "Successful response",
-                                "content": {"application/json": {"schema": {"type": "string"}}},
-                            }
-                        },
+                        "parameters": [],
+                        "responses": {"200": {"description": "Successful response"}},
                     }
                 }
             },
-            "components": {"securitySchemes": {"HTTPBasic": {"type": "http", "scheme": "basic"}}},
+            "components": {
+                "schemas": {},
+                "securitySchemes": {
+                    "HTTPBasic": {"type": "http", "scheme": "basic", "scheme_name": "HTTPBasic", "realm": "simple"}
+                },
+            },
+            "servers": [{"url": "/"}],
         }
