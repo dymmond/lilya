@@ -5,11 +5,21 @@ hide:
 
 # Release Notes
 
-## 0.18.4
+## 0.19.0
+
+### Added
+
+- Contrib security. This contrib is entirely optional and you don't need to use it but is served as an alternative
+to allow you to use Lilya security out of the box.
 
 ### Fixed
 
+- Nested dependencies that require internal parameters.
 - Internals and refactor the OpenAPI spec to match the missing internals.
+
+### Changed
+
+- Refactor the `@openapi` generator for security and authorization.
 
 ## 0.18.3
 

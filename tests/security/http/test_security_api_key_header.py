@@ -34,7 +34,11 @@ def read_current_user(current_user: User = Provides()) -> Any:
 def test_security_api_key():
     with create_client(
         routes=[
-            Path("/users/me", handler=read_current_user, dependencies={"current_user": Provide(get_current_user)}),
+            Path(
+                "/users/me",
+                handler=read_current_user,
+                dependencies={"current_user": Provide(get_current_user)},
+            ),
         ],
     ) as client:
         response = client.get("/users/me", headers={"key": "secret"})
@@ -45,7 +49,11 @@ def test_security_api_key():
 def test_security_api_key_no_key():
     with create_client(
         routes=[
-            Path("/users/me", handler=read_current_user, dependencies={"current_user": Provide(get_current_user)}),
+            Path(
+                "/users/me",
+                handler=read_current_user,
+                dependencies={"current_user": Provide(get_current_user)},
+            ),
         ],
         enable_intercept_global_exceptions=True,
     ) as client:
@@ -57,7 +65,11 @@ def test_security_api_key_no_key():
 def test_openapi_schema():
     with create_client(
         routes=[
-            Path("/users/me", handler=read_current_user, dependencies={"current_user": Provide(get_current_user)}),
+            Path(
+                "/users/me",
+                handler=read_current_user,
+                dependencies={"current_user": Provide(get_current_user)},
+            ),
         ],
         enable_openapi=True,
     ) as client:
@@ -71,7 +83,11 @@ def test_openapi_schema():
                 "version": client.app.version,
                 "summary": "Lilya application",
                 "description": "Yet another framework/toolkit that delivers.",
-                "contact": {"name": "Lilya", "url": "https://lilya.dev", "email": "admin@myapp.com"},
+                "contact": {
+                    "name": "Lilya",
+                    "url": "https://lilya.dev",
+                    "email": "admin@myapp.com",
+                },
             },
             "paths": {
                 "/users/me": {
@@ -99,7 +115,12 @@ def test_openapi_schema():
             "components": {
                 "schemas": {},
                 "securitySchemes": {
-                    "APIKeyInHeader": {"type": "apiKey", "name": "key", "in": "header", "scheme_name": "APIKeyInHeader"}
+                    "APIKeyInHeader": {
+                        "type": "apiKey",
+                        "name": "key",
+                        "in": "header",
+                        "scheme_name": "APIKeyInHeader",
+                    }
                 },
             },
             "servers": [{"url": "/"}],

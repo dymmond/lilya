@@ -22,7 +22,11 @@ def read_current_user(credentials: HTTPBasicCredentials | None = Provides()) -> 
 def test_security_http_basic():
     with create_client(
         routes=[
-            Path("/users/me", handler=read_current_user, dependencies={"credentials": Provide(security)}),
+            Path(
+                "/users/me",
+                handler=read_current_user,
+                dependencies={"credentials": Provide(security)},
+            ),
         ],
     ) as client:
         response = client.get("/users/me", auth=("john", "secret"))
@@ -32,7 +36,13 @@ def test_security_http_basic():
 
 def test_security_http_basic_no_credentials():
     with create_client(
-        routes=[Path("/users/me", handler=read_current_user, dependencies={"credentials": Provide(security)})]
+        routes=[
+            Path(
+                "/users/me",
+                handler=read_current_user,
+                dependencies={"credentials": Provide(security)},
+            )
+        ]
     ) as client:
         response = client.get("/users/me")
         assert response.status_code == 401, response.text
@@ -42,7 +52,13 @@ def test_security_http_basic_no_credentials():
 
 def test_security_http_basic_invalid_credentials():
     with create_client(
-        routes=[Path("/users/me", handler=read_current_user, dependencies={"credentials": Provide(security)})]
+        routes=[
+            Path(
+                "/users/me",
+                handler=read_current_user,
+                dependencies={"credentials": Provide(security)},
+            )
+        ]
     ) as client:
         response = client.get("/users/me", headers={"Authorization": "Basic notabase64token"})
         assert response.status_code == 401, response.text
@@ -55,7 +71,13 @@ def test_security_http_basic_non_basic_credentials():
     auth_header = f"Basic {payload}"
 
     with create_client(
-        routes=[Path("/users/me", handler=read_current_user, dependencies={"credentials": Provide(security)})]
+        routes=[
+            Path(
+                "/users/me",
+                handler=read_current_user,
+                dependencies={"credentials": Provide(security)},
+            )
+        ]
     ) as client:
         response = client.get("/users/me", headers={"Authorization": auth_header})
         assert response.status_code == 401, response.text
@@ -65,7 +87,13 @@ def test_security_http_basic_non_basic_credentials():
 
 def test_openapi_schema():
     with create_client(
-        routes=[Path("/users/me", handler=read_current_user, dependencies={"credentials": Provide(security)})]
+        routes=[
+            Path(
+                "/users/me",
+                handler=read_current_user,
+                dependencies={"credentials": Provide(security)},
+            )
+        ]
     ) as client:
         response = client.get("/openapi.json")
         assert response.status_code == 200, response.text
@@ -77,7 +105,11 @@ def test_openapi_schema():
                 "version": client.app.version,
                 "summary": "Lilya application",
                 "description": "Yet another framework/toolkit that delivers.",
-                "contact": {"name": "Lilya", "url": "https://lilya.dev", "email": "admin@myapp.com"},
+                "contact": {
+                    "name": "Lilya",
+                    "url": "https://lilya.dev",
+                    "email": "admin@myapp.com",
+                },
             },
             "paths": {
                 "/users/me": {

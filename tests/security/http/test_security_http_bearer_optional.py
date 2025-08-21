@@ -20,7 +20,9 @@ def read_current_user(credentials: HTTPAuthorizationCredentials | None = Provide
 
 def test_security_http_bearer():
     with create_client(
-        routes=[Path("/users/me", read_current_user, dependencies={"credentials": Provide(security)})]
+        routes=[
+            Path("/users/me", read_current_user, dependencies={"credentials": Provide(security)})
+        ]
     ) as client:
         response = client.get("/users/me", headers={"Authorization": "Bearer foobar"})
         assert response.status_code == 200, response.text
@@ -29,7 +31,9 @@ def test_security_http_bearer():
 
 def test_security_http_bearer_no_credentials():
     with create_client(
-        routes=[Path("/users/me", read_current_user, dependencies={"credentials": Provide(security)})]
+        routes=[
+            Path("/users/me", read_current_user, dependencies={"credentials": Provide(security)})
+        ]
     ) as client:
         response = client.get("/users/me")
         assert response.status_code == 200, response.text
@@ -38,7 +42,9 @@ def test_security_http_bearer_no_credentials():
 
 def test_security_http_bearer_incorrect_scheme_credentials():
     with create_client(
-        routes=[Path("/users/me", read_current_user, dependencies={"credentials": Provide(security)})]
+        routes=[
+            Path("/users/me", read_current_user, dependencies={"credentials": Provide(security)})
+        ]
     ) as client:
         response = client.get("/users/me", headers={"Authorization": "Basic notreally"})
         assert response.status_code == 200, response.text
@@ -47,7 +53,9 @@ def test_security_http_bearer_incorrect_scheme_credentials():
 
 def test_openapi_schema():
     with create_client(
-        routes=[Path("/users/me", read_current_user, dependencies={"credentials": Provide(security)})]
+        routes=[
+            Path("/users/me", read_current_user, dependencies={"credentials": Provide(security)})
+        ]
     ) as client:
         response = client.get("/openapi.json")
         assert response.status_code == 200, response.text
@@ -59,7 +67,11 @@ def test_openapi_schema():
                 "version": client.app.version,
                 "summary": "Lilya application",
                 "description": "Yet another framework/toolkit that delivers.",
-                "contact": {"name": "Lilya", "url": "https://lilya.dev", "email": "admin@myapp.com"},
+                "contact": {
+                    "name": "Lilya",
+                    "url": "https://lilya.dev",
+                    "email": "admin@myapp.com",
+                },
             },
             "paths": {
                 "/users/me": {
@@ -69,7 +81,15 @@ def test_openapi_schema():
                         "description": None,
                         "tags": None,
                         "deprecated": None,
-                        "security": [{"HTTPBearer": {"type": "http", "scheme": "bearer", "scheme_name": "HTTPBearer"}}],
+                        "security": [
+                            {
+                                "HTTPBearer": {
+                                    "type": "http",
+                                    "scheme": "bearer",
+                                    "scheme_name": "HTTPBearer",
+                                }
+                            }
+                        ],
                         "parameters": [],
                         "responses": {"200": {"description": "Successful response"}},
                     }
@@ -77,7 +97,9 @@ def test_openapi_schema():
             },
             "components": {
                 "schemas": {},
-                "securitySchemes": {"HTTPBearer": {"type": "http", "scheme": "bearer", "scheme_name": "HTTPBearer"}},
+                "securitySchemes": {
+                    "HTTPBearer": {"type": "http", "scheme": "bearer", "scheme_name": "HTTPBearer"}
+                },
             },
             "servers": [{"url": "/"}],
         }

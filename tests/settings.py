@@ -8,7 +8,9 @@ from edgy import Registry
 from lilya.conf.enums import EnvironmentType
 from lilya.conf.global_settings import Settings
 
-TEST_DATABASE_URL = os.environ.get("DATABASE_URI", "postgresql+asyncpg://postgres:postgres@localhost:5432/lilya")
+TEST_DATABASE_URL = os.environ.get(
+    "DATABASE_URI", "postgresql+asyncpg://postgres:postgres@localhost:5432/lilya"
+)
 
 
 class TestSettings(Settings):

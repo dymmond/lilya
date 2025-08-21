@@ -267,7 +267,6 @@ class BaseHandler:
             and name not in dependencies
             and name not in SIGNATURE_TO_LIST
         ]
-
         payload: dict[str, Any] = {}
 
         if len(body_param_names) == 1:

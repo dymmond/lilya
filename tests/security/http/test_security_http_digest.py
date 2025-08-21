@@ -18,7 +18,9 @@ def read_current_user(credentials: HTTPAuthorizationCredentials = Provides()) ->
 
 def test_security_http_digest():
     with create_client(
-        routes=[Path("/users/me", read_current_user, dependencies={"credentials": Provide(security)})]
+        routes=[
+            Path("/users/me", read_current_user, dependencies={"credentials": Provide(security)})
+        ]
     ) as client:
         response = client.get("/users/me", headers={"Authorization": "Digest foobar"})
         assert response.status_code == 200, response.text
@@ -27,7 +29,9 @@ def test_security_http_digest():
 
 def test_security_http_digest_no_credentials():
     with create_client(
-        routes=[Path("/users/me", read_current_user, dependencies={"credentials": Provide(security)})]
+        routes=[
+            Path("/users/me", read_current_user, dependencies={"credentials": Provide(security)})
+        ]
     ) as client:
         response = client.get("/users/me")
         assert response.status_code == 403, response.text
@@ -36,7 +40,9 @@ def test_security_http_digest_no_credentials():
 
 def test_security_http_digest_incorrect_scheme_credentials():
     with create_client(
-        routes=[Path("/users/me", read_current_user, dependencies={"credentials": Provide(security)})]
+        routes=[
+            Path("/users/me", read_current_user, dependencies={"credentials": Provide(security)})
+        ]
     ) as client:
         response = client.get("/users/me", headers={"Authorization": "Other invalidauthorization"})
         assert response.status_code == 403, response.text
@@ -45,7 +51,9 @@ def test_security_http_digest_incorrect_scheme_credentials():
 
 def test_openapi_schema():
     with create_client(
-        routes=[Path("/users/me", read_current_user, dependencies={"credentials": Provide(security)})]
+        routes=[
+            Path("/users/me", read_current_user, dependencies={"credentials": Provide(security)})
+        ]
     ) as client:
         response = client.get("/openapi.json")
         assert response.status_code == 200, response.text
@@ -57,7 +65,11 @@ def test_openapi_schema():
                 "version": client.app.version,
                 "summary": "Lilya application",
                 "description": "Yet another framework/toolkit that delivers.",
-                "contact": {"name": "Lilya", "url": "https://lilya.dev", "email": "admin@myapp.com"},
+                "contact": {
+                    "name": "Lilya",
+                    "url": "https://lilya.dev",
+                    "email": "admin@myapp.com",
+                },
             },
             "paths": {
                 "/users/me": {
@@ -67,7 +79,15 @@ def test_openapi_schema():
                         "description": None,
                         "tags": None,
                         "deprecated": None,
-                        "security": [{"HTTPDigest": {"type": "http", "scheme": "digest", "scheme_name": "HTTPDigest"}}],
+                        "security": [
+                            {
+                                "HTTPDigest": {
+                                    "type": "http",
+                                    "scheme": "digest",
+                                    "scheme_name": "HTTPDigest",
+                                }
+                            }
+                        ],
                         "parameters": [],
                         "responses": {"200": {"description": "Successful response"}},
                     }
@@ -75,7 +95,9 @@ def test_openapi_schema():
             },
             "components": {
                 "schemas": {},
-                "securitySchemes": {"HTTPDigest": {"type": "http", "scheme": "digest", "scheme_name": "HTTPDigest"}},
+                "securitySchemes": {
+                    "HTTPDigest": {"type": "http", "scheme": "digest", "scheme_name": "HTTPDigest"}
+                },
             },
             "servers": [{"url": "/"}],
         }

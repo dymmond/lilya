@@ -37,7 +37,7 @@ class OAuth2PasswordRequestForm(BaseModel):
     model_config = {"extra": "allow"}
 
     grant_type: Annotated[
-        str | None,
+        str,
         Form(pattern="^password$"),
         Doc(
             """
@@ -50,7 +50,7 @@ class OAuth2PasswordRequestForm(BaseModel):
             the `OAuth2PasswordRequestFormStrict` dependency.
             """
         ),
-    ] = None
+    ]
     username: Annotated[
         str,
         Form(),
@@ -192,8 +192,8 @@ class OAuth2PasswordRequestFormStrict(OAuth2PasswordRequestForm):
         using HTTP Basic auth, as: client_id:client_secret
     """
 
-    def __init__(
-        self,
+    def __init_subclass__(
+        cls,
         grant_type: Annotated[
             str,
             Form(pattern="^password$"),
@@ -274,7 +274,7 @@ class OAuth2PasswordRequestFormStrict(OAuth2PasswordRequestForm):
             ),
         ] = None,
     ) -> None:
-        super().__init__(
+        super().__init_subclass__(  # type: ignore
             grant_type=grant_type,
             username=username,
             password=password,

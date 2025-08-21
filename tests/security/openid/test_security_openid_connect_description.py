@@ -1,9 +1,12 @@
 from typing import Any
 
-from esmerald import Gateway, Inject, Injects, Security, get
-from esmerald.security.open_id import OpenIdConnect
-from esmerald.testclient import create_client
 from pydantic import BaseModel
+
+from lilya.contrib.openapi.decorator import openapi
+from lilya.contrib.security.open_id import OpenIdConnect
+from lilya.dependencies import Provide, Provides, Security
+from lilya.routing import Path
+from lilya.testclient import create_client
 
 oid = OpenIdConnect(openIdConnectUrl="/openid", description="OpenIdConnect security scheme")
 
@@ -13,19 +16,26 @@ class User(BaseModel):
 
 
 def get_current_user(oauth_header: str = Security(oid)):
+    if isinstance(oauth_header, BaseModel):
+        return oauth_header
+
     user = User(username=oauth_header)
     return user
 
 
-@get("/users/me", security=[oid], dependencies={"current_user": Inject(get_current_user)})
-def read_current_user(current_user: User = Injects()) -> Any:
+@openapi(security=[oid])
+def read_current_user(current_user: User = Provides()) -> Any:
     return current_user
 
 
 def test_security_oauth2():
     with create_client(
         routes=[
-            Gateway(handler=read_current_user),
+            Path(
+                "/users/me",
+                handler=read_current_user,
+                dependencies={"current_user": Provide(get_current_user)},
+            )
         ],
         enable_openapi=True,
     ) as client:
@@ -37,7 +47,11 @@ def test_security_oauth2():
 def test_security_oauth2_password_other_header():
     with create_client(
         routes=[
-            Gateway(handler=read_current_user),
+            Path(
+                "/users/me",
+                handler=read_current_user,
+                dependencies={"current_user": Provide(get_current_user)},
+            )
         ],
         enable_openapi=True,
     ) as client:
@@ -49,19 +63,27 @@ def test_security_oauth2_password_other_header():
 def test_security_oauth2_password_bearer_no_header():
     with create_client(
         routes=[
-            Gateway(handler=read_current_user),
+            Path(
+                "/users/me",
+                handler=read_current_user,
+                dependencies={"current_user": Provide(get_current_user)},
+            )
         ],
         enable_openapi=True,
     ) as client:
         response = client.get("/users/me")
         assert response.status_code == 403, response.text
-        assert response.json() == {"detail": "Not authenticated"}
+        assert response.text == "Not authenticated"
 
 
 def test_openapi_schema():
     with create_client(
         routes=[
-            Gateway(handler=read_current_user),
+            Path(
+                "/users/me",
+                handler=read_current_user,
+                dependencies={"current_user": Provide(get_current_user)},
+            )
         ],
         enable_openapi=True,
     ) as client:
@@ -71,20 +93,24 @@ def test_openapi_schema():
         assert response.json() == {
             "openapi": "3.1.0",
             "info": {
-                "title": "Esmerald",
-                "summary": "Esmerald application",
-                "description": "Highly scalable, performant, easy to learn and for every application.",
-                "contact": {"name": "admin", "email": "admin@myapp.com"},
+                "title": "Lilya",
                 "version": client.app.version,
+                "summary": "Lilya application",
+                "description": "Yet another framework/toolkit that delivers.",
+                "contact": {
+                    "name": "Lilya",
+                    "url": "https://lilya.dev",
+                    "email": "admin@myapp.com",
+                },
             },
-            "servers": [{"url": "/"}],
             "paths": {
                 "/users/me": {
                     "get": {
-                        "summary": "Read Current User",
-                        "description": "",
-                        "operationId": "read_current_user_users_me_get",
-                        "deprecated": False,
+                        "operationId": None,
+                        "summary": None,
+                        "description": None,
+                        "tags": None,
+                        "deprecated": None,
                         "security": [
                             {
                                 "OpenIdConnect": {
@@ -95,22 +121,21 @@ def test_openapi_schema():
                                 }
                             }
                         ],
-                        "responses": {
-                            "200": {
-                                "description": "Successful response",
-                                "content": {"application/json": {"schema": {"type": "string"}}},
-                            }
-                        },
+                        "parameters": [],
+                        "responses": {"200": {"description": "Successful response"}},
                     }
                 }
             },
             "components": {
+                "schemas": {},
                 "securitySchemes": {
                     "OpenIdConnect": {
                         "type": "openIdConnect",
                         "description": "OpenIdConnect security scheme",
                         "openIdConnectUrl": "/openid",
+                        "scheme_name": "OpenIdConnect",
                     }
-                }
+                },
             },
+            "servers": [{"url": "/"}],
         }

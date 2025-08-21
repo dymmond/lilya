@@ -1,14 +1,16 @@
-from typing import Any, Dict
+from typing import Any
 
-from esmerald import Gateway, Inject, Injects, get
-from esmerald.security.oauth2 import OAuth2PasswordBearer
-from esmerald.testclient import create_client
+from lilya.contrib.openapi.decorator import openapi
+from lilya.contrib.security.oauth2 import OAuth2PasswordBearer
+from lilya.dependencies import Provide, Provides
+from lilya.routing import Path
+from lilya.testclient import create_client
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token", auto_error=False)
 
 
-@get("/items/", security=[oauth2_scheme], dependencies={"token": Inject(oauth2_scheme)})
-async def read_items(token: str | None = Injects()) -> Dict[str, Any]:
+@openapi(security=[oauth2_scheme])
+async def read_items(token: str | None = Provides()) -> dict[str, Any]:
     if token is None:
         return {"msg": "Create an account first"}
     return {"token": token}
@@ -17,7 +19,7 @@ async def read_items(token: str | None = Injects()) -> Dict[str, Any]:
 def test_no_token():
     with create_client(
         routes=[
-            Gateway(handler=read_items),
+            Path("/items", handler=read_items, dependencies={"token": Provide(oauth2_scheme)})
         ],
     ) as client:
         response = client.get("/items")
@@ -28,7 +30,7 @@ def test_no_token():
 def test_token():
     with create_client(
         routes=[
-            Gateway(handler=read_items),
+            Path("/items", handler=read_items, dependencies={"token": Provide(oauth2_scheme)})
         ],
     ) as client:
         response = client.get("/items", headers={"Authorization": "Bearer testtoken"})
@@ -39,7 +41,7 @@ def test_token():
 def test_incorrect_token():
     with create_client(
         routes=[
-            Gateway(handler=read_items),
+            Path("/items", handler=read_items, dependencies={"token": Provide(oauth2_scheme)})
         ],
     ) as client:
         response = client.get("/items", headers={"Authorization": "Notexistent testtoken"})
@@ -50,7 +52,7 @@ def test_incorrect_token():
 def test_openapi_schema():
     with create_client(
         routes=[
-            Gateway(handler=read_items),
+            Path("/items", handler=read_items, dependencies={"token": Provide(oauth2_scheme)})
         ],
         enable_openapi=True,
     ) as client:
@@ -60,20 +62,24 @@ def test_openapi_schema():
         assert response.json() == {
             "openapi": "3.1.0",
             "info": {
-                "title": "Esmerald",
-                "summary": "Esmerald application",
-                "description": "Highly scalable, performant, easy to learn and for every application.",
-                "contact": {"name": "admin", "email": "admin@myapp.com"},
+                "title": "Lilya",
                 "version": client.app.version,
+                "summary": "Lilya application",
+                "description": "Yet another framework/toolkit that delivers.",
+                "contact": {
+                    "name": "Lilya",
+                    "url": "https://lilya.dev",
+                    "email": "admin@myapp.com",
+                },
             },
-            "servers": [{"url": "/"}],
             "paths": {
                 "/items": {
                     "get": {
-                        "summary": "Read Items",
-                        "description": "",
-                        "operationId": "read_items_items_get",
-                        "deprecated": False,
+                        "operationId": None,
+                        "summary": None,
+                        "description": None,
+                        "tags": None,
+                        "deprecated": None,
                         "security": [
                             {
                                 "OAuth2PasswordBearer": {
@@ -83,21 +89,20 @@ def test_openapi_schema():
                                 }
                             }
                         ],
-                        "responses": {
-                            "200": {
-                                "description": "Successful response",
-                                "content": {"application/json": {"schema": {"type": "string"}}},
-                            }
-                        },
+                        "parameters": [],
+                        "responses": {"200": {"description": "Successful response"}},
                     }
                 }
             },
             "components": {
+                "schemas": {},
                 "securitySchemes": {
                     "OAuth2PasswordBearer": {
                         "type": "oauth2",
                         "flows": {"password": {"tokenUrl": "/token", "scopes": {}}},
+                        "scheme_name": "OAuth2PasswordBearer",
                     }
-                }
+                },
             },
+            "servers": [{"url": "/"}],
         }

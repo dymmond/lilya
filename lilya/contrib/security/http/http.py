@@ -74,7 +74,9 @@ class HTTPBase(HttpSecurityBase):
         scheme, credentials = get_authorization_scheme_param(authorization)
         if not (scheme and credentials):
             if self.__auto_error__:
-                raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Invalid authentication credentials")
+                raise HTTPException(
+                    status_code=HTTP_403_FORBIDDEN, detail="Invalid authentication credentials"
+                )
             return None
 
         return HTTPAuthorizationCredentials(scheme=scheme, credentials=credentials)
@@ -105,7 +107,9 @@ class HTTPBasic(HTTPBase):
         authorization = request.headers.get("Authorization")
         scheme, param = get_authorization_scheme_param(authorization)
 
-        unauthorized_headers = {"WWW-Authenticate": f'Basic realm="{self.realm}"' if self.realm else "Basic"}
+        unauthorized_headers = {
+            "WWW-Authenticate": f'Basic realm="{self.realm}"' if self.realm else "Basic"
+        }
 
         if not authorization or scheme.lower() != "basic":
             if self.__auto_error__:

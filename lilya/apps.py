@@ -49,13 +49,17 @@ class BaseLilya:
     router_class: ClassVar[type[Router] | None] = Router
     router: Router
     register_as_global_instance: ClassVar[bool] = False
-    populate_global_context: Callable[[Connection], dict[str, Any] | Awaitable[dict[str, Any]]] | None = None
+    populate_global_context: (
+        Callable[[Connection], dict[str, Any] | Awaitable[dict[str, Any]]] | None
+    ) = None
 
     @property
     def routes(self) -> list[BasePath]:
         return self.router.routes
 
-    def load_settings_value(self, name: str, value: Any | None = None, is_boolean: bool = False) -> Any:
+    def load_settings_value(
+        self, name: str, value: Any | None = None, is_boolean: bool = False
+    ) -> Any:
         """
         Loader used to get the settings defaults and custom settings
         of the application.
@@ -102,7 +106,9 @@ class BaseLilya:
 
         middleware = [
             DefineMiddleware(ServerErrorMiddleware, handler=error_handler, debug=self.debug),
-            DefineMiddleware(GlobalContextMiddleware, populate_context=self.populate_global_context),
+            DefineMiddleware(
+                GlobalContextMiddleware, populate_context=self.populate_global_context
+            ),
             DefineMiddleware(LifespanGlobalContextMiddleware),
             *self.custom_middleware,
             DefineMiddleware(ExceptionMiddleware, handlers=exception_handlers, debug=self.debug),
@@ -110,7 +116,9 @@ class BaseLilya:
         ]
 
         if self.enable_intercept_global_exceptions:
-            middleware.insert(1, DefineMiddleware(LilyaExceptionMiddleware, handlers=exception_handlers))
+            middleware.insert(
+                1, DefineMiddleware(LilyaExceptionMiddleware, handlers=exception_handlers)
+            )
 
         app = self.router
         for middleware_class, args, options in reversed(middleware):
@@ -134,7 +142,11 @@ class BaseLilya:
         Returns:
             Dict: The exception handlers.
         """
-        return {key: value for key, value in self.exception_handlers.items() if key not in (500, Exception)}
+        return {
+            key: value
+            for key, value in self.exception_handlers.items()
+            if key not in (500, Exception)
+        }
 
     def on_event(self, event_type: str) -> Callable:
         return self.router.on_event(event_type)
@@ -366,7 +378,9 @@ class BaseLilya:
             exception_handlers=exception_handlers,
         )
 
-    def add_middleware(self, middleware: type[MiddlewareProtocol[P]], *args: P.args, **kwargs: P.kwargs) -> None:
+    def add_middleware(
+        self, middleware: type[MiddlewareProtocol[P]], *args: P.args, **kwargs: P.kwargs
+    ) -> None:
         """
         Adds an external middleware to the stack.
         """
@@ -374,7 +388,9 @@ class BaseLilya:
             raise RuntimeError("Middlewares cannot be added once the application has started.")
         self.custom_middleware.insert(0, DefineMiddleware(middleware, *args, **kwargs))
 
-    def add_permission(self, permission: type[PermissionProtocol[P]], *args: P.args, **kwargs: P.kwargs) -> None:
+    def add_permission(
+        self, permission: type[PermissionProtocol[P]], *args: P.args, **kwargs: P.kwargs
+    ) -> None:
         """
         Adds an external permissions to the stack.
         """
@@ -949,7 +965,9 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
             settings_module = import_string(settings_module)
 
         if settings_module:
-            if not isinstance(settings_module, Settings) and not is_class_and_subclass(settings_module, Settings):
+            if not isinstance(settings_module, Settings) and not is_class_and_subclass(
+                settings_module, Settings
+            ):
                 raise FieldException("'settings_module' must be a subclass of Settings")
             elif isinstance(settings_module, Settings):
                 self.settings_module = settings_module  # type: ignore
@@ -958,24 +976,34 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
 
         self.debug = self.load_settings_value("debug", debug, is_boolean=True)
 
-        self.exception_handlers = self.load_settings_value("exception_handlers", exception_handlers) or {}
+        self.exception_handlers = (
+            self.load_settings_value("exception_handlers", exception_handlers) or {}
+        )
         self.custom_middleware = [
-            wrap_middleware(middleware) for middleware in self.load_settings_value("middleware", middleware) or []
+            wrap_middleware(middleware)
+            for middleware in self.load_settings_value("middleware", middleware) or []
         ]
 
         self.custom_permissions = [
-            wrap_permission(permission) for permission in self.load_settings_value("permissions", permissions) or []
+            wrap_permission(permission)
+            for permission in self.load_settings_value("permissions", permissions) or []
         ]
 
-        self.before_request_callbacks = self.load_settings_value("before_request", before_request) or []
+        self.before_request_callbacks = (
+            self.load_settings_value("before_request", before_request) or []
+        )
 
-        self.after_request_callbacks = self.load_settings_value("after_request", after_request) or []
+        self.after_request_callbacks = (
+            self.load_settings_value("after_request", after_request) or []
+        )
         self.dependencies = self.load_settings_value("dependencies", dependencies) or {}
 
         self.logging_config = self.load_settings_value("logging_config", logging_config)
         self.state = State()
         self.middleware_stack: ASGIApp | None = None
-        self.enable_openapi = self.load_settings_value("enable_openapi", enable_openapi, is_boolean=True)
+        self.enable_openapi = self.load_settings_value(
+            "enable_openapi", enable_openapi, is_boolean=True
+        )
         self.openapi_config = self.load_settings_value("openapi_config", openapi_config)
         self.enable_intercept_global_exceptions = self.load_settings_value(
             "enable_intercept_global_exceptions", enable_intercept_global_exceptions
@@ -1023,7 +1051,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
         print(app.version)
         ```
         """
-        return self.settings.version
+        return cast(str, self.settings.version)
 
     @property
     def settings(self) -> Settings:

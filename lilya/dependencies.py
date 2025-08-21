@@ -2,7 +2,7 @@ import inspect
 import sys
 from collections.abc import Callable, Sequence
 from types import GeneratorType
-from typing import Any
+from typing import Any, cast
 
 from lilya.compat import is_async_callable, run_sync
 from lilya.enums import SignatureDefault
@@ -49,8 +49,20 @@ class Provide:
 
         # If the user passed explicit args/kwargs *or* pointed us at a class,
         # just call the factory directly and skip the auto-resolution logic.
+        json_data: dict[str, Any] = {}
+
+        # If the dependency is a class, we need to instantiate it
+        # and pass the request to it
+        if isinstance(request, Request):
+            try:
+                json_data = cast(dict[str, Any], await request.data()) or {}
+            except Exception:
+                ...
+
+            self.provided_kwargs.update(json_data)
+
         if self.provided_args or self.provided_kwargs or inspect.isclass(self.dependency):
-            if inspect.iscoroutinefunction(self.dependency):
+            if inspect.iscoroutinefunction(self.dependency) or is_async_callable(self.dependency):
                 result = await self.dependency(*self.provided_args, **self.provided_kwargs)
             else:
                 result = self.dependency(*self.provided_args, **self.provided_kwargs)
@@ -205,7 +217,11 @@ async def async_resolve_dependencies(
                     overrides=overrides,
                 )
             else:
-                resolved = resolve_dependencies(request, dep_func, overrides) if callable(dep_func) else dep_func
+                resolved = (
+                    resolve_dependencies(request, dep_func, overrides)
+                    if callable(dep_func)
+                    else dep_func
+                )
             kwargs[name] = resolved
     if inspect.iscoroutinefunction(func):
         result = await func(**kwargs)

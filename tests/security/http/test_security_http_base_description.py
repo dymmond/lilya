@@ -16,7 +16,13 @@ def read_current_user(credentials: HTTPAuthorizationCredentials = Provides()) ->
 
 def test_security_http_base():
     with create_client(
-        routes=[Path("/users/me", handler=read_current_user, dependencies={"credentials": Provide(security)})],
+        routes=[
+            Path(
+                "/users/me",
+                handler=read_current_user,
+                dependencies={"credentials": Provide(security)},
+            )
+        ],
         debug=True,
     ) as client:
         response = client.get("/users/me", headers={"Authorization": "Other foobar"})
@@ -26,7 +32,13 @@ def test_security_http_base():
 
 def test_security_http_base_no_credentials():
     with create_client(
-        routes=[Path("/users/me", handler=read_current_user, dependencies={"credentials": Provide(security)})]
+        routes=[
+            Path(
+                "/users/me",
+                handler=read_current_user,
+                dependencies={"credentials": Provide(security)},
+            )
+        ]
     ) as client:
         response = client.get("/users/me")
         assert response.status_code == 403, response.text
@@ -35,7 +47,13 @@ def test_security_http_base_no_credentials():
 
 def test_openapi_schema():
     with create_client(
-        routes=[Path("/users/me", handler=read_current_user, dependencies={"credentials": Provide(security)})],
+        routes=[
+            Path(
+                "/users/me",
+                handler=read_current_user,
+                dependencies={"credentials": Provide(security)},
+            )
+        ],
         enable_openapi=True,
     ) as client:
         response = client.get("/openapi.json")
@@ -48,7 +66,11 @@ def test_openapi_schema():
                 "version": client.app.version,
                 "summary": "Lilya application",
                 "description": "Yet another framework/toolkit that delivers.",
-                "contact": {"name": "Lilya", "url": "https://lilya.dev", "email": "admin@myapp.com"},
+                "contact": {
+                    "name": "Lilya",
+                    "url": "https://lilya.dev",
+                    "email": "admin@myapp.com",
+                },
             },
             "paths": {
                 "/users/me": {
