@@ -1,6 +1,7 @@
 import inspect
 import sys
 from collections.abc import Callable, Sequence
+from functools import cached_property
 from types import GeneratorType
 from typing import Any, cast
 
@@ -37,6 +38,17 @@ class Provide:
         self.use_cache = use_cache
         self._cache: Any = None
         self._resolved: bool = False
+        self.__dependency_signature__: inspect.Signature | None = None
+
+    @cached_property
+    def __signature__(self) -> inspect.Signature:
+        """
+        Returns the signature of the dependency function.
+        This is used to introspect the parameters of the dependency.
+        """
+        if self.__dependency_signature__ is None:
+            self.__dependency_signature__ = inspect.signature(self.dependency)
+        return self.__dependency_signature__
 
     async def resolve(
         self,
@@ -47,20 +59,21 @@ class Provide:
         if self.use_cache and self._resolved:
             return self._cache
 
-        # If the user passed explicit args/kwargs *or* pointed us at a class,
-        # just call the factory directly and skip the auto-resolution logic.
-        json_data: dict[str, Any] = {}
-
         # If the dependency is a class, we need to instantiate it
         # and pass the request to it
-        if isinstance(request, Request):
-            try:
-                json_data = cast(dict[str, Any], await request.data()) or {}
-            except Exception:
-                ...
+        if self.__signature__.parameters:
+            json_data: dict[str, Any] = {}
 
-            self.provided_kwargs.update(json_data)
+            if isinstance(request, Request):
+                try:
+                    json_data = cast(dict[str, Any], await request.data()) or {}
+                except Exception:
+                    ...
 
+                self.provided_kwargs.update(json_data)
+
+        # If the user passed explicit args/kwargs *or* pointed us at a class,
+        # just call the factory directly and skip the auto-resolution logic.
         if self.provided_args or self.provided_kwargs or inspect.isclass(self.dependency):
             if inspect.iscoroutinefunction(self.dependency) or is_async_callable(self.dependency):
                 result = await self.dependency(*self.provided_args, **self.provided_kwargs)
