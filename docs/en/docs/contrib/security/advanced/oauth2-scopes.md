@@ -1,10 +1,10 @@
 # OAuth2 Scopes
 
-Esmerald supports OAuth2 scopes, offering a detailed permission system that adheres to the OAuth2 standard. This feature integrates seamlessly into your OpenAPI application and its API documentation.
+Lilya supports OAuth2 scopes, offering a detailed permission system that adheres to the OAuth2 standard. This feature integrates seamlessly into your OpenAPI application and its API documentation.
 
 OAuth2 scopes are widely used by major providers such as Facebook, Google, GitHub, Microsoft, and Twitter. Whenever an application allows you to "log in with" these platforms, it leverages OAuth2 with scopes to define specific permissions.
 
-In this guide, we’ll explore how to manage authentication and authorization using OAuth2 scopes in Esmerald.
+In this guide, we’ll explore how to manage authentication and authorization using OAuth2 scopes in Lilya.
 
 !!! Warning
 
@@ -33,7 +33,7 @@ Each scope is a string (without spaces) used to specify security permissions, su
 
 We’ll quickly review the updates in the main [OAuth2 with Password, Bearer with JWT tokens](../oauth-jwt.md){.internal-link target=_blank}, now enhanced with OAuth2 scopes:
 
-```python hl_lines="7 9 34 97 99-108 114-117 123-129"
+```python
 {!> ../../../docs_src/security/advanced/app.py !}
 ```
 
@@ -45,7 +45,7 @@ First, we declare the OAuth2 security scheme with two scopes: `me` and `items`.
 
 The `scopes` parameter is a `dict` with each scope as a key and its description as the value:
 
-```python hl_lines="32-35"
+```python
 {!> ../../../docs_src/security/advanced/app.py !}
 ```
 
@@ -68,22 +68,22 @@ These scopes will be included in the JWT token returned.
 
     In your application, make sure to only include scopes that the user is permitted to have.
 
-```python hl_lines="148"
+```python
 {!> ../../../docs_src/security/advanced/app.py !}
 ```
 
 ## Declare Scopes in Path Operations and Dependencies
 
-To require the `items` scope for the `/users/me/items/` path operation, use `Security` from `Esmerald`. This works similarly to `Inject`, but includes a `scopes` parameter.
+To require the `items` scope for the `/users/me/items/` path operation, use `Security` from `Lilya`. This works similarly to `Provide`, but includes a `scopes` parameter.
 
 Pass the `get_current_user` dependency function to `Security`, along with the required scopes (in this case, `items`).
 
 !!! Info
 
     You don't need to declare scopes in multiple locations.
-    This example shows how **Esmerald** manages scopes defined at different levels.
+    This example shows how **Lilya** manages scopes defined at different levels.
 
-```python hl_lines="97 155 159"
+```python
 {!> ../../../docs_src/security/advanced/app.py !}
 ```
 
@@ -91,11 +91,11 @@ Pass the `get_current_user` dependency function to `Security`, along with the re
 
 Update the `get_current_user` dependency to use the previously created OAuth2 scheme.
 
-Since this function does not require scopes itself, use `Inject` with `oauth2_scheme`.
+Since this function does not require scopes itself, use `Provide` with `oauth2_scheme`.
 
-Declare a `SecurityScopes` parameter, imported from `esmerald.security.scopes`.
+Declare a `SecurityScopes` parameter, imported from `lilya.contrib.security.scopes`.
 
-```python hl_lines="20 97"
+```python
 {!> ../../../docs_src/security/advanced/app.py !}
 ```
 
@@ -111,7 +111,7 @@ We create an `HTTPException` that can be reused (`raise`) at various points.
 
 In this exception, we include the required scopes (if any) as a space-separated string (using `scope_str`). This string is placed in the `WWW-Authenticate` header, as specified by the OAuth2 standard.
 
-```python hl_lines="97 99-108"
+```python
 {!> ../../../docs_src/security/advanced/app.py !}
 ```
 
@@ -127,7 +127,7 @@ Ensure the data structure is correct to prevent security issues.
 
 Confirm the user exists, raising an exception if not.
 
-```python hl_lines="55 109-117"
+```python
 {!> ../../../docs_src/security/advanced/app.py !}
 ```
 
@@ -135,7 +135,7 @@ Confirm the user exists, raising an exception if not.
 
 Check that the token includes all necessary scopes. If any required scopes are missing, raise an `HTTPException`.
 
-```python hl_lines="123-129"
+```python
 {!> ../../../docs_src/security/advanced/app.py !}
 ```
 
@@ -157,10 +157,10 @@ The implicit flow is commonly used, while the authorization code flow is more se
 
 !!! Note
     Authentication providers might use different names for their flows, but they all adhere to the OAuth2 standard.
-    **Esmerald** provides utilities for all OAuth2 authentication flows in `esmerald.security.oauth2`.
+    **Lilya** provides utilities for all OAuth2 authentication flows in `lilya.contrib.security.oauth2`.
 
 ## Notes
 
 These step by step guides were inspired by **FastAPI** great work of providing simple and yet effective examples for everyone to understand.
 
-Esmerald adopts a different implementation internally but with the same purposes as any other framework to achieve that.
+Lilya adopts a different implementation internally but with the same purposes as any other framework to achieve that.

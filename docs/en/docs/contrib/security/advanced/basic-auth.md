@@ -15,7 +15,7 @@ This prompts the browser to display a login dialog for the username and password
 3. Apply this security scheme as a dependency in your path operation.
 4. The dependency returns an `HTTPBasicCredentials` object, which includes the provided `username` and `password`.
 
-```python hl_lines="10 20"
+```python
 {!> ../../../docs_src/security/advanced/basic.py !}
 ```
 
@@ -101,7 +101,7 @@ By integrating `secrets.compare_digest()` into your application, you can effecti
 
 If the credentials are incorrect, return an `HTTPException` with a status code of 401. This is the same status code used when no credentials are provided. Additionally, include the `WWW-Authenticate` header to prompt the browser to display the login screen again:
 
-```python hl_lines="16-25"
+```python
 {!> ../../../docs_src/security/advanced/basic_complex.py !}
 ```
 
@@ -109,4 +109,4 @@ If the credentials are incorrect, return an `HTTPException` with a status code o
 
 These step by step guides were inspired by **FastAPI** great work of providing simple and yet effective examples for everyone to understand.
 
-Esmerald adopts a different implementation internally but with the same purposes as any other framework to achieve that.
+Lilya adopts a different implementation internally but with the same purposes as any other framework to achieve that.

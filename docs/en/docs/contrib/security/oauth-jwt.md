@@ -30,13 +30,13 @@ If someone attempts to modify the token, such as changing the expiration date, t
 ## Installing `PyJWT`
 
 The following examples will be assuming that you don't know about anything although,
-**Esmerald also comes with [JWT integration](../configurations/jwt.md)** and there are details how to leverage it.
+**Lilya also has some [JWT integration](https://lilya-simple-jwt.dymmond.com)** and there are details how to leverage it.
 
 You will be required to install some additional libraries when using the following examples but summarizing it, you
 can also achieve the same results by running:
 
 ```shell
-$ pip install esmerald[jwt]
+$ pip install pyjwt
 ```
 
 !!! Warning
@@ -65,7 +65,7 @@ If your database is compromised, the attacker will only have access to hashed pa
 
 This prevents the thief from directly using the passwords on other systems, which is critical since many users reuse the same password across multiple platforms.
 
-An example of hashing is what Django (and **Esmerald**) offer, the **PBKDF2** (Password-Based Key Derivation Function 1 and 2).
+An example of hashing is what Django (and **Lilya**) offer, the **PBKDF2** (Password-Based Key Derivation Function 1 and 2).
 
 To help us with this, we will be using `passlib`.
 
@@ -84,8 +84,8 @@ $ pip install passlib[bcrypt]
 !!! Tip
     PassLib allows you to configure it to read passwords hashed by frameworks like Django, Flask security plugins, and others.
 
-    This enables scenarios such as sharing a database between a Django application and a Esmerald application or gradually migrating a Django
-    application to Esmerald.
+    This enables scenarios such as sharing a database between a Django application and a Lilya application or gradually migrating a Django
+    application to Lilya.
 
     Users can seamlessly log in from either application, ensuring compatibility and a smooth transition.
 
@@ -102,7 +102,7 @@ Create a PassLib "context" to handle password hashing and verification.
 
 Create a utility function to hash a user's password, another to check if a given password matches the stored hash, and a third to authenticate the user and return their details.
 
-```python hl_lines="6 29 64-65 68-69 77-81"
+```python
 {!> ../../../docs_src/security/hash/app.py !}
 ```
 
@@ -130,7 +130,7 @@ Here’s a clearer and more concise version of the instructions:
 4. Define a Pydantic model to use for the response in the token endpoint.
 5. Create a utility function to generate a new access token.
 
-```python hl_lines="4 5 24-26 44-46 84-88"
+```python
 {!> ../../../docs_src/security/hash/app.py !}
 ```
 
@@ -140,7 +140,7 @@ Update `get_current_user` to accept the same token as before, but now use JWT to
 
 Decode the received token, verify its validity, and return the current user. If the token is invalid or a user is disabled, immediately raise an HTTP error.
 
-```python hl_lines="91-108"
+```python
 {!> ../../../docs_src/security/hash/app.py !}
 ```
 
@@ -150,7 +150,7 @@ Create a `timedelta` object for the token's expiration time.
 
 Generate a valid JWT access token and return it.
 
-```python hl_lines="111-128"
+```python
 {!> ../../../docs_src/security/hash/app.py !}
 ```
 
@@ -167,10 +167,6 @@ The key point is that the `sub` key should contain a unique identifier across th
 ## Time to verify it
 
 Start the server and navigate to the documentation at [http://127.0.0.1:8000/docs/swagger](http://127.0.0.1:8000/docs).
-
-You should see a similar interface like the following:
-
-<img src="https://res.cloudinary.com/dymmond/image/upload/v1733833628/esmerald/security/jwt_n0ddmm.png" alt="Interface">
 
 Click the **Authorize** button and use the following credentials:
 
@@ -240,4 +236,4 @@ By using scopes in JWT, you can enhance security and implement role-based access
 
 These step by step guides were inspired by **FastAPI** great work of providing simple and yet effective examples for everyone to understand.
 
-Esmerald adopts a different implementation internally but with the same purposes as any other framework to achieve that.
+Lilya adopts a different implementation internally but with the same purposes as any other framework to achieve that.

@@ -7,7 +7,7 @@ that its to make sure you don't need to have a new learning curve in terms of un
 
 ## The `username` and `password`
 
-We’re going to use **Esmerald** security utilities to handle the `username` and `password`.
+We’re going to use **Lilya** security utilities to handle the `username` and `password`.
 
 According to the OAuth2 specification, when using the "password flow" (which we are using), the client/user must send `username` and `password` fields as form data.
 
@@ -42,18 +42,18 @@ These scopes help specify the level of access or permissions the user or client 
 
 ## The operation to get the `username` and `password`
 
-Let us use the Esmerald built-ins to perform this operation.
+Let us use the Lilya built-ins to perform this operation.
 
 ### OAuth2PasswordRequestForm
 
-First, import `OAuth2PasswordRequestForm`, and use it as a dependency with `Security`, `Inject` and `Injects` in the *path operation* for `/token`:
+First, import `OAuth2PasswordRequestForm`, and use it as a dependency with `Security`, `Provide` and `Provides` in the *path operation* for `/token`:
 
-```python hl_lines="5"
+```python
 {!> ../../../docs_src/security/post.py !}
 ```
 
 !!! Note
-    The `Inject` and `Injects()` are what makes Esmerald dependency injection quite unique and layer based.
+    The `Provide` and `Provides()` are what makes Lilya dependency injection quite unique and layer based.
 
 The `OAuth2PasswordRequestForm` is a class dependency that defines a form body containing the following fields:
 
@@ -71,13 +71,13 @@ The `OAuth2PasswordRequestForm` is a class dependency that defines a form body c
 - An optional `client_secret` (also not needed for our example).
 
 !!! Info
-    The `OAuth2PasswordRequestForm` is not a special class in **Esmerald**, unlike `OAuth2PasswordBearer`.
+    The `OAuth2PasswordRequestForm` is not a special class in **Lilya**, unlike `OAuth2PasswordBearer`.
 
-    `OAuth2PasswordBearer` informs **Esmerald** that it represents a security scheme, which is why it gets added as such to the OpenAPI schema.
+    `OAuth2PasswordBearer` informs **Lilya** that it represents a security scheme, which is why it gets added as such to the OpenAPI schema.
 
     In contrast, `OAuth2PasswordRequestForm` is simply a convenience class dependency. You could have written it yourself or declared the `Form` parameters directly.
 
-    Since it's a common use case, **Esmerald** provides this class out of the box to make your work easier.
+    Since it's a common use case, **Lilya** provides this class out of the box to make your work easier.
 
 ## The form data
 
@@ -90,7 +90,7 @@ Retrieve the user data from the (fake) database using the `username` from the fo
 
 If no user is found, raise an `HTTPException` with the message: **"Incorrect username or password"**.
 
-```python hl_lines="4 79-81"
+```python
 {!> ../../../docs_src/security/post.py !}
 ```
 
@@ -117,7 +117,7 @@ If your database is compromised, the attacker won't have access to the user's pl
 
 This protects users because the attacker cannot reuse their passwords on other systems (a common risk since many people reuse passwords).
 
-```python hl_lines="82-85"
+```python
 {!> ../../../docs_src/security/post.py !}
 ```
 
@@ -150,7 +150,7 @@ In this simplified example, we'll just return the `username` as the token (thoug
     In the next chapter, we'll implement a secure version using password hashing and JSON Web Tokens (JWT).
     But for now, let's focus on the key details.
 
-```python hl_lines="87"
+```python
 {!> ../../../docs_src/security/post.py !}
 ```
 
@@ -159,7 +159,7 @@ In this simplified example, we'll just return the `username` as the token (thoug
 
     This is something you must implement in your code, ensuring the correct use of these JSON keys.
 
-    It's almost the only part you need to manage manually to comply with the specifications. For everything else, **Esmerald** takes care of it for you.
+    It's almost the only part you need to manage manually to comply with the specifications. For everything else, **Lilya** takes care of it for you.
 
 ## Updating the Dependencies
 
@@ -171,7 +171,7 @@ Both dependencies will raise an HTTP error if the user doesn't exist or if the u
 
 With this update, the endpoint will only return a user if the user exists, is authenticated correctly, and is active.
 
-```python hl_lines="54-65"
+```python
 {!> ../../../docs_src/security/post.py !}
 ```
 
@@ -209,7 +209,7 @@ You will get a payload similar to this:
 
 ```json
 {
-    "username": "johndoe",
+  "username": "johndoe",
   "email": "johndoe@example.com",
   "full_name": "John Doe",
   "disabled": false,
