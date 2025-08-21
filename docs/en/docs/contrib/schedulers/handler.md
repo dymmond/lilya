@@ -212,7 +212,7 @@ The trigger is considered to be finished when any of the given triggers has fini
 Using the scheduler also means access to a lot of extra possible configurations that can be added such as `stores`,
 `executors` and any other extra configuration needed.
 
-Lilya allows to pass those configurations via application instantiation or via [settings](../application/settings.md).
+Lilya allows to pass those configurations via application instantiation or via [settings](../../settings.md).
 
 ### Via application instantiation
 

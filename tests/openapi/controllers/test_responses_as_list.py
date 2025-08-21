@@ -60,23 +60,10 @@ def test_responses_decorator(test_client_factory):
                         "operationId": None,
                         "summary": "Create a user",
                         "description": "Endpoint to create a user",
-                        "requestBody": {
-                            "content": {
-                                "application/json": {
-                                    "schema": [
-                                        {
-                                            "properties": {
-                                                "detail": {"title": "Detail", "type": "string"},
-                                                "message": {"title": "Message", "type": "string"},
-                                            },
-                                            "required": ["detail", "message"],
-                                            "title": "ErrorResponse",
-                                            "type": "object",
-                                        }
-                                    ]
-                                }
-                            }
-                        },
+                        "tags": None,
+                        "deprecated": None,
+                        "security": None,
+                        "parameters": [],
                         "responses": {
                             "201": {
                                 "description": "User created successfully",
@@ -103,6 +90,23 @@ def test_responses_decorator(test_client_factory):
                                 },
                             },
                         },
+                        "requestBody": {
+                            "content": {
+                                "application/json": {
+                                    "schema": [
+                                        {
+                                            "properties": {
+                                                "detail": {"title": "Detail", "type": "string"},
+                                                "message": {"title": "Message", "type": "string"},
+                                            },
+                                            "required": ["detail", "message"],
+                                            "title": "ErrorResponse",
+                                            "type": "object",
+                                        }
+                                    ]
+                                }
+                            }
+                        },
                     }
                 }
             },
@@ -126,7 +130,8 @@ def test_responses_decorator(test_client_factory):
                         "title": "User",
                         "type": "object",
                     },
-                }
+                },
+                "securitySchemes": {},
             },
             "servers": [{"url": "/"}],
         }

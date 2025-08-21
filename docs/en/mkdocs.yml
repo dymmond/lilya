@@ -122,6 +122,15 @@ nav:
           - contrib/schedulers/config.md
           - contrib/schedulers/handler.md
           - contrib/schedulers/scheduler.md
+      - Security:
+          - contrib/security/index.md
+          - contrib/security/introduction.md
+          - contrib/security/interaction.md
+          - contrib/security/simple-oauth2.md
+          - contrib/security/oauth-jwt.md
+          - contrib/security/advanced/oauth2-scopes.md
+          - contrib/security/advanced/basic-auth.md
+          - contrib/security/available-security.md
   - contributing.md
   - sponsorship.md
   - release-notes.md

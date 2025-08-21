@@ -6,11 +6,12 @@ from pydantic.fields import FieldInfo
 from pydantic.json_schema import GenerateJsonSchema, JsonSchemaValue
 
 from lilya._internal._encoders import ENCODER_TYPES
+from lilya.contrib.openapi.params import ResponseParam
 
 
 def get_definitions(
     *,
-    fields: list[FieldInfo],
+    fields: list[FieldInfo] | list[ResponseParam],
     schema_generator: GenerateJsonSchema,
 ) -> tuple[
     dict[tuple[FieldInfo, Literal["validation", "serialization"]], JsonSchemaValue],

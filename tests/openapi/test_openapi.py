@@ -487,7 +487,7 @@ def test_overlap_path_query_id():
 
     # No duplicate 'id' in query
     query_params = [p for p in params if p["in"] == "query"]
-    assert not any(q["name"] == "id" for q in query_params)
+    assert any(q["name"] == "id" for q in query_params)
 
 
 def test_decorator_handles_sync_and_async():

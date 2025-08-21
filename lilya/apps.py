@@ -1038,6 +1038,22 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
         config_to_use.enable(self)
 
     @property
+    def version(self) -> str:
+        """
+        Returns the Lilya version.
+
+        **Example**
+
+        ```python
+        from lilya.apps import Lilya
+
+        app = Lilya()
+        print(app.version)
+        ```
+        """
+        return cast(str, self.settings.version)
+
+    @property
     def settings(self) -> Settings:
         """
         Returns the Lilya settings object for easy access.

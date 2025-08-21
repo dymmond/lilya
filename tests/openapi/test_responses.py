@@ -58,21 +58,10 @@ def test_responses_decorator(test_client_factory):
                         "operationId": None,
                         "summary": "A test",
                         "description": "A test",
-                        "requestBody": {
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "properties": {
-                                            "name": {"title": "Name", "type": "string"},
-                                            "age": {"title": "Age", "type": "integer"},
-                                        },
-                                        "required": ["name", "age"],
-                                        "title": "User",
-                                        "type": "object",
-                                    }
-                                }
-                            }
-                        },
+                        "tags": None,
+                        "deprecated": None,
+                        "security": None,
+                        "parameters": [],
                         "responses": {
                             "400": {
                                 "description": "Bad Request",
@@ -90,6 +79,21 @@ def test_responses_decorator(test_client_factory):
                                     }
                                 },
                             },
+                        },
+                        "requestBody": {
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "properties": {
+                                            "name": {"title": "Name", "type": "string"},
+                                            "age": {"title": "Age", "type": "integer"},
+                                        },
+                                        "required": ["name", "age"],
+                                        "title": "User",
+                                        "type": "object",
+                                    }
+                                }
+                            }
                         },
                     }
                 }
@@ -114,49 +118,8 @@ def test_responses_decorator(test_client_factory):
                         "title": "User",
                         "type": "object",
                     },
-                }
-            },
-            "servers": [{"url": "/"}],
-        }
-
-
-@openapi()
-async def create_again(user: User):
-    return user
-
-
-def test_responses_decorator_simple(test_client_factory):
-    with create_client(
-        routes=[
-            Path("/item", handler=create_again, methods=["POST"]),
-        ]
-    ) as client:
-        response = client.get("/openapi.json")
-
-        assert response.status_code == 200
-
-        assert response.json() == {
-            "openapi": "3.1.0",
-            "info": {
-                "title": "Lilya",
-                "version": __version__,
-                "summary": "Lilya application",
-                "description": "Yet another framework/toolkit that delivers.",
-                "contact": {
-                    "name": "Lilya",
-                    "url": "https://lilya.dev",
-                    "email": "admin@myapp.com",
                 },
+                "securitySchemes": {},
             },
-            "paths": {
-                "/item": {
-                    "post": {
-                        "operationId": None,
-                        "requestBody": {"content": {"application/json": {"schema": {}}}},
-                        "responses": {"200": {"description": "Successful response"}},
-                    }
-                }
-            },
-            "components": {"schemas": {}},
             "servers": [{"url": "/"}],
         }

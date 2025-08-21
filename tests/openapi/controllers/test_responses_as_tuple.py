@@ -60,23 +60,10 @@ def test_responses_decorator(test_client_factory):
                         "operationId": None,
                         "summary": "A test",
                         "description": "A test",
-                        "requestBody": {
-                            "content": {
-                                "application/json": {
-                                    "schema": [
-                                        {
-                                            "properties": {
-                                                "name": {"title": "Name", "type": "string"},
-                                                "age": {"title": "Age", "type": "integer"},
-                                            },
-                                            "required": ["name", "age"],
-                                            "title": "User",
-                                            "type": "object",
-                                        }
-                                    ]
-                                }
-                            }
-                        },
+                        "tags": None,
+                        "deprecated": None,
+                        "security": None,
+                        "parameters": [],
                         "responses": {
                             "400": {
                                 "description": "Bad Request",
@@ -103,6 +90,23 @@ def test_responses_decorator(test_client_factory):
                                 },
                             },
                         },
+                        "requestBody": {
+                            "content": {
+                                "application/json": {
+                                    "schema": [
+                                        {
+                                            "properties": {
+                                                "name": {"title": "Name", "type": "string"},
+                                                "age": {"title": "Age", "type": "integer"},
+                                            },
+                                            "required": ["name", "age"],
+                                            "title": "User",
+                                            "type": "object",
+                                        }
+                                    ]
+                                }
+                            }
+                        },
                     }
                 }
             },
@@ -126,7 +130,8 @@ def test_responses_decorator(test_client_factory):
                         "title": "User",
                         "type": "object",
                     },
-                }
+                },
+                "securitySchemes": {},
             },
             "servers": [{"url": "/"}],
         }

@@ -84,6 +84,7 @@ testing = [
     "email-validator>=2.1.0.post1",
     "databasez>=0.9.7",
     "orjson",
+    "freezegun",
     "flask>=3.0.2,<4.0.0",
     "httpx>=0.25.2,<1.0.0",
     "jinja2>=3.1.3,<4.0.0",
@@ -99,9 +100,9 @@ testing = [
     "typing_extensions>=3.10.0",
     "ipython",
     "ptpython",
+    "pyjwt",
     "redis",
     "ipdb",
-    "pdbpp",
     "structlog",
     "loguru",
 ]
@@ -247,7 +248,7 @@ source = ["tests", "lilya"]
 # omit = []
 
 [[tool.mypy.overrides]]
-module = ["multipart.*", "mako.*", "uvicorn.*"]
+module = ["multipart.*", "mako.*", "uvicorn.*", "jwt.*"]
 ignore_missing_imports = true
 ignore_errors = true
 

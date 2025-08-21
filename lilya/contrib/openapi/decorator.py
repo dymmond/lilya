@@ -8,6 +8,7 @@ from lilya._utils import is_function
 from lilya.contrib.openapi.datastructures import OpenAPIResponse
 from lilya.contrib.openapi.helpers import convert_annotation_to_pydantic_model
 from lilya.contrib.openapi.params import Query, ResponseParam
+from lilya.contrib.security.base import SecurityBase, SecurityScheme
 from lilya.types import Doc
 
 SUCCESSFUL_RESPONSE = "Successful response"
@@ -218,6 +219,39 @@ def openapi(
 
             return body  # type: ignore
 
+        def handle_security_requirement(
+            security_requirements: Sequence[Any] | None,
+        ) -> list[dict[str, Any]] | None:
+            security_schemes = []
+            security_definitions: dict[str, dict[str, Any]] = {}
+
+            for security_requirement in security_requirements or []:
+                if isinstance(security_requirement, dict):
+                    for name, scheme in security_requirement.items():
+                        security_definitions[name] = scheme
+                    continue
+
+                if inspect.isclass(security_requirement):
+                    security_requirement = security_requirement()
+
+                if not isinstance(security_requirement, (SecurityBase, SecurityScheme)):
+                    raise ValueError(
+                        "Security schemes must subclass from `esmerald.openapi.models.SecurityScheme`"
+                    )
+
+                # Means it uses the security scheme directly
+                security_definition = security_requirement.model_dump(
+                    by_alias=True,
+                    exclude_none=True,
+                )
+                security_name = security_requirement.scheme_name
+                security_definitions[security_name] = security_definition
+
+            if security_definitions:
+                security_schemes.append(security_definitions)
+                return security_schemes
+            return None
+
         wrapper.openapi_meta = {
             "summary": summary,
             "description": description,
@@ -227,7 +261,7 @@ def openapi(
             "include_in_schema": include_in_schema,
             "tags": tags,
             "deprecated": deprecated,
-            "security": security,
+            "security": handle_security_requirement(security),
             "operation_id": operation_id,
             "response_description": response_description,
             "responses": response_models(responses) or {},

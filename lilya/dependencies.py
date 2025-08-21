@@ -1,12 +1,16 @@
 import inspect
 import sys
 from collections.abc import Callable, Sequence
+from functools import cached_property
 from types import GeneratorType
-from typing import Any
+from typing import Any, cast
 
-from lilya.compat import run_sync
+from lilya.compat import is_async_callable, run_sync
+from lilya.enums import SignatureDefault
 from lilya.requests import Request
 from lilya.websockets import WebSocket
+
+SIGNATURE_TO_LIST = SignatureDefault.to_list()
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -34,6 +38,17 @@ class Provide:
         self.use_cache = use_cache
         self._cache: Any = None
         self._resolved: bool = False
+        self.__dependency_signature__: inspect.Signature | None = None
+
+    @cached_property
+    def __signature__(self) -> inspect.Signature:
+        """
+        Returns the signature of the dependency function.
+        This is used to introspect the parameters of the dependency.
+        """
+        if self.__dependency_signature__ is None:
+            self.__dependency_signature__ = inspect.signature(self.dependency)
+        return self.__dependency_signature__
 
     async def resolve(
         self,
@@ -44,10 +59,23 @@ class Provide:
         if self.use_cache and self._resolved:
             return self._cache
 
+        # If the dependency is a class, we need to instantiate it
+        # and pass the request to it
+        if self.__signature__.parameters:
+            json_data: dict[str, Any] = {}
+
+            if isinstance(request, Request):
+                try:
+                    json_data = cast(dict[str, Any], await request.data()) or {}
+                except Exception:
+                    ...
+
+                self.provided_kwargs.update(json_data)
+
         # If the user passed explicit args/kwargs *or* pointed us at a class,
         # just call the factory directly and skip the auto-resolution logic.
         if self.provided_args or self.provided_kwargs or inspect.isclass(self.dependency):
-            if inspect.iscoroutinefunction(self.dependency):
+            if inspect.iscoroutinefunction(self.dependency) or is_async_callable(self.dependency):
                 result = await self.dependency(*self.provided_args, **self.provided_kwargs)
             else:
                 result = self.dependency(*self.provided_args, **self.provided_kwargs)
@@ -87,13 +115,18 @@ class Provide:
                     kwargs[name] = getattr(request, name)
                 elif name in request.query_params:
                     kwargs[name] = request.query_params[name]
+                elif name in SIGNATURE_TO_LIST:
+                    kwargs[name] = request
                 else:
                     raise RuntimeError(
                         f"Could not resolve parameter '{name}' for dependency '{self.dependency.__name__}'"
                     )
 
         call_kwargs = {**self.provided_kwargs, **kwargs}
-        if inspect.iscoroutinefunction(self.dependency):
+
+        # If the dependency is a coroutine function, await it; otherwise, call it directly.
+        # This allows for both synchronous and asynchronous dependencies.
+        if inspect.iscoroutinefunction(self.dependency) or is_async_callable(self.dependency):
             result = await self.dependency(*self.provided_args, **call_kwargs)
         else:
             result = self.dependency(*self.provided_args, **call_kwargs)

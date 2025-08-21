@@ -60,21 +60,10 @@ def test_responses_decorator(test_client_factory):
                         "operationId": None,
                         "summary": "A test",
                         "description": "A test",
-                        "requestBody": {
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "properties": {
-                                            "name": {"title": "Name", "type": "string"},
-                                            "age": {"title": "Age", "type": "integer"},
-                                        },
-                                        "required": ["name", "age"],
-                                        "title": "User",
-                                        "type": "object",
-                                    }
-                                }
-                            }
-                        },
+                        "tags": None,
+                        "deprecated": None,
+                        "security": None,
+                        "parameters": [],
                         "responses": {
                             "400": {
                                 "description": "Bad Request",
@@ -92,6 +81,21 @@ def test_responses_decorator(test_client_factory):
                                     }
                                 },
                             },
+                        },
+                        "requestBody": {
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "properties": {
+                                            "name": {"title": "Name", "type": "string"},
+                                            "age": {"title": "Age", "type": "integer"},
+                                        },
+                                        "required": ["name", "age"],
+                                        "title": "User",
+                                        "type": "object",
+                                    }
+                                }
+                            }
                         },
                     }
                 }
@@ -116,7 +120,8 @@ def test_responses_decorator(test_client_factory):
                         "title": "User",
                         "type": "object",
                     },
-                }
+                },
+                "securitySchemes": {},
             },
             "servers": [{"url": "/"}],
         }
@@ -155,11 +160,16 @@ def test_responses_decorator_simple(test_client_factory):
                 "/item": {
                     "post": {
                         "operationId": None,
-                        "requestBody": {"content": {"application/json": {"schema": {}}}},
+                        "summary": None,
+                        "description": None,
+                        "tags": None,
+                        "deprecated": None,
+                        "security": None,
+                        "parameters": [],
                         "responses": {"200": {"description": "Successful response"}},
                     }
                 }
             },
-            "components": {"schemas": {}},
+            "components": {"schemas": {}, "securitySchemes": {}},
             "servers": [{"url": "/"}],
         }
