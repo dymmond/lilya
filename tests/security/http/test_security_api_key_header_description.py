@@ -2,7 +2,6 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from lilya.conf import settings
 from lilya.contrib.openapi.decorator import openapi
 from lilya.contrib.security.api_key import APIKeyInHeader
 from lilya.dependencies import Provide, Provides, Security
@@ -76,7 +75,7 @@ def test_openapi_schema():
             "openapi": "3.1.0",
             "info": {
                 "title": "Lilya",
-                "version": settings.version,
+                "version": client.app.version,
                 "summary": "Lilya application",
                 "description": "Yet another framework/toolkit that delivers.",
                 "contact": {
@@ -88,11 +87,6 @@ def test_openapi_schema():
             "paths": {
                 "/users/me": {
                     "get": {
-                        "operationId": None,
-                        "summary": None,
-                        "description": None,
-                        "tags": None,
-                        "deprecated": None,
                         "security": [
                             {
                                 "APIKeyInHeader": {

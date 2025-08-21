@@ -77,11 +77,6 @@ def test_openapi_schema():
             "paths": {
                 "/items": {
                     "get": {
-                        "operationId": None,
-                        "summary": None,
-                        "description": None,
-                        "tags": None,
-                        "deprecated": None,
                         "security": [
                             {
                                 "OAuth2AuthorizationCodeBearer": {

@@ -57,12 +57,8 @@ def test_responses_decorator(test_client_factory):
             "paths": {
                 "/create": {
                     "post": {
-                        "operationId": None,
                         "summary": "Create a user",
                         "description": "Endpoint to create a user",
-                        "tags": None,
-                        "deprecated": None,
-                        "security": None,
                         "parameters": [],
                         "responses": {
                             "201": {

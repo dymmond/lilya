@@ -18,7 +18,6 @@ from monkay import TransparentCage
 T = TypeVar("T")
 
 
-# TODO: timedelta encode
 @runtime_checkable
 class EncoderProtocol(Protocol):
     def is_type(self, value: Any) -> bool:
@@ -228,8 +227,7 @@ def register_encoder(
     encoder_types = ENCODER_TYPES.get()
     if not isinstance(encoder_types, deque):
         raise TypeError(
-            'For registering a new encoder a "deque" is required as set "ENCODER_TYPES" value.'
-            f"Found: {encoder_types!r}"
+            f'For registering a new encoder a "deque" is required as set "ENCODER_TYPES" value.Found: {encoder_types!r}'
         )
 
     encoder_name = get_encoder_name(encoder)
@@ -269,12 +267,29 @@ def json_encode_default(
     raise ValueError(f"Object of type '{type(value).__name__}' is not JSON serializable.")
 
 
+def _exclude_none_recursively(obj: Any) -> Any:
+    """
+    Recursively exclude keys with None values from a dictionary, list, tuple, or set.
+    If the input is not a collection, it is returned unchanged.
+    """
+    if isinstance(obj, dict):
+        return {k: _exclude_none_recursively(v) for k, v in obj.items() if v is not None}
+    elif isinstance(obj, list):
+        return [_exclude_none_recursively(v) for v in obj if v is not None]
+    elif isinstance(obj, tuple):
+        return tuple(_exclude_none_recursively(v) for v in obj if v is not None)
+    elif isinstance(obj, set):
+        return {_exclude_none_recursively(v) for v in obj if v is not None}
+    return obj
+
+
 def json_encode(
     value: Any,
     *,
     json_encode_fn: Callable[..., Any] = json.dumps,
     post_transform_fn: Callable[[Any], Any] | None = json.loads,
     with_encoders: Sequence[EncoderProtocol | MoldingProtocol] | None = None,
+    exclude_none: bool = False,
 ) -> Any:
     """
     Encode a value to a JSON-compatible format using a list of encoder types.
@@ -290,6 +305,7 @@ def json_encode(
                                                so a simplified structure is returned.
     with_encoders (Sequence[EncoderProtocol]): Overwrite the used encoders for this call only
                                                by providing an own Sequence of encoders.
+    exclude_none (bool): If True, exclude keys with None values from the output.
 
     Returns:
     Any: The JSON-compatible encoded value.
@@ -297,6 +313,9 @@ def json_encode(
     Raises:
     ValueError: If the value is not serializable by any provided encoder type.
     """
+    if exclude_none:
+        value = _exclude_none_recursively(value)
+
     if with_encoders is None:
         result = json_encode_fn(value, default=json_encode_default)
         if post_transform_fn is None:
@@ -306,7 +325,10 @@ def json_encode(
         token = ENCODER_TYPES.set(with_encoders)
         try:
             return json_encode(
-                value, json_encode_fn=json_encode_fn, post_transform_fn=post_transform_fn
+                value,
+                json_encode_fn=json_encode_fn,
+                post_transform_fn=post_transform_fn,
+                exclude_none=exclude_none,
             )
         finally:
             ENCODER_TYPES.reset(token)

@@ -75,11 +75,6 @@ def test_openapi_schema():
             "paths": {
                 "/users/me": {
                     "get": {
-                        "operationId": None,
-                        "summary": None,
-                        "description": None,
-                        "tags": None,
-                        "deprecated": None,
                         "security": [
                             {
                                 "HTTPBase": {
