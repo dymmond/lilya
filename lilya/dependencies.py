@@ -63,6 +63,7 @@ class Provide:
         # and pass the request to it
         if self.__signature__.parameters:
             json_data: dict[str, Any] = {}
+            signature_keys = self.__signature__.parameters.keys()
 
             if isinstance(request, Request):
                 try:
@@ -70,7 +71,20 @@ class Provide:
                 except Exception:
                     ...
 
-                self.provided_kwargs.update(json_data)
+                updated_keys: dict[str, Any] = {}
+
+                for key, value in json_data.items():
+                    # Only include keys that are in the signature
+                    # and not already provided via provided_kwargs or provided_args
+                    # This prevents overwriting explicitly provided values
+                    # We also ensure that we don't include keys that are not in the signature
+                    # This is important to avoid passing unexpected arguments
+                    # We also ensure that we don't include keys that are not in the signature
+                    if key in signature_keys and key not in dependencies_map:
+                        updated_keys[key] = value
+
+                if updated_keys:
+                    self.provided_kwargs.update(updated_keys)
 
         # If the user passed explicit args/kwargs *or* pointed us at a class,
         # just call the factory directly and skip the auto-resolution logic.
