@@ -82,7 +82,7 @@ class InternalServerError(ImproperlyConfigured):
 
 class NotAuthorized(HTTPException):
     status_code = status.HTTP_401_UNAUTHORIZED
-    detail = "You do not have authorization to perform this action."
+    detail = "Not Authorized."
 
 
 class NotFound(HTTPException, ValueError):

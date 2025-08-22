@@ -43,9 +43,7 @@ def test_cannot_access(test_client_factory):
         response = client.get("/home")
 
         assert response.status_code == 401
-        assert response.json() == {
-            "detail": "401: You do not have authorization to perform this action."
-        }
+        assert response.json() == {"detail": "401: Not Authorized."}
 
 
 def test_cannot_access_using_super_class():
@@ -59,6 +57,6 @@ def test_cannot_access_using_super_class():
 
         assert response.status_code == 401
         assert response.json() == {
-            "detail": "You do not have authorization to perform this action.",
+            "detail": "Not Authorized.",
             "status_code": 401,
         }

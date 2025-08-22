@@ -4,6 +4,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from lilya import status
+from lilya.exceptions import HTTPException
 from lilya.requests import Request
 from lilya.responses import JSONResponse
 from lilya.types import ExceptionHandler
@@ -23,6 +24,10 @@ async def validation_error_exception_handler(
     return JSONResponse({"detail": loads(exc.json())}, status_code=status_code)
 
 
+async def http_exception(request, exc):
+    return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
+
+
 class EncoderSettings(TestSettings):
     infer_body: bool = True
 
@@ -30,4 +35,5 @@ class EncoderSettings(TestSettings):
     def exception_handlers(self) -> ExceptionHandler | dict[Any, Any]:
         return {
             ValidationError: validation_error_exception_handler,
+            HTTPException: http_exception,
         }
