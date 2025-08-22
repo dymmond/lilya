@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.19.2
+
+### Fixed
+
+- Nested dependencies where checking values that were not in the signature of the dependency itself.
+
 ## 0.19.1
 
 ### Changed
