@@ -364,8 +364,8 @@ class Path(BaseHandler, BasePath):
             wrap_permission(permission) for permission in permissions or []
         ]
 
-        self._apply_middleware(self.middleware)
         self._apply_permissions(self.wrapped_permissions)
+        self._apply_middleware(self.middleware)
 
         self.before_request = before_request if before_request is not None else []
         self.after_request = after_request if after_request is not None else []
@@ -642,8 +642,8 @@ class WebSocketPath(BaseHandler, BasePath):
         self.before_request = before_request if before_request is not None else []
         self.after_request = after_request if after_request is not None else []
 
-        self._apply_middleware(self.middleware)
         self._apply_permissions(self.wrapped_permissions)
+        self._apply_middleware(self.middleware)
 
         self.path_regex, self.path_format, self.param_convertors, self.path_start = compile_path(
             self.path
@@ -869,8 +869,8 @@ class Host(BasePath):
         self.before_request = before_request if before_request is not None else []
         self.after_request = after_request if after_request is not None else []
 
-        self._apply_middleware(self.middleware)
         self._apply_permissions(self.wrapped_permissions)
+        self._apply_middleware(self.middleware)
 
     def _apply_middleware(self, middleware: Sequence[DefineMiddleware] | None) -> None:
         """
@@ -1166,8 +1166,8 @@ class BaseRouter:
             wrap_permission(permission) for permission in permissions or []
         ]
 
-        self._apply_middleware(self.middleware)
         self._apply_permissions(self.wrapped_permissions)
+        self._apply_middleware(self.middleware)
 
     def _apply_middleware(self, middleware: Sequence[DefineMiddleware] | None) -> None:
         """
@@ -2230,8 +2230,8 @@ class Include(BasePath):
         self.before_request = before_request if before_request is not None else []
         self.after_request = after_request if after_request is not None else []
 
-        self._apply_middleware(self.middleware)
         self._apply_permissions(self.wrapped_permissions)
+        self._apply_middleware(self.middleware)
 
         self.name = name
         self.include_in_schema = include_in_schema
