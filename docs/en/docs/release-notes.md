@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.19.4
+
+### Added
+
+- Support for automatic cast call for a function is a function is provided to cast in the `loader` of the [Environment](./environments.md).
+
 ## 0.19.3
 
 - Permission call order was reversed when called from within an Include, Path, Websocket and internal routing.
