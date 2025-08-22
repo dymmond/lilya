@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import os
 import warnings
 from collections.abc import Callable, Generator
@@ -125,6 +126,8 @@ class EnvironLoader(MultiDict):
         return values
 
     def __cast__(self, key: str, value: str, cast: Cast) -> Any:
+        if inspect.isfunction(cast):
+            return cast(value)
         if not cast or not value:
             return value
         elif cast is bool and isinstance(value, str):

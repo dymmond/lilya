@@ -16,6 +16,23 @@ else:
     from typing_extensions import assert_type
 
 
+def test_load_types_via_validator():
+    def validate_to_list(v: Any = None) -> list[int]:
+        if isinstance(v, str):
+            return v.split(",")
+        elif v is None:
+            return []
+        raise ValueError("Invalid value")
+
+    loader = EnvironLoader(
+        environ={"SCOPE": None},
+    )
+
+    value = loader("SCOPE", cast=validate_to_list, default=None)
+
+    assert value == []
+
+
 def test_load_types_string():
     loader = EnvironLoader(
         environ={"VALUE": "some_value", "VALUE_CAST": "some_value"},
