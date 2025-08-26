@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import inspect
 import json
 import re
 import threading
@@ -11,6 +12,7 @@ from typing import Any
 import anyio
 from anyio.from_thread import start_blocking_portal
 
+from lilya._internal._encoders import json_encode
 from lilya._internal._events import EventDispatcher  # noqa
 from lilya.compat import is_async_callable
 from lilya.conf import _monkay
@@ -103,10 +105,19 @@ def generate_cache_key(func: Callable, args: Any, kwargs: Any) -> str:
             return sorted(value)  # Convert sets to sorted lists for consistency
         return value
 
+    try:
+        bound_method = inspect.ismethod(func) or (
+            len(args) > 0 and hasattr(args[0], func.__name__)
+        )
+    except Exception:  # noqa
+        bound_method = False
+
+    args_to_encode = args[1:] if bound_method else args
+
     serialized_data = json.dumps(
         {
-            "args": [convert(arg) for arg in args],
-            "kwargs": {k: convert(v) for k, v in kwargs.items()},
+            "args": [convert(json_encode(arg)) for arg in args_to_encode],
+            "kwargs": {k: convert(json_encode(v)) for k, v in kwargs.items()},
         },
     )
 

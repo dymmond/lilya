@@ -11,6 +11,10 @@ hide:
 
 - Support for automatic cast call for a function is a function is provided to cast in the `loader` of the [Environment](./environments.md).
 
+### Fixed
+
+- Fixed `@cache` when decorating Class controllers and function controllers.
+
 ## 0.19.3
 
 - Permission call order was reversed when called from within an Include, Path, Websocket and internal routing.
