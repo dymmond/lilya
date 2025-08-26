@@ -5,6 +5,7 @@ import logging
 import time
 from typing import Any
 
+from lilya._internal._encoders import json_encode
 from lilya.protocols.cache import CacheBackend
 
 logger = logging.getLogger(__name__)
@@ -112,7 +113,7 @@ class InMemoryCache(CacheBackend):
         """
         try:
             expiry = time.time() + ttl if ttl else None
-            self._store[key] = (json.dumps(value).encode("utf-8"), expiry)
+            self._store[key] = (json.dumps(json_encode(value)).encode("utf-8"), expiry)
         except Exception as e:
             logger.exception(f"Cache set error: {e}")
 

@@ -7,6 +7,7 @@ from typing import Any
 import anyio
 import anyio.from_thread
 
+from lilya._internal._encoders import json_encode
 from lilya.protocols.cache import CacheBackend
 
 try:
@@ -100,7 +101,7 @@ class RedisCache(CacheBackend):
             value (Any): The value to be cached.
             ttl (int | None, optional): Time-to-live in seconds. If `None`, the value never expires.
         """
-        data: bytes = json.dumps(value).encode("utf-8")
+        data: bytes = json.dumps(json_encode(value)).encode("utf-8")
         if ttl:
             await self.async_client.setex(key, ttl, data)
         else:
