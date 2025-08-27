@@ -355,7 +355,7 @@ class Path(BaseHandler, BasePath):
         if middleware is not None:
             self.middleware = [wrap_middleware(mid) for mid in middleware]
         else:
-            self.middleware = middleware
+            self.middleware = middleware if middleware is not None else []
 
         self.permissions = permissions if permissions is not None else []
         self.exception_handlers = {} if exception_handlers is None else dict(exception_handlers)
@@ -415,8 +415,8 @@ class Path(BaseHandler, BasePath):
                     [wrap_permission(permission) for permission in controller.permissions]
                 )
 
-            if controller.middlewares:
-                self.middleware.extend([wrap_middleware(mid) for mid in controller.middlewares])
+            if controller.middleware:
+                self.middleware.extend([wrap_middleware(mid) for mid in controller.middleware])
 
             if controller.exception_handlers:
                 self.exception_handlers.update(controller.exception_handlers)
@@ -660,7 +660,7 @@ class WebSocketPath(BaseHandler, BasePath):
         if middleware is not None:
             self.middleware = [wrap_middleware(mid) for mid in middleware]
         else:
-            self.middleware = middleware
+            self.middleware = middleware or []
 
         self.permissions = permissions if permissions is not None else []
         self.exception_handlers = {} if exception_handlers is None else dict(exception_handlers)
@@ -671,6 +671,8 @@ class WebSocketPath(BaseHandler, BasePath):
 
         self.before_request = before_request if before_request is not None else []
         self.after_request = after_request if after_request is not None else []
+
+        self._apply_controller_options()
 
         self._apply_permissions(self.wrapped_permissions)
         self._apply_middleware(self.middleware)
@@ -699,6 +701,32 @@ class WebSocketPath(BaseHandler, BasePath):
                 "A return value of a route handler function should be type annotated. "
                 "If your function doesn't return a value or returns None, annotate it as returning 'NoReturn' or 'None' respectively."
             )
+
+    def _apply_controller_options(self) -> None:
+        """
+        Apply controller options to the path.
+        """
+        if hasattr(self.app, "__is_controller__"):
+            controller = self.app
+            if controller.permissions:
+                self.wrapped_permissions.extend(
+                    [wrap_permission(permission) for permission in controller.permissions]
+                )
+
+            if controller.middleware:
+                self.middleware.extend([wrap_middleware(mid) for mid in controller.middleware])
+
+            if controller.exception_handlers:
+                self.exception_handlers.update(controller.exception_handlers)
+
+            if controller.dependencies and self.dependencies:
+                self.dependencies.update(controller.dependencies)
+
+            if controller.before_request:
+                self.before_request.extend(controller.before_request)
+
+            if controller.after_request:
+                self.after_request.extend(controller.after_request)
 
     def _apply_middleware(self, middleware: Sequence[DefineMiddleware] | None) -> None:
         """

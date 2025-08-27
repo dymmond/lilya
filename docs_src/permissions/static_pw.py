@@ -11,7 +11,7 @@ class StaticPWBasicAuthPermission(PermissionProtocol):
     def __init__(
         self, app: ASGIApp, *, username: str = "admin", password: str
     ) -> None:
-        self.app = app
+        super().__init__(app)
         self.basic_string = base64.b64encode(f"{username}:{password}".encode()).decode()
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
