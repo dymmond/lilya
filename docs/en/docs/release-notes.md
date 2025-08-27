@@ -17,6 +17,8 @@ hide:
 
 - Fixed `@cache` when decorating Class controllers and function controllers.
 - Permissions were not properly applied on `Controller` type objects.
+- Permissions protocol to check for the `__is_contoller__`.
+- Documentation references.
 
 ## 0.19.3
 
