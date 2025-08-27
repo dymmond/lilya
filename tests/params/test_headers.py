@@ -57,7 +57,7 @@ def test_header_required_missing(test_client_factory):
         assert response.status_code == 422
 
 
-def test_header_casted(test_client_factory):
+def test_header_casted():
     with create_client(
         routes=[Path("/", header_casted)], settings_module=EncoderSettings
     ) as client:

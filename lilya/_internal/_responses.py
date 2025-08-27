@@ -199,22 +199,37 @@ class BaseHandler:
             else:
                 continue
 
-            raw_value = source.get(key)
+            try:
+                if not isinstance(field, Cookie):
+                    raw_value = (
+                        source.get(key, None)
+                        if len(source.getall(key)) == 1
+                        else source.getall(key, None)
+                    )
+                else:
+                    raw_value = source.get(key)
+            except (KeyError, TypeError):
+                raw_value = None
 
             if field.required and raw_value is None:
                 raise UnprocessableEntity(f"Missing mandatory query parameter '{key}'") from None
 
             # Fallback to default
             if raw_value is None:
-                request_params[name] = field.default
+                request_params[name] = field.default if hasattr(field, "default") else None
                 continue
 
             # Apply casting if defined
             try:
-                if field.cast:
-                    request_params[name] = field.cast(raw_value)
+                if field.cast and isinstance(raw_value, list):
+                    request_params[name] = [raw_value]
+                elif field.cast:
+                    request_params[name] = field.resolve(raw_value, field.cast)
                 else:
-                    request_params[name] = raw_value
+                    if isinstance(raw_value, list) and len(raw_value) == 1:
+                        request_params[name] = raw_value[0]
+                    else:
+                        request_params[name] = raw_value
             except (TypeError, ValueError):
                 raise UnprocessableEntity(
                     f"Invalid value for query parameter '{key}': expected {field.cast.__name__}"

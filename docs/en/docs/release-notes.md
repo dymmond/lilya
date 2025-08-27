@@ -19,6 +19,7 @@ hide:
 - Permissions were not properly applied on `Controller` type objects.
 - Permissions protocol to check for the `__is_contoller__`.
 - Documentation references.
+- `Query` was not casting properly boolean values.
 
 ## 0.19.3
 

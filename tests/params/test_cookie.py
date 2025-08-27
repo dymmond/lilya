@@ -76,7 +76,7 @@ def test_cookie_required_missing(test_client_factory):
 
 def test_cookie_casted(test_client_factory):
     with create_client(
-        routes=[Path("/", cookie_casted)], settings_module=EncoderSettings
+        routes=[Path("/", cookie_casted)], settings_module=EncoderSettings, debug=True
     ) as client:
         response = client.get("/", cookies={"visit_count": "5"})
         assert response.json() == {"visitor": 5}

@@ -1,3 +1,4 @@
+import pytest
 from pydantic import BaseModel
 
 from lilya.controllers import Controller
@@ -16,6 +17,33 @@ class User(BaseModel):
 class Dummy:
     def show(self):
         return "test"
+
+
+class QueryParamControllerBool(Controller):
+    async def get(self, name: str, by_me: int = Query(cast=bool)):
+        return {"name": name, "search": by_me}
+
+
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        ("true", True),
+        ("false", False),
+        ("1", True),
+        ("0", False),
+        (1, True),
+        (0, False),
+        (True, True),
+        (False, False),
+    ],
+)
+def test_inject_query_param_bool(test_client_factory, value, expected):
+    with create_client(
+        routes=[Path("/{name}", QueryParamControllerBool)], settings_module=EncoderSettings
+    ) as client:
+        response = client.get(f"/lilya?by_me={value}")
+
+        assert response.json() == {"name": "lilya", "search": expected}
 
 
 class QueryParamController(Controller):
