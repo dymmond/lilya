@@ -12,16 +12,8 @@ class BaseParam:
                 else cast(value)
             )
         except Exception:
-            ...
+            raise
         return value
-
-    def __post_init__(self) -> Any:
-        if self.cast:
-            self.default = self.__cast__(self.default, self.cast)
-        return self.default
-
-    def resolve(self, value: Any, cast: type) -> Any:
-        return self.__cast__(value, cast) if cast else value
 
 
 @dataclass
@@ -32,6 +24,10 @@ class Query(BaseParam):
     cast: type | None = None
     description: str | None = None
 
+    def resolve(self, value: Any, cast: type) -> Any:
+        self.default = self.__cast__(value, cast) if cast else value
+        return self.default
+
 
 @dataclass
 class Header(BaseParam):
@@ -41,6 +37,9 @@ class Header(BaseParam):
     cast: type | None = None
     description: str | None = None
 
+    def resolve(self, value: Any, cast: type) -> Any:
+        return self.__cast__(value, cast) if cast else value
+
 
 @dataclass
 class Cookie(BaseParam):
@@ -49,3 +48,6 @@ class Cookie(BaseParam):
     required: bool = False
     cast: type | None = None
     description: str | None = None
+
+    def resolve(self, value: Any, cast: type) -> Any:
+        return self.__cast__(value, cast) if cast else value

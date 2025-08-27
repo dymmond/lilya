@@ -1,3 +1,4 @@
+import pytest
 from pydantic import BaseModel
 
 from lilya.dependencies import Provide
@@ -18,13 +19,41 @@ class Dummy:
 
 
 def test_query_for_boolean(test_client_factory):
-    query = Query(default="false", cast=bool)
+    query = Query(default="false")
+    query.resolve(query.default, bool)
 
     assert query.default is False
 
     query = Query(default="true", cast=bool)
+    query.resolve(query.default, bool)
 
     assert query.default is True
+
+
+async def inject_query_param_bool(name: str, by_me: int = Query(cast=bool)):
+    return {"name": name, "search": by_me}
+
+
+@pytest.mark.parametrize(
+    "value, expected",
+    [
+        ("true", True),
+        ("false", False),
+        ("1", True),
+        ("0", False),
+        (1, True),
+        (0, False),
+        (True, True),
+        (False, False),
+    ],
+)
+def test_inject_query_param_bool(test_client_factory, value, expected):
+    with create_client(
+        routes=[Path("/{name}", inject_query_param_bool)], settings_module=EncoderSettings
+    ) as client:
+        response = client.get(f"/lilya?by_me={value}")
+
+        assert response.json() == {"name": "lilya", "search": expected}
 
 
 async def inject_query_params(name: str, q: str = Query()):
