@@ -12,6 +12,7 @@ from inspect import isclass
 from pathlib import PurePath
 from types import GeneratorType
 from typing import Any, Generic, Protocol, TypeVar, cast, runtime_checkable
+from uuid import UUID
 
 from monkay import TransparentCage
 
@@ -170,6 +171,17 @@ class StructureEncoder(Encoder):
         return list(obj)
 
 
+class UUIDEncoder(Encoder):
+    name: str = "UUIDEncoder"
+    __type__ = UUID
+
+    def serialize(self, obj: UUID) -> str:
+        return str(obj)
+
+    def encode(self, structure: type[UUID], value: Any) -> UUID:
+        return UUID(str(value))
+
+
 DEFAULT_ENCODER_TYPES: deque[EncoderProtocol] = deque(
     (
         DataclassEncoder(),
@@ -180,6 +192,7 @@ DEFAULT_ENCODER_TYPES: deque[EncoderProtocol] = deque(
         DateEncoder(),
         BytesEncoder(),
         StructureEncoder(),
+        UUIDEncoder(),
     )
 )
 
