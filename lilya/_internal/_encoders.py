@@ -6,7 +6,7 @@ from collections import deque
 from collections.abc import Callable, Iterable, Sequence
 from contextvars import Token
 from dataclasses import asdict, is_dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from enum import Enum
 from inspect import isclass
 from pathlib import PurePath
@@ -182,6 +182,17 @@ class UUIDEncoder(Encoder):
         return UUID(str(value))
 
 
+class TimedeltaEncoder(Encoder):
+    name: str = "TimedeltaEncoder"
+    __type__ = timedelta
+
+    def serialize(self, obj: timedelta) -> float:
+        return obj.total_seconds()
+
+    def encode(self, structure: type[timedelta], value: Any) -> timedelta:
+        return timedelta(seconds=float(value))
+
+
 DEFAULT_ENCODER_TYPES: deque[EncoderProtocol] = deque(
     (
         DataclassEncoder(),
@@ -193,6 +204,7 @@ DEFAULT_ENCODER_TYPES: deque[EncoderProtocol] = deque(
         BytesEncoder(),
         StructureEncoder(),
         UUIDEncoder(),
+        TimedeltaEncoder(),
     )
 )
 

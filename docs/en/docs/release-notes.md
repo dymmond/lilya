@@ -11,6 +11,7 @@ hide:
 
 - Support for automatic cast call for a function is a function is provided to cast in the `loader` of the [Environment](./environments.md).
 - `UUIDEncoder` as a native for parsing `UUID` types.
+- `TimedeltaEncoder` as native encoder.
 
 ### Fixed
 

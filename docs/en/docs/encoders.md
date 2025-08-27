@@ -46,6 +46,8 @@ encoders that evaluates when tries to *guess* the response type.
 * `PurePathEncoder` - Serializes `PurePath` objects.
 * `DateEncoder` - Serializes date and datetime objects.
 * `StructureEncoder` - Serializes more complex data types which implement `Iterable`.
+* `UUIDEncoder` - Serializes built-in `UUID`.
+* `TimedeltaEncoder` - Serializes the `timedelta` types.
 
 What if a brand new encoder is needed and it is not natively supported by Lilya? Well, [building a custom encoder](#build-a-custom-encoder)
 is extremly easy and possible.
