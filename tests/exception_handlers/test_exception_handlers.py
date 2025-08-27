@@ -76,6 +76,58 @@ def test_exception_handling(exc_to_raise: Exception, expected_layer: str) -> Non
     ["exc_to_raise", "expected_layer"],
     [
         (PermissionDenied, "router"),
+        (InternalServerError, "router"),
+        (MethodNotAllowed, "handler"),
+        (NotFound, "handler"),
+    ],
+)
+def test_exception_handling_on_controller(exc_to_raise: Exception, expected_layer: str) -> None:
+    caller = {"name": ""}
+
+    def create_named_handler(
+        caller_name: str, expected_exception: type[Exception]
+    ) -> ExceptionHandler:
+        def handler(req: Request, exc: Exception) -> Response:
+            assert isinstance(exc, expected_exception)
+            assert isinstance(req, Request)
+            caller["name"] = caller_name
+            return Response(
+                media_type=MediaType.JSON,
+                content={},
+                status_code=HTTP_400_BAD_REQUEST,
+            )
+
+        return handler
+
+    class ControllerWithHandler(Controller):
+        exception_handlers = {
+            MethodNotAllowed: create_named_handler("handler", MethodNotAllowed),
+            NotFound: create_named_handler("handler", NotFound),
+        }
+
+        async def get(self):
+            raise exc_to_raise
+
+    with create_client(
+        routes=[
+            Path(
+                path="/base/test",
+                handler=ControllerWithHandler,
+            )
+        ],
+        exception_handlers={
+            InternalServerError: create_named_handler("router", InternalServerError),
+            PermissionDenied: create_named_handler("router", PermissionDenied),
+        },
+    ) as client:
+        client.get("/base/test/")
+        assert caller["name"] == expected_layer
+
+
+@pytest.mark.parametrize(
+    ["exc_to_raise", "expected_layer"],
+    [
+        (PermissionDenied, "router"),
         (InternalServerError, "include"),
         (MethodNotAllowed, "handler"),
         (NotFound, "handler"),

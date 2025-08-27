@@ -10,10 +10,15 @@ hide:
 ### Added
 
 - Support for automatic cast call for a function is a function is provided to cast in the `loader` of the [Environment](./environments.md).
+- `UUIDEncoder` as a native for parsing `UUID` types.
+- `TimedeltaEncoder` as native encoder.
 
 ### Fixed
 
 - Fixed `@cache` when decorating Class controllers and function controllers.
+- Permissions were not properly applied on `Controller` type objects.
+- Permissions protocol to check for the `__is_contoller__`.
+- Documentation references.
 
 ## 0.19.3
 

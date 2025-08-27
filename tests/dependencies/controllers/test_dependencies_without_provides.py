@@ -71,6 +71,31 @@ async def test_include_level_dependency():
     assert res.json() == {"y": "inc_value"}
 
 
+async def test_controller_level_dependency():
+    class Test(Controller):
+        dependencies = {"y": Provide(lambda: "inc_value")}
+
+        async def get(self, request: Request, y):
+            return {"y": y}
+
+    app = Lilya(
+        routes=[
+            Include(
+                path="/inc",
+                routes=[
+                    Path("/test_inc", handler=Test),
+                ],
+            )
+        ]
+    )
+
+    client = TestClient(app)
+
+    res = client.get("/inc/test_inc")
+    assert res.status_code == 200
+    assert res.json() == {"y": "inc_value"}
+
+
 async def test_nested_include_dependencies():
     class Test(Controller):
         async def get(self, a, b):

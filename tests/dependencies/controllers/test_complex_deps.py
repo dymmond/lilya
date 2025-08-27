@@ -46,3 +46,27 @@ def test_service_with_pydantic():
         response = client.post("/create", json={"name": "lilya", "age": 18})
         assert response.status_code == 200, response.text
         assert response.json() == {"name": "lilya", "age": 18}
+
+
+class UserControllerDep(Controller):
+    dependencies = {
+        "service": Provide(UserDAO),
+    }
+
+    async def post(self, data: UserIn, service: UserDAO):
+        return await service.create(**data.model_dump())
+
+
+def test_service_with_pydantic_controller_nested():
+    with create_client(
+        routes=[
+            Path(
+                "/create",
+                UserControllerDep,
+            )
+        ],
+        settings_module=EncoderSettings,
+    ) as client:
+        response = client.post("/create", json={"name": "lilya", "age": 18})
+        assert response.status_code == 200, response.text
+        assert response.json() == {"name": "lilya", "age": 18}

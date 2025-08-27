@@ -20,7 +20,7 @@ def test_context(test_client_factory):
     with create_client(routes=[Path(path="/", handler=get_data)]) as client:
         response = client.get("/")
 
-        assert response.json() == {"method": ["GET", "HEAD"], "middlewares": None}
+        assert response.json() == {"method": ["GET", "HEAD"], "middlewares": []}
 
 
 async def get_context_route(context: Context) -> dict[str, Any]:
