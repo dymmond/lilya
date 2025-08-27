@@ -1,6 +1,7 @@
 import pytest
 
 from lilya.apps import ChildLilya
+from lilya.controllers import Controller
 from lilya.exceptions import PermissionDenied
 from lilya.permissions import DefinePermission
 from lilya.protocols.permissions import PermissionProtocol
@@ -123,6 +124,48 @@ def test_add_permission_on_path(test_client_factory):
         assert response.json() == {"message": "Welcome home"}
 
         response = client.get("/lilya")
+        assert response.status_code == 403
+        assert response.text == "You do not have permission to perform this action."
+
+
+def test_add_permission_on_controller(test_client_factory):
+    class MyController(Controller):
+        permissions = [AllowPathAccess]
+
+        def get(self):
+            return {"message": "Welcome home"}
+
+    with create_client(
+        routes=[
+            Path("/", handler=MyController),
+        ],
+    ) as client:
+        headers = {"allow-admin": "true"}
+        response = client.get("/", headers=headers)
+        assert response.status_code == 200
+        assert response.json() == {"message": "Welcome home"}
+
+        response = client.get("/")
+        assert response.status_code == 403
+        assert response.text == "You do not have permission to perform this action."
+
+
+def test_add_permission_on_controller_path(test_client_factory):
+    class MyController(Controller):
+        def get(self):
+            return {"message": "Welcome home"}
+
+    with create_client(
+        routes=[
+            Path("/", handler=MyController, permissions=[DefinePermission(AllowPathAccess)]),
+        ],
+    ) as client:
+        headers = {"allow-admin": "true"}
+        response = client.get("/", headers=headers)
+        assert response.status_code == 200
+        assert response.json() == {"message": "Welcome home"}
+
+        response = client.get("/")
         assert response.status_code == 403
         assert response.text == "You do not have permission to perform this action."
 

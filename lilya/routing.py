@@ -364,11 +364,15 @@ class Path(BaseHandler, BasePath):
             wrap_permission(permission) for permission in permissions or []
         ]
 
-        self._apply_permissions(self.wrapped_permissions)
-        self._apply_middleware(self.middleware)
-
         self.before_request = before_request if before_request is not None else []
         self.after_request = after_request if after_request is not None else []
+
+        # Controllers are an exception, they can have permissions and middlewares
+        # applied to the class level
+        self._apply_controller_options()
+
+        self._apply_permissions(self.wrapped_permissions)
+        self._apply_middleware(self.middleware)
 
         if self.methods is not None:
             self.methods = [method.upper() for method in self.methods]
@@ -399,6 +403,32 @@ class Path(BaseHandler, BasePath):
                 "A return value of a route handler function should be type annotated. "
                 "If your function doesn't return a value or returns None, annotate it as returning 'NoReturn' or 'None' respectively."
             )
+
+    def _apply_controller_options(self) -> None:
+        """
+        Apply controller options to the path.
+        """
+        if hasattr(self.app, "__is_controller__"):
+            controller = self.app
+            if controller.permissions:
+                self.wrapped_permissions.extend(
+                    [wrap_permission(permission) for permission in controller.permissions]
+                )
+
+            if controller.middlewares:
+                self.middleware.extend([wrap_middleware(mid) for mid in controller.middlewares])
+
+            if controller.exception_handlers:
+                self.exception_handlers.update(controller.exception_handlers)
+
+            if controller.dependencies and self.dependencies:
+                self.dependencies.update(controller.dependencies)
+
+            if controller.before_request:
+                self.before_request.extend(controller.before_request)
+
+            if controller.after_request:
+                self.after_request.extend(controller.after_request)
 
     def _apply_middleware(self, middleware: Sequence[DefineMiddleware] | None) -> None:
         """

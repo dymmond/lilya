@@ -16,6 +16,7 @@ hide:
 ### Fixed
 
 - Fixed `@cache` when decorating Class controllers and function controllers.
+- Permissions were not properly applied on `Controller` type objects.
 
 ## 0.19.3
 

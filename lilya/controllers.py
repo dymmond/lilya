@@ -18,6 +18,13 @@ from lilya.websockets import WebSocket
 
 
 class BaseController(BaseHandler):
+    permissions: list[Callable[..., Coroutine[Any, Any, bool]]] = []
+    middlewares: list[Callable[..., Coroutine[Any, Any, None]]] = []
+    exception_handlers: dict[int, Callable[[Request, Exception], Response]] = {}
+    dependencies: dict[str, Any] = {}
+    before_request: list[Callable[..., Coroutine[Any, Any, None]]] = []
+    after_request: list[Callable[..., Coroutine[Any, Any, None]]] = []
+
     __is_controller__: bool = True
 
     def handle_signature(self) -> None:
