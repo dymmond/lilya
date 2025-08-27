@@ -33,7 +33,9 @@ from lilya.types import ExceptionHandler
 def test_exception_handling(exc_to_raise: Exception, expected_layer: str) -> None:
     caller = {"name": ""}
 
-    def create_named_handler(caller_name: str, expected_exception: type[Exception]) -> ExceptionHandler:
+    def create_named_handler(
+        caller_name: str, expected_exception: type[Exception]
+    ) -> ExceptionHandler:
         def handler(req: Request, exc: Exception) -> Response:
             assert isinstance(exc, expected_exception)
             assert isinstance(req, Request)
@@ -82,7 +84,9 @@ def test_exception_handling(exc_to_raise: Exception, expected_layer: str) -> Non
 def test_exception_handling_on_controller(exc_to_raise: Exception, expected_layer: str) -> None:
     caller = {"name": ""}
 
-    def create_named_handler(caller_name: str, expected_exception: type[Exception]) -> ExceptionHandler:
+    def create_named_handler(
+        caller_name: str, expected_exception: type[Exception]
+    ) -> ExceptionHandler:
         def handler(req: Request, exc: Exception) -> Response:
             assert isinstance(exc, expected_exception)
             assert isinstance(req, Request)
@@ -132,7 +136,9 @@ def test_exception_handling_on_controller(exc_to_raise: Exception, expected_laye
 def test_exception_handling_with_include(exc_to_raise: Exception, expected_layer: str) -> None:
     caller = {"name": ""}
 
-    def create_named_handler(caller_name: str, expected_exception: type[Exception]) -> ExceptionHandler:
+    def create_named_handler(
+        caller_name: str, expected_exception: type[Exception]
+    ) -> ExceptionHandler:
         def handler(req: Request, exc: Exception) -> Response:
             assert isinstance(exc, expected_exception)
             assert isinstance(req, Request)
@@ -188,10 +194,14 @@ def test_exception_handling_with_include(exc_to_raise: Exception, expected_layer
         (NotFound, "handler"),
     ],
 )
-def test_exception_handling_with_include_exception_handler(exc_to_raise: Exception, expected_layer: str) -> None:
+def test_exception_handling_with_include_exception_handler(
+    exc_to_raise: Exception, expected_layer: str
+) -> None:
     caller = {"name": ""}
 
-    def create_named_handler(caller_name: str, expected_exception: type[Exception]) -> ExceptionHandler:
+    def create_named_handler(
+        caller_name: str, expected_exception: type[Exception]
+    ) -> ExceptionHandler:
         def handler(req: Request, exc: Exception) -> Response:
             assert isinstance(exc, expected_exception)
             assert isinstance(req, Request)
@@ -219,7 +229,9 @@ def test_exception_handling_with_include_exception_handler(exc_to_raise: Excepti
                         exception_handlers={
                             MethodNotAllowed: create_named_handler("handler", MethodNotAllowed),
                             NotFound: create_named_handler("handler", NotFound),
-                            InternalServerError: create_named_handler("handler", InternalServerError),
+                            InternalServerError: create_named_handler(
+                                "handler", InternalServerError
+                            ),
                         },
                     )
                 ],
@@ -246,10 +258,14 @@ def test_exception_handling_with_include_exception_handler(exc_to_raise: Excepti
         (NotFound, "handler"),
     ],
 )
-def test_exception_handling_with_gateway_exception_handler(exc_to_raise: Exception, expected_layer: str) -> None:
+def test_exception_handling_with_gateway_exception_handler(
+    exc_to_raise: Exception, expected_layer: str
+) -> None:
     caller = {"name": ""}
 
-    def create_named_handler(caller_name: str, expected_exception: type[Exception]) -> ExceptionHandler:
+    def create_named_handler(
+        caller_name: str, expected_exception: type[Exception]
+    ) -> ExceptionHandler:
         def handler(req: Request, exc: Exception) -> Response:
             assert isinstance(exc, expected_exception)
             assert isinstance(req, Request)
@@ -278,7 +294,9 @@ def test_exception_handling_with_gateway_exception_handler(exc_to_raise: Excepti
                             LilyaException: create_named_handler("handler", LilyaException),
                             MethodNotAllowed: create_named_handler("handler", MethodNotAllowed),
                             NotFound: create_named_handler("handler", NotFound),
-                            InternalServerError: create_named_handler("handler", InternalServerError),
+                            InternalServerError: create_named_handler(
+                                "handler", InternalServerError
+                            ),
                         },
                     )
                 ],
@@ -305,7 +323,9 @@ def test_exception_handling_with_gateway_exception_handler(exc_to_raise: Excepti
 def test_exception_handling_with_child_lilya(exc_to_raise: Exception, expected_layer: str) -> None:
     caller = {"name": ""}
 
-    def create_named_handler(caller_name: str, expected_exception: type[Exception]) -> ExceptionHandler:
+    def create_named_handler(
+        caller_name: str, expected_exception: type[Exception]
+    ) -> ExceptionHandler:
         def handler(req: Request, exc: Exception) -> Response:
             assert isinstance(exc, expected_exception)
             assert isinstance(req, Request)

@@ -421,7 +421,7 @@ class Path(BaseHandler, BasePath):
             if controller.exception_handlers:
                 self.exception_handlers.update(controller.exception_handlers)
 
-            if controller.dependencies and self.dependencies:
+            if controller.dependencies:
                 self.dependencies.update(controller.dependencies)
 
             if controller.before_request:
