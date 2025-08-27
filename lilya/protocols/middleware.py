@@ -18,7 +18,7 @@ class MetaMiddleware(_ProtocolMeta):
 
 
 @runtime_checkable
-class MiddlewareProtocol(Protocol[P]):  # pragma: no cover
+class MiddlewareProtocol(Protocol[P], metaclass=MetaMiddleware):  # pragma: no cover
     __slots__ = ("app",)
 
     def __init__(self, app: ASGIApp, *args: P.args, **kwargs: P.kwargs) -> None: ...

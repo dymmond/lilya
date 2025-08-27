@@ -17,6 +17,16 @@ class Dummy:
         return "test"
 
 
+def test_query_for_boolean(test_client_factory):
+    query = Query(default="false", cast=bool)
+
+    assert query.default is False
+
+    query = Query(default="true", cast=bool)
+
+    assert query.default is True
+
+
 async def inject_query_params(name: str, q: str = Query()):
     return {"name": name, "search": q}
 

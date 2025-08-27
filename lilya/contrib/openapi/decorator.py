@@ -185,6 +185,7 @@ def openapi(
         ) -> dict[str, Query]:
             if query_dict is None:
                 return {}
+
             if isinstance(query_dict, set):
                 return {q: Query() for q in query_dict}
 
