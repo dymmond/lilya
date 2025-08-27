@@ -199,7 +199,7 @@ class BaseHandler:
             else:
                 continue
 
-            raw_value = source.get(key)
+            raw_value = source.get(key) if len(source.items()) == 1 else source.getall(key)
 
             if field.required and raw_value is None:
                 raise UnprocessableEntity(f"Missing mandatory query parameter '{key}'") from None
@@ -211,8 +211,10 @@ class BaseHandler:
 
             # Apply casting if defined
             try:
-                if field.cast:
-                    request_params[name] = field.cast(raw_value)
+                if field.cast and isinstance(raw_value, list):
+                    request_params[name] = [raw_value]
+                elif field.cast:
+                    request_params[name] = field.resolve(raw_value, field.cast)
                 else:
                     request_params[name] = raw_value
             except (TypeError, ValueError):

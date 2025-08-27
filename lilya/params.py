@@ -4,16 +4,24 @@ from typing import Any
 
 @dataclass
 class BaseParam:
-    def __post_init__(self) -> None:
+    def __cast__(self, value: Any, cast: type) -> Any:
+        try:
+            value = (
+                str(value).lower() in ("true", "1", "yes", "on", "t")
+                if cast is bool
+                else cast(value)
+            )
+        except Exception:
+            ...
+        return value
+
+    def __post_init__(self) -> Any:
         if self.cast:
-            try:
-                self.default = (
-                    str(self.default).lower() in ("true", "1", "yes", "on", "t")
-                    if self.cast
-                    else self.cast(self.default)
-                )
-            except Exception:
-                ...
+            self.default = self.__cast__(self.default, self.cast)
+        return self.default
+
+    def resolve(self, value: Any, cast: type) -> Any:
+        return self.__cast__(value, cast) if cast else value
 
 
 @dataclass
