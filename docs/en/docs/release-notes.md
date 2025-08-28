@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.19.5
+
+### Fixed
+
+- Allow string representation of bool in type check
+
 ## 0.19.4
 
 ### Added
