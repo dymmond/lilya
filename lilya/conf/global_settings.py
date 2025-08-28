@@ -120,7 +120,7 @@ class BaseSettings:
                 else:
                     raise ValueError(f"Cannot cast to ambiguous Union type: {typ}")
 
-            if typ is bool:
+            if typ is bool or str(typ) == "bool"
                 return value.lower() in self.__truthy__
             return typ(value)
         except Exception:
