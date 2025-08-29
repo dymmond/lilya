@@ -17,6 +17,9 @@ printer = Print()
 def create_app(
     name: Annotated[str, Argument(help="The name of the app.")],
     version: Annotated[str, Option("v1", help="The API version of the app.")],
+    location: Annotated[
+        str, Option(".", help="The location where to create the app.", show_default=True)
+    ],
     verbosity: Annotated[int, Option(1, "-v", help="Displays the files generated")],
 ) -> None:
     """Creates the scaffold of an application
@@ -30,6 +33,7 @@ def create_app(
         "verbosity": verbosity,
         "is_simple": True,
         "api_version": version,
+        "location": location,
     }
     directive = TemplateDirective()
 

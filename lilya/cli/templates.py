@@ -36,12 +36,13 @@ class TemplateDirective(BaseDirective):
         self.deployment_folder_name = options.get("deployment_folder_name", None)
         self.with_structure = options.get("is_simple", False)
         self.api_version = options.get("api_version", "v1")
+        self.location = os.path.abspath(options.get("location", "."))
 
         if self.app_or_project not in TREAT_AS_PROJECT_DIRECTIVE:
             self.validate_name(name)
-            top_dir = os.path.join(os.getcwd(), name)
+            top_dir = os.path.join(self.location, name)
         else:
-            top_dir = os.path.join(os.getcwd(), self.deployment_folder_name)
+            top_dir = os.path.join(self.location, self.deployment_folder_name)
 
         try:
             os.makedirs(top_dir)
