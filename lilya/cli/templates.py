@@ -7,7 +7,7 @@ from importlib import import_module
 from pathlib import Path
 from typing import Any
 
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, Template
 from sayer import error, info
 
 import lilya
@@ -35,12 +35,14 @@ class TemplateDirective(BaseDirective):
         self.with_deployment = options.get("with_deployment", False)
         self.deployment_folder_name = options.get("deployment_folder_name", None)
         self.with_structure = options.get("is_simple", False)
+        self.api_version = options.get("api_version", "v1")
+        self.location = os.path.abspath(options.get("location", "."))
 
         if self.app_or_project not in TREAT_AS_PROJECT_DIRECTIVE:
             self.validate_name(name)
-            top_dir = os.path.join(os.getcwd(), name)
+            top_dir = os.path.join(self.location, name)
         else:
-            top_dir = os.path.join(os.getcwd(), self.deployment_folder_name)
+            top_dir = os.path.join(self.location, self.deployment_folder_name)
 
         try:
             os.makedirs(top_dir)
@@ -66,6 +68,7 @@ class TemplateDirective(BaseDirective):
             "lilya_version": self.get_version(),
             "project_secret": options.get("secret_key"),
             "deployment_folder": self.deployment_folder_name,
+            "api_version": self.api_version,
         }
 
         template_dir = os.path.join(lilya.__path__[0], "_internal/_templates", base_subdir)
@@ -118,7 +121,8 @@ class TemplateDirective(BaseDirective):
         for root, dirs, files in os.walk(template_dir):
             path_rest = root[prefix_length:]
 
-            relative_dir = path_rest.replace(base_name, name)
+            relative_dir_template = Template(path_rest.replace(base_name, name))
+            relative_dir = relative_dir_template.render(context)
 
             if with_deployment:
                 relative_dir = f"{deployment_folder_name}/{relative_dir}"

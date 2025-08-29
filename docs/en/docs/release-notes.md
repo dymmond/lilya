@@ -5,6 +5,13 @@ hide:
 
 # Release Notes
 
+## 0.19.6
+
+### Added
+
+- `--version` attribute when running `createapp` directive allowing to generate a versioned scaffold.
+- `--location` attribute when using `createapp` and `createproject` directive allowing to specify the location to be created.
+
 ## 0.19.5
 
 ### Fixed
