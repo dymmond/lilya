@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.19.6
+
+### Added
+
+- `--version` attribute when running `createapp` directive allowing to generate a versioned scaffold.
+
 ## 0.19.5
 
 ### Fixed
