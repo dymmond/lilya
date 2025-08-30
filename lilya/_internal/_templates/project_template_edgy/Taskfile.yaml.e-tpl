@@ -38,7 +38,7 @@ tasks:
     env:
         LILYA_SETTINGS_MODULE: {{ project_name }}.configs.development.settings.DevelopmentAppSettings
     cmd:
-        edgy makemigrations {{ .MESSAGE }}
+        edgy makemigrations
 
   migrate:
     desc: Runs the latest migrations
@@ -52,4 +52,4 @@ tasks:
     env:
         LILYA_SETTINGS_MODULE: {{ project_name }}.configs.development.settings.DevelopmentAppSettings
     cmd:
-        edgy downgrade {{ .VERSION }}
+        edgy downgrade
