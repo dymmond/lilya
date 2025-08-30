@@ -36,6 +36,7 @@ class TemplateDirective(BaseDirective):
         self.deployment_folder_name = options.get("deployment_folder_name", None)
         self.with_structure = options.get("is_simple", False)
         self.api_version = options.get("api_version", "v1")
+        self.edgy = options.get("edgy", False)
         self.location = os.path.abspath(options.get("location", "."))
 
         if self.app_or_project not in TREAT_AS_PROJECT_DIRECTIVE:
@@ -56,11 +57,13 @@ class TemplateDirective(BaseDirective):
         else:
             base_name = "project_name"
 
-        base_subdir = (
-            f"{app_or_project}_template_simple"
-            if not self.with_structure and self.app_or_project not in TREAT_AS_PROJECT_DIRECTIVE
-            else f"{app_or_project}_template"
-        )
+        base_subdir = f"{app_or_project}_template"
+        if self.app_or_project not in TREAT_AS_PROJECT_DIRECTIVE:
+            if self.edgy:
+                base_subdir = f"{app_or_project}_template_edgy"
+            elif self.with_structure:
+                base_subdir = f"{app_or_project}_template_simple"
+
         base_deployment = "deployment_template"
 
         context = {

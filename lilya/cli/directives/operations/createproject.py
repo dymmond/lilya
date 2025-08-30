@@ -37,6 +37,15 @@ def create_project(
             show_default=True,
         ),
     ],
+    edgy: Annotated[
+        bool,
+        Option(
+            False,
+            "-e",
+            help="Generates a project with configurations for Edgy ORM.",
+            show_default=True,
+        ),
+    ],
     location: Annotated[
         str, Option(".", help="The location where to create the project.", show_default=True)
     ],
@@ -54,6 +63,7 @@ def create_project(
         "with_deployment": with_deployment,
         "deployment_folder_name": deployment_folder_name,
         "is_simple": with_structure,
+        "edgy": edgy,
         "location": location,
     }
     directive = TemplateDirective()
