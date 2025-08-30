@@ -25,3 +25,31 @@ tasks:
       LILYA_SETTINGS_MODULE: {{ project_name }}.configs.testing.settings.TestingAppSettings
     cmds:
       - pytest -s
+
+  init:
+    desc: Init the migrations folder for your projects
+    env:
+        LILYA_SETTINGS_MODULE: {{ project_name }}.configs.development.settings.DevelopmentAppSettings
+    cmd:
+        edgy init -t sequential
+
+  makemigrations:
+    desc: Generate migrations with a provided message
+    env:
+        LILYA_SETTINGS_MODULE: {{ project_name }}.configs.development.settings.DevelopmentAppSettings
+    cmd:
+        edgy makemigrations {{ .MESSAGE }}
+
+  migrate:
+    desc: Runs the latest migrations
+    env:
+        LILYA_SETTINGS_MODULE: {{ project_name }}.configs.development.settings.DevelopmentAppSettings
+    cmd:
+        edgy migrate
+
+  downgrade:
+    desc: Runs the downgrade migration to a specific version
+    env:
+        LILYA_SETTINGS_MODULE: {{ project_name }}.configs.development.settings.DevelopmentAppSettings
+    cmd:
+        edgy downgrade {{ .VERSION }}
