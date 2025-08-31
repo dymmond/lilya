@@ -1,5 +1,9 @@
 version: 3
 
+env:
+  EDGY_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/{{ project_name }}
+  EDGY_SETTINGS_MODULE: {{ project_name }}.configs.edgy.EdgyAppSettings
+
 tasks:
   clean:
     desc: Cleans caching, pyc and pycache files
