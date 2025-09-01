@@ -1,17 +1,16 @@
 from __future__ import annotations
 
-import json
-
 from lilya.exceptions import ContinueRouting
 from lilya.requests import Request
 from lilya.responses import JSONResponse
 from lilya.routing import Path, Router
+from lilya.serializers import serializer
 
 
 def test_sniffing(test_client_factory):
     async def sniff1(request: Request):
         msg, body_initialized = await request.sniff()
-        assert json.loads(msg["body"])
+        assert serializer.loads(msg["body"])
         assert body_initialized
         jsonob = await request.json()
         if "sniff1" not in jsonob:
@@ -21,7 +20,7 @@ def test_sniffing(test_client_factory):
 
     async def sniff2(request: Request):
         msg, body_initialized = await request.sniff()
-        assert json.loads(msg["body"])
+        assert serializer.loads(msg["body"])
         assert body_initialized
         jsonob = await request.json()
         if "sniff2" not in jsonob:

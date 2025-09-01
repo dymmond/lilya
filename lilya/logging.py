@@ -11,7 +11,7 @@ from lilya.types import Doc
 
 class LoggerProxy:
     """
-    Proxy for the real logger used by Esmerald.
+    Proxy for the real logger used by Lilya.
     """
 
     def __init__(self) -> None:

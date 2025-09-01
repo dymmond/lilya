@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import inspect
-import json
 import re
 import threading
 from collections.abc import Callable
@@ -18,6 +17,7 @@ from lilya.compat import is_async_callable
 from lilya.conf import _monkay
 from lilya.logging import logger
 from lilya.protocols.cache import CacheBackend
+from lilya.serializers import serializer
 
 
 def observable(send: list[str] | None = None, listen: list[str] | None = None) -> Callable:
@@ -114,7 +114,7 @@ def generate_cache_key(func: Callable, args: Any, kwargs: Any) -> str:
 
     args_to_encode = args[1:] if bound_method else args
 
-    serialized_data = json.dumps(
+    serialized_data = serializer.dumps(
         {
             "args": [convert(json_encode(arg)) for arg in args_to_encode],
             "kwargs": {k: convert(json_encode(v)) for k, v in kwargs.items()},

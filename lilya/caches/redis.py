@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 from typing import Any
 
 import anyio
@@ -9,6 +8,7 @@ import anyio.from_thread
 
 from lilya._internal._encoders import json_encode
 from lilya.protocols.cache import CacheBackend
+from lilya.serializers import serializer
 
 try:
     import redis.asyncio as redis
@@ -91,7 +91,7 @@ class RedisCache(CacheBackend):
             Any | None: The deserialized value if found, otherwise `None`.
         """
         value = await self.async_client.get(key)
-        return json.loads(value) if value is not None else None
+        return serializer.loads(value) if value is not None else None
 
     async def set(self, key: str, value: Any, ttl: int | None = None) -> None:
         """Stores a value in the Redis cache asynchronously.
@@ -101,7 +101,11 @@ class RedisCache(CacheBackend):
             value (Any): The value to be cached.
             ttl (int | None, optional): Time-to-live in seconds. If `None`, the value never expires.
         """
-        data: bytes = json.dumps(json_encode(value)).encode("utf-8")
+        try:
+            data: bytes = serializer.dumps(json_encode(value)).encode("utf-8")
+        except AttributeError:
+            data = serializer.dumps(json_encode(value))
+
         if ttl:
             await self.async_client.setex(key, ttl, data)
         else:

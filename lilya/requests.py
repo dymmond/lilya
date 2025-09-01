@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import inspect
-import json
 from collections.abc import AsyncGenerator, Callable
 from typing import Any, cast
 
@@ -19,6 +18,7 @@ from lilya.compat import AsyncResourceHandler
 from lilya.datastructures import FormData
 from lilya.enums import Event, MediaType, ScopeType
 from lilya.exceptions import HTTPException
+from lilya.serializers import serializer
 from lilya.types import Empty, Message, Receive, Scope, Send
 
 try:
@@ -225,7 +225,7 @@ class Request(Connection):
         """
         if self._json is Empty:
             body = await self.body() or b"null"
-            self._json = json.loads(body)
+            self._json = serializer.loads(body)
         return self._json
 
     async def text(self) -> Any:

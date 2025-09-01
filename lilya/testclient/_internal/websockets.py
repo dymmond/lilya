@@ -8,8 +8,9 @@ from concurrent.futures import Future
 from functools import cached_property
 
 import anyio
-import anyio.from_thread
+import anyio.from_thread  # noqa
 
+from lilya.serializers import serializer
 from lilya.testclient._internal.types import ASGI3App, PortalFactoryType
 from lilya.types import Message, Scope
 from lilya.websockets import WebSocketDisconnect
@@ -284,4 +285,4 @@ class WebSocketTestSession:
             text = message["text"]
         else:
             text = message["bytes"].decode("utf-8")
-        return json.loads(text)
+        return serializer.loads(text)

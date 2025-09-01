@@ -21,6 +21,7 @@ from lilya.caches.memory import InMemoryCache
 from lilya.conf.enums import EnvironmentType
 from lilya.logging import LoggingConfig, StandardLoggingConfig
 from lilya.protocols.cache import CacheBackend
+from lilya.serializers import SerializerConfig, StandardSerializerConfig
 from lilya.types import ApplicationType, Dependencies, Doc, ExceptionHandler
 
 if TYPE_CHECKING:
@@ -769,6 +770,27 @@ class Settings(Internal):
         ```
         """
         return StandardLoggingConfig(level=self.logging_level)
+
+    @property
+    def serializer_config(self) -> SerializerConfig | None:  # noqa
+        """
+        An instance of [SerializerConfig](https://lilya.dev/serialization/).
+
+        Default:
+            StandardSerializerConfig()
+
+        **Example**
+
+        ```python
+        from lilya.conf import Settings
+
+
+        class AppSettings(Settings):
+            @property
+            def serializer_config(self) -> SerializerConfig:
+                return StandardSerializerConfig()
+        """
+        return StandardSerializerConfig()
 
     @property
     def openapi_config(self) -> Any | None:

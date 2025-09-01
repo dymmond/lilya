@@ -82,6 +82,7 @@ nav:
   - context.md
   - authentication.md
   - logging.md
+  - serializers.md
   - security.md
   - threadpool.md
 - Features:

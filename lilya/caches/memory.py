@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-import json
-import logging
 import time
 from typing import Any
 
 from lilya._internal._encoders import json_encode
+from lilya.logging import logger
 from lilya.protocols.cache import CacheBackend
-
-logger = logging.getLogger(__name__)
+from lilya.serializers import serializer
 
 
 class InMemoryCache(CacheBackend):
@@ -92,7 +90,7 @@ class InMemoryCache(CacheBackend):
                 self.sync_delete(key)
                 return None
 
-            return json.loads(value)
+            return serializer.loads(value)
         except Exception as e:
             logger.exception(f"Cache get error: {e}")
             return None
@@ -113,7 +111,7 @@ class InMemoryCache(CacheBackend):
         """
         try:
             expiry = time.time() + ttl if ttl else None
-            self._store[key] = (json.dumps(json_encode(value)).encode("utf-8"), expiry)
+            self._store[key] = (serializer.dumps(json_encode(value)).encode("utf-8"), expiry)
         except Exception as e:
             logger.exception(f"Cache set error: {e}")
 

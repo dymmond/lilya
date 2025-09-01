@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import inspect
-import json
 from collections.abc import Callable, Coroutine, Generator
 from functools import cached_property
 from typing import Any, cast
@@ -13,6 +12,7 @@ from lilya.enums import Event, HTTPMethod, ScopeType, SignatureDefault
 from lilya.exceptions import HTTPException, ImproperlyConfigured
 from lilya.requests import Request
 from lilya.responses import PlainText, Response
+from lilya.serializers import serializer
 from lilya.types import Message, Receive, Scope, Send
 from lilya.websockets import WebSocket
 
@@ -230,8 +230,8 @@ class WebSocketController(BaseController):
             else message["bytes"].decode("utf-8")
         )
         try:
-            return json.loads(text)
-        except json.decoder.JSONDecodeError:
+            return serializer.loads(text)
+        except Exception:
             raise RuntimeError("Malformed JSON data received.") from None
 
     async def on_connect(self, websocket: WebSocket) -> None:
