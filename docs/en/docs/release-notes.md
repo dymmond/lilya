@@ -7,6 +7,25 @@ hide:
 
 ## 0.19.6
 
+### Changed
+
+- To make Lilya cleaner in the installation we have now separated the installation. The [Lilya native client](./lilya-cli.md)
+requires some additional packages and not everyone requires this or even desires but for those already using, the change is simple.
+
+#### Before
+
+```shell
+$ pip install lilya
+```
+
+#### After
+
+```shell
+$ pip install lilya[standard]
+```
+
+This brings the current behaviour of Lilya prior to version 0.19.6 and nothing changes.
+
 ### Added
 
 - `--version` attribute when running `createapp` directive allowing to generate a versioned scaffold.
