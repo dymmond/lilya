@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from base64 import b64decode, b64encode
 from collections import deque
 from collections.abc import Callable, Iterable, Sequence
@@ -14,8 +15,6 @@ from typing import Any, Generic, Protocol, TypeVar, cast, runtime_checkable
 from uuid import UUID
 
 from monkay import TransparentCage
-
-from lilya.conf import _monkay
 
 T = TypeVar("T")
 
@@ -312,8 +311,8 @@ def _exclude_none_recursively(obj: Any) -> Any:
 def json_encode(
     value: Any,
     *,
-    json_encode_fn: Callable[..., Any] | None = None,
-    post_transform_fn: Callable[[Any], Any] | None = None,
+    json_encode_fn: Callable[..., Any] | None = json.dumps,
+    post_transform_fn: Callable[[Any], Any] | None = json.loads,
     with_encoders: Sequence[EncoderProtocol | MoldingProtocol] | None = None,
     exclude_none: bool = False,
 ) -> Any:
@@ -339,12 +338,6 @@ def json_encode(
     Raises:
     ValueError: If the value is not serializable by any provided encoder type.
     """
-    if not json_encode_fn:
-        json_encode_fn = _monkay.settings.serializer_config.dumps
-
-    if not post_transform_fn:
-        post_transform_fn = _monkay.settings.serializer_config.loads
-
     if exclude_none:
         value = _exclude_none_recursively(value)
 
