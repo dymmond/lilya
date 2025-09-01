@@ -312,8 +312,8 @@ def _exclude_none_recursively(obj: Any) -> Any:
 def json_encode(
     value: Any,
     *,
-    json_encode_fn: Callable[..., Any] = _monkay.settings.serializer_config.dumps,
-    post_transform_fn: Callable[[Any], Any] | None = _monkay.settings.serializer_config.loads,
+    json_encode_fn: Callable[..., Any] | None = None,
+    post_transform_fn: Callable[[Any], Any] | None = None,
     with_encoders: Sequence[EncoderProtocol | MoldingProtocol] | None = None,
     exclude_none: bool = False,
 ) -> Any:
@@ -339,6 +339,12 @@ def json_encode(
     Raises:
     ValueError: If the value is not serializable by any provided encoder type.
     """
+    if not json_encode_fn:
+        json_encode_fn = _monkay.settings.serializer_config.dumps
+
+    if not post_transform_fn:
+        post_transform_fn = _monkay.settings.serializer_config.loads
+
     if exclude_none:
         value = _exclude_none_recursively(value)
 

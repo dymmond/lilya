@@ -198,7 +198,7 @@ template = "test"
 installer = "pip"
 
 [tool.hatch.envs.hatch-test.env-vars]
-LILYA_SETTINGS_MODULE = "tests.settings.TestSettings"
+LILYA_SETTINGS_MODULE = "tests.settings.AppTestSettings"
 
 [project.scripts]
 lilya = "lilya.__main__:run_cli"

@@ -20,7 +20,7 @@ class ORJSONSerializerConfig(SerializerConfig):
         return orjson
 
 
-class TestSettings(Settings):
+class AppTestSettings(Settings):
     debug: bool = True
     environment: str = EnvironmentType.TESTING.value
 

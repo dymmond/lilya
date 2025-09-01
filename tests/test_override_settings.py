@@ -13,7 +13,7 @@ def test_can_override_settings():
 
 @override_settings(environment="test_func")
 def test_name_of_settings():
-    assert settings.__class__.__name__ == "TestSettings"
+    assert settings.__class__.__name__ == "AppTestSettings"
 
 
 class TestInClass:
@@ -23,7 +23,7 @@ class TestInClass:
 
     @override_settings(environment="test_func")
     def test_name_of_settings(self):
-        assert settings.__class__.__name__ == "TestSettings"
+        assert settings.__class__.__name__ == "AppTestSettings"
 
 
 class TestInClassAsync:
@@ -33,4 +33,4 @@ class TestInClassAsync:
 
     @override_settings(environment="test_func")
     async def test_name_of_settings(self, test_client_factory):
-        assert settings.__class__.__name__ == "TestSettings"
+        assert settings.__class__.__name__ == "AppTestSettings"
