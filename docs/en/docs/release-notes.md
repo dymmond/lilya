@@ -7,6 +7,25 @@ hide:
 
 ## 0.19.6
 
+### Changed
+
+- To make Lilya cleaner in the installation we have now separated the installation. The [Lilya native client](./lilya-cli.md)
+requires some additional packages and not everyone requires this or even desires but for those already using, the change is simple.
+
+#### Before
+
+```shell
+$ pip install lilya
+```
+
+#### After
+
+```shell
+$ pip install lilya[standard]
+```
+
+This brings the current behaviour of Lilya prior to version 0.19.6 and nothing changes.
+
 ### Added
 
 - `--version` attribute when running `createapp` directive allowing to generate a versioned scaffold.
@@ -14,6 +33,7 @@ hide:
 - `--edgy` attribute to `createproject` allowing the generation of project scaffolds integrating Edgy ORM.
 - `exception` method to logging protocol.
 - `wrap_dependency` internal that will create a `Provide` in case a dependency is passed and no `Provide` is provided.
+- Add `Jinja2Templates` as alias to `Jinja2Template`.
 
 ## 0.19.5
 

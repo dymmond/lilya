@@ -62,6 +62,7 @@ Lilya comes bearing fruits.
 * Compatibility with `trio` and `asyncio`.
 * Dynamic routing system with the help of the native **Include** and minimum boilerplate.
 * Native settings system. No more bloated instances.
+* Native dependency injection that is extremely scalable, clean and fast.
 
 ## Installation
 
@@ -69,6 +70,12 @@ If you want just the toolkit/framework.
 
 ```shell
 $ pip install lilya
+```
+
+If you want the Lilya client (for scaffolds, and other useful tools)
+
+```shell
+$ pip install lilya[standard]
 ```
 
 If you wish to use to extra functionalities such as the **shell** or **directives**

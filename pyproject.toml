@@ -40,8 +40,6 @@ dependencies = [
     "anyio>=3.4.0,<5",
     "multidict>=6.0.4,<7.0.0",
     "typing_extensions>=3.10.0; python_version < '3.11'",
-    "rich_toolkit>=0.14.7",
-    "sayer>=0.3.4,<1.0.0",
     "monkay>=0.4.0",
 ]
 keywords = ["lilya"]
@@ -55,21 +53,40 @@ Source = "https://github.com/dymmond/lilya"
 
 [project.optional-dependencies]
 all = [
-    "click>=8.1.7,<9.0.0",
+    # The templating engine
     "jinja2>=3.1.3",
-    "rich>=13.7.0,<15.0.0",
+    # Used for the runserver CLI command
+    "rich_toolkit>=0.14.7",
+    # The base client for Lilya
+    "sayer>=0.3.4,<1.0.0",
+    # The server for runserver command
     "uvicorn[standard]>=0.29.0",
+    # HTTP client for Lilya
     "httpx>=0.22.0",
+    # For the shell support in the CLI
     "ipython",
     "ptpython",
-    "rich-toolkit>=0.14.7",
 ]
 
 cli = [
-    "click>=8.1.7,<9.0.0",
+    # The templating engine
     "jinja2>=3.1.3",
-    "rich>=13.7.0,<15.0.0",
-    "rich-toolkit>=0.14.7",
+    # Used for the runserver CLI command
+    "rich_toolkit>=0.14.7",
+    # The base client for Lilya
+    "sayer>=0.3.4,<1.0.0",
+    # The server for runserver command
+    "uvicorn[standard]>=0.29.0",
+]
+
+standard = [
+    # The templating engine
+    "jinja2>=3.1.3",
+    # Used for the runserver CLI command
+    "rich_toolkit>=0.14.7",
+    # The base client for Lilya
+    "sayer>=0.3.4,<1.0.0",
+    # The server for runserver command
     "uvicorn[standard]>=0.29.0",
 ]
 

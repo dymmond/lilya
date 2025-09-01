@@ -229,3 +229,6 @@ class Jinja2Template:
             template=self, render_function_name="render_async" if self.env.is_async else "render"
         )
         return template_renderer(*args, **kwargs)
+
+
+Jinja2Templates = Jinja2Template  # Alias for backward compatibility

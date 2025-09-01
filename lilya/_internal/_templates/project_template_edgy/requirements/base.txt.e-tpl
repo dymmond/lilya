@@ -1,4 +1,4 @@
-lilya>={{ lilya_version }}
+lilya[standard]>={{ lilya_version }}
 edgy[postgres]
 gunicorn
 uvicorn
