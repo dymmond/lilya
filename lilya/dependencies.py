@@ -1,7 +1,7 @@
 import inspect
 import sys
 from collections.abc import Callable, Sequence
-from functools import cached_property
+from functools import cached_property, lru_cache
 from types import GeneratorType
 from typing import Any, cast
 
@@ -18,11 +18,30 @@ else:
     from typing_extensions import Self
 
 
+@lru_cache(maxsize=1024)
+def wrap_dependency(
+    dependency: Callable[..., Any],
+    *args: Any,
+    use_cache: bool = False,
+    **kwargs: Any,
+) -> "Provide":
+    """
+    Wraps a dependency factory callable. When resolved, it inspects
+    the factory's own signature and recursively resolves any nested
+    Provide instances you've registered.
+    """
+    if not isinstance(dependency, Provide):
+        if not callable(dependency):
+            return Provide(lambda: dependency, *args, use_cache=use_cache, **kwargs)  # type: ignore
+        return Provide(dependency, *args, use_cache=use_cache, **kwargs)
+    return dependency  # type: ignore
+
+
 class Provide:
     """
     Wraps a dependency factory callable. When resolved, it inspects
-    the factory’s own signature and recursively resolves any nested
-    Provide instances you’ve registered.
+    the factory's own signature and recursively resolves any nested
+    Provide instances you've registered.
     """
 
     def __init__(

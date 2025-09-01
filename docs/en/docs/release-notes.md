@@ -12,7 +12,8 @@ hide:
 - `--version` attribute when running `createapp` directive allowing to generate a versioned scaffold.
 - `--location` attribute when using `createapp` and `createproject` directive allowing to specify the location to be created.
 - `--edgy` attribute to `createproject` allowing the generation of project scaffolds integrating Edgy ORM.
-- `exception` method to logging protocol
+- `exception` method to logging protocol.
+- `wrap_dependency` internal that will create a `Provide` in case a dependency is passed and no `Provide` is provided.
 
 ## 0.19.5
 

@@ -12,6 +12,7 @@ from lilya.conf import _monkay, settings as lilya_settings  # noqa
 from lilya.conf.exceptions import FieldException
 from lilya.conf.global_settings import Settings
 from lilya.datastructures import State, URLPath
+from lilya.dependencies import wrap_dependency
 from lilya.logging import LoggingConfig, setup_logging
 from lilya.middleware.asyncexit import AsyncExitStackMiddleware
 from lilya.middleware.base import DefineMiddleware
@@ -1018,7 +1019,10 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
         self.after_request_callbacks = (
             self.load_settings_value("after_request", after_request) or []
         )
-        self.dependencies = self.load_settings_value("dependencies", dependencies) or {}
+
+        # Wrap dependencies
+        _dependencies = self.load_settings_value("dependencies", dependencies) or {}
+        self.dependencies = {key: wrap_dependency(dep) for key, dep in _dependencies.items()}
 
         self.logging_config = self.load_settings_value("logging_config", logging_config)
         self.state = State()

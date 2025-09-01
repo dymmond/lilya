@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from functools import lru_cache
 from typing import Any, cast
 
 from lilya.middleware.base import DefineMiddleware
 
 
+@lru_cache(maxsize=1024)
 def wrap_middleware(
     middleware: DefineMiddleware | Any,
 ) -> DefineMiddleware:
