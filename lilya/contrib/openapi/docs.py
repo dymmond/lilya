@@ -1,7 +1,7 @@
-import json
 from typing import Any
 
 from lilya.responses import HTMLResponse
+from lilya.serializers import serializer
 
 swagger_ui_default_parameters = {
     "dom_id": "#swagger-ui",
@@ -46,7 +46,7 @@ def get_swagger_ui_html(
     """
 
     for key, value in current_swagger_ui_parameters.items():
-        html += f"{json.dumps(key)}: {json.dumps(value)},\n"
+        html += f"{serializer.dumps(key)}: {serializer.dumps(value)},\n"
 
     if oauth2_redirect_url:
         html += f"oauth2RedirectUrl: window.location.origin + '{oauth2_redirect_url}',"
@@ -60,7 +60,7 @@ def get_swagger_ui_html(
 
     if init_oauth:
         html += f"""
-        ui.initOAuth({json.dumps(init_oauth)})
+        ui.initOAuth({serializer.dumps(init_oauth)})
         """
 
     html += """

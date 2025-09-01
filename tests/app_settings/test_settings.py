@@ -7,6 +7,7 @@ import pytest
 
 from lilya.conf.global_settings import Settings
 from lilya.protocols.cache import CacheBackend
+from tests.settings import ORJSONSerializerConfig, TestSettings
 
 
 class FileBackend(CacheBackend):
@@ -206,3 +207,10 @@ def test_tuple_with_properties():
     t = settings.tuple(include_properties=False)
     assert ("custom_property", "custom_value") not in t
     assert ("cached_property_example", "cached_value") not in t
+
+
+def test_serializer_config():
+    class CustomSettings(TestSettings): ...
+
+    settings = CustomSettings()
+    assert isinstance(settings.serializer_config, ORJSONSerializerConfig)

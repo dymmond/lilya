@@ -29,6 +29,7 @@ from lilya.protocols.permissions import PermissionProtocol
 from lilya.requests import Request
 from lilya.responses import Response
 from lilya.routing import BasePath, Include, Router, RoutingMethodsMixin
+from lilya.serializers import SerializerConfig, setup_serializer
 from lilya.types import (
     ApplicationType,
     ASGIApp,
@@ -904,6 +905,15 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
                 """
             ),
         ] = None,
+        serializer_config: Annotated[
+            SerializerConfig | None,
+            Doc(
+                """
+                A custom SerializerConfig instance to override defaults if provided.
+                Read more about [Serializers](https://lilya.dev/serializers/).
+                """
+            ),
+        ] = None,
         populate_global_context: Annotated[
             Callable[[Connection], dict[str, Any] | Awaitable[dict[str, Any]]] | None,
             Doc(
@@ -1025,6 +1035,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
         self.dependencies = {key: wrap_dependency(dep) for key, dep in _dependencies.items()}
 
         self.logging_config = self.load_settings_value("logging_config", logging_config)
+        self.serializer_config = self.load_settings_value("serializer_config", serializer_config)
         self.state = State()
         self.middleware_stack: ASGIApp | None = None
         self.enable_openapi = self.load_settings_value(
@@ -1052,6 +1063,9 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
 
         if self.logging_config is not None:
             setup_logging(self.logging_config)
+
+        if self.serializer_config is None:
+            setup_serializer(self.serializer_config)
 
         if self.enable_openapi:
             self.configure_openapi(self.openapi_config)

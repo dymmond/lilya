@@ -1,4 +1,3 @@
-import json
 from collections.abc import Callable, Mapping
 from dataclasses import asdict, dataclass
 from typing import Any
@@ -9,6 +8,7 @@ from lilya.exceptions import HTTPException
 from lilya.protocols.middleware import MiddlewareProtocol
 from lilya.requests import Request
 from lilya.responses import Response
+from lilya.serializers import serializer
 from lilya.types import ASGIApp, Receive, Scope, Send
 
 
@@ -111,7 +111,7 @@ class LilyaExceptionMiddleware(MiddlewareProtocol):
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
             headers = {}
 
-        body = json.dumps(content.dict(exclude_none=True))
+        body = serializer.dumps(content.dict(exclude_none=True))
         return Response(
             content=body,
             media_type=MediaType.JSON,

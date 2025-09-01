@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import inspect
-import json
 from collections.abc import AsyncIterator, Callable, Iterable
 from typing import Any, cast
 
 from lilya._internal._connection import Connection
 from lilya.enums import Event, MessageMode, ScopeType, WebSocketState
 from lilya.exceptions import WebSocketRuntimeError
+from lilya.serializers import serializer
 from lilya.types import Message, Receive, Scope, Send
 
 
@@ -155,7 +155,7 @@ class WebSocket(WebsocketMixin):
             text = message["text"]
         else:
             text = message["bytes"].decode("utf-8")
-        return json.loads(text)
+        return serializer.loads(text)
 
     async def iter_text(self) -> AsyncIterator[str]:
         try:
@@ -188,7 +188,7 @@ class WebSocket(WebsocketMixin):
         if mode not in {MessageMode.TEXT, MessageMode.BINARY}:
             raise WebSocketRuntimeError('The "mode" argument should be "text" or "binary".')
 
-        text = json.dumps(data, separators=(",", ":"), ensure_ascii=False)
+        text = serializer.dumps(data, separators=(",", ":"), ensure_ascii=False)
 
         (
             await self.send({"type": Event.WEBSOCKET_SEND, "text": text})
