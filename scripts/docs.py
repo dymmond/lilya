@@ -264,7 +264,7 @@ def serve(port: int) -> None:
 @cli.command()
 @click.option("-l", "--lang", default="en", help="The language code. Defaults to 'en'.")
 @click.option(
-    "-p", "--port", default=8000, help="The port to serve the documentation. Defaults to 8000."
+    "-p", "--port", default=9000, help="The port to serve the documentation. Defaults to 8000."
 )
 def live(lang: str, port: int) -> None:
     """

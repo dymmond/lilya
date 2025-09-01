@@ -58,7 +58,7 @@ class SerializerConfig(ABC):
         **kwargs: Any,
     ) -> None:
         self.options = kwargs
-        self.skip_setup_configure: bool = kwargs.get("skip_setup_configure", False)
+        self.skip_setup_configure: bool = kwargs.get("skip_setup_configure", True)
 
     def configure(self) -> None:
         """
