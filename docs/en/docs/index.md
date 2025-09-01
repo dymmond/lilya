@@ -68,6 +68,7 @@ Lilya comes bearing fruits.
 * Dynamic routing system with the help of the native **Include** and minimum boilerplate.
 * Native settings system. No more bloated instances.
 * Native dependency injection that is extremely scalable, clean and fast.
+* Dynamic, native and fast custom serializers.
 
 ## Installation
 

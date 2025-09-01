@@ -7,6 +7,16 @@ hide:
 
 ## 0.19.6
 
+### Added
+
+- `--version` attribute when running `createapp` directive allowing to generate a versioned scaffold.
+- `--location` attribute when using `createapp` and `createproject` directive allowing to specify the location to be created.
+- `--edgy` attribute to `createproject` allowing the generation of project scaffolds integrating Edgy ORM.
+- `exception` method to logging protocol.
+- `wrap_dependency` internal that will create a `Provide` in case a dependency is passed and no `Provide` is provided.
+- Add `Jinja2Templates` as alias to `Jinja2Template`.
+- New dynamic, native and fast custom [serializers](./serializers.md).
+
 ### Changed
 
 - To make Lilya cleaner in the installation we have now separated the installation. The [Lilya native client](./lilya-cli.md)
@@ -25,15 +35,6 @@ $ pip install lilya[standard]
 ```
 
 This brings the current behaviour of Lilya prior to version 0.19.6 and nothing changes.
-
-### Added
-
-- `--version` attribute when running `createapp` directive allowing to generate a versioned scaffold.
-- `--location` attribute when using `createapp` and `createproject` directive allowing to specify the location to be created.
-- `--edgy` attribute to `createproject` allowing the generation of project scaffolds integrating Edgy ORM.
-- `exception` method to logging protocol.
-- `wrap_dependency` internal that will create a `Provide` in case a dependency is passed and no `Provide` is provided.
-- Add `Jinja2Templates` as alias to `Jinja2Template`.
 
 ## 0.19.5
 
