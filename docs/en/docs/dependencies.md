@@ -31,6 +31,20 @@ Options:
 
 * `use_cache=True/False` (default `False`): cache the factory result for the lifetime of a request.
 
+#### Without `Provide`
+
+Lilya also allows you to pass without `Provide` and internally it will wrap it in a `Provide` object
+for you.
+
+This of course comes with its limitations. The flags such as `use_cache` cannot be injected as if you declare
+`Provide` directly.
+
+Is this useful? It it on a case by case basis but it shows once again how flexible Lilya can be.
+
+```python
+{!> ../../../docs_src/dependencies/example1_no_provide.py !}
+```
+
 ### `Provides`
 
 Use in your handler signature to declare that a parameter should be injected:

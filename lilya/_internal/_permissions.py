@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from functools import lru_cache
 from typing import Any, cast
 
 from lilya.permissions.base import DefinePermission
 
 
+@lru_cache(maxsize=1024)
 def wrap_permission(
     permission: DefinePermission | Any,
 ) -> DefinePermission:

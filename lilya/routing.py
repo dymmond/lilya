@@ -27,6 +27,7 @@ from lilya.concurrency import run_in_threadpool
 from lilya.conf import _monkay
 from lilya.conf.global_settings import Settings
 from lilya.datastructures import URL, Header, ScopeHandler, SendReceiveSniffer, URLPath
+from lilya.dependencies import wrap_dependency
 from lilya.enums import EventType, HTTPMethod, Match, ScopeType
 from lilya.exceptions import ContinueRouting, HTTPException, ImproperlyConfigured
 from lilya.middleware.base import DefineMiddleware
@@ -338,7 +339,10 @@ class Path(BaseHandler, BasePath):
         self.include_in_schema = include_in_schema
         self.methods: list[str] | None = methods
         self.deprecated = deprecated
-        self.dependencies = dependencies if dependencies is not None else {}
+
+        # Wrap dependencies
+        _dependencies = dependencies if dependencies is not None else {}
+        self.dependencies = {key: wrap_dependency(dep) for key, dep in _dependencies.items()}
 
         # Defition of the app
         self.__handler_app__ = handler
@@ -645,9 +649,12 @@ class WebSocketPath(BaseHandler, BasePath):
         self.handler = handler
         self.name = get_name(handler) if name is None else name
         self.include_in_schema = include_in_schema
-        self.dependencies = dependencies if dependencies is not None else {}
 
-        # Defition of the app
+        # Wrap dependencies
+        _dependencies = dependencies if dependencies is not None else {}
+        self.dependencies = {key: wrap_dependency(dep) for key, dep in _dependencies.items()}
+
+        # Definition of the app
         self.__handler_app__ = handler
         while isinstance(self.__handler_app__, functools.partial):
             self.__handler_app__ = self.__handler_app__.func
@@ -905,6 +912,7 @@ class Host(BasePath):
         *,
         middleware: Sequence[DefineMiddleware] | None = None,
         permissions: Sequence[DefinePermission] | None = None,
+        dependencies: Dependencies | None = None,
         exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
         before_request: Sequence[Callable[..., Any]] | None = None,
         after_request: Sequence[Callable[..., Any]] | None = None,
@@ -918,6 +926,10 @@ class Host(BasePath):
         )
         self.middleware = middleware if middleware is not None else []
         self.permissions = permissions if permissions is not None else []
+
+        # Wrap dependencies
+        _dependencies = dependencies if dependencies is not None else {}
+        self.dependencies = {key: wrap_dependency(dep) for key, dep in _dependencies.items()}
         self.exception_handlers = {} if exception_handlers is None else dict(exception_handlers)
 
         self.wrapped_permissions = [
@@ -1195,7 +1207,10 @@ class BaseRouter:
 
         self.on_startup = [] if on_startup is None else list(on_startup)
         self.on_shutdown = [] if on_shutdown is None else list(on_shutdown)
-        self.dependencies = dependencies if dependencies is not None else {}
+
+        # Wrap dependencies
+        _dependencies = dependencies if dependencies is not None else {}
+        self.dependencies = {key: wrap_dependency(dep) for key, dep in _dependencies.items()}
 
         self.lifespan_context = handle_lifespan_events(
             on_startup=on_startup, on_shutdown=on_shutdown, lifespan=lifespan
@@ -2277,9 +2292,12 @@ class Include(BasePath):
         self.exception_handlers = {} if exception_handlers is None else dict(exception_handlers)
 
         if dependencies is None and hasattr(self.__base_app__, "dependencies"):
-            self.dependencies = self.__base_app__.dependencies or {}
+            _dependencies = self.__base_app__.dependencies or {}
         else:
-            self.dependencies = dependencies or {}
+            _dependencies = dependencies or {}
+
+        # Wrap dependencies
+        self.dependencies = {key: wrap_dependency(dep) for key, dep in _dependencies.items()}
 
         self.wrapped_permissions = [
             wrap_permission(permission) for permission in permissions or []
