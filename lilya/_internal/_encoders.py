@@ -311,7 +311,7 @@ def _exclude_none_recursively(obj: Any) -> Any:
 def json_encode(
     value: Any,
     *,
-    json_encode_fn: Callable[..., Any] = json.dumps,
+    json_encode_fn: Callable[..., Any] | None = json.dumps,
     post_transform_fn: Callable[[Any], Any] | None = json.loads,
     with_encoders: Sequence[EncoderProtocol | MoldingProtocol] | None = None,
     exclude_none: bool = False,

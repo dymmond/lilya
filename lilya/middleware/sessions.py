@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from base64 import b64decode, b64encode
 from collections.abc import Awaitable, Callable
 from inspect import isawaitable
@@ -13,6 +12,7 @@ from lilya._internal._connection import Connection
 from lilya.datastructures import Header, Secret
 from lilya.enums import ScopeType
 from lilya.protocols.middleware import MiddlewareProtocol
+from lilya.serializers import serializer
 from lilya.types import ASGIApp, Message, Receive, Scope, Send
 
 
@@ -27,8 +27,8 @@ class SessionMiddleware(MiddlewareProtocol):
         same_site: Literal["lax", "strict", "none"] = "lax",
         https_only: bool = False,
         domain: str | None = None,
-        session_serializer: Callable[[Any], bytes | str] = json.dumps,
-        session_deserializer: Callable[[bytes], Any] = json.loads,
+        session_serializer: Callable[[Any], bytes | str] = serializer.dumps,
+        session_deserializer: Callable[[bytes], Any] = serializer.loads,
         populate_session: Callable[[Connection], dict[str, Any] | Awaitable[dict[str, Any]]]
         | None = None,
     ) -> None:

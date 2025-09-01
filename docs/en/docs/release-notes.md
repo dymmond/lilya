@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.19.7
+
+### Changed
+
+- `Encoders` use the native `lilya.serializers.serializer` object instead of direct `json`.
+
 ## 0.19.6
 
 ### Added

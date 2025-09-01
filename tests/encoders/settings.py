@@ -8,7 +8,7 @@ from lilya.exceptions import HTTPException
 from lilya.requests import Request
 from lilya.responses import JSONResponse
 from lilya.types import ExceptionHandler
-from tests.settings import TestSettings
+from tests.settings import AppTestSettings
 
 
 async def validation_error_exception_handler(
@@ -28,7 +28,7 @@ async def http_exception(request, exc):
     return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
 
 
-class EncoderSettings(TestSettings):
+class EncoderSettings(AppTestSettings):
     infer_body: bool = True
 
     @property
