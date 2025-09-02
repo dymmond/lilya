@@ -74,6 +74,27 @@ class SerializerConfig(ABC):
         raise NotImplementedError("`get_serializer()` must be implemented in subclasses.")
 
 
+class CompactSerializer:
+    load = json.load
+    loads = json.loads
+
+    @staticmethod
+    def dump(obj: Any, **kwargs: Any) -> None:
+        kwargs.setdefault("ensure_ascii", False)
+        kwargs.setdefault("allow_nan", False)
+        kwargs.setdefault("indent", None)
+        kwargs.setdefault("separators", (",", ":"))
+        json.dump(obj, **kwargs)
+
+    @staticmethod
+    def dumps(obj: Any, **kwargs: Any) -> str:
+        kwargs.setdefault("ensure_ascii", False)
+        kwargs.setdefault("allow_nan", False)
+        kwargs.setdefault("indent", None)
+        kwargs.setdefault("separators", (",", ":"))
+        return json.dumps(obj, **kwargs)
+
+
 class StandardSerializerConfig(SerializerConfig):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
@@ -81,7 +102,7 @@ class StandardSerializerConfig(SerializerConfig):
     def configure(self) -> None: ...
 
     def get_serializer(self) -> Any:
-        return json
+        return CompactSerializer
 
 
 def setup_serializer(serializer_config: SerializerConfig | None = None) -> None:
