@@ -349,6 +349,7 @@ class JSONResponse(Response):
             new_params = new_params.copy()
         else:
             new_params = {}
+        # FIXME: use the new serializer
         new_params.setdefault(
             "json_encode_fn",
             functools.partial(

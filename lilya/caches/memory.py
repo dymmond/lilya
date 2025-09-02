@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import time
-from typing import Any
+from contextlib import suppress
+from typing import Any, cast
 
 from lilya._internal._encoders import json_encode
 from lilya.logging import logger
@@ -110,8 +111,11 @@ class InMemoryCache(CacheBackend):
             Exception: If an error occurs while serializing or storing the value.
         """
         try:
+            data: bytes = json_encode(value, post_transform_fn=None)
+            with suppress(AttributeError):
+                data = cast(str, data).encode("utf-8")
             expiry = time.time() + ttl if ttl else None
-            self._store[key] = (serializer.dumps(json_encode(value)).encode("utf-8"), expiry)
+            self._store[key] = (data, expiry)
         except Exception as e:
             logger.exception(f"Cache set error: {e}")
 
