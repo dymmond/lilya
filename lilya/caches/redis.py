@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any
+from contextlib import suppress
+from typing import Any, cast
 
 import anyio
 import anyio.from_thread
@@ -101,10 +102,9 @@ class RedisCache(CacheBackend):
             value (Any): The value to be cached.
             ttl (int | None, optional): Time-to-live in seconds. If `None`, the value never expires.
         """
-        try:
-            data: bytes = serializer.dumps(json_encode(value)).encode("utf-8")
-        except AttributeError:
-            data = serializer.dumps(json_encode(value))
+        data: bytes = json_encode(value, post_transform_fn=None)
+        with suppress(AttributeError):
+            data = cast(str, data).encode("utf-8")
 
         if ttl:
             await self.async_client.setex(key, ttl, data)

@@ -147,7 +147,7 @@ class BaseHandler:
         return app
 
     async def _handle_response_content(
-        self, app: ASGIApp, scope: Scope, receive: Receive, send: Send
+        self, app: ASGIApp | Any, scope: Scope, receive: Receive, send: Send
     ) -> None:
         """
         Generates the app response, ensuring it is in the form of an ASGI application.
