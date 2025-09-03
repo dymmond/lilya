@@ -7,6 +7,14 @@ hide:
 
 ## 0.19.7
 
+### Added
+
+- Compact json for the serializers.
+
+### Fixed
+
+- `Query` parsing was overriding the default.
+
 ### Changed
 
 - `Encoders` use the native `lilya.serializers.serializer` object instead of direct `json`.

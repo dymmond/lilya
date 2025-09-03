@@ -206,3 +206,39 @@ def test_query_none_default(test_client_factory):
     ) as client:
         response = client.get("/")
         assert response.json() == {"q": None}
+
+
+def test_parse_bool_true(test_client_factory):
+    class BoolController(Controller):
+        async def get(
+            self, flag: Query = Query(default=True, cast=bool, description="A boolean flag")
+        ):
+            return {"flag": flag}
+
+    with create_client(routes=[Path("/", BoolController)]) as client:
+        response = client.get("/?flag=true")
+        assert response.json() == {"flag": True}
+
+        response = client.get("/?flag=false")
+        assert response.json() == {"flag": False}
+
+        response = client.get("/")
+        assert response.json() == {"flag": True}
+
+
+def test_parse_bool_false(test_client_factory):
+    class BoolController(Controller):
+        async def get(
+            self, flag: Query = Query(default=False, cast=bool, description="A boolean flag")
+        ):
+            return {"flag": flag}
+
+    with create_client(routes=[Path("/", BoolController)]) as client:
+        response = client.get("/?flag=true")
+        assert response.json() == {"flag": True}
+
+        response = client.get("/?flag=false")
+        assert response.json() == {"flag": False}
+
+        response = client.get("/")
+        assert response.json() == {"flag": False}

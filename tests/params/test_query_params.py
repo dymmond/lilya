@@ -22,12 +22,9 @@ def test_query_for_boolean(test_client_factory):
     query = Query(default="false")
     query.resolve(query.default, bool)
 
-    assert query.default is False
-
     query = Query(default="true", cast=bool)
-    query.resolve(query.default, bool)
 
-    assert query.default is True
+    assert query.resolve(query.default, bool) is True
 
 
 async def inject_query_param_bool(name: str, by_me: int = Query(cast=bool)):
@@ -210,3 +207,37 @@ def test_query_none_default(test_client_factory):
     with create_client(routes=[Path("/", null_param)], settings_module=EncoderSettings) as client:
         response = client.get("/")
         assert response.json() == {"q": None}
+
+
+def test_parse_bool_true(test_client_factory):
+    async def bool_param(
+        flag: Query = Query(default=True, cast=bool, description="A boolean flag"),
+    ):
+        return {"flag": flag}
+
+    with create_client(routes=[Path("/", bool_param)]) as client:
+        response = client.get("/?flag=true")
+        assert response.json() == {"flag": True}
+
+        response = client.get("/?flag=false")
+        assert response.json() == {"flag": False}
+
+        response = client.get("/")
+        assert response.json() == {"flag": True}
+
+
+def test_parse_bool_false(test_client_factory):
+    async def bool_param(
+        flag: Query = Query(default=False, cast=bool, description="A boolean flag"),
+    ):
+        return {"flag": flag}
+
+    with create_client(routes=[Path("/", bool_param)]) as client:
+        response = client.get("/?flag=true")
+        assert response.json() == {"flag": True}
+
+        response = client.get("/?flag=false")
+        assert response.json() == {"flag": False}
+
+        response = client.get("/")
+        assert response.json() == {"flag": False}
