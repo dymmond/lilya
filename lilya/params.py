@@ -6,11 +6,12 @@ from typing import Any
 class BaseParam:
     def __cast__(self, value: Any, cast: type) -> Any:
         try:
-            value = (
-                str(value).lower() in ("true", "1", "yes", "on", "t")
-                if cast is bool
-                else cast(value)
-            )
+            if str(value).lower() in ("true", "1", "yes", "on", "t") and cast is bool:
+                value = True
+            elif str(value).lower() in ("false", "0", "no", "off", "f") and cast is bool:
+                value = False
+            else:
+                value = cast(value)
         except Exception:
             raise
         return value
@@ -25,8 +26,7 @@ class Query(BaseParam):
     description: str | None = None
 
     def resolve(self, value: Any, cast: type) -> Any:
-        self.default = self.__cast__(value, cast) if cast else value
-        return self.default
+        return self.__cast__(value, cast) if cast else value
 
 
 @dataclass
