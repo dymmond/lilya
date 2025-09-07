@@ -23,7 +23,7 @@ class LoggerProxy:
             self._logger = logger
 
     def __getattr__(self, item: str) -> Any:
-        # try to avoid acquiring a mutex which harms performance
+        # try to avoid acquiring a mutex (harms performance)
         if not self._logger:
             with self._lock:
                 # recheck
