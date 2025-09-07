@@ -374,7 +374,7 @@ class RedirectResponse(Response):
     def __init__(
         self,
         url: str | URL,
-        status_code: int = status.HTTP_307_TEMPORARY_REDIRECT,
+        status_code: int = status.HTTP_303_SEE_OTHER,
         headers: Mapping[str, str] | None = None,
         background: Task | None = None,
         encoders: Sequence[Encoder | type[Encoder]] | None = None,
