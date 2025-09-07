@@ -23,11 +23,13 @@ class LoggerProxy:
             self._logger = logger
 
     def __getattr__(self, item: str) -> Any:
-        with self._lock:
-            if not self._logger:
-                setup_logging()
-                return getattr(self._logger, item)
-            return getattr(self._logger, item)
+        # try to avoid acquiring a mutex which harms performance
+        if not self._logger:
+            with self._lock:
+                # recheck
+                if not self._logger:
+                    setup_logging()
+        return getattr(self._logger, item)
 
 
 logger: LoggerProtocol = cast(LoggerProtocol, LoggerProxy())
@@ -94,7 +96,7 @@ class LoggingConfig(ABC):
 class StandardLoggingConfig(LoggingConfig):
     def __init__(self, config: dict[str, Any] | None = None, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.config = config or self.default_config()
+        self.config = config if config is not None else self.default_config()
 
     def default_config(self) -> dict[str, Any]:  # noqa
         return {
@@ -146,7 +148,7 @@ def setup_logging(logging_config: LoggingConfig | None = None) -> None:
     if logging_config is not None and not isinstance(logging_config, LoggingConfig):
         raise ValueError("`logging_config` must be an instance of LoggingConfig.")
 
-    config = logging_config or StandardLoggingConfig()
+    config = logging_config if logging_config is not None else StandardLoggingConfig()
 
     if not config.skip_setup_configure:
         config.configure()
