@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.19.8
+
+### Changed
+
+- `RedirectResponse` default from 307 to `HTTP_303_SEE_OTHER`.
+
 ## 0.19.7
 
 ### Added
