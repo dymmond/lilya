@@ -34,6 +34,20 @@ of getting the path parameters.
 * Lilya auto discovers and injects them for you.
 * You get them from the [request](./requests.md) object.
 
+The `handler` parameter of a `Path` and `WebSocketPath` allows also to pass a `str` as parameter and Lilya will
+import it for you.
+
+**Example**
+
+Imagine the handler is inside a `myapp/accounts/controllers.py` and its called `welcome`. This
+would be possible to do it like this:
+
+```python
+Path("/welcome", "myapp.accounts.controllers.welcome")
+```
+
+The same is applied to WebSocketPath.
+
 #### Auto discovering the parameters
 
 This is probably the easiest and simplest way.
