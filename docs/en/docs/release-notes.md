@@ -15,6 +15,10 @@ hide:
 
 - `RedirectResponse` default from 307 to `HTTP_303_SEE_OTHER`.
 
+### Fixed
+
+- Runserver when no autodiscovery was enabled.
+
 ## 0.19.7
 
 ### Added
