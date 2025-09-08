@@ -319,7 +319,7 @@ class Path(BaseHandler, BasePath):
     def __init__(
         self,
         path: str,
-        handler: Callable[..., Any],
+        handler: Callable[..., Any] | str,
         *,
         methods: list[str] | None = None,
         name: str | None = None,
@@ -334,7 +334,9 @@ class Path(BaseHandler, BasePath):
     ) -> None:
         assert path.startswith("/"), "Paths must start with '/'"
         self.path = clean_path(path)
+        handler = import_string(handler) if isinstance(handler, str) else handler
         self.handler = handler
+
         self.name = get_name(handler) if name is None else name
         self.include_in_schema = include_in_schema
         self.methods: list[str] | None = methods
@@ -632,7 +634,7 @@ class WebSocketPath(BaseHandler, BasePath):
     def __init__(
         self,
         path: str,
-        handler: Callable[..., Any],
+        handler: Callable[..., Any] | str,
         *,
         name: str | None = None,
         include_in_schema: bool = True,
@@ -646,7 +648,9 @@ class WebSocketPath(BaseHandler, BasePath):
         assert path.startswith("/"), "Paths must start with '/'"
         self.path = clean_path(path)
 
+        handler = import_string(handler) if isinstance(handler, str) else handler
         self.handler = handler
+
         self.name = get_name(handler) if name is None else name
         self.include_in_schema = include_in_schema
 

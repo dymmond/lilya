@@ -7,6 +7,10 @@ hide:
 
 ## 0.19.8
 
+### Added
+
+- Allow using `str` as `handler` param for the `Path` and `WebsocketPath` as alternative.
+
 ### Changed
 
 - `RedirectResponse` default from 307 to `HTTP_303_SEE_OTHER`.
