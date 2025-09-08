@@ -189,9 +189,8 @@ class DirectiveEnv:
             folder_path = cwd / folder
             scaffold = self._find_app_in_folder(folder_path, cwd)
 
-            if not scaffold:
-                continue
-            break
+            if scaffold:
+                break
 
         if not scaffold:
             raise EnvError("Could not find a Lilya application.")

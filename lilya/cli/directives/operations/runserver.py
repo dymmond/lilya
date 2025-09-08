@@ -139,21 +139,20 @@ def runserver(
         toolkit.print(f"Importing module '{env.path}'", tag="Lilya")
         toolkit.print_line()
 
-        root_tree = get_app_tree(
-            env.module_info.module_paths, discovery_file=env.module_info.discovery_file
-        )
-
-        toolkit.print(root_tree, tag="module")
-        toolkit.print_line()
-
-        toolkit.print(
-            "The [bold]Lilya[/bold] object is imported using the following code:",
-            tag="code",
-        )
-        toolkit.print(
-            f"[underline]from [bold]{env.module_info.module_import[0]}[/bold] import [bold]{env.module_info.module_import[1]}[/bold]",
-            tag=env.module_info.module_import[1],
-        )
+        if env.module_info.module_paths:
+            root_tree = get_app_tree(
+                env.module_info.module_paths, discovery_file=env.module_info.discovery_file
+            )
+            toolkit.print(root_tree, tag="module")
+            toolkit.print_line()
+            toolkit.print(
+                "The [bold]Lilya[/bold] object is imported using the following code:",
+                tag="code",
+            )
+            toolkit.print(
+                f"[underline]from [bold]{env.module_info.module_import[0]}[/bold] import [bold]{env.module_info.module_import[1]}[/bold]",
+                tag=env.module_info.module_import[1],
+            )
 
         url = f"http://{host}:{port}"
         docs = f"http://{host}:{port}/docs/swagger"
