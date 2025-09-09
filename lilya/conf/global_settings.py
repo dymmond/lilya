@@ -488,6 +488,14 @@ class Settings(Internal):
             """
         ),
     ] = ""
+    redirect_slashes: Annotated[
+        bool,
+        Doc(
+            """
+            Enable or disable automatic trailing slash redirection for HTTP routes.
+            """
+        ),
+    ] = True
 
     @property
     def routes(self) -> list[Any]:
