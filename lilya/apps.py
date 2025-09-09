@@ -867,13 +867,13 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
             ),
         ] = None,
         redirect_slashes: Annotated[
-            bool,
+            bool | None,
             Doc(
                 """
                 Enable or disable automatic trailing slash redirection for HTTP routes.
                 """
             ),
-        ] = True,
+        ] = None,
         lifespan: Annotated[
             Lifespan[ApplicationType] | None,
             Doc(
@@ -886,7 +886,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
             ),
         ] = None,
         include_in_schema: Annotated[
-            bool,
+            bool | None,
             Doc(
                 """
                 Enable or disable inclusion of the application in a OpenAPI schema integration.
@@ -896,7 +896,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
                     flags that can be used for any possible integration.
                 """
             ),
-        ] = True,
+        ] = None,
         logging_config: Annotated[
             LoggingConfig | None,
             Doc(
@@ -951,7 +951,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
                 Enable or disable OpenAPI documentation generation. Defaults to False.
                 """
             ),
-        ] = False,
+        ] = None,
         openapi_config: Annotated[
             Any | None,
             Doc(
@@ -970,7 +970,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
                 With this flag enable, Lilya custom middleware activates those.
                 """
             ),
-        ] = False,
+        ] = None,
         root_path: Annotated[
             str | None,
             Doc(
@@ -1046,11 +1046,17 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
             "enable_intercept_global_exceptions", enable_intercept_global_exceptions
         )
         self.root_path = self.load_settings_value("root_path", root_path)
+        self.redirect_slashes = self.load_settings_value(
+            "redirect_slashes", redirect_slashes, is_boolean=True
+        )
+        self.include_in_schema = self.load_settings_value(
+            "include_in_schema", include_in_schema, is_boolean=True
+        )
 
         if self.router_class is not None:
             self.router = self.router_class(
                 routes=routes,
-                redirect_slashes=redirect_slashes,
+                redirect_slashes=self.redirect_slashes,
                 permissions=self.custom_permissions,
                 on_startup=on_startup,
                 on_shutdown=on_shutdown,

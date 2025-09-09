@@ -18,6 +18,8 @@ hide:
 ### Fixed
 
 - Runserver when no autodiscovery was enabled.
+- Initial settings was not initialising properly in the constructor.
+- Edgy template was being wrongly renamed.
 
 ## 0.19.7
 
