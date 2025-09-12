@@ -7,10 +7,14 @@ hide:
 
 ## 0.20.1
 
+### Added
+
+- New [send_file](./contrib/files/send-file.md) to **contrib**.
+- New [jsonify](./contrib/files/jsonify.md) to **contrib**.
+
 ### Changed
 
 - Add `wrap_dependency` for inherited Controller dependencies.
-- Add new [send_file](./contrib/files/send-file.md) to **contrib**.
 
 ## 0.20.0
 

@@ -134,6 +134,7 @@ nav:
     - contrib/security/available-security.md
   - Files:
     - contrib/files/send-file.md
+    - contrib/files/jsonify.md
 - contributing.md
 - sponsorship.md
 - release-notes.md
