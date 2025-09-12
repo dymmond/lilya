@@ -132,6 +132,8 @@ nav:
     - contrib/security/advanced/oauth2-scopes.md
     - contrib/security/advanced/basic-auth.md
     - contrib/security/available-security.md
+  - Files:
+    - contrib/files/send-file.md
 - contributing.md
 - sponsorship.md
 - release-notes.md
