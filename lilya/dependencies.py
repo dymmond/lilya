@@ -1,7 +1,8 @@
+import contextlib
 import inspect
 import sys
-from collections.abc import Callable, Sequence
-from functools import cached_property, lru_cache
+from collections.abc import Callable, Coroutine, Sequence
+from functools import cached_property, lru_cache, wraps
 from types import GeneratorType
 from typing import Any, cast
 
@@ -315,3 +316,389 @@ def resolve_dependencies(
     if inspect.iscoroutinefunction(func):
         raise ValueError("Function is async. Use resolve_dependencies_async instead.")
     return run_sync(async_resolve_dependencies(request, func, overrides))
+
+
+class PureScope:
+    """
+    Async context manager for managing cleanup of resources in a request-less scope.
+
+    Usage:
+        async with PureScope() as scope:
+            # Use scope to manage resources
+            ...
+        # Resources are cleaned up here
+    """
+
+    def __init__(self) -> None:
+        self._cleanups: list[
+            tuple[Callable[[], Any] | Callable[[], Coroutine[Any, Any, Any]], bool]
+        ] = []
+
+    def add_cleanup(
+        self, fn: Callable[[], Any] | Callable[[], Coroutine[Any, Any, Any]], is_async: bool
+    ) -> None:
+        """
+        Register a cleanup function to be called when the scope is closed.
+        """
+        self._cleanups.append((fn, is_async))
+
+    async def aclose(self) -> None:
+        """
+        Call all registered cleanup functions in LIFO order.
+        Suppresses any exceptions raised by cleanup functions.
+        """
+        while self._cleanups:
+            fn, is_async = self._cleanups.pop()
+            try:
+                if is_async:
+                    await fn()
+                else:
+                    fn()
+            except Exception:
+                ...
+
+    async def __aenter__(self) -> "PureScope":
+        """
+        Enter the async context manager.
+        """
+        return self
+
+    async def __aexit__(self, et: Any, ev: Any, tb: Any) -> None:
+        """
+        Exit the async context manager and perform cleanup.
+        """
+        await self.aclose()
+
+
+def _constant(value: Any) -> Callable[[], Any]:
+    """
+    Wrap a non-callable value in a zero-argument function using `def`
+    (preferred over lambda for clarity and style guides).
+    """
+
+    def return_value(_v: Any = value) -> Any:
+        """
+        Return the constant value.
+        """
+        return _v
+
+    return_value.__name__ = "constant"
+    return return_value
+
+
+class _Depends:
+    """
+    Parameter default marker and/or dependency wrapper that is completely
+    request-agnostic. Can be used anywhere (services, tasks, tests).
+
+    Usage in signatures:
+        def handler(repo = Depends(get_repo)): ...
+
+    Or as a wrapper:
+        repo_dep = Depends(get_repo, use_cache=True)
+        await repo_dep.resolve()  # no Request needed
+    """
+
+    def __init__(
+        self,
+        dependency: Callable[..., Any] | Any,
+        *args: Any,
+        use_cache: bool = False,
+        **kwargs: Any,
+    ) -> None:
+        if not isinstance(dependency, _Depends) and not callable(dependency):
+            dependency = _constant(dependency)
+        self.dependency = dependency  # Callable[..., Any]
+        self.provided_args = args
+        self.provided_kwargs = kwargs
+        self.use_cache = use_cache
+        self._cache: Any = None
+        self._resolved: bool = False
+        self.__dependency_signature__: inspect.Signature | None = None
+
+    def __repr__(self) -> str:
+        name = getattr(self.dependency, "__name__", type(self.dependency).__name__)
+        return f"Depends({name})"
+
+    @cached_property
+    def __signature__(self) -> inspect.Signature:
+        if self.__dependency_signature__ is None:
+            self.__dependency_signature__ = inspect.signature(self.dependency)  # type: ignore[arg-type]
+        return self.__dependency_signature__
+
+    async def resolve(
+        self,
+        dependencies_map: dict[str, Any | Any] | None = None,
+        overrides: dict[Any, Any] | None = None,
+        scope: PureScope | None = None,
+    ) -> Any:
+        """
+        Resolve the dependency tree without any Request/WebSocket.
+
+        - `dependencies_map` lets you bind parameter names to other Depends/values.
+        - `overrides` lets you replace a callable with another callable/value by identity.
+        """
+        if self.use_cache and self._resolved:
+            return self._cache
+
+        dependencies_map = dependencies_map or {}
+        overrides = overrides or {}
+
+        # If args/kwargs explicitly provided or this is a class, call directly.
+        if self.provided_args or self.provided_kwargs or inspect.isclass(self.dependency):
+            dep_callable = overrides.get(self.dependency, self.dependency)
+            result = await _maybe_call_async(
+                dep_callable, *self.provided_args, **self.provided_kwargs
+            )
+            result = await _handle_generators_requestless(result)
+            if self.use_cache:
+                self._cache, self._resolved = result, True
+            return result
+
+        # Otherwise, introspect the dependency function and build kwargs.
+        signature = inspect.signature(self.dependency)  # type: ignore
+        kwargs: dict[str, Any] = {}
+        for name, param in signature.parameters.items():
+            if param.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
+                continue
+
+            # Nested requestless Depends marker in the callee signature
+            if isinstance(param.default, _Depends):
+                kwargs[name] = await param.default.resolve(
+                    dependencies_map, overrides, scope=scope
+                )
+                continue
+
+            # Name-based resolution via dependencies_map
+            if name in dependencies_map:
+                nested = dependencies_map[name]
+                if isinstance(nested, _Depends):
+                    kwargs[name] = await nested.resolve(dependencies_map, overrides, scope=scope)
+                else:
+                    # value or callable
+                    if callable(nested):
+                        kwargs[name] = await _maybe_call_async(nested)
+                    else:
+                        kwargs[name] = nested
+                continue
+
+            # Fall back to default value if provided
+            if param.default is not inspect._empty:
+                # If the default itself is callable but *not* a Depends, we respect it literally,
+                # i.e., pass the callable object as default rather than invoking it.
+                kwargs[name] = param.default
+                continue
+
+            # No way to resolve
+            raise RuntimeError(
+                f"Could not resolve parameter '{name}' for dependency "
+                f"'{getattr(self.dependency, '__name__', self.dependency)}' "
+                "(no request available and no mapping/default provided)"
+            )
+
+        dep_callable = overrides.get(self.dependency, self.dependency)
+
+        result = await _maybe_call_async(
+            dep_callable, *self.provided_args, **{**self.provided_kwargs, **kwargs}
+        )
+        result = await _handle_generators_requestless(result, scope=scope)
+
+        # Cache if requested
+        if self.use_cache:
+            self._cache, self._resolved = result, True
+
+        return result
+
+
+def Depends(
+    dependency: Callable[..., Any] | Any,
+    *args: Any,
+    use_cache: bool = False,
+    **kwargs: Any,
+) -> _Depends:
+    """
+    Safe factory for request-less Depends.
+
+    - If `dependency` is non-callable (e.g., dict), we bypass caching (unhashable).
+    - If `dependency` is callable, we attempt to cache by a computed key; if
+      any piece of the key is unhashable, we skip caching.
+
+    Usage in signatures:
+        def handler(repo = Depends(get_repo)): ...
+    Or as a wrapper:
+        repo_dep = Depends(get_repo, use_cache=True)
+        await repo_dep.resolve()  # no Request needed
+    """
+    if not callable(dependency):
+        return _Depends(_constant(dependency), *args, use_cache=use_cache, **kwargs)
+
+    try:
+        key = (
+            dependency,
+            tuple(args),
+            frozenset(kwargs.items()),
+            bool(use_cache),
+        )
+        hash(key)
+    except TypeError:
+        return _Depends(dependency, *args, use_cache=use_cache, **kwargs)
+
+    return _depends_cached(key)
+
+
+@lru_cache(maxsize=1024)
+def _depends_cached(
+    key: tuple[
+        Callable[..., Any],
+        tuple[Any, ...],
+        frozenset[tuple[str, Any]],
+        bool,
+    ],
+) -> _Depends:
+    """
+    Internal cached factory for Depends.
+    See Depends() for usage and behavior.
+
+    Args:
+        key: A tuple containing the dependency callable, its args, kwargs as a frozenset, and use_cache flag.
+    """
+    dependency, args, kw_items, use_cache = key
+    return _Depends(dependency, *args, use_cache=use_cache, **dict(kw_items))
+
+
+async def _maybe_call_async(fn: Any, *args: Any, **kwargs: Any) -> Any:
+    """
+    Call a function that may be sync or async, and await if needed.
+
+    Args:
+        fn: The function to call.
+        *args: Positional arguments to pass to the function.
+        **kwargs: Keyword arguments to pass to the function.
+    """
+    if inspect.iscoroutinefunction(fn) or is_async_callable(fn):
+        return await fn(*args, **kwargs)
+    return fn(*args, **kwargs)
+
+
+async def _handle_generators_requestless(result: Any, scope: PureScope | None = None) -> Any:
+    """
+    For request-less operation, we can't rely on request.add_cleanup.
+
+    Strategy: yield-first-then-close immediately to avoid leaks.
+
+    If you need scoped lifetime, prefer context managers instead of generators.
+    """
+    if isinstance(result, GeneratorType):
+        try:
+            value = next(result)
+
+            if scope is not None:
+                scope.add_cleanup(result.close, is_async=False)
+            else:
+                result.close()
+        except StopIteration:
+            return None
+        finally:
+            with contextlib.suppress(Exception):
+                result.close()
+        return value
+
+    if inspect.isasyncgen(result):
+        try:
+            value = await result.__anext__()
+
+            if scope is not None:
+                scope.add_cleanup(result.aclose, is_async=True)
+            else:
+                await result.aclose()
+        except StopAsyncIteration:
+            return None
+        finally:
+            with contextlib.suppress(Exception):
+                await result.aclose()
+        return value
+
+    return result
+
+
+def inject(
+    _func: Callable[..., Any] | None = None,
+    *,
+    overrides: dict[Any, Any] | None = None,
+    dependencies_map: dict[str, Any] | None = None,
+) -> Callable[..., Any]:
+    """
+    Decorator that auto-resolves parameters whose defaults are `Depends(...)`
+    (request-agnostic) before calling the function.
+
+    Usage:
+        @inject
+        async def f(x = Depends(dep)): ...
+        await f()  # x is injected
+
+    You can also set static overrides or a name-based dependencies_map:
+        @inject(overrides={dep: replacement}, dependencies_map={"x": 123})
+        def g(x=Depends(dep)): ...
+    """
+
+    def _decorate(func: Callable[..., Any]) -> Callable[..., Any]:
+        signature = inspect.signature(func)
+        ov = overrides or {}
+        dm = dependencies_map or {}
+
+        if inspect.iscoroutinefunction(func) or is_async_callable(func):
+
+            @wraps(func)
+            async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
+                bound = signature.bind_partial(*args, **kwargs)
+
+                for name, param in signature.parameters.items():
+                    if name in bound.arguments:
+                        continue
+
+                    default = param.default
+                    if isinstance(default, _Depends):
+                        # Let Depends handle recursion/nesting
+                        value = await default.resolve(dependencies_map=dm, overrides=ov)
+                        bound.arguments[name] = value
+                    elif default is not inspect._empty:
+                        bound.arguments[name] = default
+                    else:
+                        raise RuntimeError(
+                            f"Missing required parameter '{name}' and no Depends/default provided "
+                            f"for auto-injection in {getattr(func, '__name__', func)}"
+                        )
+
+                return await func(*bound.args, **bound.kwargs)
+
+            # Preserve original signature for introspection tools
+            async_wrapper.__signature__ = signature
+            return async_wrapper
+
+        # Sync branch
+        @wraps(func)
+        def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
+            bound = signature.bind_partial(*args, **kwargs)
+
+            for name, param in signature.parameters.items():
+                if name in bound.arguments:
+                    continue
+
+                default = param.default
+                if isinstance(default, _Depends):
+                    value = run_sync(default.resolve(dependencies_map=dm, overrides=ov))
+                    bound.arguments[name] = value
+                elif default is not inspect._empty:
+                    bound.arguments[name] = default
+                else:
+                    raise RuntimeError(
+                        f"Missing required parameter '{name}' and no Depends/default provided "
+                        f"for auto-injection in {getattr(func, '__name__', func)}"
+                    )
+
+            return func(*bound.args, **bound.kwargs)
+
+        sync_wrapper.__signature__ = signature
+        return sync_wrapper
+
+    return _decorate if _func is None else _decorate(_func)

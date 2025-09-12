@@ -232,6 +232,60 @@ It works as we normally declare dependencies using the `Provide` and `Provides`.
 {!> ../../../docs_src/dependencies/resolve/layer.py !}
 ```
 
+## Depends and `inject`
+
+What if you simply want to use a dependency injection that simply does not rely on a `request`/`response` lifecycle?
+
+For example, you have in your code some something that simply needs to run without it, example? A scheduler task?
+
+Of course you do have more examples other than this one.
+
+Well, Lilya now comes equipped with this possibility with a new `Depends` and `@inject` decorator.
+
+```python
+from lilya.dependencies import Depends, inject
+```
+
+### `Depends`
+
+Although the name might sounds familiar to a few, if not a lot of people, in Lilya world `Depends` is similar to `Resolve`
+but operates on an *requestless* world.
+
+For the `Depends` to work you will also need to have the `@inject` decorator to help you out.
+
+Let us go into an example. Let us assume you have some sort of scheduler running and you would need a database session
+to connect and perform some sort of operations.
+
+Now, as you can see, you don't need a request/response for this, do you? (Celery tasks, for example?)
+
+So you would have something like this:
+
+```python
+{!> ../../../docs_src/dependencies/depends/conn.py !}
+```
+
+So far so good, right?
+
+You can use the `get_db` inside your [Provide](#provide) or [Resolve](#the-resolve-dependency-object) as this can be
+injected into your handlers **but you cannot use it just like this if you need inside a task**, can you?
+
+Ok, this is where the `Depends` and `@inject` come to play.
+
+Let us update the example to add an extra function that can then be used outside the request/response cycle.
+
+```python
+{!> ../../../docs_src/dependencies/depends/conn_updated.py !}
+```
+
+Did you notice the new `get_database_session` function? Well, this is how it works, you can now use
+that function everywhere in your code and it will perform the dependency injection as you are used.
+
+This is great as you can have normal Python functions that simply do not care about request lifecycle but
+you still want to use some sort of dependency injection for a myriad of reasons.
+
+This new `Depends` and `@inject` will allow you to do just that and it will take care of generators,
+scopes and so on as usual.
+
 ---
 
 ## Best Practices
@@ -241,5 +295,6 @@ It works as we normally declare dependencies using the `Provide` and `Provides`.
 * **Group dependencies** by include for modular design.
 * **Override sparingly** at route level—for true variations only.
 * **Document** which dependencies each handler needs with clear parameter names.
+* `Depends` and `inject` are used **outside** the request/response cycle and must not be mistaken for the rest.
 
 With these patterns, you’ll keep your Lilya code clean, testable, and maintainable.
