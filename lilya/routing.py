@@ -1234,7 +1234,11 @@ class BaseRouter:
         self.include_in_schema = include_in_schema
         self.deprecated = deprecated
 
-        self.middleware = middleware if middleware is not None else []
+        if middleware is not None:
+            self.middleware = [wrap_middleware(mid) for mid in middleware]
+        else:
+            self.middleware = middleware or []
+
         self.permissions = permissions if permissions is not None else []
         self.settings_module = settings_module
         self.middleware_stack = self.app
