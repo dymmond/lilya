@@ -428,7 +428,9 @@ class Path(BaseHandler, BasePath):
                 self.exception_handlers.update(controller.exception_handlers)
 
             if controller.dependencies:
-                self.dependencies.update(controller.dependencies)
+                self.dependencies.update(
+                    {k: wrap_dependency(v) for k, v in controller.dependencies.items()}
+                )
 
             if controller.before_request:
                 self.before_request.extend(controller.before_request)
