@@ -11,10 +11,10 @@ from typing import Any
 import anyio
 from anyio.from_thread import start_blocking_portal
 
-from lilya._internal._encoders import json_encode
+from lilya._internal._encoders import json_encode  # noqa
 from lilya._internal._events import EventDispatcher  # noqa
 from lilya.compat import is_async_callable
-from lilya.conf import _monkay
+from lilya.conf import _monkay  # noqa
 from lilya.logging import logger
 from lilya.protocols.cache import CacheBackend
 from lilya.serializers import serializer

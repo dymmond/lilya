@@ -1,7 +1,7 @@
 import pytest
 
 from lilya import status
-from lilya.crypto import get_random_secret_key
+from lilya._internal._crypto import get_random_secret_key
 from lilya.exceptions import PermissionDenied
 from lilya.middleware import DefineMiddleware
 from lilya.middleware.csrf import CSRFMiddleware

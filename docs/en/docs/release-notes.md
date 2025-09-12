@@ -5,11 +5,22 @@ hide:
 
 # Release Notes
 
+## 0.20.1
+
+### Added
+
+- New [send_file](./contrib/files/send-file.md) to **contrib**.
+- New [jsonify](./contrib/files/jsonify.md) to **contrib**.
+
+### Changed
+
+- Add `wrap_dependency` for inherited Controller dependencies.
+
 ## 0.20.0
 
 ### Added
 
-- New request‑agnostic **Depends** for DI anywhere (sync/async, nested deps, overrides, per‑instance caching).  
+- New request‑agnostic **Depends** for DI anywhere (sync/async, nested deps, overrides, per‑instance caching).
 - Added **@inject** decorator to auto‑resolve `Depends` on call. This preserves signature and honors explicit args.
 
 #### Example

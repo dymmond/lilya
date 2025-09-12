@@ -30,6 +30,21 @@ async def test_app_level_dependency_with_body_inferred():
     settings.infer_body = False
 
 
+async def test_app_level_dependency_inherited():
+    class Test(Controller):
+        dependencies = {"x": lambda: "app_value"}
+
+        async def get(self, request: Request, x=Provides()):
+            return {"x": x}
+
+    app = Lilya(routes=[Path("/test_app", handler=Test)])
+
+    client = TestClient(app)
+    res = client.get("/test_app")
+    assert res.status_code == 200
+    assert res.json() == {"x": "app_value"}
+
+
 async def test_app_level_dependency():
     class Test(Controller):
         async def get(self, request: Request, x=Provides()):
