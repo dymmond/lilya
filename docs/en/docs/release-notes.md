@@ -10,7 +10,26 @@ hide:
 ### Added
 
 - New request‑agnostic **Depends** for DI anywhere (sync/async, nested deps, overrides, per‑instance caching).  
-- Added **@inject** decorator to auto‑resolve `Depends` on call. This preserves signature and honors explicit args.  
+- Added **@inject** decorator to auto‑resolve `Depends` on call. This preserves signature and honors explicit args.
+
+#### Example
+
+```python
+from lilya.dependencies import Depends, inject
+
+
+def get_db():
+    session = Sessionlocal()
+    try:
+        yield session
+    finally:
+        session.close()
+
+
+@inject
+def get_db_session(db = Depends(get_db)) -> Any:
+    return db
+```
 
 ## 0.19.8
 
