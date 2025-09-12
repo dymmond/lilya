@@ -10,6 +10,7 @@ hide:
 ### Changed
 
 - Add `wrap_dependency` for inherited Controller dependencies.
+- Add new [send_file](./contrib/files/send-file.md) to **contrib**.
 
 ## 0.20.0
 
