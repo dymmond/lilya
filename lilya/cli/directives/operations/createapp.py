@@ -4,11 +4,11 @@ from typing import Annotated
 
 from sayer import Argument, Option, command, error, success
 
+from lilya._internal._crypto import get_random_secret_key
 from lilya.cli.directives.operations._constants import SECRET_KEY_INSECURE_PREFIX
 from lilya.cli.exceptions import DirectiveError
 from lilya.cli.templates import TemplateDirective
 from lilya.cli.terminal import Print
-from lilya.crypto import get_random_secret_key
 
 printer = Print()
 
