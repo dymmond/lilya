@@ -361,7 +361,7 @@ class Path(BaseHandler, BasePath):
         if middleware is not None:
             self.middleware = [wrap_middleware(mid) for mid in middleware]
         else:
-            self.middleware = middleware if middleware is not None else []
+            self.middleware = middleware or []
 
         self.permissions = permissions if permissions is not None else []
         self.exception_handlers = {} if exception_handlers is None else dict(exception_handlers)
@@ -930,7 +930,10 @@ class Host(BasePath):
         self.host_regex, self.host_format, self.param_convertors, self.path_start = compile_path(
             host
         )
-        self.middleware = middleware if middleware is not None else []
+        if middleware is not None:
+            self.middleware = [wrap_middleware(mid) for mid in middleware]
+        else:
+            self.middleware = middleware or []
         self.permissions = permissions if permissions is not None else []
 
         # Wrap dependencies
@@ -2293,7 +2296,11 @@ class Include(BasePath):
 
         self.app = self.__base_app__
 
-        self.middleware = middleware if middleware is not None else []
+        if middleware is not None:
+            self.middleware = [wrap_middleware(mid) for mid in middleware]
+        else:
+            self.middleware = middleware or []
+
         self.permissions = permissions if permissions is not None else []
         self.exception_handlers = {} if exception_handlers is None else dict(exception_handlers)
 
