@@ -5,6 +5,13 @@ hide:
 
 # Release Notes
 
+## 0.20.0
+
+### Added
+
+- New request‑agnostic **Depends** for DI anywhere (sync/async, nested deps, overrides, per‑instance caching).  
+- Added **@inject** decorator to auto‑resolve `Depends` on call. This preserves signature and honors explicit args.  
+
 ## 0.19.8
 
 ### Added
