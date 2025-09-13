@@ -191,7 +191,7 @@ class DirectiveEnv:
 
             # Iterate over default pattern application functions
             for func in DISCOVERY_FUNCTIONS:
-                if fn := getattr(module, variable, None):
+                if fn := getattr(module, func, None):
                     app_path = f"{dotted_path}:{func}"
                     app_candidate = fn()
                     if isinstance(app_candidate, Lilya):

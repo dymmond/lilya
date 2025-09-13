@@ -102,6 +102,10 @@ def runserver(
     """
     ctx = click.get_current_context()
     env = ctx.ensure_object(DirectiveEnv)
+    if path:
+        # if we have a path, we use it instead
+        # because it only handles variables we have no double import
+        env = env.load_from_env(path=path)
     with get_ui_toolkit() as toolkit:
         # Analyse the app structure
         toolkit.print(
@@ -193,8 +197,7 @@ def runserver(
         toolkit.print_line()
 
         uvicorn.run(
-            # use the imported app when not the path. Otherwise we have double imports with strange sideeffects
-            app=path or app,
+            app=app,
             port=port,
             host=host,
             reload=reload,
