@@ -65,5 +65,7 @@ jobs:
 
       - name: "Run typing checks"
         run: "hatch run test:check_types"
+        if: ${{ matrix.python-version != '3.14' }}
+
       - name: "Run tests"
         run: "hatch run test:test"
