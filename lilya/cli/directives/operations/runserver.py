@@ -104,7 +104,7 @@ def runserver(
     env = ctx.ensure_object(DirectiveEnv)
     if path:
         # if we have a path, we use it instead
-        # because it only handles variables we have no double import
+        # because it only handles variables we have no double initializations
         env = env.load_from_env(path=path)
     with get_ui_toolkit() as toolkit:
         # Analyse the app structure
