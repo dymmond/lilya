@@ -193,8 +193,8 @@ def runserver(
         toolkit.print_line()
 
         uvicorn.run(
-            # use the imported app. Otherwise we have double imports with strange sideeffects
-            app=app,
+            # use the imported app when not the path. Otherwise we have double imports with strange sideeffects
+            app=path or app,
             port=port,
             host=host,
             reload=reload,
