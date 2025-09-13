@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from importlib import import_module
 from pathlib import Path
 
-from lilya.apps import ChildLilya, Lilya
+from lilya.apps import BaseLilya, Lilya
 from lilya.cli.constants import (
     DISCOVERY_FILES,
     DISCOVERY_FUNCTIONS,
@@ -30,7 +30,7 @@ class Scaffold:
     app: ASGIApp
     app_location: Path | None = None
     discovery_file: str | None = None
-    lilya_app: Lilya | ChildLilya | None = None
+    lilya_app: BaseLilya | None = None
 
 
 @dataclass
@@ -50,7 +50,7 @@ class DirectiveEnv:
 
     path: str | None = None
     app: ASGIApp | None = None
-    lilya_app: Lilya | ChildLilya | None = None
+    lilya_app: BaseLilya | None = None
     command_path: str | None = None
     module_info: ModuleInfo | None = None
 
@@ -136,7 +136,7 @@ class DirectiveEnv:
         module_str_path, app_name = path.split(":")
         module = import_module(module_str_path)
         app = getattr(module, app_name)
-        if isinstance(app, Lilya):
+        if isinstance(app, BaseLilya):
             lilya = app
         else:
             lilya = _monkay.instance
@@ -165,7 +165,7 @@ class DirectiveEnv:
 
             # Iterates through the elements of the module.
             for attr, value in module.__dict__.items():
-                if isinstance(value, Lilya):
+                if isinstance(value, BaseLilya):
                     app_path = f"{dotted_path}:{attr}"
                     return Scaffold(
                         app=value,

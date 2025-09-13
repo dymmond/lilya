@@ -18,7 +18,7 @@ from lilya.enums import HTTPMethod
 from lilya.routing import Path
 
 if TYPE_CHECKING:
-    from lilya.apps import ChildLilya, Lilya
+    from lilya.apps import BaseLilya
     from lilya.routing import BasePath, Router
 
 console = Console()
@@ -72,7 +72,7 @@ def show_urls(env: DirectiveEnv) -> None:
     echo(table)
 
 
-def get_routes_table(app: Lilya | ChildLilya | None, table: Table) -> Table:
+def get_routes_table(app: BaseLilya | None, table: Table) -> Table:
     """Prints the routing system"""
     table.add_column("Path", style=OutputColour.GREEN, vertical="middle")
     table.add_column("Path Parameters", style=OutputColour.BRIGHT_CYAN, vertical="middle")
@@ -81,7 +81,7 @@ def get_routes_table(app: Lilya | ChildLilya | None, table: Table) -> Table:
     table.add_column("HTTP Methods", style=OutputColour.RED, vertical="middle")
 
     def parse_routes(
-        app: Lilya | ChildLilya | Router | BasePath | None,
+        app: BaseLilya | Router | BasePath | None,
         table: Table,
         route: Any | None = None,
         prefix: str | None = "",
