@@ -187,13 +187,14 @@ def runserver(
             tag="note",
         )
 
-        if debug:
-            app.debug = debug
+        if debug and env.lilya_app:
+            env.lilya_app.debug = debug
 
         toolkit.print_line()
 
         uvicorn.run(
-            app=path or env.path,
+            # use the imported app. Otherwise we have double imports with strange sideeffects
+            app=app,
             port=port,
             host=host,
             reload=reload,

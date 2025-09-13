@@ -94,9 +94,9 @@ async def run(
     ## Check if application is up and execute any event
     # Shutting down after
     lifespan = generate_lifespan_events(
-        env.app.router.on_startup,
-        env.app.router.on_shutdown,
-        env.app.router.lifespan_context,
+        env.lily_app.router.on_startup,
+        env.lily_app.router.on_shutdown,
+        env.lily_app.router.lifespan_context,
     )
     await execute_lifespan(env.app, lifespan, directive, program_name, position)
 

@@ -63,8 +63,10 @@ def show_urls(env: DirectiveEnv) -> None:
             "LILYA_DEFAULT_APP environment variable."
         )
         sys.exit(1)
-
-    app = env.app
+    if getattr(env, "lilya_app", None) is None:
+        error("Not a lilya app")
+        sys.exit(1)
+    app = env.lilya_app
     table = Table(title="Application Paths")
     table = get_routes_table(app, table)
     echo(table)
@@ -100,7 +102,7 @@ def get_routes_table(app: Lilya | ChildLilya | None, table: Table) -> Table:
                     else:
                         fn_type = "sync"
 
-                http_methods = ", ".join(sorted(route.methods))
+                http_methods = ", ".join(sorted(route.methods or []))
                 parameters = ", ".join(sorted(route.stringify_parameters))
                 table.add_row(path, parameters, route.name, fn_type, http_methods)
                 continue
