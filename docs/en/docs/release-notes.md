@@ -5,6 +5,15 @@ hide:
 
 # Release Notes
 
+## 0.20.2
+
+### Fixed
+
+- Properly detect wrapped Lilya instances.
+- Fix crash in show-urls.
+- Fix double initialization of app in runserver.
+- Optimize uvicorn initialization in case of no reload or workers for debugger.
+
 ## 0.20.1
 
 ### Added

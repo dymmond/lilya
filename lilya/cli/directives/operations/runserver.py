@@ -197,7 +197,7 @@ def runserver(
         toolkit.print_line()
 
         uvicorn.run(
-            app=app,
+            app=app if not reload and not workers else env.path,
             port=port,
             host=host,
             reload=reload,
