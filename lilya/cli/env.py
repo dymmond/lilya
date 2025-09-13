@@ -54,13 +54,18 @@ class DirectiveEnv:
     command_path: str | None = None
     module_info: ModuleInfo | None = None
 
-    def load_from_env(self, path: str | None = None) -> DirectiveEnv:
+    def load_from_env(
+        self, path: str | None = None, cwd: None | str | Path = None
+    ) -> DirectiveEnv:
         """
         Loads the environment variables into the scaffold.
         """
         # Adds the current path where the command is being invoked
         # To the system path
-        cwd = Path().cwd()
+        if cwd is None:
+            cwd = Path.cwd()
+        if not isinstance(cwd, Path):
+            cwd = Path(cwd)
         command_path = str(cwd)
         if command_path not in sys.path:
             sys.path.append(command_path)

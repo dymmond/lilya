@@ -7,7 +7,7 @@ from typing import Annotated, Any, cast
 
 import click
 from rich.tree import Tree
-from sayer import Argument, Option, command, error
+from sayer import Option, command, error
 
 from lilya.cli.env import DirectiveEnv
 from lilya.cli.exceptions import DirectiveError
@@ -42,13 +42,6 @@ def get_app_tree(module_paths: list[Path], discovery_file: str) -> Tree:
 
 @command
 def runserver(
-    path: Annotated[
-        str | None,
-        Argument(
-            required=False,
-            help="A path to a Python file or package directory with ([blue]__init__.py[/blue] files) containing a [bold]Lilya[/bold] app. If not provided, Lilya will try to discover.",
-        ),
-    ],
     port: Annotated[
         int, Option(8000, "-p", help="Port to run the development server.", show_default=True)
     ],
@@ -102,10 +95,6 @@ def runserver(
     """
     ctx = click.get_current_context()
     env = ctx.ensure_object(DirectiveEnv)
-    if path:
-        # if we have a path, we use it instead
-        # because it only handles variables we have no double initializations
-        env = env.load_from_env(path=path)
     with get_ui_toolkit() as toolkit:
         # Analyse the app structure
         toolkit.print(
