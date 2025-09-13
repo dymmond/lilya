@@ -197,6 +197,8 @@ def runserver(
         toolkit.print_line()
 
         uvicorn.run(
+            # in case of no reload and workers, we might end up initializing twice when
+            # using a function, so use app instead
             app=app if not reload and not workers else env.path,
             port=port,
             host=host,
