@@ -47,16 +47,22 @@ jobs:
       - uses: "actions/setup-python@v5"
         with:
           python-version: "${{ matrix.python-version }}"
+          allow-prereleases: true
+
       - uses: actions/cache@v4
         id: cache
         with:
           path: ${{ env.pythonLocation }}
           key: ${{ runner.os }}-python-${{ env.pythonLocation }}-${{ hashFiles('pyproject.toml') }}-test-v02
+
       - name: "Install dependencies"
         if: steps.cache.outputs.cache-hit != 'true'
         run: "pip install hatch"
+
       - name: "Run linting checks"
         run: "hatch fmt --check"
+        if: ${{ matrix.python-version != '3.14' }}
+
       - name: "Run typing checks"
         run: "hatch run test:check_types"
       - name: "Run tests"
