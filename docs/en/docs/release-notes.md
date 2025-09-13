@@ -5,7 +5,12 @@ hide:
 
 # Release Notes
 
-## 0.20.2
+## 0.20.1
+
+### Added
+
+- New [send_file](./contrib/files/send-file.md) to **contrib**.
+- New [jsonify](./contrib/files/jsonify.md) to **contrib**.
 
 ### Changed
 
@@ -20,13 +25,6 @@ hide:
 ### Breaking
 
 - lilya runserver loses its path argument. You can specify it via `lilya --path foo runserver`.
-
-## 0.20.1
-
-### Added
-
-- New [send_file](./contrib/files/send-file.md) to **contrib**.
-- New [jsonify](./contrib/files/jsonify.md) to **contrib**.
 
 ### Changed
 
