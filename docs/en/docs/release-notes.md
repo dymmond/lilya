@@ -14,6 +14,20 @@ hide:
 
 ### Changed
 
+- Morph path argument into path option and expose it for all commands.
+
+### Fixed
+
+- Properly detect wrapped Lilya instances.
+- Fix crash in show-urls.
+- Fix double initialization of app in runserver.
+
+### Breaking
+
+- lilya runserver loses its path argument. You can specify it via `lilya --path foo runserver`.
+
+### Changed
+
 - Add `wrap_dependency` for inherited Controller dependencies.
 
 ## 0.20.0

@@ -15,10 +15,10 @@ from lilya.cli.constants import APP_PARAMETER, LILYA_DISCOVER_APP
 from lilya.cli.env import DirectiveEnv
 from lilya.cli.utils import fetch_directive
 from lilya.context import G, g_context
-from lilya.types import Lifespan
+from lilya.types import ASGIApp, Lifespan
 
 if TYPE_CHECKING:
-    from lilya.apps import ChildLilya, Lilya
+    pass
 
 T = TypeVar("T")
 
@@ -94,9 +94,9 @@ async def run(
     ## Check if application is up and execute any event
     # Shutting down after
     lifespan = generate_lifespan_events(
-        env.app.router.on_startup,
-        env.app.router.on_shutdown,
-        env.app.router.lifespan_context,
+        env.lilya_app.router.on_startup,
+        env.lilya_app.router.on_shutdown,
+        env.lilya_app.router.lifespan_context,
     )
     await execute_lifespan(env.app, lifespan, directive, program_name, position)
 
@@ -135,7 +135,7 @@ async def reset_global_context(token: Any) -> None:
 
 
 async def execute_lifespan(
-    app: Lilya | ChildLilya | None,
+    app: ASGIApp | None,
     lifespan: Lifespan,
     directive: Any,
     program_name: str,

@@ -6,9 +6,16 @@ from dataclasses import dataclass
 from importlib import import_module
 from pathlib import Path
 
-from lilya.apps import ChildLilya, Lilya
-from lilya.cli.constants import DISCOVERY_FILES, DISCOVERY_FUNCTIONS, LILYA_DISCOVER_APP
+from lilya.apps import BaseLilya, Lilya
+from lilya.cli.constants import (
+    DISCOVERY_ATTRS,
+    DISCOVERY_FILES,
+    DISCOVERY_FUNCTIONS,
+    LILYA_DISCOVER_APP,
+)
+from lilya.conf import _monkay
 from lilya.exceptions import EnvError
+from lilya.types import ASGIApp
 
 
 @dataclass
@@ -20,9 +27,10 @@ class Scaffold:
     """
 
     path: str
-    app: Lilya | ChildLilya
+    app: ASGIApp
     app_location: Path | None = None
     discovery_file: str | None = None
+    lilya_app: BaseLilya | None = None
 
 
 @dataclass
@@ -41,17 +49,23 @@ class DirectiveEnv:
     """
 
     path: str | None = None
-    app: Lilya | ChildLilya | None = None
+    app: ASGIApp | None = None
+    lilya_app: BaseLilya | None = None
     command_path: str | None = None
     module_info: ModuleInfo | None = None
 
-    def load_from_env(self, path: str | None = None) -> DirectiveEnv:
+    def load_from_env(
+        self, path: str | None = None, cwd: None | str | Path = None
+    ) -> DirectiveEnv:
         """
         Loads the environment variables into the scaffold.
         """
         # Adds the current path where the command is being invoked
         # To the system path
-        cwd = Path().cwd()
+        if cwd is None:
+            cwd = Path.cwd()
+        if not isinstance(cwd, Path):
+            cwd = Path(cwd)
         command_path = str(cwd)
         if command_path not in sys.path:
             sys.path.append(command_path)
@@ -68,6 +82,7 @@ class DirectiveEnv:
         return DirectiveEnv(
             path=_app.path,
             app=_app.app,
+            lilya_app=_app.lilya_app,
             command_path=command_path,
             module_info=self.get_module_data_from_path(
                 _app.app_location, _app.path, _app.discovery_file
@@ -126,7 +141,11 @@ class DirectiveEnv:
         module_str_path, app_name = path.split(":")
         module = import_module(module_str_path)
         app = getattr(module, app_name)
-        return Scaffold(path=path, app=app)
+        if isinstance(app, BaseLilya):
+            lilya = app
+        else:
+            lilya = _monkay.instance
+        return Scaffold(path=path, app=app, lilya_app=lilya)
 
     def _get_folders(self, path: Path) -> list[str]:
         """
@@ -151,20 +170,53 @@ class DirectiveEnv:
 
             # Iterates through the elements of the module.
             for attr, value in module.__dict__.items():
-                if isinstance(value, Lilya):
+                if isinstance(value, BaseLilya):
                     app_path = f"{dotted_path}:{attr}"
                     return Scaffold(
-                        app=value, path=app_path, app_location=path, discovery_file=discovery_file
+                        app=value,
+                        lilya_app=value,
+                        path=app_path,
+                        app_location=path,
+                        discovery_file=discovery_file,
                     )
+
+            # Check if a lilya app has self registered and is just wrapped
+            if (lilya_instance := _monkay.instance) is not None:
+                # Iterate over default pattern application names
+                for variable in DISCOVERY_ATTRS:
+                    if app_candidate := getattr(module, variable, None):
+                        app_path = f"{dotted_path}:{variable}"
+                        return Scaffold(
+                            app=app_candidate,
+                            lilya_app=lilya_instance,
+                            path=app_path,
+                            app_location=path,
+                            discovery_file=discovery_file,
+                        )
 
             # Iterate over default pattern application functions
             for func in DISCOVERY_FUNCTIONS:
-                if hasattr(module, func):
+                if fn := getattr(module, func, None):
                     app_path = f"{dotted_path}:{func}"
-                    fn = getattr(module, func)
-                    return Scaffold(
-                        app=fn(), path=app_path, app_location=path, discovery_file=discovery_file
-                    )
+                    app_candidate = fn()
+                    if isinstance(app_candidate, Lilya):
+                        return Scaffold(
+                            app=app_candidate,
+                            lilya_app=app_candidate,
+                            path=app_path,
+                            app_location=path,
+                            discovery_file=discovery_file,
+                        )
+
+                    # monkay.instance is a dynamic property, so recheck
+                    if (lilya_instance := _monkay.instance) is not None:
+                        return Scaffold(
+                            app=app_candidate,
+                            lilya_app=lilya_instance,
+                            path=app_path,
+                            app_location=path,
+                            discovery_file=discovery_file,
+                        )
         return None
 
     def find_app(self, path: str | None, cwd: Path) -> Scaffold:
