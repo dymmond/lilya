@@ -11,6 +11,7 @@ hide:
 
 - New [send_file](./contrib/files/send-file.md) to **contrib**.
 - New [jsonify](./contrib/files/jsonify.md) to **contrib**.
+- Official support for Python 3.14.
 
 ### Changed
 
