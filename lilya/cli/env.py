@@ -8,9 +8,9 @@ from pathlib import Path
 
 from lilya.apps import BaseLilya, Lilya
 from lilya.cli.constants import (
+    DISCOVERY_ATTRS,
     DISCOVERY_FILES,
     DISCOVERY_FUNCTIONS,
-    DISCOVERY_VARIABLES,
     LILYA_DISCOVER_APP,
 )
 from lilya.conf import _monkay
@@ -183,7 +183,7 @@ class DirectiveEnv:
             # Check if a lilya app has self registered and is just wrapped
             if (lilya_instance := _monkay.instance) is not None:
                 # Iterate over default pattern application names
-                for variable in DISCOVERY_VARIABLES:
+                for variable in DISCOVERY_ATTRS:
                     if app_candidate := getattr(module, variable, None):
                         app_path = f"{dotted_path}:{variable}"
                         return Scaffold(
