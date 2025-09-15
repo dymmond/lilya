@@ -5,6 +5,16 @@ hide:
 
 # Release Notes
 
+## 0.20.2
+
+### Added
+
+- `is_json` and `is_form` properties for `Request`.
+
+### Changed
+
+- Inferred body to allow the form request to be parsed properly.
+
 ## 0.20.1
 
 ### Added

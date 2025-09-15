@@ -263,7 +263,7 @@ class BaseHandler:
         - Multi-param style: {"user": {...}, "item": {...}}
         - Single-param style: {"name": "...", "age": ...} -> into a single structured param
         """
-        json_data = await request.json() or {}
+        json_data = await request.json() if request.is_json else await request.data() or {}
         parameters = signature.parameters
 
         # Determine which parameters are already accounted for
@@ -299,7 +299,8 @@ class BaseHandler:
             except Exception as exc:  # noqa
                 if name in json_data:
                     payload[name] = apply_structure(
-                        structure=encoder_object, value=json_data[name]
+                        structure=encoder_object,
+                        value=json_data[name],  # type: ignore
                     )
                 else:
                     raise exc
@@ -314,7 +315,7 @@ class BaseHandler:
                 if name not in json_data:
                     raise ValueError(f"Missing expected body key and/or payload for '{name}'.")
                 encoder_object = parameters[name].annotation
-                payload[name] = apply_structure(structure=encoder_object, value=json_data[name])
+                payload[name] = apply_structure(structure=encoder_object, value=json_data[name])  # type: ignore
 
         return payload
 
