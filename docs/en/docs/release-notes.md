@@ -10,6 +10,7 @@ hide:
 ### Added
 
 - `is_json` and `is_form` properties for `Request`.
+- `infer_body` support for `FormData` types automatically.
 
 ### Changed
 

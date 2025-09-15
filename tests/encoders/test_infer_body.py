@@ -89,3 +89,21 @@ def test_infer_body_with_dependency_without_provides(test_client_factory):
 
         assert response.status_code == 200
         assert response.json() == {"name": "lilya", "age": 10, "sku": "test", "x": "app_value"}
+
+
+async def process_form(user: User, item: Item):
+    return {**user.model_dump(), "sku": item.sku}
+
+
+def test_infer_body_from_form(test_client_factory):
+    data = {"user": '{"name": "lilya", "age": 10}', "item": '{"sku": "test"}'}
+
+    with create_client(
+        routes=[Path("/infer-form", handler=process_form, methods=["POST"])],
+        settings_module=EncoderSettings,
+    ) as client:
+        # send as form
+        response = client.post("/infer-form", data=data)
+
+        assert response.status_code == 200
+        assert response.json() == {"name": "lilya", "age": 10, "sku": "test"}
