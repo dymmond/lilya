@@ -16,6 +16,7 @@ from lilya.exceptions import ImproperlyConfigured, UnprocessableEntity, WebSocke
 from lilya.params import Cookie, Header, Query
 from lilya.requests import Request
 from lilya.responses import Ok, Response
+from lilya.serializers import serializer
 from lilya.types import ASGIApp, Receive, Scope, Send
 from lilya.websockets import WebSocket
 
@@ -248,6 +249,16 @@ class BaseHandler:
             default = param.value
         return isinstance(default, (Query, Header, Cookie))
 
+    def _maybe_parse_json(self, value: Any) -> Any:
+        if isinstance(value, str):
+            value = value.strip()
+            if value.startswith("{") or value.startswith("["):
+                try:
+                    return serializer.loads(value)
+                except Exception:  # noqa
+                    return value
+        return value
+
     async def _parse_inferred_body(
         self,
         request: Request,
@@ -263,7 +274,14 @@ class BaseHandler:
         - Multi-param style: {"user": {...}, "item": {...}}
         - Single-param style: {"name": "...", "age": ...} -> into a single structured param
         """
-        json_data = await request.json() or {}
+        if request.is_json:
+            json_data: dict[str, Any] = await request.json() or {}
+        elif request.is_form:
+            form = await request.form()
+            json_data = {k: self._maybe_parse_json(v) for k, v in form.items()}
+        else:
+            json_data = await request.data() or {}  # type: ignore
+
         parameters = signature.parameters
 
         # Determine which parameters are already accounted for
@@ -299,7 +317,8 @@ class BaseHandler:
             except Exception as exc:  # noqa
                 if name in json_data:
                     payload[name] = apply_structure(
-                        structure=encoder_object, value=json_data[name]
+                        structure=encoder_object,
+                        value=json_data[name],
                     )
                 else:
                     raise exc

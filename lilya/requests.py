@@ -90,6 +90,20 @@ class Request(Connection):
         )
 
     @property
+    def is_form(self) -> bool:
+        """
+        Returns True if the request body is FormData (multipart or urlencoded).
+        """
+        return self.content_type in (MediaType.MULTIPART, MediaType.URLENCODED)
+
+    @property
+    def is_json(self) -> bool:
+        """
+        Returns True if the request body is JSON.
+        """
+        return self.content_type == MediaType.JSON
+
+    @property
     def method(self) -> str:
         """
         Get the HTTP method of the request.
