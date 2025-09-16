@@ -240,5 +240,165 @@ class ArticleListController(ListController):
 </ul>
 ```
 
+By using `FormController`, you can:
+
+* Cleanly separate form handling from templates.
+* Reuse validation logic across multiple controllers.
+* Integrate seamlessly with Pydantic, msgspec, attrs, or custom systems.
+
+
+## FormController
+
+The `FormController` provides a clean, class-based pattern for handling forms in Lilya.
+It is inspired by Django’s `FormView` but adapted for Lilya’s async-first and validation-agnostic design.
+
+Unlike Django, `FormController` is **not tied to any form library**, you can use **Pydantic**, **msgspec**, **attrs**, dataclasses,
+or any other mechanism for instantiating and validating submitted form data. See the [encoders](./encoders.md) for more
+details.
+
+### Key Features
+
+* Renders a form on **GET** requests.
+* Processes submitted form data on **POST** requests.
+* Provides hooks for customizing validation, success, and error handling.
+* Fully agnostic of the schema/validation library.
+* Automatically re-renders the form with errors if validation fails.
+
+### Attributes
+
+* **`form_class`**: The class used to instantiate/validate form data.
+  Must be set, or `get_form_class()` must be overridden.
+
+* **`success_url`**: URL to redirect to when the form is successfully processed.
+  Required unless `form_valid()` is overridden.
+
+* **`validator`**: Optional callable `(form_class, form_data) -> instance` that performs validation/instantiation.
+  Useful for plugging in Pydantic, msgspec, or attrs.
+
+### Overridable Hooks
+
+* **`get_form_class()`**: Returns the form class.
+* **`get_initial()`**: Provides initial form data (defaults to `{}`).
+* **`validate_form(form_class, data)`**: Validates and instantiates the form (defaults to `form_class(**data)`).
+* **`form_valid(request, form)`**: Called when the form is valid (default: redirects to `success_url`).
+* **`form_invalid(request, errors, data)`**: Called when the form is invalid (default: re-renders the template with errors).
+
+---
+
+### Example: Basic Contact Form (with Pydantic)
+
+```python
+from pydantic import BaseModel
+from lilya.requests import Request
+from lilya.responses import HTMLResponse
+from lilya.templating.controllers import FormController
+
+
+class ContactForm(BaseModel):
+    name: str
+    email: str
+    message: str
+
+
+class ContactFormController(FormController):
+    template_name = "contact.html"
+    form_class = ContactForm
+    success_url = "/thanks"
+
+    async def form_valid(self, request: Request, form: ContactForm, **kwargs) -> HTMLResponse:
+        # Handle the validated form: save to DB, send email, etc.
+        print("Valid form:", form.model_dump())
+        return await super().form_valid(request, form, **kwargs)
+```
+
+**Example template (`contact.html`):**
+
+```jinja
+<h1>Contact Us</h1>
+<form method="post">
+  <label>Name: <input type="text" name="name" value="{{ form.get('name','') }}"></label><br>
+  <label>Email: <input type="email" name="email" value="{{ form.get('email','') }}"></label><br>
+  <label>Message: <textarea name="message">{{ form.get('message','') }}</textarea></label><br>
+  <button type="submit">Send</button>
+</form>
+
+{% if errors %}
+  <div class="errors">
+    <h3>Form errors:</h3>
+    <ul>
+    {% for error in errors %}
+      <li>{{ error }}</li>
+    {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+```
+
+---
+
+### Example: Using `msgspec`
+
+```python
+import msgspec
+from lilya.templating.controllers import FormController
+
+
+class SignupForm(msgspec.Struct):
+    username: str
+    password: str
+
+
+class SignupController(FormController):
+    template_name = "signup.html"
+    form_class = SignupForm
+    success_url = "/welcome"
+
+    async def validate_form(self, form_class, data):
+        return msgspec.convert(data, form_class)
+```
+
+---
+
+### Example: Using `attrs`
+
+```python
+import attrs
+from lilya.templating.controllers import FormController
+
+
+@attrs.define
+class ProfileForm:
+    username: str
+    bio: str = ""
+
+
+class ProfileController(FormController):
+    template_name = "profile.html"
+    form_class = ProfileForm
+    success_url = "/done"
+```
+
+---
+
+### Example: Overriding Validation
+
+You can override `validate_form` to enforce custom rules without relying on any library:
+
+```python
+class CustomValidationController(FormController):
+    template_name = "custom_form.html"
+    form_class = dict  # dummy class for storing data
+    success_url = "/done"
+
+    async def validate_form(self, form_class, data):
+        if "username" not in data or len(data["username"]) < 3:
+            raise ValueError("Username must be at least 3 characters")
+        return data
+```
+
+---
+
+## Notes
+
 By using these class-based controllers, you can structure your template-rendering endpoints in a more
 organized and maintainable way, separating concerns like data fetching, context preparation, and rendering.

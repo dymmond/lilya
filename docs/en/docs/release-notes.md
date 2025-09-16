@@ -14,6 +14,7 @@ hide:
 - Complex types with collections, lists, sets, dicts supported by `infer_body` as True.
 - File uploads (UploadFile and list[UploadFile]) are now seamlessly supported in body inference.
 - Introduced dotted key expansion `(user.name=lilya)` and bracket list notation `(items[0].sku=test)` to express nested objects and lists in form submissions.
+- New [FormController](./templates.md#formcontroller) class based view template that is agnostic to any validation library.
 
 ### Changed
 
