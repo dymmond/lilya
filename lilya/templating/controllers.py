@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from typing import Any
 
 from lilya.controllers import Controller
 from lilya.exceptions import ImproperlyConfigured  # noqa
 from lilya.requests import Request
-from lilya.responses import HTMLResponse
+from lilya.responses import HTMLResponse, RedirectResponse
 from lilya.templating import Jinja2Template
 
 templates = Jinja2Template(directory="templates")
@@ -211,3 +211,196 @@ class ListController(BaseTemplateController):
         context[self.context_object_name] = object_list
 
         return context
+
+
+class FormController(BaseTemplateController):
+    """
+    A controller for handling forms in Lilya applications.
+
+    Inspired by Django's ``FormView``, this controller renders a form on GET
+    requests and processes submitted data on POST requests. Unlike Django,
+    it is validation-library agnostic, allowing you to use Pydantic, msgspec,
+    attrs, dataclasses, or any other validation system.
+
+    Typical workflow:
+        - On ``GET`` → renders the template with an empty or initial form.
+        - On ``POST`` → validates/instantiates the form class.
+            - If valid → delegates to :meth:`form_valid`.
+            - If invalid → delegates to :meth:`form_invalid`.
+
+    Attributes:
+        form_class (type[Any] | None): The class used to instantiate and validate
+            form data. Must be set or ``get_form_class()`` must be overridden.
+        success_url (str | None): The URL to redirect to upon successful form
+            submission. Must be set or ``form_valid()`` must be overridden.
+        validator (Callable[[type[Any], dict[str, Any]], Any] | None): Optional
+            callable that receives ``(form_class, form_data)`` and returns an
+            instantiated form object, or raises an error. Use this to plug in
+            Pydantic, msgspec, attrs, etc.
+    """
+
+    form_class: type[Any] | None = None
+    success_url: str | None = None
+    validator: Callable[[type[Any], dict[str, Any]], Any] | None = None
+    """
+    A callable that takes (form_class, form_data) and returns an instance
+    or raises an exception. This allows plugging in Pydantic, msgspec,
+    attrs, dataclasses, etc.
+    """
+
+    def get_form_class(self) -> type[Any]:
+        """
+        Return the form class used for instantiation and validation.
+
+        Returns:
+            type[Any]: The form class to use.
+
+        Raises:
+            ImproperlyConfigured: If ``form_class`` is not set and this method
+            is not overridden.
+        """
+        if self.form_class is None:
+            raise ImproperlyConfigured(
+                f"{self.__class__.__name__} requires either a definition of 'form_class' "
+                "or an override of 'get_form_class()'."
+            )
+        return self.form_class
+
+    def get_initial(self) -> dict[str, Any]:
+        """
+        Return the initial data for the form.
+
+        Subclasses can override this method to pre-populate form fields.
+        By default, returns an empty dict.
+
+        Returns:
+            dict[str, Any]: The initial form data.
+        """
+        return {}
+
+    async def get_context_data(self, request: Request, **kwargs: Any) -> dict[str, Any]:
+        """
+        Return the template context for rendering the form.
+
+        By default, includes:
+            - ``form``: The initial form data (from :meth:`get_initial`).
+            - ``errors``: An empty dict (populated by :meth:`form_invalid`).
+
+        Args:
+            request (Request): The incoming HTTP request.
+            **kwargs: Additional context data.
+
+        Returns:
+            dict[str, Any]: The template context.
+        """
+        context = await super().get_context_data(request, **kwargs)
+        context["form"] = self.get_initial()
+        context.setdefault("errors", {})
+        return context
+
+    async def get(self, request: Request, **kwargs: Any) -> HTMLResponse:
+        """
+        Handle GET requests.
+
+        Renders the form template with the initial context.
+
+        Args:
+            request (Request): The incoming HTTP request.
+            **kwargs: Additional context data.
+
+        Returns:
+            HTMLResponse: The rendered template response.
+        """
+        return await self.render_template(request, await self.get_context_data(request, **kwargs))
+
+    async def post(self, request: Request, **kwargs: Any) -> HTMLResponse | RedirectResponse:
+        """
+        Handle POST requests.
+
+        Validates the submitted form data. If valid, delegates to
+        :meth:`form_valid`; otherwise, delegates to :meth:`form_invalid`.
+
+        Args:
+            request (Request): The incoming HTTP request.
+            **kwargs: Additional context data.
+
+        Returns:
+            HTMLResponse | RedirectResponse: The response after processing.
+        """
+        form_class = self.get_form_class()
+        form_data = dict(await request.form())
+
+        try:
+            instance = await self.validate_form(form_class, form_data)
+        except Exception as exc:
+            return await self.form_invalid(request, str(exc), form_data, **kwargs)
+
+        return await self.form_valid(request, instance, **kwargs)
+
+    async def validate_form(self, form_class: type[Any], data: dict[str, Any]) -> Any:
+        """
+        Validate and instantiate the form.
+
+        By default, this method instantiates ``form_class`` with the submitted
+        data. Subclasses can override this method or provide a ``validator``
+        callable for integration with libraries like Pydantic, msgspec, or attrs.
+
+        Args:
+            form_class (type[Any]): The form class to instantiate.
+            data (dict[str, Any]): The submitted form data.
+
+        Returns:
+            Any: The instantiated form object.
+
+        Raises:
+            Exception: If validation or instantiation fails.
+        """
+        if self.validator:
+            return self.validator(form_class, data)
+        return form_class(**data)
+
+    async def form_valid(
+        self, request: Request, form: Any, **kwargs: Any
+    ) -> HTMLResponse | RedirectResponse:
+        """
+        Called when submitted form data is valid.
+
+        By default, redirects to :attr:`success_url`. Subclasses can override
+        this method to save data, send emails, etc.
+
+        Args:
+            request (Request): The incoming HTTP request.
+            form (Any): The validated form instance.
+            **kwargs: Additional context data.
+
+        Returns:
+            HTMLResponse | RedirectResponse: A response, typically a redirect.
+        """
+        if not self.success_url:
+            raise ImproperlyConfigured(
+                f"{self.__class__.__name__} requires 'success_url' or an override of form_valid()."
+            )
+        return RedirectResponse(url=self.success_url, status_code=303)
+
+    async def form_invalid(
+        self, request: Request, errors: Any, data: dict[str, Any], **kwargs: Any
+    ) -> HTMLResponse:
+        """
+        Called when submitted form data is invalid.
+
+        By default, re-renders the template with the submitted data and error
+        messages in the context.
+
+        Args:
+            request (Request): The incoming HTTP request.
+            errors (Any): The validation errors (format depends on validator).
+            data (dict[str, Any]): The submitted form data.
+            **kwargs: Additional context data.
+
+        Returns:
+            HTMLResponse: The rendered template response with errors.
+        """
+        context = await super().get_context_data(request, **kwargs)
+        context["form"] = data
+        context["errors"] = errors
+        return await self.render_template(request, context)
