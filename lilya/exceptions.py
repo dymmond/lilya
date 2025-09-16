@@ -1,11 +1,35 @@
 from __future__ import annotations
 
 import http
-from typing import Any
+from typing import Annotated, Any, cast
+
+from typing_extensions import Doc
 
 from lilya import status
+from lilya._internal._encoding import force_str  # noqa
 
-__all__ = ("HTTPException", "WebSocketException")
+
+def _get_error_details(data: Any) -> Any:
+    if isinstance(data, (list, tuple)):
+        return [_get_error_details(item) for item in data]
+
+    elif isinstance(data, dict):
+        return {key: _get_error_details(value) for key, value in data.items()}
+
+    text = force_str(data)
+    return ErrorDetail(text)
+
+
+class ErrorDetail(str):
+    def __new__(cls, string: str) -> ErrorDetail:
+        self = super().__new__(cls, string)
+        return self
+
+    def __repr__(self) -> str:
+        return f"ErrorDetail(string={str(self)})"
+
+    def __hash__(self) -> int:
+        return hash(str(self))
 
 
 class LilyaException(Exception):
@@ -140,6 +164,54 @@ class AuthenticationError(Exception): ...
 
 
 class EnvError(Exception): ...
+
+
+class ValidationError(HTTPException):
+    """
+    Provides a more detailed error message for validation errors
+    when thrown by the application.
+    """
+
+    status_code = status.HTTP_400_BAD_REQUEST
+    detail = "Validation error."
+
+    def __init__(
+        self,
+        detail: str | list[str] | dict[str, Any] | tuple[str] = None,
+        status_code: Annotated[
+            int | None,
+            Doc(
+                """
+                An integer with the status code to be raised.
+                """
+            ),
+        ] = None,
+        headers: Annotated[
+            dict[str, Any] | None,
+            Doc(
+                """
+                Any python dictionary containing headers.
+                """
+            ),
+        ] = None,
+        **extra: Annotated[
+            Any,
+            Doc(
+                """
+                Any extra information used by the exception.
+                """
+            ),
+        ],
+    ) -> None:
+        if isinstance(detail, tuple):
+            detail = list(detail)
+        elif not isinstance(detail, dict) and not isinstance(detail, list):
+            detail = [detail]
+
+        detail = _get_error_details(detail)
+        super().__init__(
+            status_code=status_code, detail=cast(str, detail), headers=headers, **extra
+        )
 
 
 # The EnvironmentError name is bad, it clashes with a builtin exception

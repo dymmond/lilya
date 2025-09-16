@@ -6,7 +6,7 @@ from typing import Any
 from lilya.controllers import Controller
 from lilya.exceptions import ImproperlyConfigured  # noqa
 from lilya.requests import Request
-from lilya.responses import HTMLResponse, RedirectResponse
+from lilya.responses import HTMLResponse, RedirectResponse, Response
 from lilya.templating import Jinja2Template
 
 templates = Jinja2Template(directory="templates")
@@ -318,7 +318,7 @@ class FormController(BaseTemplateController):
         """
         return await self.render_template(request, await self.get_context_data(request, **kwargs))
 
-    async def post(self, request: Request, **kwargs: Any) -> HTMLResponse | RedirectResponse:
+    async def post(self, request: Request, **kwargs: Any) -> Response:
         """
         Handle POST requests.
 
@@ -342,6 +342,12 @@ class FormController(BaseTemplateController):
 
         return await self.form_valid(request, instance, **kwargs)
 
+    async def patch(self, request: Request, **kwargs: Any) -> Response:
+        return await self.post(request, **kwargs)
+
+    async def put(self, request: Request, **kwargs: Any) -> Response:
+        return await self.post(request, **kwargs)
+
     async def validate_form(self, form_class: type[Any], data: dict[str, Any]) -> Any:
         """
         Validate and instantiate the form.
@@ -364,9 +370,7 @@ class FormController(BaseTemplateController):
             return self.validator(form_class, data)
         return form_class(**data)
 
-    async def form_valid(
-        self, request: Request, form: Any, **kwargs: Any
-    ) -> HTMLResponse | RedirectResponse:
+    async def form_valid(self, request: Request, form: Any, **kwargs: Any) -> Response:
         """
         Called when submitted form data is valid.
 
@@ -389,7 +393,7 @@ class FormController(BaseTemplateController):
 
     async def form_invalid(
         self, request: Request, errors: Any, data: dict[str, Any], **kwargs: Any
-    ) -> HTMLResponse:
+    ) -> Response:
         """
         Called when submitted form data is invalid.
 
