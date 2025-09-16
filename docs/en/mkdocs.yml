@@ -116,8 +116,8 @@ nav:
   - docker.md
 - Contrib:
   - contrib/index.md
-  - OpenAPI:
-    - contrib/openapi.md
+  - contrib/openapi.md
+  - contrib/forms-and-body-inference.md
   - Schedulers:
     - contrib/schedulers/index.md
     - contrib/schedulers/config.md

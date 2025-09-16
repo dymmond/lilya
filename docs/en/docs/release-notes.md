@@ -10,11 +10,15 @@ hide:
 ### Added
 
 - `is_json` and `is_form` properties for `Request`.
-- `infer_body` support for `FormData` types automatically.
+- Support for automatic body inference from forms (application/x-www-form-urlencoded and multipart/form-data), in addition to JSON.
+- Complex types with collections, lists, sets, dicts supported by `infer_body` as True.
+- File uploads (UploadFile and list[UploadFile]) are now seamlessly supported in body inference.
+- Introduced dotted key expansion `(user.name=lilya)` and bracket list notation `(items[0].sku=test)` to express nested objects and lists in form submissions.
 
 ### Changed
 
 - Inferred body to allow the form request to be parsed properly.
+- Improved typed structuring: collections like list[Item], tuple[Item, ...], dict[str, Item], and sets are now properly inferred and converted into typed objects.
 
 ## 0.20.1
 
