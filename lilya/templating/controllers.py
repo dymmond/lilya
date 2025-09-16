@@ -38,7 +38,12 @@ class TemplateControllerMetaclass(type):
         """
         super().__init__(name, bases, dct)
 
-        base_classes = ["BaseTemplateController", "TemplateController", "ListController"]
+        base_classes = [
+            "BaseTemplateController",
+            "TemplateController",
+            "ListController",
+            "FormController",
+        ]
         is_base_or_template_view = name in base_classes
 
         if (
