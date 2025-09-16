@@ -253,3 +253,29 @@ def test_single_param_var_tuple_of_items(test_client_factory):
         assert body["is_tuple"] is True
         assert body["types"] == ["Item", "Item"]
         assert body["skus"] == ["t1", "t2"]
+
+
+async def process_items_with_meta(items: list[dict[str, Any]]):
+    return items
+
+
+def test_infer_body_nested_json_strings_in_form(test_client_factory):
+    with create_client(
+        routes=[Path("/items-meta", handler=process_items_with_meta, methods=["POST"])],
+        settings_module=EncoderSettings,
+    ) as client:
+        response = client.post(
+            "/items-meta",
+            data={
+                "items[0].sku": "test1",
+                "items[0].meta": '{"x": 1}',
+                "items[1].sku": "test2",
+                "items[1].meta": '{"x": 2}',
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json() == [
+            {"sku": "test1", "meta": {"x": 1}},
+            {"sku": "test2", "meta": {"x": 2}},
+        ]

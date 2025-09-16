@@ -279,6 +279,35 @@ class BaseHandler:
                     return value
         return value
 
+    def _deep_parse_json(self, value: Any) -> Any:
+        """
+        Recursively traverse a nested structure (dicts, lists, strings) and
+        attempt to decode any JSON-encoded strings into Python objects.
+
+        - If `value` is a string and looks like JSON (handled by `_maybe_parse_json`),
+          it will be parsed into a dict, list, number, etc.
+        - If `value` is a dict, its values are recursively processed.
+        - If `value` is a list, each element is recursively processed.
+        - Any other type is returned as-is.
+
+        This allows form submissions like:
+
+            items[0].meta = '{"x": 1}'
+
+        to be expanded into:
+
+            {"items": [{"meta": {"x": 1}}]}
+
+        instead of leaving the nested `meta` as a raw JSON string.
+        """
+        if isinstance(value, str):
+            return self._maybe_parse_json(value)
+        if isinstance(value, dict):
+            return {k: self._deep_parse_json(v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [self._deep_parse_json(v) for v in value]
+        return value
+
     def _expand_nested_keys(self, data: dict[str, Any]) -> dict[str, Any]:
         """
         Expands flat form keys with dot and bracket notation into nested dicts/lists.
@@ -425,8 +454,9 @@ class BaseHandler:
             json_data: dict[str, Any] = await request.json() or {}
         elif request.is_form:
             form = await request.form()
-            raw = {k: self._maybe_parse_json(v) for k, v in form.items()}
-            json_data = self._expand_nested_keys(raw)
+            raw = dict(form.items())
+            expanded = self._expand_nested_keys(raw)
+            json_data = self._deep_parse_json(expanded)
         else:
             json_data = await request.data() or {}  # type: ignore
 
