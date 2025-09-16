@@ -11,6 +11,7 @@ hide:
 
 - `is_json` and `is_form` properties for `Request`.
 - `infer_body` support for `FormData` types automatically.
+- Complex types with collections, lists, sets, dicts supported by `infer_body` as True.
 
 ### Changed
 

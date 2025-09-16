@@ -183,3 +183,84 @@ def test_infer_body_with_list_in_form(test_client_factory):
 
         assert response.status_code == 200
         assert response.json() == ["test1", "test2"]
+
+
+class ProccessListItemController(Controller):
+    async def post(self, items: list[Item]):
+        return {
+            "is_items_list": isinstance(items, list),
+            "elem_types": [type(x).__name__ for x in items],
+            "skus": [x.sku for x in items],
+        }
+
+
+def test_single_param_list_structuring_root_and_wrapped(test_client_factory):
+    with create_client(
+        routes=[Path("/items", handler=ProccessListItemController, methods=["POST"])],
+        settings_module=EncoderSettings,
+    ) as client:
+        response = client.post("/items", json=[{"sku": "a"}, {"sku": "b"}])
+
+        assert response.status_code == 200
+        assert response.json()["elem_types"] == ["Item", "Item"]
+        assert response.json()["skus"] == ["a", "b"]
+
+        response = client.post("/items", json={"items": [{"sku": "x"}, {"sku": "y"}]})
+
+        assert response.status_code == 200
+        assert response.json()["elem_types"] == ["Item", "Item"]
+        assert response.json()["skus"] == ["x", "y"]
+
+
+# Dict[str, Item]
+
+
+class ProccessMapController(Controller):
+    async def post(self, items: dict[str, Item]):
+        return {
+            "keys": sorted(items.keys()),
+            "types": [type(v).__name__ for v in items.values()],
+            "skus": [v.sku for v in items.values()],
+        }
+
+
+def test_single_param_dict_of_items(test_client_factory):
+    with create_client(
+        routes=[Path("/map", handler=ProccessMapController, methods=["POST"])],
+        settings_module=EncoderSettings,
+    ) as client:
+        response = client.post("/map", json={"a": {"sku": "A"}, "b": {"sku": "B"}})
+
+        assert response.status_code == 200
+
+        body = response.json()
+
+        assert body["keys"] == ["a", "b"]
+        assert body["types"] == ["Item", "Item"]
+        assert body["skus"] == ["A", "B"]
+
+
+# Tuple[Item, ...]
+class ProccessTupleController(Controller):
+    async def post(self, items: tuple[Item, ...]):
+        return {
+            "is_tuple": isinstance(items, tuple),
+            "types": [type(v).__name__ for v in items],
+            "skus": [v.sku for v in items],
+        }
+
+
+def test_single_param_var_tuple_of_items(test_client_factory):
+    with create_client(
+        routes=[Path("/tuple", handler=ProccessTupleController, methods=["POST"])],
+        settings_module=EncoderSettings,
+    ) as client:
+        response = client.post("/tuple", json=[{"sku": "t1"}, {"sku": "t2"}])
+
+        assert response.status_code == 200
+
+        body = response.json()
+
+        assert body["is_tuple"] is True
+        assert body["types"] == ["Item", "Item"]
+        assert body["skus"] == ["t1", "t2"]
