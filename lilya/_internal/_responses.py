@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import inspect
+import re
 from collections.abc import Awaitable, Callable, Coroutine
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Annotated, Any, Union, cast, get_args, get_origin
 
 from lilya._internal._encoders import apply_structure, json_encode
 from lilya._internal._exception_handlers import wrap_app_handling_exceptions
@@ -24,6 +25,8 @@ if TYPE_CHECKING:
     from lilya.routing import BasePath as BasePath  # noqa
 
 SIGNATURE_TO_LIST = SignatureDefault.to_list()
+
+INDEX_REGEX = re.compile(r"^(.+)\[(\d+)\]$")
 
 
 class BaseHandler:
@@ -250,6 +253,23 @@ class BaseHandler:
         return isinstance(default, (Query, Header, Cookie))
 
     def _maybe_parse_json(self, value: Any) -> Any:
+        """Conditionally parses a string value into a JSON object.
+
+        This method inspects the provided value. If it's a string that
+        appears to be a JSON object or array (i.e., starts with '{' or '['
+        after stripping whitespace), it attempts to deserialize it.
+
+        If parsing is successful, the resulting Python object (dict or list)
+        is returned. If parsing fails for any reason, or if the value is not a
+        string that looks like JSON, the original value is returned.
+
+        Args:
+            value (Any): The value to potentially parse as JSON.
+
+        Returns:
+            Any: A parsed Python object if the input was a valid JSON string,
+                 otherwise the original value.
+        """
         if isinstance(value, str):
             value = value.strip()
             if value.startswith("{") or value.startswith("["):
@@ -261,17 +281,130 @@ class BaseHandler:
 
     def _expand_nested_keys(self, data: dict[str, Any]) -> dict[str, Any]:
         """
-        Expands flat form keys like "user.name" into nested dicts.
-        Example: {"user.name": "lilya", "user.age": "10"} -> {"user": {"name": "lilya", "age": "10"}}
+        Expands flat form keys with dot and bracket notation into nested dicts/lists.
+
+        Examples:
+        - {"user.name": "lilya", "user.age": "10"}
+          -> {"user": {"name": "lilya", "age": "10"}}
+
+        - {"items[0].sku": "test", "items[1].sku": "other"}
+          -> {"items": [{"sku": "test"}, {"sku": "other"}]}
         """
         expanded: dict[str, Any] = {}
-        for key, value in data.items():
-            parts = key.split(".")
-            d = expanded
-            for part in parts[:-1]:
-                d = d.setdefault(part, {})
-            d[parts[-1]] = value
+
+        for flat_key, value in data.items():
+            parts = flat_key.split(".")
+            d: Any = expanded
+
+            for i, part in enumerate(parts):
+                matched = INDEX_REGEX.match(part)
+                is_last = i == len(parts) - 1
+
+                if matched:
+                    key, idx = matched.groups()
+                    idx = int(idx)
+
+                    if key not in d or not isinstance(d.get(key), list):
+                        d[key] = []
+
+                    # ensure list has enough slots
+                    while len(d[key]) <= idx:
+                        d[key].append({})
+
+                    if is_last:
+                        d[key][idx] = value
+                    else:
+                        d = d[key][idx]
+
+                else:
+                    if is_last:  # type: ignore
+                        d[part] = value
+                    else:
+                        if part not in d or not isinstance(d[part], dict):
+                            d[part] = {}
+                        d = d[part]
         return expanded
+
+    def _strip_annotated(self, annotation: Any) -> Any:
+        """Strips metadata from an Annotated type hint.
+
+        This utility method checks if a given type annotation is an instance of
+        `typing.Annotated`. If it is, it extracts and returns the underlying
+        base type, effectively removing any metadata. If the annotation is not
+        an `Annotated` type, it returns the annotation unchanged.
+
+        For example, `Annotated[int, "some metadata"]` would become `int`.
+
+        Args:
+            annotation (Any): The type annotation to potentially strip.
+
+        Returns:
+            Any: The base type if the annotation is `Annotated`, otherwise the
+                 original annotation.
+        """
+        if get_origin(annotation) is Annotated:
+            return get_args(annotation)[0]
+        return annotation
+
+    def _structure_to_annotation(self, annotation: Any, value: Any) -> Any:
+        """
+        Make apply_structure work with container annotations like list[T], tuple[T], set[T], dict[K, V].
+        Falls back to plain apply_structure for non-containers.
+        """
+        annotation = self._strip_annotated(annotation)
+        origin = get_origin(annotation)
+        args = get_args(annotation)
+
+        # Optional/Union: try non-None arms in order
+        if origin is Union:
+            non_none = [a for a in args if a is not type(None)]  # noqa: E721
+            for a in non_none:
+                try:
+                    return self._structure_to_annotation(a, value)
+                except Exception:
+                    continue
+            return value  # fallback
+
+        # list[T]
+        if origin is list:
+            (elem_t,) = args or (Any,)
+            return [self._structure_to_annotation(elem_t, v) for v in (value or [])]
+
+        # tuple[T, ...] or tuple[T1, T2, ...]
+        if origin is tuple:
+            if len(args) == 2 and args[1] is Ellipsis:
+                (elem_t, _) = args
+                return tuple(self._structure_to_annotation(elem_t, v) for v in (value or []))
+            # fixed-length tuple
+            return tuple(
+                self._structure_to_annotation(t, v)
+                for t, v in zip(args, (value or []), strict=False)
+            )
+
+        # set[T] / frozenset[T]
+        if origin is set:
+            (elem_t,) = args or (Any,)
+            return {self._structure_to_annotation(elem_t, v) for v in (value or [])}
+        if origin is frozenset:
+            (elem_t,) = args or (Any,)
+            return frozenset(self._structure_to_annotation(elem_t, v) for v in (value or []))
+
+        # dict[K, V]  (keys are usually strings from JSON/form; keep keys as-is, structure values)
+        if origin is dict:
+            key_t, val_t = args or (Any, Any)
+            if value is None:
+                return {}
+            return {k: self._structure_to_annotation(val_t, v) for k, v in value.items()}
+
+        # Non-container: if it's already the right type, return; else apply_structure
+        try:
+            # Best-effort fast path when annotation is a runtime class/type
+            if isinstance(annotation, type) and isinstance(value, annotation):
+                return value
+        except Exception:
+            pass
+
+        return apply_structure(structure=annotation, value=value)
 
     async def _parse_inferred_body(
         self,
@@ -321,22 +454,16 @@ class BaseHandler:
             name = body_param_names[0]
             encoder_object = parameters[name].annotation
 
-            if name in SIGNATURE_TO_LIST:
+            if name in SIGNATURE_TO_LIST or name in dependencies:
                 return payload
 
-            if name in dependencies:
-                return payload
+            candidate = (
+                json_data[name]
+                if (isinstance(json_data, dict) and name in json_data)
+                else json_data
+            )
+            return {name: self._structure_to_annotation(encoder_object, candidate)}
 
-            try:
-                payload[name] = apply_structure(structure=encoder_object, value=json_data)
-            except Exception as exc:  # noqa
-                if name in json_data:
-                    payload[name] = apply_structure(
-                        structure=encoder_object,
-                        value=json_data[name],
-                    )
-                else:
-                    raise exc
         else:
             for name in body_param_names:
                 if name in SIGNATURE_TO_LIST:
@@ -348,7 +475,7 @@ class BaseHandler:
                 if name not in json_data:
                     raise ValueError(f"Missing expected body key and/or payload for '{name}'.")
                 encoder_object = parameters[name].annotation
-                payload[name] = apply_structure(structure=encoder_object, value=json_data[name])
+                payload[name] = self._structure_to_annotation(encoder_object, json_data[name])
 
         return payload
 

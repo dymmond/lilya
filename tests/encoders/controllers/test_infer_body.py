@@ -161,3 +161,25 @@ def test_infer_body_with_flat_form_and_file(test_client_factory):
             "filename": "hello.txt",
             "filesize": 11,
         }
+
+
+class ProcessController(Controller):
+    async def post(self, items: list[Item]):
+        return [item.sku for item in items]
+
+
+def test_infer_body_with_list_in_form(test_client_factory):
+    with create_client(
+        routes=[Path("/items", handler=ProcessController)],
+        settings_module=EncoderSettings,
+    ) as client:
+        response = client.post(
+            "/items",
+            data={
+                "items[0].sku": "test1",
+                "items[1].sku": "test2",
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json() == ["test1", "test2"]
