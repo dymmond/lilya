@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.20.3
+
+### Added
+
+- `ValidationError` added to `lilya.exceptions`.
+
 ## 0.20.2
 
 ### Added
