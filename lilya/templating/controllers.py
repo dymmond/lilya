@@ -11,7 +11,7 @@ from lilya.templating import Jinja2Template
 
 templates = Jinja2Template(directory="templates")
 
-__all__ = ["TemplateController", "ListController"]
+__all__ = ["TemplateController", "ListController", "FormController"]
 
 
 class TemplateControllerMetaclass(type):
