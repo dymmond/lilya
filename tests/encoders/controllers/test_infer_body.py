@@ -1,9 +1,11 @@
+import io
 from typing import Any
 
 from msgspec import Struct
 from pydantic import BaseModel
 
 from lilya.controllers import Controller
+from lilya.datastructures import DataUpload as UploadFile
 from lilya.dependencies import Provide, Provides
 from lilya.routing import Path
 from lilya.testclient import create_client
@@ -111,3 +113,32 @@ def test_infer_body_from_form(test_client_factory):
 
         assert response.status_code == 200
         assert response.json() == {"name": "lilya", "age": 10, "sku": "test"}
+
+
+class ProfileController(Controller):
+    async def post(self, user: User, file: UploadFile):
+        content = await file.read()
+        return {
+            "user": user.model_dump(),
+            "filename": file.filename,
+            "filesize": len(content),
+        }
+
+
+def test_infer_body_with_file_upload(test_client_factory):
+    with create_client(
+        routes=[Path("/upload", handler=ProfileController)],
+        settings_module=EncoderSettings,
+    ) as client:
+        response = client.post(
+            "/upload",
+            data={"user": '{"name":"lilya","age":10}'},
+            files={"file": ("hello.txt", io.BytesIO(b"hello world"), "text/plain")},
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "user": {"name": "lilya", "age": 10},
+            "filename": "hello.txt",
+            "filesize": 11,
+        }
