@@ -23,30 +23,30 @@ class TemplateControllerMetaclass(type):
     `template_name` attribute explicitly set to a non-None value.
     """
 
-    def __new__(cls, name: str, bases: Any, attrs: Any) -> Any:
+    def __new__(cls: type[type], name: str, bases: tuple[type, ...], attrs: dict[str, Any]) -> Any:
+        def make_wrapper(method_name: str, original: Callable[..., Any]) -> Callable[..., Any]:
+            async def wrapper(
+                self: Any,
+                request: Any,
+                *args: Any,
+                **kwargs: Any,
+            ) -> Any:
+                # Call subclass override
+                result = await original(self, request, *args, **kwargs)
+
+                # If no result, delegate to parent implementation
+                if result is None:
+                    for base in type(self).mro()[1:]:
+                        if hasattr(base, method_name):
+                            base_method = getattr(base, method_name)
+                            return await base_method(self, request, *args, **kwargs)
+                return result
+
+            return wrapper
+
         for method_name in ("form_valid", "form_invalid"):
             if method_name in attrs:
-                original = attrs[method_name]
-
-                async def wrapper(
-                    self: Any,
-                    request: Request,
-                    *args: Any,
-                    __original: Any = original,
-                    __method_name: str = method_name,
-                    **kwargs: Any,
-                ) -> Any:
-                    # Call subclass override
-                    result = await __original(self, request, *args, **kwargs)
-
-                    # If subclass forgot to call super(), fallback to parent
-                    if result is None:
-                        base_method = getattr(super(type(self), self), __method_name)
-                        return await base_method(request, *args, **kwargs)
-
-                    return result
-
-                attrs[method_name] = wrapper
+                attrs[method_name] = make_wrapper(method_name, attrs[method_name])
 
         return super().__new__(cls, name, bases, attrs)
 

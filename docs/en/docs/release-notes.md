@@ -10,6 +10,39 @@ hide:
 ### Added
 
 - `ValidationError` added to `lilya.exceptions`.
+- Introduced [lilya.contrib.mail](./contrib/mail.md) providing a full-featured, async-first email framework.
+- Includes a high-level `Mailer` API for sending single, multiple, and templated messages.
+- Supports multipart messages (text + HTML), custom headers, attachments (in-memory or files), and metadata.
+* CLI integration, `lilya mail sendtest`, for sending quick test emails via console backend.
+
+#### Built-in Backends
+
+- **SMTPBackend**: Async-friendly with connection pooling and TLS/authentication.
+- **ConsoleBackend**: Writes messages to stdout for debugging.
+- **FileBackend**: Saves emails as `.eml` files for inspection or archiving.
+- **InMemoryBackend**: Stores emails in memory for development or testing scenarios.
+
+#### Email Templates
+
+- Added `TemplateRenderer` with Jinja2 integration.
+- `send_template` generates HTML + auto text fallbacks.
+- Supports separate text/HTML templates and contextual rendering.
+
+#### Application Integration
+
+* New `setup_mail(app, backend, template_dir, attach_lifecycle=True)` utility attaches a `Mailer` to `app.state.mailer`.
+* Automatically opens/closes backend connections via startup/shutdown hooks.
+
+#### Exception Hierarchy
+
+* `MailError`: Base exception for all mail errors.
+* `BackendNotConfigured`: Raised when no backend or template renderer is configured.
+* `InvalidMessage`: Raised when an `EmailMessage` is incomplete or malformed.
+
+---
+
+Would you like me to phrase these as **“Added / Changed / Fixed” sections** (changelog style), or keep them in this **feature-highlight narrative style**?
+
 
 ## 0.20.2
 
