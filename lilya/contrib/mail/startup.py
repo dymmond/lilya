@@ -14,20 +14,39 @@ def setup_mail(
     attach_lifecycle: bool = True,
 ) -> None:
     """
-    Attach a global Mailer to `app.state.mailer`. Optionally registers
-    startup/shutdown hooks if the app exposes Starlette-like events.
+    Configure and attach a global `Mailer` instance to the Lilya application.
+
+    This function ensures that `app.state.mailer` is always available,
+    allowing you to send emails anywhere in your application
+    (handlers, dependencies, background tasks).
+
+    Optionally, it will also hook into the application's startup
+    and shutdown events to manage the backend's connection lifecycle.
+
+    Args:
+        app: The Lilya application instance.
+        backend: A configured mail backend (e.g., `SMTPBackend`,
+            `ConsoleBackend`, `FileBackend`, `InMemoryBackend`).
+        template_dir: Optional path to a directory containing Jinja2 templates
+            for rendering HTML/plain-text emails.
+        attach_lifecycle: If `True`, register startup/shutdown event handlers
+            to automatically open/close the mail backend connection.
+
+    Raises:
+        BackendNotConfigured: If no backend is provided.
     """
-    if not backend:
-        raise BackendNotConfigured("No mail backend provided.")
+    if backend is None:
+        raise BackendNotConfigured("No mail backend provided to setup_mail().")
 
     mailer = Mailer(backend=backend, template_dir=template_dir)
     app.state.mailer = mailer
 
     if attach_lifecycle:
-        add_event = getattr(app, "add_event_handler", None)
-        if callable(add_event):
-            add_event("startup", mailer.open)
-            add_event("shutdown", mailer.close)
+        add_event_handler = getattr(app, "add_event_handler", None)
+        if callable(add_event_handler):
+            add_event_handler("startup", mailer.open)
+            add_event_handler("shutdown", mailer.close)
         else:
-            # Fallback: do nothing (caller can manage open/close explicitly)
-            ...
+            # If the app does not support event handlers,
+            # the developer must call `mailer.open()` and `mailer.close()` manually.
+            return

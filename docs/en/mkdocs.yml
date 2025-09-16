@@ -135,7 +135,7 @@ nav:
   - Files:
     - contrib/files/send-file.md
     - contrib/files/jsonify.md
-  - "contrib/mail.md"
+  - contrib/mail.md
 - contributing.md
 - sponsorship.md
 - release-notes.md

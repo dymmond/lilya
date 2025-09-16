@@ -4,18 +4,26 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
+# Type aliases for readability
 AttachmentContent = bytes | memoryview
-Attachmenttuple = tuple[str, AttachmentContent, str | None]  # (filename, content, mimetype)
+AttachmentTuple = tuple[str, AttachmentContent, str | None]  # (filename, content, mimetype)
 
 
 @dataclass
 class EmailMessage:
     """
-    Framework-agnostic email message.
+    A framework-agnostic representation of an email message.
 
-    - Supports multipart (text + html) via 'alternatives'
-    - Supports attachments either by in-memory bytes or file paths
-    - 'headers' allows arbitrary extra headers
+    This class is used internally by Lilya's mail system to describe
+    the structure of an outgoing email, regardless of which backend
+    actually sends it.
+
+    Features:
+        - **Multipart support**: send both text and HTML versions.
+        - **Alternatives**: add extra MIME bodies (e.g., iCalendar).
+        - **Attachments**: add binary attachments (in-memory or file paths).
+        - **Headers**: add custom RFC-822 headers.
+        - **Metadata**: arbitrary extra data not sent to recipients.
     """
 
     subject: str
@@ -26,28 +34,34 @@ class EmailMessage:
     body_text: str | None = None
     body_html: str | None = None
 
-    # Extra bodies (media-type, content) e.g. [("text/calendar", bytes_ics)]
+    # Extra MIME bodies, e.g., [("text/calendar", ics_bytes)]
     alternatives: list[tuple[str, str | bytes]] = field(default_factory=list)
 
+    # Recipient lists
     cc: list[str] = field(default_factory=list)
     bcc: list[str] = field(default_factory=list)
     reply_to: list[str] = field(default_factory=list)
 
-    # Attachments:
-    # - in_memory: list of (filename, content_bytes, mimetype?)
-    # - file_paths: list of absolute/relative paths
-    attachments: list[Attachmenttuple] = field(default_factory=list)
+    # Attachments
+    attachments: list[AttachmentTuple] = field(default_factory=list)
     attachment_paths: list[str] = field(default_factory=list)
 
+    # Extra headers (e.g., {"X-Campaign": "welcome"})
     headers: Mapping[str, str] = field(default_factory=dict)
 
-    # Arbitrary metadata (not sent over the wire)
+    # Arbitrary metadata (not transmitted)
     meta: dict[str, Any] = field(default_factory=dict)
 
     def all_recipients(self) -> list[str]:
-        r = list(self.to)
+        """
+        Collect all recipients of the email (To + Cc + Bcc).
+
+        Returns:
+            A combined list of all recipient addresses.
+        """
+        recipients: list[str] = list(self.to)
         if self.cc:
-            r.extend(self.cc)
+            recipients.extend(self.cc)
         if self.bcc:
-            r.extend(self.bcc)
-        return r
+            recipients.extend(self.bcc)
+        return recipients

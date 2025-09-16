@@ -12,23 +12,52 @@ from lilya.contrib.mail.message import EmailMessage
 
 class FileBackend(BaseMailBackend):
     """
-    Writes RFC-822 .eml files to a directory (like Django's file backend).
+    A mail backend that writes messages to disk as `.eml` files.
+
+    This backend is useful for **development, debugging, or archiving**,
+    when you want to inspect the raw RFC-822 email output without
+    actually sending it.
+
+    Files are written in standard MIME format, so they can be opened by
+    email clients like Thunderbird or Outlook.
     """
 
     def __init__(self, directory: str, create: bool = True) -> None:
-        self.dir = Path(directory)
+        """
+        Initialize the file backend.
+
+        Args:
+            directory: Path to the directory where `.eml` files will be stored.
+            create: Whether to automatically create the directory if it does not exist.
+        """
+        self.directory = Path(directory)
         self.create = create
 
     async def open(self) -> None:
+        """
+        Ensure the target directory exists if `create=True`.
+        """
         if self.create:
-            self.dir.mkdir(parents=True, exist_ok=True)
+            self.directory.mkdir(parents=True, exist_ok=True)
 
     async def send(self, message: EmailMessage) -> None:
-        em = await build_email_message(message)
-        ts = datetime.utcnow().strftime("%Y%m%d-%H%M%S-%f")
-        safe_subj = "".join(
-            c for c in (message.subject or "no-subject") if c.isalnum() or c in "-_"
+        """
+        Write an email message to a `.eml` file.
+
+        Filenames are prefixed with a UTC timestamp to avoid collisions,
+        followed by a sanitized subject line.
+
+        Args:
+            message: The :class:`EmailMessage` to serialize.
+        """
+        email_message = await build_email_message(message)
+
+        timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S-%f")
+        safe_subject = "".join(
+            char for char in (message.subject or "no-subject") if char.isalnum() or char in "-_"
         )[:60]
-        fname = self.dir / f"{ts}-{safe_subj}.eml"
-        with open(fname, "wb") as f:
-            BytesGenerator(f, policy=default_policy).flatten(em)
+
+        file_path = self.directory / f"{timestamp}-{safe_subject}.eml"
+
+        with open(file_path, "wb") as file:
+            BytesGenerator(file, policy=default_policy).flatten(email_message)
