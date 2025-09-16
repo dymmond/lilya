@@ -259,6 +259,20 @@ class BaseHandler:
                     return value
         return value
 
+    def _expand_nested_keys(self, data: dict[str, Any]) -> dict[str, Any]:
+        """
+        Expands flat form keys like "user.name" into nested dicts.
+        Example: {"user.name": "lilya", "user.age": "10"} -> {"user": {"name": "lilya", "age": "10"}}
+        """
+        expanded: dict[str, Any] = {}
+        for key, value in data.items():
+            parts = key.split(".")
+            d = expanded
+            for part in parts[:-1]:
+                d = d.setdefault(part, {})
+            d[parts[-1]] = value
+        return expanded
+
     async def _parse_inferred_body(
         self,
         request: Request,
@@ -278,7 +292,8 @@ class BaseHandler:
             json_data: dict[str, Any] = await request.json() or {}
         elif request.is_form:
             form = await request.form()
-            json_data = {k: self._maybe_parse_json(v) for k, v in form.items()}
+            raw = {k: self._maybe_parse_json(v) for k, v in form.items()}
+            json_data = self._expand_nested_keys(raw)
         else:
             json_data = await request.data() or {}  # type: ignore
 

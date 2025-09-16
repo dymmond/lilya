@@ -120,14 +120,33 @@ async def process_upload(user: User, file: UploadFile):
     }
 
 
-def test_infer_body_with_file_upload(test_client_factory):
+def test_infer_body_with_json_field_and_file(test_client_factory):
     with create_client(
-        routes=[Path("/upload", handler=process_upload, methods=["POST"])],
+        routes=[Path("/upload-json", handler=process_upload, methods=["POST"])],
         settings_module=EncoderSettings,
     ) as client:
         response = client.post(
-            "/upload",
+            "/upload-json",
             data={"user": '{"name":"lilya","age":10}'},
+            files={"file": ("hello.txt", io.BytesIO(b"hello world"), "text/plain")},
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "user": {"name": "lilya", "age": 10},
+            "filename": "hello.txt",
+            "filesize": 11,
+        }
+
+
+def test_infer_body_with_flat_form_and_file(test_client_factory):
+    with create_client(
+        routes=[Path("/upload-flat", handler=process_upload, methods=["POST"])],
+        settings_module=EncoderSettings,
+    ) as client:
+        response = client.post(
+            "/upload-flat",
+            data={"user.name": "lilya", "user.age": "10"},
             files={"file": ("hello.txt", io.BytesIO(b"hello world"), "text/plain")},
         )
 
