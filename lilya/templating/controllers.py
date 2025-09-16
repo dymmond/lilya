@@ -6,7 +6,7 @@ from typing import Any
 from lilya.controllers import Controller
 from lilya.exceptions import ImproperlyConfigured  # noqa
 from lilya.requests import Request
-from lilya.responses import HTMLResponse, RedirectResponse
+from lilya.responses import HTMLResponse, RedirectResponse, Response
 from lilya.templating import Jinja2Template
 
 templates = Jinja2Template(directory="templates")
@@ -22,6 +22,33 @@ class TemplateControllerMetaclass(type):
     and potentially not TemplateController if it's just an intermediary) has the
     `template_name` attribute explicitly set to a non-None value.
     """
+
+    def __new__(cls: type[type], name: str, bases: tuple[type, ...], attrs: dict[str, Any]) -> Any:
+        def make_wrapper(method_name: str, original: Callable[..., Any]) -> Callable[..., Any]:
+            async def wrapper(
+                self: Any,
+                request: Any,
+                *args: Any,
+                **kwargs: Any,
+            ) -> Any:
+                # Call subclass override
+                result = await original(self, request, *args, **kwargs)
+
+                # If no result, delegate to parent implementation
+                if result is None:
+                    for base in type(self).mro()[1:]:
+                        if hasattr(base, method_name):
+                            base_method = getattr(base, method_name)
+                            return await base_method(self, request, *args, **kwargs)
+                return result
+
+            return wrapper
+
+        for method_name in ("form_valid", "form_invalid"):
+            if method_name in attrs:
+                attrs[method_name] = make_wrapper(method_name, attrs[method_name])
+
+        return super().__new__(cls, name, bases, attrs)
 
     def __init__(cls, name: str, bases: Any, dct: Any) -> None:
         """
@@ -318,7 +345,7 @@ class FormController(BaseTemplateController):
         """
         return await self.render_template(request, await self.get_context_data(request, **kwargs))
 
-    async def post(self, request: Request, **kwargs: Any) -> HTMLResponse | RedirectResponse:
+    async def post(self, request: Request, **kwargs: Any) -> Response:
         """
         Handle POST requests.
 
@@ -342,6 +369,12 @@ class FormController(BaseTemplateController):
 
         return await self.form_valid(request, instance, **kwargs)
 
+    async def patch(self, request: Request, **kwargs: Any) -> Response:
+        return await self.post(request, **kwargs)
+
+    async def put(self, request: Request, **kwargs: Any) -> Response:
+        return await self.post(request, **kwargs)
+
     async def validate_form(self, form_class: type[Any], data: dict[str, Any]) -> Any:
         """
         Validate and instantiate the form.
@@ -364,9 +397,7 @@ class FormController(BaseTemplateController):
             return self.validator(form_class, data)
         return form_class(**data)
 
-    async def form_valid(
-        self, request: Request, form: Any, **kwargs: Any
-    ) -> HTMLResponse | RedirectResponse:
+    async def form_valid(self, request: Request, form: Any, **kwargs: Any) -> Response:
         """
         Called when submitted form data is valid.
 
@@ -389,7 +420,7 @@ class FormController(BaseTemplateController):
 
     async def form_invalid(
         self, request: Request, errors: Any, data: dict[str, Any], **kwargs: Any
-    ) -> HTMLResponse:
+    ) -> Response:
         """
         Called when submitted form data is invalid.
 
