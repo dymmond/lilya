@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from typing import Any
 
 from lilya.contrib.mail.backends.base import BaseMailBackend
-from lilya.contrib.mail.exceptions import BackendNotConfigured
+from lilya.contrib.mail.exceptions import BackendNotConfigured, InvalidMessage
 from lilya.contrib.mail.message import EmailMessage
 from lilya.contrib.mail.templates import TemplateRenderer
 
@@ -80,6 +80,8 @@ class Mailer:
         """
         if not self.backend:
             raise BackendNotConfigured("No mail backend configured.")
+        if not message.all_recipients():
+            raise InvalidMessage("No recipients specified.")
         if not (
             message.body_text
             or message.body_html
@@ -87,8 +89,7 @@ class Mailer:
             or message.attachments
             or message.attachment_paths
         ):
-            # Note: allowed, but discouraged — an email with no content parts.
-            pass
+            raise InvalidMessage("Message must have at least one body part or attachment.")
         await self.backend.send(message)
 
     async def send_many(self, messages: Sequence[EmailMessage]) -> None:
