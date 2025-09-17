@@ -140,17 +140,17 @@ nav:
 - sponsorship.md
 - release-notes.md
 markdown_extensions:
+- attr_list
 - toc:
     permalink: true
 - mdx_include:
-    base_path: docs
+    base_path: docs/
 - admonition
 - extra
 - pymdownx.superfences
 - pymdownx.tabbed:
     alternate_style: true
 - pymdownx.highlight
-- attr_list
 - md_in_html
 extra:
   alternate:
