@@ -39,11 +39,6 @@ hide:
 * `BackendNotConfigured`: Raised when no backend or template renderer is configured.
 * `InvalidMessage`: Raised when an `EmailMessage` is incomplete or malformed.
 
----
-
-Would you like me to phrase these as **“Added / Changed / Fixed” sections** (changelog style), or keep them in this **feature-highlight narrative style**?
-
-
 ## 0.20.2
 
 ### Added
