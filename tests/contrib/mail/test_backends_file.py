@@ -52,3 +52,30 @@ async def test_subject_sanitization(tmp_path):
 
     assert files
     assert "Weird" in files[0].name
+
+
+async def test_file_backend_serializes_attachments(tmp_path):
+    # create a file to attach
+    f = tmp_path / "hello.txt"
+    f.write_text("hello")
+
+    backend = FileBackend(directory=str(tmp_path))
+    await backend.open()
+
+    mailer = Mailer(backend=backend)
+    msg = EmailMessage(
+        subject="attach",
+        to=["a@test"],
+        body_text="see attached",
+        attachment_paths=[str(f)],
+    )
+    await mailer.send(msg)
+
+    files = list(Path(tmp_path).glob("*.eml"))
+
+    assert files
+
+    content = files[0].read_text()
+
+    assert "hello.txt" in content
+    assert "see attached" in content

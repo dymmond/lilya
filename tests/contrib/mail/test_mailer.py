@@ -89,3 +89,27 @@ async def test_send_template_without_renderer_raises():
             subject="test",
             to=["a@example.com"],
         )
+
+
+async def test_headers_reply_to_cc_bcc_preserved():
+    backend = InMemoryBackend()
+    mailer = Mailer(backend=backend)
+
+    msg = EmailMessage(
+        subject="hdrs",
+        to=["a@test"],
+        cc=["b@test"],
+        bcc=["c@test"],
+        reply_to=["reply@test"],
+        body_text="hi",
+        headers={"X-Custom": "123"},
+    )
+
+    await mailer.send(msg)
+
+    stored = backend.outbox[0]
+
+    assert stored.cc == ["b@test"]
+    assert stored.bcc == ["c@test"]
+    assert stored.reply_to == ["reply@test"]
+    assert stored.headers["X-Custom"] == "123"

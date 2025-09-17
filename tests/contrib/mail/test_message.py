@@ -63,3 +63,19 @@ def test_empty_subject_fallback_for_filebackend(tmp_path):
 
     assert files
     assert "no-subject" in files[0].name
+
+
+def test_alternatives():
+    msg = EmailMessage(
+        subject="Alt",
+        to=["a@test"],
+        body_text="Plain",
+        alternatives=[("text/calendar", "BEGIN:VCALENDAR\nEND:VCALENDAR")],
+    )
+
+    assert msg.alternatives
+
+    media_type, content = msg.alternatives[0]
+
+    assert media_type == "text/calendar"
+    assert "VCALENDAR" in content

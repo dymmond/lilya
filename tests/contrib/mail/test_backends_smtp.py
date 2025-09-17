@@ -31,6 +31,11 @@ class DummySMTP:
         self.actions.append("close")
 
 
+class FailingSMTP(DummySMTP):
+    def send_message(self, msg, to_addrs=None):
+        raise smtplib.SMTPException("Simulated failure")
+
+
 async def test_smtp_backend_sends(monkeypatch):
     monkeypatch.setattr(smtplib, "SMTP", DummySMTP)
 
@@ -75,4 +80,34 @@ async def test_send_without_open_raises(monkeypatch):
     msg = EmailMessage(subject="x", to=["a@test"], body_text="body")
 
     with pytest.raises(RuntimeError):
+        await mailer.send(msg)
+
+
+async def test_smtp_applies_default_from(monkeypatch):
+    dummy = DummySMTP()
+    monkeypatch.setattr(smtplib, "SMTP", lambda *a, **kw: dummy)
+
+    backend = SMTPBackend(host="smtp.test", port=25, username="user", password="pass")
+    mailer = Mailer(backend=backend)
+    await mailer.open()
+
+    msg = EmailMessage(subject="smtp", to=["a@test"], body_text="hello")
+
+    assert msg.from_email is None
+
+    await mailer.send(msg)
+
+    assert msg.from_email == "user"  # default_from_email applied
+
+
+async def test_smtp_error_propagates(monkeypatch):
+    monkeypatch.setattr(smtplib, "SMTP", lambda *a, **kw: FailingSMTP())
+
+    backend = SMTPBackend(host="smtp.test", port=25)
+    mailer = Mailer(backend=backend)
+    await mailer.open()
+
+    msg = EmailMessage(subject="smtp", to=["a@test"], body_text="hello")
+
+    with pytest.raises(smtplib.SMTPException):
         await mailer.send(msg)
