@@ -58,7 +58,7 @@ all = [
     # Used for the runserver CLI command
     "rich_toolkit>=0.14.7",
     # The base client for Lilya
-    "sayer>=0.3.4,<1.0.0",
+    "sayer>=0.5.0,<1.0.0",
     # The server for runserver command
     "uvicorn[standard]>=0.29.0",
     # HTTP client for Lilya
