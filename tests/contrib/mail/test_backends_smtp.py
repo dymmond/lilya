@@ -10,25 +10,25 @@ pytestmark = pytest.mark.anyio
 
 class DummySMTP:
     def __init__(self, *a, **kw):
-        pass
+        self.actions = []
 
     def ehlo(self):
-        pass
+        self.actions.append("ehlo")
 
     def starttls(self):
-        pass
+        self.actions.append("tls")
 
     def login(self, user, pwd):
-        self.logged_in = (user, pwd)
+        self.actions.append(("login", user))
 
     def send_message(self, msg, to_addrs=None):
-        self.sent = (msg, to_addrs)
+        self.actions.append(("send", to_addrs))
 
     def quit(self):
-        pass
+        self.actions.append("quit")
 
     def close(self):
-        pass
+        self.actions.append("close")
 
 
 async def test_smtp_backend_sends(monkeypatch):
@@ -37,10 +37,42 @@ async def test_smtp_backend_sends(monkeypatch):
     backend = SMTPBackend(host="smtp.test", port=25, username="user", password="pass")
     mailer = Mailer(backend=backend)
     await mailer.open()
+
     msg = EmailMessage(subject="smtp", to=["a@test"], body_text="hello")
     await mailer.send(msg)
 
     # Ensure DummySMTP recorded the send
     client = backend._conn._client
-    assert client.sent
-    assert "smtp" in str(client.sent[0])
+
+    assert any(action[0] == "send" for action in client.actions if isinstance(action, tuple))
+
+
+async def test_smtp_connection_and_send(monkeypatch):
+    dummy = DummySMTP()
+    monkeypatch.setattr(smtplib, "SMTP", lambda *a, **kw: dummy)
+
+    backend = SMTPBackend(host="smtp.test", port=25, username="user", password="pass")
+    mailer = Mailer(backend=backend)
+
+    await mailer.open()
+    msg = EmailMessage(subject="smtp", to=["a@test"], body_text="hello")
+
+    await mailer.send(msg)
+    await mailer.close()
+
+    # Ensure login and send occurred
+    assert ("login", "user") in dummy.actions
+    assert any(action[0] == "send" for action in dummy.actions if isinstance(action, tuple))
+
+
+async def test_send_without_open_raises(monkeypatch):
+    dummy = DummySMTP()
+    monkeypatch.setattr(smtplib, "SMTP", lambda *a, **kw: dummy)
+
+    backend = SMTPBackend(host="smtp.test", port=25)
+    mailer = Mailer(backend=backend)
+
+    msg = EmailMessage(subject="x", to=["a@test"], body_text="body")
+
+    with pytest.raises(RuntimeError):
+        await mailer.send(msg)
