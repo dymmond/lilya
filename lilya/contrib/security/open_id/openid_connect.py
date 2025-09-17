@@ -1,12 +1,11 @@
 from typing import Annotated, Any
 
-from typing_extensions import Doc
-
 from lilya.contrib.openapi.models import OpenIdConnect as OpenIdConnectModel
 from lilya.contrib.security.base import SecurityBase as SecurityBase
 from lilya.exceptions import HTTPException
 from lilya.requests import Request
 from lilya.status import HTTP_403_FORBIDDEN
+from lilya.types import Doc
 
 
 class OpenIdConnect(SecurityBase):

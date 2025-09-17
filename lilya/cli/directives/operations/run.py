@@ -7,15 +7,15 @@ from enum import Enum
 from typing import TYPE_CHECKING, Annotated, Any, TypeVar
 
 import click
+from monkay.asgi import Lifespan as MonkayLifespan
 from sayer import Argument, Option, command, error
 
-from lilya._internal._events import generate_lifespan_events
 from lilya.cli.base import BaseDirective
 from lilya.cli.constants import APP_PARAMETER, LILYA_DISCOVER_APP
 from lilya.cli.env import DirectiveEnv
 from lilya.cli.utils import fetch_directive
 from lilya.context import G, g_context
-from lilya.types import ASGIApp, Lifespan
+from lilya.types import ASGIApp
 
 if TYPE_CHECKING:
     pass
@@ -93,12 +93,7 @@ async def run(
 
     ## Check if application is up and execute any event
     # Shutting down after
-    lifespan = generate_lifespan_events(
-        env.lilya_app.router.on_startup,
-        env.lilya_app.router.on_shutdown,
-        env.lilya_app.router.lifespan_context,
-    )
-    await execute_lifespan(env.app, lifespan, directive, program_name, position)
+    await execute_lifespan(env.app, directive, program_name, position)
 
 
 def get_position() -> int:
@@ -136,7 +131,6 @@ async def reset_global_context(token: Any) -> None:
 
 async def execute_lifespan(
     app: ASGIApp | None,
-    lifespan: Lifespan,
     directive: Any,
     program_name: str,
     position: int,
@@ -144,7 +138,7 @@ async def execute_lifespan(
     """
     Executes the lifespan events and the directive.
     """
-    async with lifespan(app):
+    async with MonkayLifespan(app):
         token = await set_global_context()
         if isinstance(directive, BaseDirective):
             await directive.execute_from_command(sys.argv[:], program_name, position)

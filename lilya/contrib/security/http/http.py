@@ -3,7 +3,6 @@ from base64 import b64decode
 from typing import Annotated, Any
 
 from pydantic import BaseModel
-from typing_extensions import Doc
 
 from lilya.contrib.openapi.models import HTTPBase as HTTPBaseModel, HTTPBearer as HTTPBearerModel
 from lilya.contrib.security.base import HttpSecurityBase
@@ -11,6 +10,7 @@ from lilya.contrib.security.utils import get_authorization_scheme_param
 from lilya.exceptions import HTTPException
 from lilya.requests import Request
 from lilya.status import HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
+from lilya.types import Doc
 
 
 class HTTPBasicCredentials(BaseModel):

@@ -1,7 +1,6 @@
 from typing import Annotated, cast
 
 from pydantic import BaseModel
-from typing_extensions import Doc
 
 from lilya.contrib.openapi.enums import APIKeyIn
 from lilya.contrib.openapi.models import APIKey
@@ -9,6 +8,7 @@ from lilya.contrib.security.base import SecurityBase
 from lilya.exceptions import HTTPException
 from lilya.requests import Request
 from lilya.status import HTTP_403_FORBIDDEN
+from lilya.types import Doc
 
 
 class APIKeyBase(SecurityBase):

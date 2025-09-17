@@ -5,6 +5,17 @@ hide:
 
 # Release Notes
 
+## 0.20.4
+
+### Changed
+
+- Use monkay.asgi for lifespans.
+
+### Fixed
+
+- Fix handling non-starlette like lifespan.
+- Fix import errors with python 3.11 (Doc imports).
+
 ## 0.20.3
 
 ### Added
