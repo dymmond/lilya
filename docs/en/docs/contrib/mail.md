@@ -377,13 +377,145 @@ async def signup(request: Request) -> JSONResponse:
 
   Use `SMTPBackend` or implement a custom backend (e.g. Mailgun, Brevo).
 
----
-
 With this setup:
 
 * Startup/shutdown hooks automatically open/close the SMTP connection.
 * You can freely swap backends depending on environment.
 * Templated emails keep code clean and consistent.
+
+## Using `Mail` as a Dependency
+
+In addition to accessing `app.state.mailer` directly, Lilya provides an out-of-the-box dependency
+you can inject into any handler: `Mail`.
+
+This is powered by Lilya’s dependency injection system and resolves to the configured global
+`Mailer` instance (the one you set up via `setup_mail`).
+
+---
+
+### 1. Configure Mail
+
+```python
+from lilya.apps import Lilya
+from lilya.contrib.mail.startup import setup_mail
+from lilya.contrib.mail.backends.smtp import SMTPBackend
+
+app = Lilya()
+
+setup_mail(
+    app,
+    backend=SMTPBackend(
+        host="smtp.gmail.com",
+        port=587,
+        username="me@gmail.com",
+        password="secret",
+        use_tls=True,
+        default_from_email="noreply@myapp.com",
+    ),
+    template_dir="templates/emails",
+)
+```
+
+---
+
+### 2. Inject Mail with `dependencies`
+
+```python
+from lilya.apps import Lilya
+from lilya.responses import JSONResponse
+from lilya.contrib.mail.dependencies import Mail
+from lilya.contrib.mail import EmailMessage
+from lilya.routing import Path
+
+async def send_welcome(mailer: Mail) -> JSONResponse:
+    msg = EmailMessage(
+        subject="Welcome!",
+        to=["user@example.com"],
+        body_text="Thanks for signing up!",
+    )
+    await mailer.send(msg)
+    return JSONResponse({"status": "sent"})
+
+
+app = Lilya(routes=[
+    Path("/welcome", send_welcome, methods=["POST"], dependencies={
+        "mailer": Mail
+    })
+])
+
+```
+
+!!! Check
+    Here, `mailer: Mail` resolves to the configured global `Mailer` instance.
+
+---
+
+### 3. Failure Modes
+
+* If you forget to call `setup_mail`, injection will raise:
+
+```
+RuntimeError: No Mailer configured. Did you forget to call setup_mail(app, backend=...)?
+```
+
+* If you override `app.state.mailer` with something invalid, you’ll see the same error.
+
+---
+
+### 4. Overriding in Tests
+
+You can easily replace the `Mail` dependency in tests:
+
+```python
+from lilya.apps import Lilya
+from lilya.dependencies import Provide
+from lilya.contrib.mail.dependencies import Mail
+
+class FakeMailer:
+    def __init__(self):
+        self.sent = []
+    async def send(self, message):
+        self.sent.append(message)
+
+app = Lilya()
+fake = FakeMailer()
+FakeMail = Provide(lambda request: fake)
+
+@app.post("/test", dependencies={"mailer": FakeMail})
+async def test_handler(mailer: Mail):
+    await mailer.send("hello")
+    return {"ok": True}
+```
+
+Now your handler uses the fake mailer, perfect for asserting email logic in unit tests without hitting a real SMTP server.
+
+---
+
+### 5. Background Tasks & Beyond
+
+Because `Mail` is a normal dependency, you can also use it inside background tasks or WebSocket endpoints:
+
+```python
+from lilya.background import Task
+
+@app.post("/signup", dependencies={"mailer": Mail})
+async def signup(user: dict, mailer: Mail):
+    async def send_welcome():
+        await mailer.send_template(
+            subject="Welcome!",
+            to=[user["email"]],
+            template_html="welcome.html",
+            context={"name": user["name"]},
+        )
+    return {"ok": True, "background": Task(send_welcome)}
+```
+
+### Notes
+
+* Use `setup_mail` once in `main.py` (or whatever file you have your application instance).
+* Inject the configured `Mailer` anywhere with `dependencies={"mailer": Mail}`.
+* Clean error messages if it isn’t configured.
+* Easy to override in tests.
 
 ---
 
