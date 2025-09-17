@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.20.4
+
+### Changed
+
+- Update sayer dependency version to 0.5.0.
+
 ## 0.20.3
 
 ### Added
