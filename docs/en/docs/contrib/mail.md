@@ -1,4 +1,4 @@
-# Mail System in Lilya
+# Mail
 
 The `lilya.contrib.mail` module provides a **powerful, async-native email system** built for modern applications.
 
@@ -271,6 +271,119 @@ class MailchimpBackend(BaseMailBackend):
                 },
             )
 ```
+
+## A "Real World" Example: Sending emails via Lilya
+
+Email is often needed for user signups, password resets, or notifications.
+With `lilya.contrib.mail`, you can attach a mailer to your app and send messages anywhere.
+
+---
+
+### 1. Configure the Mailer
+
+First, set up the mail backend when creating your app:
+
+```python
+from lilya.apps import Lilya
+from lilya.contrib.mail import setup_mail
+from lilya.contrib.mail.backends.smtp import SMTPBackend
+
+app = Lilya()
+
+# Attach mailer with SMTP backend
+setup_mail(
+    app,
+    backend=SMTPBackend(
+        host="smtp.gmail.com",
+        port=587,
+        username="myapp@gmail.com",
+        password="super-secret",
+        use_tls=True,
+        default_from_email="noreply@myapp.com",
+    ),
+    template_dir="templates/emails",
+)
+```
+
+This makes `app.state.mailer` available anywhere in your app.
+
+---
+
+### 2. Create Email Templates
+
+In `templates/emails/welcome.html`:
+
+```html
+<h1>Welcome, {{ name }}!</h1>
+<p>Thanks for joining our platform.</p>
+```
+
+In `templates/emails/welcome.txt`:
+
+```
+Welcome, {{ name }}!
+Thanks for joining our platform.
+```
+
+---
+
+### 3. Send an Email from an Endpoint
+
+With your `app` from Lilya you can do now this:
+
+```python
+from lilya.responses import JSONResponse
+from lilya.requests import Request
+
+@app.post("/signup")
+async def signup(request: Request) -> JSONResponse:
+    data = await request.json()
+    user_email = data["email"]
+
+    # Send a welcome email
+    await request.app.state.mailer.send_template(
+        subject="Welcome to MyApp",
+        to=[user_email],
+        template_html="welcome.html",
+        template_text="welcome.txt",
+        context={"name": user_email.split("@")[0]},
+    )
+
+    return JSONResponse({"message": "User created and welcome email sent"})
+```
+
+!!! Note
+    Lilya also has the `Path` from `lilya.routing`, this is just an alternative for example purposes.
+
+---
+
+### 4. Switching Backends per Environment
+
+* **Development:**
+
+  ```python
+  from lilya.contrib.mail.backends.console import ConsoleBackend
+  setup_mail(app, backend=ConsoleBackend())
+  ```
+
+* **Testing:**
+
+  ```python
+  from lilya.contrib.mail.backends.inmemory import InMemoryBackend
+  setup_mail(app, backend=InMemoryBackend())
+  ```
+
+* **Production:**
+
+  Use `SMTPBackend` or implement a custom backend (e.g. Mailgun, Brevo).
+
+---
+
+With this setup:
+
+* Startup/shutdown hooks automatically open/close the SMTP connection.
+* You can freely swap backends depending on environment.
+* Templated emails keep code clean and consistent.
 
 ---
 
