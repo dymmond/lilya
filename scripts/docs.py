@@ -327,6 +327,3 @@ docs_cli.add_command(update_config)
 
 if __name__ == "__main__":  # pragma: no cover
     docs_cli()
-
-if __name__ == "__main__":
-    docs_cli()
