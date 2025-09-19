@@ -5,6 +5,14 @@ hide:
 
 # Release Notes
 
+## 0.20.5
+
+This was a change for the newer sayer 0.5.1 that affects the client.
+
+### Changed
+
+- Allow minimum Sayer to be 0.5.1.
+
 ## 0.20.4
 
 ### Changed
