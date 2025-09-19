@@ -12,6 +12,8 @@ This was a change for the newer sayer 0.5.1 that affects the client.
 ### Changed
 
 - Allow minimum Sayer to be 0.5.1.
+- Lilya cli now loses the `name` argument. This is now handled directly by the newest Sayer that
+was internal refactored for the `@callback`.
 
 ## 0.20.4
 
