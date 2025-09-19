@@ -125,6 +125,7 @@ testing = [
 ]
 
 docs = [
+    "click=8.2.2",
     "sayer",
     "griffe-typingdoc>=0.2.2,<1.0",
     "mkautodoc>=0.2.0,<0.3.0",
