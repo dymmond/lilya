@@ -9,7 +9,7 @@ hide:
 
 ### Changed
 
-- Update sayer dependency version to 0.5.0.
+- Update sayer dependency version to 0.5.0 and pin it.
 
 ## 0.20.3
 
