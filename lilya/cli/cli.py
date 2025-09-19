@@ -4,7 +4,7 @@ import typing
 
 import click
 from sayer import Sayer
-from sayer.params import Argument, Option
+from sayer.params import Option
 
 from lilya import __version__
 from lilya.cli.directives.operations.createapp import create_app as create_app  # noqa
@@ -47,7 +47,6 @@ lilya_cli = Sayer(
 @lilya_cli.callback(invoke_without_command=True)
 def lilya_callback(
     ctx: click.Context,
-    name: typing.Annotated[str, Argument(help="The directive name.")],
     app: typing.Annotated[
         str,
         Option(
