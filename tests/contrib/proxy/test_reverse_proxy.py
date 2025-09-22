@@ -1,3 +1,5 @@
+import logging
+
 import httpx
 import pytest
 
@@ -177,3 +179,116 @@ async def test_large_streaming_download(client):
         size += len(chunk)
 
     assert size == 1024 * 1024  # 1 MiB
+
+
+async def test_timeout_maps_to_504(proxy_and_app, monkeypatch):
+    proxy, app, _ = proxy_and_app
+    await proxy.startup()
+
+    # Force all requests to timeout
+    def boom(*args, **kwargs):
+        raise httpx.ReadTimeout("timeout", request=httpx.Request("GET", "http://dummy/"))
+
+    assert proxy._client is not None
+    monkeypatch.setattr(proxy._client, "stream", boom)
+
+    transport = httpx.ASGITransport(app=app)
+
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as cli:
+        r = await cli.get("/auth/echo")
+        assert r.status_code == 504
+        assert "Gateway Timeout" in r.text
+
+    await proxy.shutdown()
+
+
+async def test_retry_on_status_and_backoff(monkeypatch, proxy_and_app):
+    proxy, app, _ = proxy_and_app
+
+    proxy._max_retries = 2
+    proxy._retry_statuses = {502}
+    await proxy.startup()
+
+    call_count = {"n": 0}
+
+    class DummyResp:
+        def __init__(self, status_code):
+            self.status_code = status_code
+            self.headers = {}
+            self.request = httpx.Request("GET", "http://dummy/")
+
+        async def aclose(self):
+            return
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *exc):
+            return False
+
+        async def aiter_bytes(self):
+            if self.status_code == 200:
+                yield b"ok"
+
+    def fake_stream(*args, **kwargs):
+        call_count["n"] += 1
+        if call_count["n"] < 3:
+            return DummyResp(502)
+        return DummyResp(200)
+
+    monkeypatch.setattr(proxy._client, "stream", fake_stream)
+
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as cli:
+        r = await cli.get("/auth/echo")
+
+    assert r.status_code == 200
+    assert call_count["n"] == 3
+
+    await proxy.shutdown()
+
+
+async def test_header_allowlist_mode(proxy_and_app):
+    proxy, app, _ = proxy_and_app
+
+    proxy._allow_request_headers = {"custom-header"}
+    proxy._allow_response_headers = {"content-type"}
+
+    await proxy.startup()
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as cli:
+        r = await cli.get("/auth/echo", headers={"Custom-Header": "ok", "X-Other": "bad"})
+
+    data = r.json()
+    headers = data["headers"]
+
+    assert headers["custom-header"] == "ok"
+    assert headers["host"] is not None
+    assert headers["x-forwarded-for"] is not None
+
+    await proxy.shutdown()
+
+
+async def test_structured_logging_emits(caplog, proxy_and_app, monkeypatch):
+    proxy, app, _ = proxy_and_app
+
+    log = logging.getLogger("proxytest")
+    proxy._log = log
+    caplog.set_level(logging.INFO, logger="proxytest")
+
+    await proxy.startup()
+
+    def boom(*args, **kwargs):
+        raise httpx.RequestError("boom", request=httpx.Request("GET", "http://dummy/"))
+
+    assert proxy._client is not None
+    monkeypatch.setattr(proxy._client, "stream", boom)
+
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as cli:
+        await cli.get("/auth/echo")
+
+    logs = [rec.message for rec in caplog.records if "reverse_proxy" in rec.message]
+    assert any("upstream_error" in m for m in logs)
+
+    await proxy.shutdown()
