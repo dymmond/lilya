@@ -1,8 +1,9 @@
 # ReverseProxy
 
-A **mountable ASGI reverse proxy** for Lilya that lets one service expose a **single endpoint**
-(e.g., `/auth/**`) and forward requests transparently to another internal service 
-**preserving method, headers, cookies, query parameters, and streaming bodies**.
+A **mountable ASGI reverse proxy** for Lilya that forwards HTTP **and optionally WebSocket** traffic to an upstream service.
+
+It preserves **methods, headers, cookies, query parameters, and streaming bodies**, while supporting retries,
+timeout handling, header policies, and structured logging.
 
 Typical use case: you have **two Lilya apps**:
 
@@ -14,11 +15,14 @@ With `ReverseProxy`, you mount a single catch‑all route on App 2 (e.g., `/auth
 ## Why a Proxy?
 
 - **Single public surface**: Expose `/auth/**` from App 2; keep App 1 private.
-- **No duplication**: No need to re‑implement login endpoints in App 2.
-- **Transparent behaviour**: Methods, headers, cookies (`Set-Cookie` included), query params, and **streaming** are preserved.
-- **Path rewrite**: Mount at `/auth` but forward upstream as `/{path}` (or with a different prefix).
-- **Security**: Guard against SSRF by fixing a base upstream URL; scrub hop‑by‑hop headers; add `X-Forwarded-*`.
-- **Dev & test friendly**: Pure ASGI. Test in‑memory with `httpx.ASGITransport`.
+- **No duplication**: Don’t re-implement login/logout; just forward.
+- **Transparent behaviour**: Requests/responses stream through without buffering.
+- **Header controls**: Drop hop-by-hop headers, or use an allow-list mode.
+- **Retries & timeouts**: Built-in retry policy with exponential backoff; maps timeouts to **504 Gateway Timeout**.
+- **Cookie rewriting**: Adjust or strip `Domain` on `Set-Cookie`.
+- **WebSocket proxying**: (optional) Proxy WS traffic bidirectionally.
+- **Observability**: Structured logging hooks for retries, errors, and timeouts.
+- **Test-friendly**: In-memory with `httpx.ASGITransport` or WS echo servers.
 
 ### Before continuing
 
@@ -42,6 +46,8 @@ proxy = ReverseProxy(
     preserve_host=False,                         # set Host to auth-service
     # Optional: drop the Domain attribute from Set-Cookie so it binds to current host
     rewrite_set_cookie_domain=lambda _original: "",
+    max_retries=2,
+    retry_backoff_factor=0.2,
 )
 
 # The Main Lilya application
@@ -59,8 +65,6 @@ app = Lilya(
 - `GET /auth/login`:  proxied as `GET http://auth-service:8000/login`
 - `POST /auth/session?next=%2Fprofile`:  proxied to upstream with same query, headers, cookies, and body
 - `Set-Cookie` from upstream is forwarded; domain rewrite is supported if needed.
-
----
 
 ## How it works (request lifecycle)
 
@@ -94,14 +98,21 @@ ReverseProxy(
     *,
     upstream_prefix: str = "/",
     preserve_host: bool = False,
-    rewrite_set_cookie_domain: Callable[[str], Optional[str]] | None = None,
+    rewrite_set_cookie_domain: Callable[[str], str] | None = None,
     timeout: httpx.Timeout | float = httpx.Timeout(10, connect=5, read=10, write=10),
     limits: httpx.Limits = httpx.Limits(max_connections=100, max_keepalive_connections=20),
     follow_redirects: bool = False,
     extra_request_headers: dict[str, str] | None = None,
     drop_request_headers: Iterable[str] = (),
     drop_response_headers: Iterable[str] = (),
-    transport: httpx.BaseTransport | None = None,  # inject ASGITransport in tests
+    allow_request_headers: Iterable[str] | None = None,
+    allow_response_headers: Iterable[str] | None = None,
+    transport: httpx.BaseTransport | None = None,
+    max_retries: int = 0,
+    retry_backoff_factor: float = 0.2,
+    retry_statuses: Sequence[int] = (502, 503, 504),
+    retry_exceptions: tuple[type[Exception], ...] = (httpx.ConnectError, httpx.ReadTimeout),
+    logger: logging.Logger | None = None,
 )
 ```
 
@@ -127,12 +138,40 @@ ReverseProxy(
 - `await proxy.startup()` — creates a shared `httpx.AsyncClient`.
 - `await proxy.shutdown()` — closes the client.
 
----
+## WebSocket Support
+
+If you install `websockets`:
+
+```shell
+pip install websockets
+```
+
+You can proxy WS endpoints too:
+
+```python
+proxy = ReverseProxy("http://chat-service.local")
+app = Lilya(routes=[Include("/ws", app=proxy)])
+```
+
+* Incoming `ws://proxy.local/ws/room`: Proxied to `ws://chat-service.local/room`
+* Frames (text/binary) are streamed bidirectionally.
+* On upstream close, the proxy emits `1000` (normal closure).
+* On timeout/error, emits `1011` (internal error).
+
+## Error handling
+
+* **Connection errors**: `502 Bad Gateway`
+* **Timeouts**: `504 Gateway Timeout`
+* **Retryable statuses/exceptions**: Retries up to `max_retries`, with exponential backoff.
+* **Structured logging**: Each error/retry/timeout is logged as `reverse_proxy.<event>` with context.
 
 ## Header handling
 
-**Hop‑by‑hop** headers are stripped **inbound** to the proxy so they're **not forwarded** to upstream:
-
+* **Hop-by-hop headers dropped** (always):
+  `Connection, Keep-Alive, Proxy-Authenticate, Proxy-Authorization, TE, Trailer, Transfer-Encoding, Upgrade`
+* **Drop lists**: `drop_request_headers` and `drop_response_headers`
+* **Allow lists**: Use `allow_request_headers` / `allow_response_headers` to only forward a whitelist.
+* **Forwarded headers**: Always inject `X-Forwarded-For`, `X-Forwarded-Proto`, `X-Forwarded-Host`.
 ```
 Connection, Keep-Alive, Proxy-Authenticate, Proxy-Authorization,
 TE, Trailer, Transfer-Encoding, Upgrade
@@ -156,7 +195,6 @@ Upstream often sets cookies with `Domain=auth.example.com`. If your public host 
 - **Drop `Domain`** on `Set-Cookie` via `rewrite_set_cookie_domain=lambda _: ""`: Cookie binds to the **current host**.
 - **Rewrite** to a specific domain: `rewrite_set_cookie_domain=lambda _: "example.com"`: Cookie becomes valid for that domain and subdomains.
 
-
 !!! Tip
     Ensure correct `SameSite` and `Secure` flags for cross‑site cookies (e.g., `SameSite=None; Secure` if needed).
 
@@ -171,16 +209,22 @@ Upstream often sets cookies with `Domain=auth.example.com`. If your public host 
 - `upstream_prefix="/"`:  Upstream request: `/<"login">?next=%2Fprofile`
 - `upstream_prefix="/api/v1"`:  Upstream request: `/api/v1/login?next=%2Fprofile`
 
----
-
 ## Error mapping
 
 Any `httpx.RequestError` (connect errors, DNS, refused, etc.) is returned as **`502 Bad Gateway`**.
-  
+
 You can extend the implementation to:
 
 - Map **read/write/overall timeout** to **`504 Gateway Timeout`**.
 - Map **TLS or protocol errors** to `502` with more granular logs.
+
+### Retry behavior
+
+- `max_retries=2, retry_backoff_factor=0.2`: delays: `0.2s, 0.4s`
+- Retries triggered by:
+    * Status codes in `retry_statuses`
+    * Exceptions in `retry_exceptions`
+- Timeout: Maps to `504` if retries exhausted
 
 ## CORS
 
@@ -504,7 +548,24 @@ async def test_large_streaming_download(client):
     assert size == 1024 * 1024
 ```
 
----
+### Testing WS
+
+Example with an echo server:
+
+```python
+import pytest, websockets, anyio
+
+@pytest.mark.anyio
+async def test_ws_proxy(proxy_and_app):
+    async def echo(ws):
+        async for msg in ws:
+            await ws.send(msg)
+
+    async with websockets.serve(echo, "127.0.0.1", 0) as server:
+        uri = f"ws://{server.sockets[0].getsockname()[0]}:{server.sockets[0].getsockname()[1]}"
+        proxy = ReverseProxy(uri)
+        ...
+```
 
 ## Troubleshooting
 
@@ -548,3 +609,17 @@ async def test_large_streaming_download(client):
 - **Logging**: Log upstream URL, method, status, duration, and upstream errors. You can wrap the proxy or fork it to inject your logger.
 - **Tracing**: Propagate trace headers (`traceparent`, `x-request-id`) via `extra_request_headers` or a custom header policy.
 - **Metrics**: Count 2xx/4xx/5xx, upstream durations, retry/timeout events (if you implement retries).
+
+```python
+import logging
+
+logger = logging.getLogger("proxy")
+proxy = ReverseProxy("http://upstream", logger=logger)
+```
+
+Produces log lines like:
+
+```
+reverse_proxy.upstream_retryable_error url='http://upstream/echo' attempt=1 error='ConnectError(...)'
+reverse_proxy.upstream_timeout url='http://upstream/echo' attempt=2 error='ReadTimeout(...)'
+```

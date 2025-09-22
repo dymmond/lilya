@@ -1,3 +1,8 @@
+---
+hide:
+  - navigation
+---
+
 # Contributing
 
 Thank you for showing interes in contributing to Lilya. There are many ways you can help and contribute to the
