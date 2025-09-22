@@ -15,9 +15,9 @@ except ImportError as e:
     raise ImportError("httpx is required for lilya.contrib.proxy") from e
 
 
-class ReverseProxy:
+class Relay:
     """
-    ASGI reverse proxy middleware for Lilya.
+    ASGI relay middleware for Lilya.
 
     This component forwards incoming ASGI requests to an upstream server
     using `httpx.AsyncClient` and streams the response back to the caller.
@@ -38,7 +38,7 @@ class ReverseProxy:
     Typical usage
     -------------
     ```python
-    proxy = ReverseProxy("http://upstream.local", upstream_prefix="/api")
+    proxy = Relay("http://upstream.local", upstream_prefix="/api")
 
     app = Lilya(routes=[Include("/proxy", app=proxy)])
 
@@ -177,7 +177,7 @@ class ReverseProxy:
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
-        ASGI entrypoint for the reverse proxy.
+        ASGI entrypoint for the relay.
 
         This method is invoked by the ASGI server whenever a new
         connection is routed to the proxy. It inspects the `scope["type"]`
@@ -199,7 +199,7 @@ class ReverseProxy:
         Example:
             When mounted at `/auth`:
 
-                app = Lilya(routes=[Include("/auth", app=ReverseProxy(...))])
+                app = Lilya(routes=[Include("/auth", app=Relay(...))])
 
             The ASGI server will call `proxy(scope, receive, send)` whenever
             a request matches the `/auth` prefix.
@@ -213,7 +213,7 @@ class ReverseProxy:
         else:
             await self._send_text(send, 404, "Not Found")
 
-        assert self._client is not None, "ReverseProxy not started. Call startup() first."
+        assert self._client is not None, "Relay not started. Call startup() first."
 
     async def _handle_http(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -239,7 +239,7 @@ class ReverseProxy:
         Side effects:
             Emits structured logs for retries, timeouts, and errors.
         """
-        assert self._client is not None, "ReverseProxy not started. Call startup() first."
+        assert self._client is not None, "Relay not started. Call startup() first."
 
         method = scope["method"]
         upstream_url = self._build_upstream_url(scope)
