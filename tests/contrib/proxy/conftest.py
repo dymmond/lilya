@@ -5,7 +5,7 @@ import httpx
 import pytest
 
 from lilya.apps import Lilya
-from lilya.contrib.proxy.reverse import Relay
+from lilya.contrib.proxy.relay import Relay
 from lilya.routing import Include
 
 

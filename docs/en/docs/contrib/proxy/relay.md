@@ -38,12 +38,12 @@ pip install httpx
 # app.py
 from lilya.apps import Lilya
 from lilya.routing import Include
-from lilya.contrib.proxy.reverse import Relay
+from lilya.contrib.proxy.relay import Relay
 
 proxy = Relay(
     target_base_url="http://auth-service:8000",  # internal service base URL
-    upstream_prefix="/",                         # map "/auth/<path>" -> "/<path>" upstream
-    preserve_host=False,                         # set Host to auth-service
+    upstream_prefix="/",  # map "/auth/<path>" -> "/<path>" upstream
+    preserve_host=False,  # set Host to auth-service
     # Optional: drop the Domain attribute from Set-Cookie so it binds to current host
     rewrite_set_cookie_domain=lambda _original: "",
     max_retries=2,
@@ -53,10 +53,10 @@ proxy = Relay(
 # The Main Lilya application
 app = Lilya(
     routes=[
-        Include("/auth", app=proxy),             # Everything under /auth/** is proxied
+        Include("/auth", app=proxy),  # Everything under /auth/** is proxied
     ],
-    on_startup=[proxy.startup],                  # start shared HTTP client (pool)
-    on_shutdown=[proxy.shutdown],                # close it cleanly
+    on_startup=[proxy.startup],  # start shared HTTP client (pool)
+    on_shutdown=[proxy.shutdown],  # close it cleanly
 )
 ```
 
@@ -86,7 +86,7 @@ app = Lilya(
 You'll keep the proxy as part of your project's contrib code or ship it as `lilya.contrib.proxy`. The examples below assume a local module:
 
 ```python
-from lilya.contrib.proxy.reverse import Relay
+from lilya.contrib.proxy.relay import Relay
 ```
 ## API reference
 
@@ -323,17 +323,19 @@ import httpx
 import pytest
 from lilya import Lilya
 from lilya.routing import Include
-from lilya.contrib.proxy.reverse import Relay
+from lilya.contrib.proxy.relay import Relay
+
 
 class DummyUpstream:
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
-            await self._text(send, 404, "Not Found"); return
+            await self._text(send, 404, "Not Found");
+            return
 
         method, path = scope["method"], scope["path"]
         qs = scope.get("query_string", b"").decode("latin-1")
 
-        headers = {k.decode("latin-1"): v.decode("latin-1") for k,v in scope["headers"]}
+        headers = {k.decode("latin-1"): v.decode("latin-1") for k, v in scope["headers"]}
         body = b""
         while True:
             event = await receive()
@@ -370,7 +372,7 @@ class DummyUpstream:
                 "refresh=zzz; Path=/; Secure; SameSite=None",
             ]
             return await self._text(send, 200, "ok",
-                extra=[(b"set-cookie", c.encode("latin-1")) for c in cookies])
+                                    extra=[(b"set-cookie", c.encode("latin-1")) for c in cookies])
 
         if path.endswith("/large"):
             await send({"type": "http.response.start", "status": 200,
@@ -387,18 +389,20 @@ class DummyUpstream:
     async def _text(self, send, status, text, extra=None):
         headers = [(b"content-type", b"text/plain; charset=utf-8")]
         if extra: headers.extend(extra)
-        await send({"type":"http.response.start","status":status,"headers":headers})
-        await send({"type":"http.response.body","body":text.encode("utf-8")})
+        await send({"type": "http.response.start", "status": status, "headers": headers})
+        await send({"type": "http.response.body", "body": text.encode("utf-8")})
 
     async def _json(self, send, status, payload):
         data = json.dumps(payload).encode("utf-8")
-        await send({"type":"http.response.start","status":status,
-                    "headers":[(b"content-type", b"application/json")]})
-        await send({"type":"http.response.body","body":data})
+        await send({"type": "http.response.start", "status": status,
+                    "headers": [(b"content-type", b"application/json")]})
+        await send({"type": "http.response.body", "body": data})
+
 
 @pytest.fixture
 def upstream_app():
     return DummyUpstream()
+
 
 @pytest.fixture
 def proxy_and_app(upstream_app):
@@ -416,6 +420,7 @@ def proxy_and_app(upstream_app):
         on_shutdown=[proxy.shutdown],
     )
     return proxy, app, upstream_app
+
 
 @pytest.fixture
 async def client(proxy_and_app):
