@@ -135,6 +135,8 @@ nav:
   - Files:
     - contrib/files/send-file.md
     - contrib/files/jsonify.md
+  - Proxy:
+    - contrib/proxy/reverse-proxy.md
   - contrib/mail.md
 - contributing.md
 - sponsorship.md
