@@ -12,56 +12,12 @@ except ImportError as e:
 
 class ReverseProxy:
     """
-    An ASGI-compatible reverse proxy middleware/component for Lilya.
+    An ASGI-compatible reverse proxy middleware for Lilya.
 
-    This class allows you to mount a Lilya application as a reverse proxy
-    that forwards incoming requests to a specified upstream target server
-    and streams back the response.
-
-    It uses `httpx.AsyncClient` under the hood to handle upstream connections
-    with support for streaming, connection pooling, cookie domain rewriting,
-    and customizable request/response header filtering.
-
-    Typical use case:
-    ```python
-    from lilya import Lilya
-    from lilya.contrib.proxy import ReverseProxy
-
-    proxy = ReverseProxy("https://example.com", upstream_prefix="/api")
-
-    app = Lilya(routes=[
-        Mount("/proxy", app=proxy),
-    ])
-
-    @app.on_startup
-    async def start_proxy():
-        await proxy.startup()
-
-    @app.on_shutdown
-    async def stop_proxy():
-        await proxy.shutdown()
-    ```
-
-    Args:
-        target_base_url: Base URL of the upstream server to forward requests to.
-        upstream_prefix: Path prefix prepended before forwarding to upstream.
-        preserve_host: If True, preserves the incoming `Host` header instead of
-            rewriting it to the upstream host.
-        rewrite_set_cookie_domain: Optional callable for rewriting `Set-Cookie`
-            domains on the upstream response. Receives the raw cookie string and
-            must return the replacement domain (or empty string to drop).
-        timeout: Timeout settings for upstream requests. Accepts either
-            `httpx.Timeout` or a float (seconds).
-        limits: Connection limits for the underlying `httpx.AsyncClient`.
-        follow_redirects: Whether to follow upstream redirects automatically.
-        extra_request_headers: Extra headers to add to every forwarded request.
-        drop_request_headers: Request headers to strip before proxying upstream.
-        drop_response_headers: Response headers to strip from upstream before
-            sending back to the client.
-        transport: Optional custom transport for `httpx.AsyncClient`.
-
-    Raises:
-        ImportError: If `httpx` is not installed.
+    This class forwards incoming HTTP requests to a configured upstream
+    target and streams the response back. It handles hop-by-hop header
+    filtering, optional cookie domain rewriting, and `X-Forwarded-*`
+    header injection.
     """
 
     def __init__(
@@ -79,26 +35,35 @@ class ReverseProxy:
         drop_response_headers: Iterable[str] | None = None,
         transport: httpx.BaseTransport | None = None,
     ) -> None:
-        if drop_request_headers is None:
-            drop_request_headers = ()
-
-        if drop_response_headers is None:
-            drop_response_headers = ()
-
-        self._base = httpx.URL(target_base_url.rstrip("/"))
+        """
+        Args:
+            target_base_url: Base URL of the upstream server.
+            upstream_prefix: Path prefix prepended to forwarded requests.
+            preserve_host: If True, keeps original Host header.
+            rewrite_set_cookie_domain: Optional function to rewrite cookie domains.
+            timeout: Timeout for upstream requests.
+            limits: Connection pool limits for httpx client.
+            follow_redirects: Whether to follow upstream redirects.
+            extra_request_headers: Extra headers to add to each request.
+            drop_request_headers: Headers to strip from requests.
+            drop_response_headers: Headers to strip from responses.
+            transport: Optional custom transport for httpx client.
+        """
+        self._base_url = httpx.URL(target_base_url.rstrip("/"))
         self._upstream_prefix = upstream_prefix
         self._preserve_host = preserve_host
         self._rewrite_cookie_domain = rewrite_set_cookie_domain
         self._timeout = timeout if isinstance(timeout, httpx.Timeout) else httpx.Timeout(timeout)
         self._limits = limits
         self._follow_redirects = follow_redirects
-        self._extra_req_headers = extra_request_headers or {}
-        self._drop_req_headers = {h.lower() for h in drop_request_headers}
-        self._drop_resp_headers = {h.lower() for h in drop_response_headers}
+        self._extra_request_headers = extra_request_headers or {}
+        self._drop_request_headers = {h.lower() for h in (drop_request_headers or ())}
+        self._drop_response_headers = {h.lower() for h in (drop_response_headers or ())}
         self._client: httpx.AsyncClient | None = None
         self._transport = transport
 
-        self._hop_by_hop = {
+        # Headers that must never be forwarded
+        self._hop_by_hop_headers = {
             "connection",
             "keep-alive",
             "proxy-authenticate",
@@ -110,12 +75,7 @@ class ReverseProxy:
         }
 
     async def startup(self) -> None:
-        """
-        Initialize the underlying `httpx.AsyncClient`.
-
-        Must be called during application startup before the proxy
-        can process requests.
-        """
+        """Initialize the underlying httpx.AsyncClient."""
         if self._client is None:
             self._client = httpx.AsyncClient(
                 timeout=self._timeout,
@@ -125,50 +85,101 @@ class ReverseProxy:
             )
 
     async def shutdown(self) -> None:
-        """
-        Gracefully close the upstream client session.
-
-        Should be called during application shutdown to release resources
-        and close idle connections.
-        """
+        """Close the httpx client gracefully."""
         if self._client is not None:
             await self._client.aclose()
             self._client = None
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        """
-        ASGI entrypoint for handling requests.
-
-        For HTTP requests, forwards the request to the configured upstream
-        server and streams the response back to the client.
-
-        For non-HTTP scopes, returns a 404 `Not Found`.
-
-        Args:
-            scope: The ASGI connection scope dictionary.
-            receive: Awaitable to receive events (e.g. request body).
-            send: Awaitable to send events (e.g. response data).
-        """
+        """ASGI entrypoint to handle incoming requests."""
         if scope["type"] != "http":
-            await self.not_found(send)
+            await self._send_text(send, 404, "Not Found")
             return
 
-        assert self._client is not None, "ReverseProxy not started. Call startup() on app startup."
+        assert self._client is not None, "ReverseProxy not started. Call startup() first."
 
         method = scope["method"]
+        upstream_url = self._build_upstream_url(scope)
+        request_headers = self._prepare_request_headers(scope)
+        request_body = (
+            self._build_request_body_stream(receive)
+            if method not in ("GET", "HEAD", "OPTIONS")
+            else None
+        )
+
+        try:
+            await self._forward_to_upstream(
+                method, upstream_url, request_headers, request_body, send
+            )
+        except httpx.RequestError as exc:
+            await self._send_text(send, 502, f"Upstream error: {exc}")
+
+    # -----------------------------
+    # Request / Response helpers
+    # -----------------------------
+
+    def _join_paths(self, prefix: str, path: str) -> str:
+        """
+        Join a prefix and request path into a normalized upstream path.
+
+        Ensures there is exactly one slash between the prefix and the path.
+
+        Args:
+            prefix: The upstream prefix configured for the proxy.
+            path: The request path from the ASGI scope.
+
+        Returns:
+            A joined path string suitable for forwarding upstream.
+        """
+        if not prefix.endswith("/"):
+            prefix += "/"
+        return prefix + path.lstrip("/")
+
+    def _build_upstream_url(self, scope: Scope) -> httpx.URL:
+        """Construct the target upstream URL based on scope and prefix."""
         raw_path: bytes = scope.get("raw_path", scope["path"].encode("latin-1"))
         query_string: bytes = scope.get("query_string", b"")
-
-        # Build upstream path: mount path is already stripped by the router when mounted.
-        # Combine upstream_prefix + path
         path = raw_path.decode("latin-1")
         upstream_path = self._join_paths(self._upstream_prefix, path)
-        upstream_url = self._base.join(upstream_path).copy_with(query=query_string)
+        return self._base_url.join(upstream_path).copy_with(query=query_string)
 
-        # Build request headers
-        headers = self._extract_request_headers(scope)
+    def _prepare_request_headers(self, scope: Scope) -> dict[str, str]:
+        """Extract and normalize headers for the upstream request."""
+        request_headers: dict[str, str] = {}
+        for raw_key, raw_value in scope.get("headers", []):
+            key = raw_key.decode("latin-1")
+            value = raw_value.decode("latin-1")
+            if (
+                key.lower() in self._hop_by_hop_headers
+                or key.lower() in self._drop_request_headers
+            ):
+                continue
+            request_headers[key] = value
 
-        # Request body stream (pass-through)
+        request_headers.update(self._extra_request_headers)
+
+        if not self._preserve_host:
+            request_headers["host"] = self._base_url.host or request_headers.get("host", "")
+
+        # Add forwarding headers
+        client_addr = scope.get("client")
+        client_ip = client_addr[0] if client_addr else ""
+        existing_forwarded_for = request_headers.get("x-forwarded-for")
+        request_headers["x-forwarded-for"] = (
+            f"{existing_forwarded_for}, {client_ip}"
+            if existing_forwarded_for and client_ip
+            else client_ip or existing_forwarded_for or ""
+        )
+        request_headers["x-forwarded-proto"] = (
+            "https" if scope.get("scheme") == "https" else "http"
+        )
+        request_headers["x-forwarded-host"] = request_headers.get("host", "")
+
+        return request_headers
+
+    def _build_request_body_stream(self, receive: Receive) -> AsyncIterator[bytes]:
+        """Yield request body chunks from ASGI events."""
+
         async def body_iter() -> AsyncIterator[bytes]:
             while True:
                 event = await receive()
@@ -181,185 +192,99 @@ class ReverseProxy:
                 elif event["type"] == "http.disconnect":
                     break
 
-        content = body_iter() if method not in ("GET", "HEAD", "OPTIONS") else None
+        return body_iter()
 
-        try:
-            async with self._client.stream(
-                method, upstream_url, headers=headers, content=content
-            ) as upstream_resp:
-                status_code = upstream_resp.status_code
-                response_headers = self._filter_response_headers(upstream_resp.headers.items())
+    async def _forward_to_upstream(
+        self,
+        method: str,
+        url: httpx.URL,
+        headers: dict[str, str],
+        content: AsyncIterator[bytes] | None,
+        send: Send,
+    ) -> None:
+        """Stream the request to the upstream and relay the response back."""
+        assert self._client is not None
 
-                # Optional cookie domain rewrite
-                if self._rewrite_cookie_domain is not None:
-                    cookies = upstream_resp.headers.get_list("set-cookie")
-                    if cookies:
-                        # Remove originals
-                        response_headers = [
-                            (k, v) for (k, v) in response_headers if k.lower() != "set-cookie"
-                        ]
-                        # Add rewritten
-                        for c in cookies:
-                            response_headers.append(("set-cookie", self._rewrite_cookie(c)))
+        async with self._client.stream(method, url, headers=headers, content=content) as resp:
+            response_headers = self._sanitize_response_headers(resp.headers.items())
 
-                await send(
-                    {
-                        "type": "http.response.start",
-                        "status": status_code,
-                        "headers": [
-                            (k.encode("latin-1"), v.encode("latin-1")) for k, v in response_headers
-                        ],
-                    }
-                )
+            if self._rewrite_cookie_domain is not None:
+                response_headers = self._rewrite_response_cookies(resp, response_headers)
 
-                async for chunk in upstream_resp.aiter_bytes():
-                    await send({"type": "http.response.body", "body": chunk, "more_body": True})
+            await send(
+                {
+                    "type": "http.response.start",
+                    "status": resp.status_code,
+                    "headers": [
+                        (k.encode("latin-1"), v.encode("latin-1")) for k, v in response_headers
+                    ],
+                }
+            )
 
-        except httpx.RequestError as exc:
-            await self._send_text(send, 502, f"Upstream error: {exc}")
-            return
+            async for chunk in resp.aiter_bytes():
+                await send({"type": "http.response.body", "body": chunk, "more_body": True})
 
         await send({"type": "http.response.body", "body": b"", "more_body": False})
 
-    def _join_paths(self, a: str, b: str) -> str:
-        """
-        Join two URL paths ensuring a single slash separator.
+    # -----------------------------
+    # Response helpers
+    # -----------------------------
 
-        Args:
-            a: Base path (e.g., upstream prefix).
-            b: Request path from scope.
-
-        Returns:
-            The joined path string.
-        """
-        if not a.endswith("/"):
-            a += "/"
-        return a + b.lstrip("/")
-
-    def _extract_request_headers(self, scope: Scope) -> dict[str, str]:
-        """
-        Extracts and sanitizes request headers from the ASGI scope.
-
-        Drops hop-by-hop headers and those configured in
-        `drop_request_headers`, applies `extra_request_headers`,
-        and sets appropriate `X-Forwarded-*` headers.
-
-        Args:
-            scope: The ASGI scope containing raw request headers.
-
-        Returns:
-            A dictionary of prepared headers for the upstream request.
-        """
-        hdrs = {}
-        for raw_k, raw_v in scope.get("headers", []):
-            k = raw_k.decode("latin-1")
-            v = raw_v.decode("latin-1")
-            if k.lower() in self._hop_by_hop or k.lower() in self._drop_req_headers:
-                continue
-            hdrs[k] = v
-
-        # Extra request headers
-        hdrs.update(self._extra_req_headers)
-
-        # Host handling
-        if not self._preserve_host:
-            hdrs["host"] = self._base.host or hdrs.get("host", "")
-
-        # X-Forwarded-*
-        client_addr = scope.get("client")
-        client_ip = client_addr[0] if client_addr else ""
-        xfwd = hdrs.get("x-forwarded-for")
-        hdrs["x-forwarded-for"] = (
-            (f"{xfwd}, {client_ip}" if xfwd else client_ip) if client_ip else (xfwd or "")
-        )
-        hdrs["x-forwarded-proto"] = "https" if scope.get("scheme") == "https" else "http"
-        hdrs["x-forwarded-host"] = hdrs.get("host", "")
-
-        return hdrs
-
-    def _filter_response_headers(
+    def _sanitize_response_headers(
         self, headers: Iterable[tuple[str, str]]
     ) -> list[tuple[str, str]]:
-        """
-        Optionally rewrites the domain in `Set-Cookie` headers.
-
-        Uses the `rewrite_set_cookie_domain` callback if provided.
-        Supports removing, modifying, or adding domains.
-
-        Args:
-            set_cookie_value: The raw `Set-Cookie` header value.
-
-        Returns:
-            The rewritten `Set-Cookie` header string.
-        """
-        out: list[tuple[str, str]] = []
-        for k, v in headers:
-            lk = k.lower()
-            if lk in self._hop_by_hop or lk in self._drop_resp_headers:
+        """Remove hop-by-hop and dropped headers from upstream response."""
+        sanitized: list[tuple[str, str]] = []
+        for key, value in headers:
+            lower_key = key.lower()
+            if lower_key in self._hop_by_hop_headers or lower_key in self._drop_response_headers:
                 continue
-            # Let ASGI server set Transfer-Encoding/Content-Length as needed
-            if lk in ("transfer-encoding",):
+            if lower_key in ("transfer-encoding",):
                 continue
-            out.append((k, v))
-        return out
+            sanitized.append((key, value))
+        return sanitized
 
-    def _rewrite_cookie(self, set_cookie_value: str) -> str:
-        """
-        Optionally rewrites the domain in `Set-Cookie` headers.
+    def _rewrite_response_cookies(
+        self,
+        response: httpx.Response,
+        headers: list[tuple[str, str]],
+    ) -> list[tuple[str, str]]:
+        """Rewrite Set-Cookie headers when a domain rewrite function is provided."""
+        cookies = response.headers.get_list("set-cookie")
+        if not cookies:
+            return headers
 
-        Uses the `rewrite_set_cookie_domain` callback if provided.
-        Supports removing, modifying, or adding domains.
+        filtered = [(k, v) for k, v in headers if k.lower() != "set-cookie"]
+        for cookie in cookies:
+            filtered.append(("set-cookie", self._rewrite_cookie(cookie)))
+        return filtered
 
-        Args:
-            set_cookie_value: The raw `Set-Cookie` header value.
-
-        Returns:
-            The rewritten `Set-Cookie` header string.
-        """
+    def _rewrite_cookie(self, cookie_value: str) -> str:
+        """Apply rewrite_set_cookie_domain callback to a cookie value."""
         if self._rewrite_cookie_domain is None:
-            return set_cookie_value
+            return cookie_value
 
-        decision = self._rewrite_cookie_domain(set_cookie_value)
+        decision = self._rewrite_cookie_domain(cookie_value)
         if decision is None:
-            return set_cookie_value
+            return cookie_value
 
-        parts = [p for p in (x.strip() for x in set_cookie_value.split(";")) if p]
-        out = []
-        domain_seen = False
-        for p in parts:
-            if p.lower().startswith("domain="):
+        parts = [p.strip() for p in cookie_value.split(";") if p.strip()]
+        rewritten, domain_seen = [], False
+        for part in parts:
+            if part.lower().startswith("domain="):
                 domain_seen = True
-                if decision == "":
-                    continue
-                else:
-                    out.append(f"Domain={decision}")
+                if decision:
+                    rewritten.append(f"Domain={decision}")
             else:
-                out.append(p)
+                rewritten.append(part)
 
-        # If no Domain was present and decision is to set one, add it.
-        if not domain_seen and decision not in (None, ""):
-            out.append(f"Domain={decision}")
+        if not domain_seen and decision:
+            rewritten.append(f"Domain={decision}")
 
-        return "; ".join(out)
-
-    async def not_found(self, send: Send) -> None:
-        """
-        Send a simple 404 Not Found response.
-
-        Args:
-            send: ASGI send function.
-        """
-        await self._send_text(send, 404, "Not Found")
+        return "; ".join(rewritten)
 
     async def _send_text(self, send: Send, status: int, text: str) -> None:
-        """
-        Send a plain-text HTTP response.
-
-        Args:
-            send: ASGI send function.
-            status: HTTP status code to send.
-            text: Response body text.
-        """
+        """Send a plain-text HTTP response."""
         await send(
             {
                 "type": "http.response.start",
