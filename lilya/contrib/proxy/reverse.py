@@ -11,6 +11,59 @@ except ImportError as e:
 
 
 class ReverseProxy:
+    """
+    An ASGI-compatible reverse proxy middleware/component for Lilya.
+
+    This class allows you to mount a Lilya application as a reverse proxy
+    that forwards incoming requests to a specified upstream target server
+    and streams back the response.
+
+    It uses `httpx.AsyncClient` under the hood to handle upstream connections
+    with support for streaming, connection pooling, cookie domain rewriting,
+    and customizable request/response header filtering.
+
+    Typical use case:
+    ```python
+    from lilya import Lilya
+    from lilya.contrib.proxy import ReverseProxy
+
+    proxy = ReverseProxy("https://example.com", upstream_prefix="/api")
+
+    app = Lilya(routes=[
+        Mount("/proxy", app=proxy),
+    ])
+
+    @app.on_startup
+    async def start_proxy():
+        await proxy.startup()
+
+    @app.on_shutdown
+    async def stop_proxy():
+        await proxy.shutdown()
+    ```
+
+    Args:
+        target_base_url: Base URL of the upstream server to forward requests to.
+        upstream_prefix: Path prefix prepended before forwarding to upstream.
+        preserve_host: If True, preserves the incoming `Host` header instead of
+            rewriting it to the upstream host.
+        rewrite_set_cookie_domain: Optional callable for rewriting `Set-Cookie`
+            domains on the upstream response. Receives the raw cookie string and
+            must return the replacement domain (or empty string to drop).
+        timeout: Timeout settings for upstream requests. Accepts either
+            `httpx.Timeout` or a float (seconds).
+        limits: Connection limits for the underlying `httpx.AsyncClient`.
+        follow_redirects: Whether to follow upstream redirects automatically.
+        extra_request_headers: Extra headers to add to every forwarded request.
+        drop_request_headers: Request headers to strip before proxying upstream.
+        drop_response_headers: Response headers to strip from upstream before
+            sending back to the client.
+        transport: Optional custom transport for `httpx.AsyncClient`.
+
+    Raises:
+        ImportError: If `httpx` is not installed.
+    """
+
     def __init__(
         self,
         target_base_url: str,
@@ -57,6 +110,12 @@ class ReverseProxy:
         }
 
     async def startup(self) -> None:
+        """
+        Initialize the underlying `httpx.AsyncClient`.
+
+        Must be called during application startup before the proxy
+        can process requests.
+        """
         if self._client is None:
             self._client = httpx.AsyncClient(
                 timeout=self._timeout,
@@ -66,11 +125,30 @@ class ReverseProxy:
             )
 
     async def shutdown(self) -> None:
+        """
+        Gracefully close the upstream client session.
+
+        Should be called during application shutdown to release resources
+        and close idle connections.
+        """
         if self._client is not None:
             await self._client.aclose()
             self._client = None
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """
+        ASGI entrypoint for handling requests.
+
+        For HTTP requests, forwards the request to the configured upstream
+        server and streams the response back to the client.
+
+        For non-HTTP scopes, returns a 404 `Not Found`.
+
+        Args:
+            scope: The ASGI connection scope dictionary.
+            receive: Awaitable to receive events (e.g. request body).
+            send: Awaitable to send events (e.g. response data).
+        """
         if scope["type"] != "http":
             await self.not_found(send)
             return
@@ -144,11 +222,34 @@ class ReverseProxy:
         await send({"type": "http.response.body", "body": b"", "more_body": False})
 
     def _join_paths(self, a: str, b: str) -> str:
+        """
+        Join two URL paths ensuring a single slash separator.
+
+        Args:
+            a: Base path (e.g., upstream prefix).
+            b: Request path from scope.
+
+        Returns:
+            The joined path string.
+        """
         if not a.endswith("/"):
             a += "/"
         return a + b.lstrip("/")
 
     def _extract_request_headers(self, scope: Scope) -> dict[str, str]:
+        """
+        Extracts and sanitizes request headers from the ASGI scope.
+
+        Drops hop-by-hop headers and those configured in
+        `drop_request_headers`, applies `extra_request_headers`,
+        and sets appropriate `X-Forwarded-*` headers.
+
+        Args:
+            scope: The ASGI scope containing raw request headers.
+
+        Returns:
+            A dictionary of prepared headers for the upstream request.
+        """
         hdrs = {}
         for raw_k, raw_v in scope.get("headers", []):
             k = raw_k.decode("latin-1")
@@ -179,6 +280,18 @@ class ReverseProxy:
     def _filter_response_headers(
         self, headers: Iterable[tuple[str, str]]
     ) -> list[tuple[str, str]]:
+        """
+        Optionally rewrites the domain in `Set-Cookie` headers.
+
+        Uses the `rewrite_set_cookie_domain` callback if provided.
+        Supports removing, modifying, or adding domains.
+
+        Args:
+            set_cookie_value: The raw `Set-Cookie` header value.
+
+        Returns:
+            The rewritten `Set-Cookie` header string.
+        """
         out: list[tuple[str, str]] = []
         for k, v in headers:
             lk = k.lower()
@@ -191,6 +304,18 @@ class ReverseProxy:
         return out
 
     def _rewrite_cookie(self, set_cookie_value: str) -> str:
+        """
+        Optionally rewrites the domain in `Set-Cookie` headers.
+
+        Uses the `rewrite_set_cookie_domain` callback if provided.
+        Supports removing, modifying, or adding domains.
+
+        Args:
+            set_cookie_value: The raw `Set-Cookie` header value.
+
+        Returns:
+            The rewritten `Set-Cookie` header string.
+        """
         if self._rewrite_cookie_domain is None:
             return set_cookie_value
 
@@ -218,9 +343,23 @@ class ReverseProxy:
         return "; ".join(out)
 
     async def not_found(self, send: Send) -> None:
+        """
+        Send a simple 404 Not Found response.
+
+        Args:
+            send: ASGI send function.
+        """
         await self._send_text(send, 404, "Not Found")
 
     async def _send_text(self, send: Send, status: int, text: str) -> None:
+        """
+        Send a plain-text HTTP response.
+
+        Args:
+            send: ASGI send function.
+            status: HTTP status code to send.
+            text: Response body text.
+        """
         await send(
             {
                 "type": "http.response.start",
