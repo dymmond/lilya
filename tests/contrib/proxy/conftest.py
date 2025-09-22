@@ -5,7 +5,7 @@ import httpx
 import pytest
 
 from lilya.apps import Lilya
-from lilya.contrib.proxy.reverse import ReverseProxy
+from lilya.contrib.proxy.reverse import Relay
 from lilya.routing import Include
 
 
@@ -144,7 +144,7 @@ def proxy_and_app(upstream_app):
     target_base = "http://auth-service.local"
 
     upstream_transport = httpx.ASGITransport(app=upstream_app)
-    proxy = ReverseProxy(
+    proxy = Relay(
         target_base_url=target_base,
         upstream_prefix="/",  # map /auth/<path> -> /<path> on upstream
         preserve_host=False,

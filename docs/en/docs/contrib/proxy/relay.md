@@ -1,4 +1,4 @@
-# ReverseProxy
+# Relay
 
 A **mountable ASGI reverse proxy** for Lilya that forwards HTTP **and optionally WebSocket** traffic to an upstream service.
 
@@ -10,7 +10,7 @@ Typical use case: you have **two Lilya apps**:
 - **App 1** (Authentication) handles login, logout, refresh, etc.
 - **App 2** (Your main API) wants to expose `GET/POST /auth/...` publicly but **forward** to App 1 under the hood.
 
-With `ReverseProxy`, you mount a single catch‑all route on App 2 (e.g., `/auth`) that **proxies everything** to App 1.
+With `Relay`, you mount a single catch‑all route on App 2 (e.g., `/auth`) that **proxies everything** to App 1.
 
 ## Why a Proxy?
 
@@ -26,7 +26,7 @@ With `ReverseProxy`, you mount a single catch‑all route on App 2 (e.g., `/auth
 
 ### Before continuing
 
-Lilya uses `httpx` to create the `ReverseProxy` object. This means, to work with it **you must**:
+Lilya uses `httpx` to create the `Relay` object. This means, to work with it **you must**:
 
 ```shell
 pip install httpx
@@ -38,9 +38,9 @@ pip install httpx
 # app.py
 from lilya.apps import Lilya
 from lilya.routing import Include
-from lilya.contrib.proxy.reverse import ReverseProxy
+from lilya.contrib.proxy.reverse import Relay
 
-proxy = ReverseProxy(
+proxy = Relay(
     target_base_url="http://auth-service:8000",  # internal service base URL
     upstream_prefix="/",                         # map "/auth/<path>" -> "/<path>" upstream
     preserve_host=False,                         # set Host to auth-service
@@ -86,14 +86,14 @@ app = Lilya(
 You'll keep the proxy as part of your project's contrib code or ship it as `lilya.contrib.proxy`. The examples below assume a local module:
 
 ```python
-from lilya.contrib.proxy.reverse import ReverseProxy
+from lilya.contrib.proxy.reverse import Relay
 ```
 ## API reference
 
-### `ReverseProxy(...)`
+### `Relay(...)`
 
 ```python
-ReverseProxy(
+Relay(
     target_base_url: str,
     *,
     upstream_prefix: str = "/",
@@ -149,7 +149,7 @@ pip install websockets
 You can proxy WS endpoints too:
 
 ```python
-proxy = ReverseProxy("http://chat-service.local")
+proxy = Relay("http://chat-service.local")
 app = Lilya(routes=[Include("/ws", app=proxy)])
 ```
 
@@ -244,7 +244,7 @@ When the browser calls only **App 2** (the proxy), and App 2 server‑side calls
 ### 1. Auth service under `/auth/**` with Domain drop
 
 ```python
-proxy = ReverseProxy(
+proxy = Relay(
     "http://auth-service:8000",
     upstream_prefix="/",
     rewrite_set_cookie_domain=lambda _: "",  # drop Domain
@@ -261,7 +261,7 @@ app = Lilya(
 ### 2. Proxy a versioned API under `/billing/**`:  `/api/v1/**` upstream
 
 ```python
-billing = ReverseProxy(
+billing = Relay(
     "http://billing-service.internal",
     upstream_prefix="/api/v1",
 )
@@ -279,7 +279,7 @@ app = Lilya(
 ```python
 secret = os.getenv("INTERNAL_SERVICE_TOKEN")
 
-proxy = ReverseProxy(
+proxy = Relay(
     "http://internal:9000",
     extra_request_headers={"X-Internal-Auth": secret},
     drop_request_headers=["x-forwarded-for"],  # example of additional drops
@@ -291,7 +291,7 @@ proxy = ReverseProxy(
 ### 4. Preserve the client `Host` header (rare, but occasionally required)
 
 ```python
-proxy = ReverseProxy("http://upstream:8000", preserve_host=True)
+proxy = Relay("http://upstream:8000", preserve_host=True)
 ```
 
 **Why**: Some upstreams compute logic based on `Host`. Most setups prefer `preserve_host=False`.
@@ -299,7 +299,7 @@ proxy = ReverseProxy("http://upstream:8000", preserve_host=True)
 ### 5. Follow upstream redirects (opt‑in)
 
 ```python
-proxy = ReverseProxy(
+proxy = Relay(
     "http://legacy:8080",
     follow_redirects=True,
 )
@@ -323,7 +323,7 @@ import httpx
 import pytest
 from lilya import Lilya
 from lilya.routing import Include
-from lilya.contrib.proxy.reverse import ReverseProxy
+from lilya.contrib.proxy.reverse import Relay
 
 class DummyUpstream:
     async def __call__(self, scope, receive, send):
@@ -403,7 +403,7 @@ def upstream_app():
 @pytest.fixture
 def proxy_and_app(upstream_app):
     upstream_transport = httpx.ASGITransport(app=upstream_app)
-    proxy = ReverseProxy(
+    proxy = Relay(
         "http://auth-service.local",
         upstream_prefix="/",
         preserve_host=False,
@@ -563,13 +563,13 @@ async def test_ws_proxy(proxy_and_app):
 
     async with websockets.serve(echo, "127.0.0.1", 0) as server:
         uri = f"ws://{server.sockets[0].getsockname()[0]}:{server.sockets[0].getsockname()[1]}"
-        proxy = ReverseProxy(uri)
+        proxy = Relay(uri)
         ...
 ```
 
 ## Troubleshooting
 
-### ReverseProxy not started. Call startup() on app startup.
+### Relay not started. Call startup() on app startup.
 
 - **Cause**: App lifespan didn't run (common when using `httpx.ASGITransport(app=app)`).
 - **Fix**:
@@ -614,7 +614,7 @@ async def test_ws_proxy(proxy_and_app):
 import logging
 
 logger = logging.getLogger("proxy")
-proxy = ReverseProxy("http://upstream", logger=logger)
+proxy = Relay("http://upstream", logger=logger)
 ```
 
 Produces log lines like:

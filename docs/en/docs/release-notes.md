@@ -9,7 +9,7 @@ hide:
 
 ### Added
 
-- [ReverseProxy](./contrib/proxy/reverse-proxy.md). This allows to create objects that are ASGI compatible and upstream services within your Lilya application.
+- [Relay](./contrib/proxy/relay.md). This allows to create objects that are ASGI compatible and upstream services within your Lilya application.
 - **WebSocket proxying**: Added full support for bidirectional WS proxying (text + binary frames).
 - **Retry & backoff**: Configurable retry logic with exponential backoff on retryable statuses/exceptions.
 - **Timeout mapping**: Upstream timeouts now map to `504 Gateway Timeout`.
