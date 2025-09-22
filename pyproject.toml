@@ -67,7 +67,7 @@ all = [
     "ipython",
     "ptpython",
     # For the forms
-    "python-multipart>=0.0.13"
+    "python-multipart>=0.0.13",
 ]
 
 cli = [
