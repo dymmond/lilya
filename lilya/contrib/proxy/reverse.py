@@ -17,22 +17,39 @@ except ImportError as e:
 
 class ReverseProxy:
     """
-    ASGI reverse proxy for Lilya with HTTP + optional WebSocket support.
+    ASGI reverse proxy middleware for Lilya.
 
-    Features
-    --------
-    - Streams requests/responses using httpx.AsyncClient.
-    - Hop-by-hop header filtering.
-    - Optional `Set-Cookie` domain rewriting.
-    - X-Forwarded-* headers injection.
-    - Optional retry policy (status/exception, exponential backoff).
-    - Optional header allow-list mode (instead of drop-list).
-    - Optional WebSocket proxying (requires `websockets` package).
-    - Structured logging (pass a logger).
+    This component forwards incoming ASGI requests to an upstream server
+    using `httpx.AsyncClient` and streams the response back to the caller.
 
-    Backwards-compatibility
-    -----------------------
-    Defaults match your current behavior; enabling retries/allow-lists/WS is opt-in.
+    Key features
+    ------------
+    - **HTTP proxying** with streaming request and response bodies.
+    - **WebSocket proxying** (optional, requires the `websockets` package).
+    - **Header management**: filters hop-by-hop headers, supports drop/allow lists,
+      and injects `X-Forwarded-*` headers automatically.
+    - **Cookie rewriting**: can modify or remove the `Domain` attribute on
+      `Set-Cookie` headers via a callback.
+    - **Retry policy**: supports retries on network exceptions or retryable
+      status codes with exponential backoff.
+    - **Structured logging**: emits one log entry per retry, timeout, or error
+      with event type and key/value metadata.
+
+    Typical usage
+    -------------
+    ```python
+    proxy = ReverseProxy("http://upstream.local", upstream_prefix="/api")
+
+    app = Lilya(routes=[Include("/proxy", app=proxy)])
+
+    @app.on_startup
+    async def open():
+        await proxy.startup()
+
+    @app.on_shutdown
+    async def close():
+        await proxy.shutdown()
+    ```
     """
 
     def __init__(
@@ -116,7 +133,24 @@ class ReverseProxy:
         }
 
     async def startup(self) -> None:
-        """Initialize the underlying httpx.AsyncClient."""
+        """
+        Initialize the proxy's underlying HTTP client.
+
+        Creates a persistent `httpx.AsyncClient` with the configured
+        timeouts, connection limits, redirect behavior, and (optionally)
+        a custom transport. This must be called before the proxy can
+        forward any HTTP requests.
+
+        Typically, you register this in the application’s
+        `on_startup` event so the client is ready before handling traffic.
+
+        Example:
+            app = Lilya(
+                routes=[Include("/auth", app=proxy)],
+                on_startup=[proxy.startup],
+                on_shutdown=[proxy.shutdown],
+            )
+        """
         if self._client is None:
             self._client = httpx.AsyncClient(
                 timeout=self._timeout,
@@ -126,13 +160,50 @@ class ReverseProxy:
             )
 
     async def shutdown(self) -> None:
-        """Close the httpx client gracefully."""
+        """
+        Dispose of the underlying HTTP client.
+
+        Closes the internal `httpx.AsyncClient`, releasing all
+        connection pool resources and preventing further requests.
+        After shutdown, the proxy cannot handle HTTP traffic until
+        `startup()` is called again.
+
+        Typically, you register this in the application’s
+        `on_shutdown` event to ensure a clean shutdown.
+        """
         if self._client is not None:
             await self._client.aclose()
             self._client = None
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        """ASGI entrypoint to handle incoming requests."""
+        """
+        ASGI entrypoint for the reverse proxy.
+
+        This method is invoked by the ASGI server whenever a new
+        connection is routed to the proxy. It inspects the `scope["type"]`
+        and dispatches accordingly:
+
+            - `"http"` → forwards the request via `_handle_http`.
+            - `"websocket"` → proxies the connection via `_handle_websocket`.
+            - Any other type → responds with a `404 Not Found`.
+
+        Args:
+            scope: The ASGI connection scope (contains type, path, headers, etc.).
+            receive: The ASGI receive callable, used to await incoming events.
+            send: The ASGI send callable, used to send response or WS events.
+
+        Raises:
+            AssertionError: If the proxy was not started with `startup()`
+            before being invoked.
+
+        Example:
+            When mounted at `/auth`:
+
+                app = Lilya(routes=[Include("/auth", app=ReverseProxy(...))])
+
+            The ASGI server will call `proxy(scope, receive, send)` whenever
+            a request matches the `/auth` prefix.
+        """
         scope_type = scope["type"]
 
         if scope_type == "http":
@@ -145,7 +216,29 @@ class ReverseProxy:
         assert self._client is not None, "ReverseProxy not started. Call startup() first."
 
     async def _handle_http(self, scope: Scope, receive: Receive, send: Send) -> None:
-        """Handle an HTTP request by forwarding to upstream with streaming."""
+        """
+        Forward an incoming HTTP request to the configured upstream.
+
+        This method builds the upstream URL and request headers from the ASGI
+        scope, streams the request body if present, and relays the response
+        headers and body back to the client.
+
+        Retry behavior:
+          - **Timeouts** are mapped to 504 Gateway Timeout.
+          - **Retryable statuses** (e.g. 502, 503, 504) raise `HTTPStatusError`
+            and trigger exponential backoff until `max_retries` is exceeded.
+          - **Retryable exceptions** (e.g. `httpx.ConnectError`) are retried
+            with backoff.
+          - Other `httpx.RequestError`s are returned immediately as 502.
+
+        Args:
+            scope: The ASGI connection scope for the request.
+            receive: Coroutine that yields request events.
+            send: Coroutine used to send response events.
+
+        Side effects:
+            Emits structured logs for retries, timeouts, and errors.
+        """
         assert self._client is not None, "ReverseProxy not started. Call startup() first."
 
         method = scope["method"]
@@ -209,7 +302,30 @@ class ReverseProxy:
                 return
 
     def _retry_sleep_seconds(self, attempt: int) -> float:
-        """Exponential backoff: factor * 2^(attempt-1)."""
+        """
+        Calculate the backoff delay before the next retry attempt.
+
+        Implements an exponential backoff algorithm:
+
+            delay = retry_backoff_factor * (2 ** (attempt - 1))
+
+        Where:
+            - `retry_backoff_factor` is a base multiplier (e.g. 0.2s).
+            - `attempt` is the current retry number, starting at 1.
+
+        Example:
+            With `retry_backoff_factor=0.2`:
+                attempt=1 → 0.2s
+                attempt=2 → 0.4s
+                attempt=3 → 0.8s
+                attempt=4 → 1.6s
+
+        Args:
+            attempt: The current retry attempt number (1-based).
+
+        Returns:
+            The number of seconds to wait before retrying, as a float.
+        """
         return cast(float, self._retry_backoff_factor * (2 ** (attempt - 1)))
 
     def _join_paths(self, prefix: str, path: str) -> str:
@@ -230,7 +346,32 @@ class ReverseProxy:
         return prefix + path.lstrip("/")
 
     def _build_upstream_url(self, scope: Scope) -> httpx.URL:
-        """Construct the target upstream URL based on scope and prefix."""
+        """
+        Construct the full upstream URL for a given ASGI request.
+
+        This method takes the incoming request path and query string
+        from the ASGI `scope`, joins it with the configured upstream
+        prefix, and combines it with the proxy’s base URL.
+
+        Behavior:
+            - Uses `scope["raw_path"]` if available, otherwise falls back
+              to `scope["path"]`.
+            - Decodes the path from bytes to a UTF-8 string.
+            - Joins the path with `self._upstream_prefix` via `_join_paths`.
+            - Preserves the raw query string.
+
+        Args:
+            scope: The ASGI connection scope containing request metadata.
+
+        Returns:
+            An `httpx.URL` object representing the target upstream URL.
+
+        Example:
+            If base_url="http://auth.local", upstream_prefix="/api", and
+            the client requests "/auth/echo?x=1":
+
+                Result → http://auth.local/api/echo?x=1
+        """
         raw_path: bytes = scope.get("raw_path", scope["path"].encode("latin-1"))
         query_string: bytes = scope.get("query_string", b"")
         path = raw_path.decode("latin-1")
@@ -238,7 +379,43 @@ class ReverseProxy:
         return self._base_url.join(upstream_path).copy_with(query=query_string)
 
     def _prepare_request_headers(self, scope: Scope) -> dict[str, str]:
-        """Extract and normalize headers for the upstream request."""
+        """
+        Build the set of headers to forward to the upstream server.
+
+        This method normalizes request headers, strips hop-by-hop or
+        explicitly dropped headers, optionally overrides the `Host`
+        header, and injects standard `X-Forwarded-*` headers so the
+        upstream can see the original client context.
+
+        Behavior:
+            - Iterates through `scope["headers"]` and decodes keys/values
+              to strings.
+            - Removes hop-by-hop headers (Connection, TE, Upgrade, etc.).
+            - Removes any headers configured in `_drop_request_headers`.
+            - Adds any extra headers from `_extra_request_headers`.
+            - If `preserve_host` is False, rewrites the `Host` header to
+              match the upstream base URL.
+            - Ensures `x-forwarded-for`, `x-forwarded-proto`, and
+              `x-forwarded-host` are always present.
+
+        Args:
+            scope: The ASGI connection scope for the incoming request.
+
+        Returns:
+            A dictionary of header names and values safe to forward.
+
+        Example:
+            Input headers:
+                {"Host": "frontend.local", "Connection": "keep-alive"}
+
+            Output headers (preserve_host=False):
+                {
+                  "Host": "auth.local",
+                  "x-forwarded-for": "127.0.0.1",
+                  "x-forwarded-proto": "http",
+                  "x-forwarded-host": "auth.local"
+                }
+        """
         request_headers: dict[str, str] = {}
         for raw_key, raw_value in scope.get("headers", []):
             key = raw_key.decode("latin-1")
@@ -272,7 +449,33 @@ class ReverseProxy:
         return request_headers
 
     def _build_request_body_stream(self, receive: Receive) -> AsyncIterator[bytes]:
-        """Yield request body chunks from ASGI events."""
+        """
+        Create an async generator that streams the request body from ASGI events.
+
+        This helper wraps the ASGI `receive` callable in an async generator
+        that yields body chunks as they arrive from the client. It allows the
+        proxy to forward request bodies (e.g. file uploads, large JSON payloads)
+        to the upstream without buffering the entire request in memory.
+
+        Behavior:
+            - Yields each non-empty `body` field from `http.request` events.
+            - Continues until `more_body` is False, meaning the client has sent
+              the complete request body.
+            - If a `http.disconnect` event is received, iteration stops early.
+
+        Args:
+            receive: The ASGI `receive` callable for this connection.
+
+        Returns:
+            An async iterator of `bytes` chunks representing the request body.
+
+        Example:
+            >>> async for chunk in proxy._build_request_body_stream(receive):
+            ...     print(len(chunk))
+            8192
+            8192
+            1024
+        """
 
         async def body_iter() -> AsyncIterator[bytes]:
             while True:
@@ -296,7 +499,23 @@ class ReverseProxy:
         content: AsyncIterator[bytes] | None,
         send: Send,
     ) -> None:
-        """Stream the request to the upstream and relay the response back."""
+        """
+        Perform a single upstream HTTP request and relay the response.
+
+        Opens a streaming request to the upstream server using httpx and
+        forwards the response headers and body to the client.
+
+        - If the status code is in `retry_statuses`, raises
+          `httpx.HTTPStatusError` to trigger the retry loop.
+        - If `rewrite_set_cookie_domain` is provided, rewrites `Set-Cookie`
+          headers before sending them back.
+        - Streams response body in chunks to avoid buffering large payloads.
+
+        Raises:
+            httpx.HTTPStatusError: For retryable statuses.
+            httpx.RequestError: For network or protocol errors.
+        """
+
         assert self._client is not None
 
         async with self._client.stream(method, url, headers=headers, content=content) as resp:
@@ -329,13 +548,26 @@ class ReverseProxy:
 
     async def _handle_websocket(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
-        Proxy WebSocket connections to upstream using the `websockets` package.
+        Proxy a WebSocket connection to the upstream server.
 
-        Notes:
-            - Requires `websockets` to be installed (`pip install websockets`).
-            - Builds the upstream WS URL by converting http/https -> ws/wss and joining paths.
-            - Streams messages bidirectionally until close.
+        Accepts the downstream WebSocket, opens a new upstream WebSocket using
+        the `websockets` library, and shuttles messages bidirectionally until
+        either side closes.
+
+        Behavior:
+          - Converts http/https upstream base to ws/wss.
+          - Forwards both text and binary frames.
+          - If the `websockets` package is not installed, responds with 1011
+            (server error, close).
+          - On upstream timeout, closes with 1011 and reason "Upstream WS timeout".
+          - On other errors, closes with 1011 and logs the exception.
+
+        Args:
+            scope: ASGI WebSocket scope.
+            receive: Coroutine yielding WebSocket events from the client.
+            send: Coroutine to send WebSocket events back to the client.
         """
+
         if websockets is None:
             # 501 (Not Implemented) because dependency is missing
             await self._send_ws_close(send, 1011, "Server cannot proxy WebSockets")
@@ -372,7 +604,44 @@ class ReverseProxy:
         self, scope: Scope, receive: Receive, send: Send, upstream: Any
     ) -> None:
         """
-        Bidirectionally forward messages between client (ASGI) and upstream WS.
+        Relay WebSocket messages bidirectionally between client and upstream.
+
+        This method runs two concurrent tasks inside an `anyio.TaskGroup`:
+
+        - **downstream_to_upstream**:
+          Reads ASGI `websocket.receive` events from the client and forwards
+          them to the upstream WebSocket connection. Supports both text and
+          binary frames. On `websocket.disconnect`, attempts to close the
+          upstream gracefully and stops the loop.
+
+        - **upstream_to_downstream**:
+          Iterates messages coming from the upstream WebSocket connection and
+          forwards them as ASGI `websocket.send` events to the client. If the
+          upstream closes, sends a final `websocket.close` frame with code
+          `1000` (normal closure).
+
+        Args:
+            scope: The ASGI scope for this connection (not directly used here,
+                but passed for consistency).
+            receive: ASGI receive callable that yields client events.
+            send: ASGI send callable used to emit messages back to the client.
+            upstream: An open WebSocket connection object from the
+                `websockets` library.
+
+        Behavior:
+            - Both tasks run until one side closes the connection.
+            - Ensures resources are cleaned up properly even if one side
+              disconnects abruptly.
+            - Uses `anyio.create_task_group` for concurrency, making it
+              backend-agnostic (works with asyncio or trio).
+
+        Example:
+            Client <──text──> Proxy <──text──> Upstream
+            Client <──bytes─> Proxy <──bytes─> Upstream
+
+        Close codes:
+            - 1000: Normal closure when upstream ends.
+            - 1011: Internal error (sent by `_handle_websocket` on exceptions).
         """
 
         async def downstream_to_upstream() -> None:
@@ -406,21 +675,102 @@ class ReverseProxy:
 
     def _build_upstream_ws_url(self, scope: Scope) -> httpx.URL:
         """
-        Convert base HTTP(S) URL to WS(S) and join with request path + query.
+        Build the upstream WebSocket URL from the ASGI scope.
+
+        Converts the base upstream HTTP(S) URL into the equivalent
+        WebSocket scheme (`ws://` or `wss://`) and appends the request
+        path and query string. This ensures that WebSocket connections
+        are routed to the correct upstream endpoint.
+
+        Args:
+            scope: The ASGI WebSocket scope containing the connection
+                details such as `scheme`, `path`, and `query_string`.
+
+        Returns:
+            A fully-qualified `httpx.URL` pointing to the upstream WebSocket.
+
+        Example:
+            If the proxy is configured with base_url="http://upstream.local"
+            and the client connects to:
+
+                ws://proxy.local/chat?room=1
+
+            Then this method will generate:
+
+                ws://upstream.local/chat?room=1
         """
+
         scheme = scope.get("scheme", "http")
         ws_scheme = "wss" if scheme == "https" else "ws"
         http_equiv = self._build_upstream_url(scope)  # includes joined path + query
         return http_equiv.copy_with(scheme=ws_scheme)
 
     async def _send_ws_close(self, send: Send, code: int, reason: str) -> None:
-        """Send a WebSocket close frame."""
+        """
+        Send a WebSocket close event downstream.
+
+        Used when the proxy needs to terminate a WebSocket session
+        due to an upstream timeout, error, or orderly shutdown.
+        Wraps the ASGI `websocket.close` message.
+
+        Args:
+            send: The ASGI `send` callable used to emit events.
+            code: WebSocket close code (e.g. 1000 for normal close,
+                1011 for internal error).
+            reason: Optional human-readable reason string describing
+                why the connection was closed.
+
+        ASGI Message Sent:
+            ```python
+            {
+                "type": "websocket.close",
+                "code": code,
+                "reason": reason,
+            }
+            ```
+        Example:
+
+            >>> await proxy._send_ws_close(send, 1011, "Upstream WS timeout")
+        """
+
         await send({"type": "websocket.close", "code": code, "reason": reason})
 
     def _sanitize_response_headers(
         self, headers: Iterable[tuple[str, str]]
     ) -> list[tuple[str, str]]:
-        """Remove hop-by-hop and dropped headers from upstream response."""
+        """
+        Filter upstream response headers before sending them downstream.
+
+        Some HTTP headers are considered *hop-by-hop* and must never be
+        forwarded by proxies (e.g. `Connection`, `Keep-Alive`). This method
+        removes those as well as any headers explicitly marked for dropping
+        in the proxy configuration.
+
+        Behavior:
+            - Iterates over all headers returned by the upstream.
+            - Excludes hop-by-hop headers defined in `_hop_by_hop_headers`.
+            - Excludes any headers listed in `_drop_response_headers`.
+            - Explicitly strips `Transfer-Encoding` headers since streaming
+              is managed by ASGI.
+
+        Args:
+            headers: Iterable of (name, value) header pairs from the upstream
+                response.
+
+        Returns:
+            A list of (name, value) pairs safe to include in the downstream
+            response.
+
+        Example:
+            Input:
+                [("Content-Type", "text/plain"),
+                 ("Connection", "keep-alive"),
+                 ("X-Custom", "yes")]
+
+            Output:
+                [("Content-Type", "text/plain"),
+                 ("X-Custom", "yes")]
+        """
         sanitized: list[tuple[str, str]] = []
         for key, value in headers:
             lower_key = key.lower()
@@ -436,7 +786,37 @@ class ReverseProxy:
         response: httpx.Response,
         headers: list[tuple[str, str]],
     ) -> list[tuple[str, str]]:
-        """Rewrite Set-Cookie headers when a domain rewrite function is provided."""
+        """
+        Process and potentially rewrite all `Set-Cookie` headers from an upstream response.
+
+        This method is only active when a `rewrite_set_cookie_domain` callback
+        was provided to the proxy. It inspects the upstream response headers,
+        extracts all `Set-Cookie` values, and passes each one through
+        `_rewrite_cookie` to apply domain rewrite rules.
+
+        Behavior:
+            - Collects all cookies from `response.headers`.
+            - Removes any existing `Set-Cookie` entries from the `headers` list.
+            - Re-appends rewritten cookies based on the callback’s logic.
+            - If no cookies are present, returns headers unchanged.
+
+        Args:
+            response: The upstream `httpx.Response` object whose headers may
+                contain one or more `Set-Cookie` fields.
+            headers: The current header list destined for the downstream client.
+
+        Returns:
+            A new header list where all `Set-Cookie` headers have been
+            rewritten (or dropped) according to `_rewrite_cookie`.
+
+        Example:
+            If upstream sets a cookie:
+                Set-Cookie: session=abc; Path=/; Domain=auth.local
+
+            And the callback maps all domains to "example.com",
+            the downstream response will include:
+                Set-Cookie: session=abc; Path=/; Domain=example.com
+        """
         get_list = getattr(response.headers, "get_list", None) or getattr(
             response.headers, "getlist", None
         )
@@ -457,7 +837,33 @@ class ReverseProxy:
         return filtered
 
     def _rewrite_cookie(self, cookie_value: str) -> str:
-        """Apply rewrite_set_cookie_domain callback to a cookie value."""
+        """
+        Rewrite the `Domain` attribute of a Set-Cookie header value.
+
+        This uses the `rewrite_set_cookie_domain` callback provided at proxy
+        initialization. The callback decides how the cookie domain should be
+        handled for downstream clients.
+
+        Behavior:
+            - If no callback is configured, the cookie is returned unchanged.
+            - If the callback returns `None`, the cookie is returned unchanged.
+            - If the callback returns an empty string (""), any existing Domain
+              attribute is dropped.
+            - If the callback returns a non-empty string, the Domain attribute
+              is set to that value (replacing any existing Domain).
+
+        Args:
+            cookie_value: Raw `Set-Cookie` header value from the upstream response.
+
+        Returns:
+            The modified `Set-Cookie` header string with the Domain attribute
+            rewritten, removed, or left intact according to the callback.
+
+        Example:
+            >>> proxy._rewrite_cookie("session=abc; Path=/; Domain=auth.local")
+            "session=abc; Path=/; Domain=example.com"
+        """
+
         if self._rewrite_cookie_domain is None:
             return cookie_value
 
@@ -481,7 +887,27 @@ class ReverseProxy:
         return "; ".join(rewritten)
 
     async def _send_text(self, send: Send, status: int, text: str) -> None:
-        """Send a plain-text HTTP response."""
+        """
+        Send a minimal plain-text HTTP response downstream.
+
+        This helper is used for error cases (e.g. timeouts, upstream errors)
+        where we want to quickly send a status code and a human-readable
+        message without building a full response object.
+
+        Args:
+            send: The ASGI `send` callable used to emit events back to the client.
+            status: The HTTP status code to send (e.g. 502, 504).
+            text: The response body as a plain UTF-8 string.
+
+        ASGI Messages Emitted:
+            - `http.response.start`: starts the response with status + content type.
+            - `http.response.body`: contains the encoded text payload.
+
+        Note:
+            The response is always returned with
+            `Content-Type: text/plain; charset=utf-8`.
+        """
+
         await send(
             {
                 "type": "http.response.start",
@@ -493,7 +919,17 @@ class ReverseProxy:
 
     def _log_event(self, event: str, **fields: Any) -> None:
         """
-        Structured log helper. Emits one line per event with key/value fields.
+        Emit a structured log line for proxy events.
+
+        Log lines are prefixed with `reverse_proxy.<event>` and include all
+        additional fields as `key=value` pairs.
+
+        Example:
+            reverse_proxy.upstream_timeout url='http://...' attempt=2 error='ReadTimeout(...)'
+
+        Args:
+            event: Short identifier for the event type (e.g. "upstream_timeout").
+            **fields: Arbitrary key/value pairs providing context for the log.
         """
         if not self._log:
             return
