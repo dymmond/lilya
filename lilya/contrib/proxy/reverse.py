@@ -17,7 +17,7 @@ except ImportError as e:
 
 class Relay:
     """
-    ASGI reverse proxy middleware for Lilya.
+    ASGI relay middleware for Lilya.
 
     This component forwards incoming ASGI requests to an upstream server
     using `httpx.AsyncClient` and streams the response back to the caller.
@@ -177,7 +177,7 @@ class Relay:
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
-        ASGI entrypoint for the reverse proxy.
+        ASGI entrypoint for the relay.
 
         This method is invoked by the ASGI server whenever a new
         connection is routed to the proxy. It inspects the `scope["type"]`

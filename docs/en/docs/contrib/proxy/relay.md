@@ -1,6 +1,6 @@
 # Relay
 
-A **mountable ASGI reverse proxy** for Lilya that forwards HTTP **and optionally WebSocket** traffic to an upstream service.
+A **mountable ASGI relay** for Lilya that forwards HTTP **and optionally WebSocket** traffic to an upstream service.
 
 It preserves **methods, headers, cookies, query parameters, and streaming bodies**, while supporting retries,
 timeout handling, header policies, and structured logging.
