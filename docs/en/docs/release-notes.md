@@ -7,6 +7,11 @@ hide:
 
 ## 0.20.6
 
+### Added
+
+- [ReverseProxy](./contrib/proxy/reverse-proxy.md). This allows to create objects that are ASGI
+compatible and upstream services within your Lilya application.
+
 ### Changed
 
 - Added `python-multipart` as part of the `all` and `standard` Lilya packages.
