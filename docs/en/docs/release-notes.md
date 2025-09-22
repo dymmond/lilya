@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.20.6
+
+### Changed
+
+- Added `python-multipart` as part of the `all` and `standard` Lilya packages.
+
 ## 0.20.5
 
 This was a change for the newer sayer 0.5.1 that affects the client.
