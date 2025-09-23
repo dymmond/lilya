@@ -124,6 +124,15 @@ from lilya.responses import HTMLResponse
 {!> ../../../docs_src/responses/html.py !}
 ```
 
+### HTML
+
+Returning an `html` response. This is literally the same as the HTMLResponse but created for better
+readability.
+
+```python
+from lilya.responses import HTML
+```
+
 ### Error
 
 Response that can be used when throwing a `500` error. Defaults to return an `html` response.

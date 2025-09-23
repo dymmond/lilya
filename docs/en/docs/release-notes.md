@@ -16,6 +16,7 @@ hide:
 - **Header policies**: Added support for allow-list mode (`allow_request_headers`, `allow_response_headers`) in addition to drop-lists.
 - **Structured logging**: Proxy events (`upstream_error`, `upstream_timeout`, `upstream_retryable_error`) now emit consistent log messages for observability.
 - Support for [CSRFMiddleware](./middleware.md#csrfmiddleware) to understand the HTML forms allowing also custom fields.
+- New [HTML](./responses.md#html) response as an alternative to `HTMLResponse`.
 
 ### Changed
 
