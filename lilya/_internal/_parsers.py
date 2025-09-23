@@ -11,20 +11,10 @@ from urllib.parse import unquote, unquote_plus
 import anyio
 from anyio import SpooledTemporaryFile
 
+from lilya.contrib.multipart import parsers as multipart
+from lilya.contrib.multipart.utils import _decode_rfc5987, parse_options_header
 from lilya.datastructures import DataUpload, FormData, Header
 from lilya.enums import FormMessage
-
-try:
-    import python_multipart as multipart
-    from python_multipart.multipart import parse_options_header
-except ModuleNotFoundError:  # pragma: nocover
-    # old import name
-    try:
-        import multipart  # type: ignore[no-redef]
-        from multipart.multipart import parse_options_header  # type: ignore[no-redef]
-    except ModuleNotFoundError:  # pragma: nocover
-        parse_options_header = None
-        multipart = None
 
 
 @lru_cache(1024)
@@ -160,7 +150,17 @@ class FormParser:
             "on_end": self.on_end,
         }
 
-        parser = multipart.QuerystringParser(callbacks)
+        parser = multipart.QuerystringParser()
+        if hasattr(parser, "set_callback"):
+            for cb_name, func in callbacks.items():
+                name = cb_name[3:] if cb_name.startswith("on_") else cb_name
+                try:
+                    parser.set_callback(name, func)  # type: ignore[attr-defined]
+                except Exception:
+                    pass
+        elif hasattr(parser, "callbacks") and isinstance(parser.callbacks, dict):
+            parser.callbacks.update(callbacks)
+
         field_name = b""
         field_value = b""
         items: list[tuple[str, str | DataUpload]] = []
@@ -319,30 +319,31 @@ class MultiPartParser:
             self._handle_no_filename()
 
     def _set_field_name(self, options: dict[bytes, bytes]) -> None:
-        """
-        Set the field name based on options in Content-Disposition header.
-
-        Args:
-            options (Dict[bytes, bytes]): Parsed options from the Content-Disposition header.
-        """
-        try:
+        """Set the field name based on options; support RFC5987 name*."""
+        if b"name" in options:
             self._current_part.field_name = _user_safe_decode(options[b"name"], self._charset)
-        except KeyError:
-            raise MultiPartException(
-                'The Content-Disposition header field "name" must be provided.'
-            ) from None
+            return
+        # RFC5987 name*
+        raw = options.get(b"name*")
+        if raw is not None:
+            decoded = _decode_rfc5987(raw, self._charset)
+            self._current_part.field_name = decoded
+            return
+        raise MultiPartException(
+            'The Content-Disposition header field "name" must be provided.'
+        ) from None
 
     def _handle_filename(self, options: dict[bytes, bytes]) -> None:
-        """
-        Handle the case when the part has a filename.
-
-        Args:
-            options (Dict[bytes, bytes]): Parsed options from the Content-Disposition header.
-        """
+        """Handle the case when the part has a filename. Support RFC5987 filename*."""
         self._current_files += 1
         self._validate_files_count()
 
-        filename = _user_safe_decode(options[b"filename"], self._charset)
+        filename = ""
+        if b"filename" in options:
+            filename = _user_safe_decode(options[b"filename"], self._charset)
+        elif b"filename*" in options:
+            filename = _decode_rfc5987(options[b"filename*"], self._charset)
+
         tempfile = self._create_temp_file()
         self._current_part.file = self._create_upload_file(filename, tempfile)
 
@@ -478,20 +479,29 @@ class MultiPartParser:
             "on_end": self.on_end,
         }
 
-    def _create_multipart_parser(
-        self, boundary: bytes, callbacks: dict[str, Callable]
-    ) -> multipart.MultipartParser:
+    def _create_multipart_parser(self, boundary: bytes, callbacks: dict[str, Callable]) -> multipart.MultipartParser:
         """
         Create the multipart parser with the specified boundary and callbacks.
-
-        Args:
-            boundary (bytes): Multipart boundary.
-            callbacks (Dict[str, Callable]): Callbacks dictionary.
-
-        Returns:
-            multipart.MultipartParser: Created multipart parser.
+        Works with lilya.contrib.multipart (preferred).
         """
-        return multipart.MultipartParser(boundary, cast(Any, callbacks))
+        # Our contrib parser signature is MultipartParser(boundary, *[, max_size=...])
+        mp = multipart.MultipartParser(boundary)
+        # If it exposes set_callback(name, func) use that, stripping 'on_'
+        if hasattr(mp, "set_callback"):
+            for cb_name, func in callbacks.items():
+                name = cb_name[3:] if cb_name.startswith("on_") else cb_name
+                try:
+                    mp.set_callback(name, func)  # type: ignore[attr-defined]
+                except Exception:
+                    pass
+        # Or store into callbacks dict if present
+        if hasattr(mp, "callbacks") and isinstance(mp.callbacks, dict):
+            for cb_name, func in callbacks.items():
+                try:
+                    mp.callbacks[cb_name] = func  # type: ignore[attr-defined]
+                except Exception:
+                    pass
+        return mp
 
     async def _write_file_data(self) -> None:
         """
