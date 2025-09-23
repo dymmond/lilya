@@ -496,6 +496,14 @@ class Settings(Internal):
             """
         ),
     ] = True
+    csrf_token_name: Annotated[
+        str,
+        Doc(
+            """
+            Name given to the `csrf_token` field for the HTML form.
+            """
+        ),
+    ] = "csrf_token"
 
     @property
     def routes(self) -> list[Any]:

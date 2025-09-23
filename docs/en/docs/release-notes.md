@@ -5,6 +5,20 @@ hide:
 
 # Release Notes
 
+## 0.20.7
+
+### Added
+
+- `csrf_token_name` as new parameter in the Lilya settings. This will allow you to globally set the name of the
+`csrf` token when using CSRFMiddleware.
+- `csrf_enabled` flag to `TemplateController`. This will automatically inject the `csrf` token in the context of the templates.
+- `csrf_token_form_name` to `TemplateController`. This defaults to `csrf_token` and corresponds to the name of the variable
+that is injected in the context of the template for the CSRF token when `csrf_enabled`.
+
+### Changed
+
+- Make `response` optional in the `get_or_set_csrf_token`.
+
 ## 0.20.6
 
 ### Added
