@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-import hashlib
-import hmac
 import re
-import secrets
 import urllib.parse
 from typing import Literal
 
+from lilya.contrib.security.csrf import generate_csrf_token, tokens_match
 from lilya.datastructures import Cookie, Header
 from lilya.enums import MediaType, ScopeType
 from lilya.exceptions import PermissionDenied
@@ -89,7 +87,7 @@ class CSRFMiddleware(MiddlewareProtocol):
             await self.app(scope, receive, self.get_send_wrapper(send, csrf_cookie))
             return
 
-        if self._csrf_tokens_match(current_token, csrf_cookie):
+        if tokens_match(self.secret, current_token, csrf_cookie):
             await self.app(scope, recv_for_app, send)
             return
 
@@ -256,7 +254,7 @@ class CSRFMiddleware(MiddlewareProtocol):
         if "set-cookie" not in headers:
             cookie = Cookie(
                 key=self.cookie_name,
-                value=self._generate_csrf_token(),
+                value=generate_csrf_token(self.secret),
                 path=self.cookie_path,
                 secure=self.cookie_secure,
                 httponly=self.cookie_httponly,
@@ -265,70 +263,3 @@ class CSRFMiddleware(MiddlewareProtocol):
             )
             headers.add("set-cookie", cookie.to_header(header=""))
         return message
-
-    def _generate_csrf_hash(self, token: str) -> str:
-        """
-        Generate an HMAC that signs the CSRF token.
-
-        Args:
-            token: The CSRF token.
-
-        Returns:
-            Signed HMAC of the token.
-        """
-        return hmac.new(self.secret.encode(), token.encode(), hashlib.sha256).hexdigest()
-
-    def _generate_csrf_token(self) -> str:
-        """
-        Generate a CSRF token that includes a randomly generated string signed by an HMAC.
-
-        Returns:
-            CSRF token.
-        """
-        token = secrets.token_hex(CSRF_SECRET_BYTES)
-        token_hash = self._generate_csrf_hash(token)
-        return token + token_hash
-
-    def _decode_csrf_token(self, token: str) -> str | None:
-        """
-        Decode a CSRF token and validate its HMAC.
-
-        Args:
-            token: The CSRF token.
-
-        Returns:
-            Decoded CSRF token if valid, otherwise None.
-        """
-        if len(token) < CSRF_SECRET_LENGTH + 1:
-            return None
-
-        token_secret = token[:CSRF_SECRET_LENGTH]
-        existing_hash = token[CSRF_SECRET_LENGTH:]
-        expected_hash = self._generate_csrf_hash(token_secret)
-        if not secrets.compare_digest(existing_hash, expected_hash):
-            return None
-
-        return token_secret
-
-    def _csrf_tokens_match(
-        self, request_csrf_token: str | None, cookie_csrf_token: str | None
-    ) -> bool:
-        """
-        Takes the CSRF tokens from the request and the cookie and verifies both are valid and identical.
-
-        Args:
-            request_csrf_token: CSRF token from the request headers.
-            cookie_csrf_token: CSRF token from the cookie.
-
-        Returns:
-            True if tokens are valid and identical, False otherwise.
-        """
-        if not (request_csrf_token and cookie_csrf_token):
-            return False
-
-        decoded_request_token = self._decode_csrf_token(request_csrf_token)
-        decoded_cookie_token = self._decode_csrf_token(cookie_csrf_token)
-        if decoded_request_token is None or decoded_cookie_token is None:
-            return False
-
-        return secrets.compare_digest(decoded_request_token, decoded_cookie_token)
