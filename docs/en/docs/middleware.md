@@ -213,6 +213,10 @@ protection works depending on your needs **XHR/fetch** or **traditional HTML for
 {!> ../../../docs_src/middleware/available/csrf.py !}
 ```
 
+!!! info "Check the security section"
+    If you want more details specicially about this, check the [Security with CSRF](./contrib/security/csrf.md)
+    documentation section.
+
 #### What it protects and how
 
 `CSRFMiddleware` implements the **double‑submit cookie** pattern:

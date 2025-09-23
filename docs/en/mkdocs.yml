@@ -132,6 +132,8 @@ nav:
     - contrib/security/advanced/oauth2-scopes.md
     - contrib/security/advanced/basic-auth.md
     - contrib/security/available-security.md
+    - CSRF:
+      - contrib/security/csrf.md
   - Files:
     - contrib/files/send-file.md
     - contrib/files/jsonify.md

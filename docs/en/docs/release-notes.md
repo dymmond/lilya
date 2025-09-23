@@ -17,6 +17,7 @@ hide:
 - **Structured logging**: Proxy events (`upstream_error`, `upstream_timeout`, `upstream_retryable_error`) now emit consistent log messages for observability.
 - Support for [CSRFMiddleware](./middleware.md#csrfmiddleware) to understand the HTML forms allowing also custom fields.
 - New [HTML](./responses.md#html) response as an alternative to `HTMLResponse`.
+- New documentation section for [security with CSRF](./contrib/security/csrf.md).
 
 ### Changed
 
