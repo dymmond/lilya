@@ -151,9 +151,6 @@ def requires(
     return decorator
 
 
-class AuthenticationError(Exception): ...
-
-
 class AuthenticationBackend(ABC):
     @abstractmethod
     async def authenticate(self, connection: Connection) -> AuthResult | None: ...
@@ -181,7 +178,7 @@ BaseUser = UserInterface
 
 class BasicUser(UserInterface):
     def __init__(self, username: str) -> None:
-        self.username = username
+        self._username = username
 
     @property
     def is_authenticated(self) -> bool:
@@ -189,10 +186,17 @@ class BasicUser(UserInterface):
 
     @property
     def display_name(self) -> str:
-        return self.username
+        return self._username
 
 
 class AnonymousUser(UserInterface):
+    """
+    Represents a user who is not authenticated.
+
+    This class implements the `UserInterface` protocol and provides default
+    values for an anonymous user.
+    """
+
     @property
     def is_authenticated(self) -> bool:
         return False
