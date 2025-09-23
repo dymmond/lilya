@@ -42,7 +42,7 @@ class BaseAuthMiddleware(ABC, MiddlewareProtocol):
         super().__init__(app)
         self.app = app
         self.on_error: Callable[[Connection, Exception], Response] = (
-            on_error if on_error is not None else self.default_on_error  # type: ignore
+            on_error if on_error is not None else self.default_on_error
         )
         self.scopes: set[str] = {ScopeType.HTTP, ScopeType.WEBSOCKET}
 
