@@ -15,20 +15,12 @@ from lilya._internal._connection import (
 )
 from lilya._internal._parsers import FormParser, MultiPartException, MultiPartParser
 from lilya.compat import AsyncResourceHandler
+from lilya.contrib.multipart.utils import parse_options_header
 from lilya.datastructures import FormData
 from lilya.enums import Event, MediaType, ScopeType
 from lilya.exceptions import HTTPException
 from lilya.serializers import serializer
 from lilya.types import Empty, Message, Receive, Scope, Send
-
-try:
-    from python_multipart.multipart import parse_options_header
-except ModuleNotFoundError:  # pragma: nocover
-    # old import name
-    try:
-        from multipart.multipart import parse_options_header  # type: ignore[no-redef]
-    except ModuleNotFoundError:  # pragma: nocover
-        parse_options_header = None
 
 
 class Request(Connection):

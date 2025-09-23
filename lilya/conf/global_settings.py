@@ -41,7 +41,7 @@ def safe_get_type_hints(cls: type) -> dict[str, Any]:
     """
     try:
         return get_type_hints(cls, include_extras=True)
-    except Exception:
+    except Exception:  # noqa
         return cls.__annotations__
 
 
@@ -124,7 +124,7 @@ class BaseSettings:
             if typ is bool or str(typ) == "bool":
                 return value.lower() in self.__truthy__
             return typ(value)
-        except Exception:
+        except Exception:  # noqa
             if get_origin(typ) is Union or get_origin(UnionType):
                 type_name = " | ".join(
                     t.__name__ if hasattr(t, "__name__") else str(t) for t in get_args(typ)
@@ -171,7 +171,7 @@ class BaseSettings:
                         continue
                     result_key = name.upper() if upper else name
                     result[result_key] = value
-                except Exception:
+                except Exception:  # noqa
                     # Skip properties that raise errors
                     continue
 
