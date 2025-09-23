@@ -8,10 +8,10 @@ from lilya.authentication import (
     AnonymousUser,
     AuthCredentials,
     AuthenticationBackend,
-    AuthenticationError,
     AuthResult,
 )
 from lilya.enums import ScopeType
+from lilya.exceptions import AuthenticationError
 from lilya.protocols.middleware import MiddlewareProtocol
 from lilya.responses import PlainText, Response
 from lilya.types import ASGIApp, Receive, Scope, Send
@@ -42,7 +42,7 @@ class BaseAuthMiddleware(ABC, MiddlewareProtocol):
         super().__init__(app)
         self.app = app
         self.on_error: Callable[[Connection, Exception], Response] = (
-            on_error if on_error is not None else self.default_on_error
+            on_error if on_error is not None else self.default_on_error  # type: ignore[assignment]
         )
         self.scopes: set[str] = {ScopeType.HTTP, ScopeType.WEBSOCKET}
 
