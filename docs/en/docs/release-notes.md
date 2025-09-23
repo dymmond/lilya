@@ -19,6 +19,9 @@ hide:
 ### Changed
 
 - Added `python-multipart` as part of the `all` and `standard` Lilya packages.
+- Replaced `python-multipart` with a fully native multipart, urlencoded, and octet-stream form parser.
+- Improved RFC 5987 parameter decoding for proper handling of UTF-8 filenames and headers.
+
 
 ## 0.20.5
 

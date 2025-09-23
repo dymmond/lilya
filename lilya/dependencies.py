@@ -88,7 +88,7 @@ class Provide:
             if isinstance(request, Request):
                 try:
                     json_data = cast(dict[str, Any], await request.data()) or {}
-                except Exception:
+                except Exception:  # noqa
                     ...
 
                 updated_keys: dict[str, Any] = {}
@@ -354,7 +354,7 @@ class PureScope:
                     await fn()
                 else:
                     fn()
-            except Exception:
+            except Exception:  # noqa
                 ...
 
     async def __aenter__(self) -> "PureScope":

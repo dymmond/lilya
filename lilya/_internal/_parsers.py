@@ -155,8 +155,8 @@ class FormParser:
             for cb_name, func in callbacks.items():
                 name = cb_name[3:] if cb_name.startswith("on_") else cb_name
                 try:
-                    parser.set_callback(name, func)  # type: ignore[attr-defined]
-                except Exception:
+                    parser.set_callback(name, func)
+                except Exception:  # noqa
                     pass
         elif hasattr(parser, "callbacks") and isinstance(parser.callbacks, dict):
             parser.callbacks.update(callbacks)
@@ -479,7 +479,9 @@ class MultiPartParser:
             "on_end": self.on_end,
         }
 
-    def _create_multipart_parser(self, boundary: bytes, callbacks: dict[str, Callable]) -> multipart.MultipartParser:
+    def _create_multipart_parser(
+        self, boundary: bytes, callbacks: dict[str, Callable]
+    ) -> multipart.MultipartParser:
         """
         Create the multipart parser with the specified boundary and callbacks.
         Works with lilya.contrib.multipart (preferred).
@@ -491,15 +493,15 @@ class MultiPartParser:
             for cb_name, func in callbacks.items():
                 name = cb_name[3:] if cb_name.startswith("on_") else cb_name
                 try:
-                    mp.set_callback(name, func)  # type: ignore[attr-defined]
-                except Exception:
+                    mp.set_callback(name, func)
+                except Exception:  # noqa
                     pass
         # Or store into callbacks dict if present
         if hasattr(mp, "callbacks") and isinstance(mp.callbacks, dict):
             for cb_name, func in callbacks.items():
                 try:
-                    mp.callbacks[cb_name] = func  # type: ignore[attr-defined]
-                except Exception:
+                    mp.callbacks[cb_name] = func
+                except Exception:  # noqa
                     pass
         return mp
 

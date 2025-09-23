@@ -12,7 +12,7 @@ async def user_state_update(request):
         raise ContinueRouting()
     try:
         jsonob = await request.json()
-    except Exception:
+    except Exception: # noqa
         raise ContinueRouting()
     if jsonob.get("type") != "update_state":
         raise ContinueRouting()

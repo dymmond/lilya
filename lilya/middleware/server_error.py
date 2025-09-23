@@ -197,7 +197,7 @@ class ServerErrorMiddleware(MiddlewareProtocol):
         # escape error class and text
         try:
             exc_type_str = traceback_obj.exc_type_str
-        except Exception:
+        except Exception:  # noqa
             # for older python versions < 3.13
             exc_type_str = traceback_obj.exc_type.__name__
         error = f"{html.escape(exc_type_str)}: {html.escape(str(traceback_obj))}"

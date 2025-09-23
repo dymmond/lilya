@@ -162,7 +162,7 @@ class _SMTPConnection:
                 finally:
                     try:
                         client.close()
-                    except Exception:
+                    except Exception:  # noqa
                         ...
 
             await anyio.to_thread.run_sync(_quit, self._client)

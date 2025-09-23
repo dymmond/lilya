@@ -67,7 +67,7 @@ async def _json(client: AsyncClient, method: str, url: str, **kwargs) -> dict:
     # Try JSON body; if not JSON (e.g., redirect), fall back.
     try:
         return resp.json()
-    except Exception:
+    except Exception:  # noqa
         return {"status_code": resp.status_code, "headers": dict(resp.headers)}
 
 

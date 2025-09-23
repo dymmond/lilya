@@ -390,7 +390,7 @@ class BaseHandler:
             for a in non_none:
                 try:
                     return self._structure_to_annotation(a, value)
-                except Exception:
+                except Exception:  # noqa
                     continue
             return value  # fallback
 
@@ -430,8 +430,8 @@ class BaseHandler:
             # Best-effort fast path when annotation is a runtime class/type
             if isinstance(annotation, type) and isinstance(value, annotation):
                 return value
-        except Exception:
-            pass
+        except Exception:  # noqa
+            ...
 
         return apply_structure(structure=annotation, value=value)
 
