@@ -113,7 +113,7 @@ async def get_login(request: Request):
     # Prepare the response first so we can attach Set-Cookie before sending
     response = HTML(HTML_TEMPLATE.format(token=""))
     token = get_or_set_csrf_token(
-        request, response, secret="your-long-unique-secret", httponly=False
+        request, response=response, secret="your-long-unique-secret", httponly=False
     )
     response.body = HTML_TEMPLATE.format(token=token).encode("utf-8")
     return response
@@ -300,7 +300,6 @@ class LoginController(TemplateController):
         # Get or generate the CSRF Token
         token = get_or_set_csrf_token(
             request,
-            response,
             secret=CSRF_SECRET,
             # You can keep HttpOnly=True because we're not reading the cookie in JS;
             # we render the token directly into HTML from the server.
@@ -313,14 +312,14 @@ class LoginController(TemplateController):
 
     async def get(self, request: Request) -> HTML:
         return await self.render_template(request)
-    
+
     async def post(self, request: Request) -> HTML:
         # Get the form
         form = await request.form()
 
         # Do things and return
-        ... 
-    
+        ...
+
     # Return your HTML response
 ```
 
@@ -371,7 +370,7 @@ Because we embed the server‑generated token directly, we can keep the cookie *
     * Hidden field (classic forms), **or**
     * Header (XHR/fetch/HTMX).
 * On first page render, **ensure a token exists** and embed it:
-    * Use `get_or_set_csrf_token(request, response, secret=...)` from `lilya.contrib.security.csrf` to set the cookie *and* get the token value.
+    * Use `get_or_set_csrf_token(request, response=, secret=...)` from `lilya.contrib.security.csrf` to set the cookie *and* get the token value.
 * Choose cookie flags:
     * **Recommended** for SSR: `httponly=True` (since you embed token directly in HTML).
     * For JS‑read cookie patterns, keep `httponly=False` (less secure; only if you need to read the cookie in JS).

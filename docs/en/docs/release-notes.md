@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.20.7
+
+### Changed
+
+- Make `response` optional in the `get_or_set_csrf_token`.
+
 ## 0.20.6
 
 ### Added

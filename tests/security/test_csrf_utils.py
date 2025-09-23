@@ -7,6 +7,7 @@ from lilya.contrib.security.csrf import (
     get_or_set_csrf_token,
     tokens_match,
 )
+from lilya.responses import Ok
 from lilya.routing import Path
 from lilya.testclient import create_client
 
@@ -14,6 +15,7 @@ from lilya.testclient import create_client
 def test_generate_and_decode_roundtrip():
     secret = get_random_secret_key()
     token = generate_csrf_token(secret)
+
     assert isinstance(token, str)
 
     decoded = decode_csrf_token(secret, token)
@@ -40,13 +42,11 @@ def test_get_or_set_csrf_token_sets_cookie_and_returns_value():
     secret = get_random_secret_key()
 
     async def view(request):
-        from lilya.responses import Ok
-
         response = Ok({"ok": True})
         token = get_or_set_csrf_token(
             request,
-            response,
             secret,
+            response=response,
             httponly=False,  # template-friendly
         )
         # Echo it so we can assert it equals the cookie set value

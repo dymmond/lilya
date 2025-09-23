@@ -81,9 +81,9 @@ def build_csrf_cookie(
 
 
 def ensure_csrf_cookie(
-    response: Response,
     secret: str,
     *,
+    response: Response | None = None,
     cookie_name: str = "csrftoken",
     path: str = "/",
     secure: bool = False,
@@ -106,16 +106,18 @@ def ensure_csrf_cookie(
         samesite=samesite,
         domain=domain,
     )
-    # The Response in Lilya has a header map supporting .add()
-    response.headers.add("set-cookie", cookie.to_header(header=""))
+
+    if response:
+        # The Response in Lilya has a header map supporting .add()
+        response.headers.add("set-cookie", cookie.to_header(header=""))
     return cookie.value
 
 
 def get_or_set_csrf_token(
     request: Request,
-    response: Response,
     secret: str,
     *,
+    response: Response | None = None,
     cookie_name: str = "csrftoken",
     path: str = "/",
     secure: bool = False,
@@ -135,8 +137,8 @@ def get_or_set_csrf_token(
     if existing:
         return existing
     return ensure_csrf_cookie(
-        response,
         secret,
+        response=response,
         cookie_name=cookie_name,
         path=path,
         secure=secure,
