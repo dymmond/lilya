@@ -4,8 +4,9 @@ import binascii
 
 from lilya.apps import Lilya
 from lilya.authentication import (
-    AuthCredentials, AuthenticationBackend, AuthenticationError, BasicUser
+    AuthCredentials, AuthenticationBackend, BasicUser
 )
+from lilya.exceptions import AuthenticationError
 from lilya.middleware import DefineMiddleware
 from lilya.middleware.sessions import SessionMiddleware
 from lilya.middleware.authentication import AuthenticationMiddleware

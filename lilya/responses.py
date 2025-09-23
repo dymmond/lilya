@@ -309,6 +309,12 @@ class HTMLResponse(Response):
     media_type = MediaType.HTML
 
 
+class HTML(HTMLResponse):
+    """
+    A simple alias for HTMLResponse for better readability.
+    """
+
+
 class Error(HTMLResponse):
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
 

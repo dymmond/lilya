@@ -206,11 +206,134 @@ how to use it is available.
 
 ### CSRFMiddleware
 
-The default parameters used by the CSRFMiddleware implementation are restrictive by default and Lilya allows some
-ways of using this middleware depending of the taste.
+The default parameters used by the CSRFMiddleware are secure by default. Lilya lets you tune how CSRF
+protection works depending on your needs **XHR/fetch** or **traditional HTML forms** without extra dependencies.
 
 ```python
 {!> ../../../docs_src/middleware/available/csrf.py !}
+```
+
+!!! info "Check the security section"
+    If you want more details specicially about this, check the [Security with CSRF](./contrib/security/csrf.md)
+    documentation section.
+
+#### What it protects and how
+
+`CSRFMiddleware` implements the **double‑submit cookie** pattern:
+
+* On **safe methods** (default: `GET`, `HEAD`) it **sets** a CSRF cookie (default name: `csrftoken`) if missing.
+* On **unsafe methods** (`POST`, `PUT`, `PATCH`, `DELETE`) it **validates** an incoming token from:
+    1. The request header **`X-CSRFToken`** (preferred for XHR/fetch), or
+    2. A form field (default name **`csrf_token`**) in **`application/x-www-form-urlencoded`** or **`multipart/form-data`** bodies.
+
+The value from (1) or (2) must match the signed cookie value.
+
+!!! Note
+    The middleware reads form bodies **only when needed** (unsafe methods, header missing, content type is form).
+    It buffers and **replays** the body to the next app, so your handlers can still call `await request.form()` or `await request.body()` normally.
+
+#### Behaviour at a glance
+
+* **Safe methods**: Middleware injects the cookie (if missing) and forwards the response.
+* **Unsafe methods**:
+    1.  If the header token is present: Validate vs Cookie.
+    2.  Else if content type is `application/x-www-form-urlencoded` or `multipart/form-data`: read, extract `form_field_name`, **replay** body to the app, then validate.
+    3.  Otherwise: **403 PermissionDenied**.
+
+#### Examples
+
+##### 1. Classic HTML form (no JavaScript)
+
+Render the CSRF cookie value into a hidden field. Make sure `httponly=False` so the template can access the cookie.
+
+**Middleware (typical)**:
+
+```python
+DefineMiddleware(
+    CSRFMiddleware,
+    secret="your-long-unique-secret",
+    httponly=False,     # templates read the cookie
+    secure=True,        # production
+    samesite="lax",
+)
+```
+
+##### 2. XHR / fetch (header path)
+
+Use the cookie value to set the header. (In SPA/PJAX contexts this is often more convenient.)
+
+```js
+async function postData(url, data) {
+  const csrf = document.cookie
+    .split("; ")
+    .find((c) => c.startsWith("csrftoken="))
+    ?.split("=")[1];
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRFToken": csrf,           // header token
+    },
+    body: JSON.stringify(data),
+    credentials: "same-origin",
+  });
+
+  return res.json();
+}
+```
+
+No need to change the middleware defaults, this uses the header path.
+
+##### 3. File uploads (multipart)
+
+Works out of the box with hidden fields in `multipart/form-data` forms.
+
+##### 4. Custom form field name
+
+Prefer a different field name (e.g., `csrfmiddlewaretoken`)?
+
+```python
+DefineMiddleware(
+    CSRFMiddleware,
+    secret="your-long-unique-secret",
+    form_field_name="csrfmiddlewaretoken",
+    httponly=False,
+)
+```
+
+##### 5. Tightening body buffering
+
+If you only accept small forms, reduce the `max_body_size`:
+
+```python
+DefineMiddleware(
+    CSRFMiddleware,
+    secret="your-long-unique-secret",
+    max_body_size=64 * 1024,  # 64 KiB
+)
+```
+
+When the body exceeds this limit, the middleware won't parse fallback tokens and will fail CSRF unless the header is present.
+
+#### Minimal, complete examples
+
+**Using headers**
+
+```python
+{!> ../../../docs_src/middleware/available/csrf_example_2.py !}
+```
+
+**Using a form**
+
+```python
+{!> ../../../docs_src/middleware/available/csrf_example_3.py !}
+```
+
+**Using a custom field**
+
+```python
+{!> ../../../docs_src/middleware/available/csrf_example_4.py !}
 ```
 
 ### CORSMiddleware

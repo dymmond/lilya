@@ -70,6 +70,15 @@ class LoggingConfig(ABC):
         ] = "DEBUG",
         **kwargs: Any,
     ) -> None:
+        """
+        Initializes the logging configuration.
+
+        One of the kwargs is the `name` which corresponds to the logger name.
+
+        Args:
+            level: The logging level. Default is "DEBUG".
+            **kwargs: Additional keyword arguments for custom configurations.
+        """
         levels: str = ", ".join(self.__logging_levels__)
         assert level in self.__logging_levels__, (
             f"'{level}' is not a valid logging level. Available levels: '{levels}'."
@@ -78,6 +87,7 @@ class LoggingConfig(ABC):
         self.level = level.upper()
         self.options = kwargs
         self.skip_setup_configure: bool = kwargs.get("skip_setup_configure", False)
+        self.name = kwargs.get("name", "lilya")
 
     def configure(self) -> None:
         """
@@ -123,7 +133,7 @@ class StandardLoggingConfig(LoggingConfig):
         logging.config.dictConfig(self.config)
 
     def get_logger(self) -> Any:
-        return logging.getLogger("lilya")
+        return logging.getLogger(self.name)
 
 
 def setup_logging(logging_config: LoggingConfig | None = None) -> None:

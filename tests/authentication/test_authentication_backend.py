@@ -12,11 +12,11 @@ from lilya.apps import Lilya
 from lilya.authentication import (
     AuthCredentials,
     AuthenticationBackend,
-    AuthenticationError,
     BasicUser,
     requires,
 )
 from lilya.controllers import Controller
+from lilya.exceptions import AuthenticationError
 from lilya.middleware import DefineMiddleware
 from lilya.middleware.authentication import AuthenticationMiddleware
 from lilya.requests import Connection, Request

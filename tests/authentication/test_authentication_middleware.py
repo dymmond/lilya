@@ -9,10 +9,10 @@ import pytest
 from lilya.authentication import (
     AuthCredentials,
     AuthenticationBackend,
-    AuthenticationError,
     BasicUser,
     requires,
 )
+from lilya.exceptions import AuthenticationError
 from lilya.middleware import DefineMiddleware
 from lilya.middleware.authentication import AuthenticationMiddleware, BaseAuthMiddleware
 from lilya.requests import Connection, Request

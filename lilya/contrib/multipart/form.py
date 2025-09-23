@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import io
-import logging
 import tempfile
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -10,9 +9,6 @@ from typing import Any, Protocol
 from lilya.contrib.multipart.exceptions import FormParserError
 from lilya.contrib.multipart.parsers import MultipartParser, OctetStreamParser, QuerystringParser
 from lilya.contrib.multipart.utils import decode_rfc5987_param, parse_options_header
-
-log = logging.getLogger(__name__)
-
 
 # ---------------------------------------------------------------------
 # Callback Protocols

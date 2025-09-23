@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-import logging
 from collections.abc import Callable
 from typing import Any
 from urllib.parse import unquote
+
+from lilya.logging import logger
 
 from .exceptions import MultipartParseError, QuerystringParseError
 
 Callback = Callable[..., Any]
 CallbackName = str
-
-logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------
@@ -32,7 +31,7 @@ class BaseParser:
     """
 
     def __init__(self) -> None:
-        self.logger = logging.getLogger(__name__)
+        self.logger = logger
         self.callbacks: dict[str, Callback] = {}
 
     def callback(

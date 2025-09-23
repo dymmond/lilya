@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-import logging
 import re
 from urllib.parse import unquote, unquote_to_bytes
-
-logger = logging.getLogger(__name__)
 
 # RFC 2616 token and quoted-string grammar
 _TOKEN = r"[!#$%&'*+\-.^_`|~0-9A-Za-z]+"

@@ -15,13 +15,16 @@ hide:
 - **Timeout mapping**: Upstream timeouts now map to `504 Gateway Timeout`.
 - **Header policies**: Added support for allow-list mode (`allow_request_headers`, `allow_response_headers`) in addition to drop-lists.
 - **Structured logging**: Proxy events (`upstream_error`, `upstream_timeout`, `upstream_retryable_error`) now emit consistent log messages for observability.
+- Support for [CSRFMiddleware](./middleware.md#csrfmiddleware) to understand the HTML forms allowing also custom fields.
+- New [HTML](./responses.md#html) response as an alternative to `HTMLResponse`.
+- New documentation section for [security with CSRF](./contrib/security/csrf.md).
 
 ### Changed
 
 - Added `python-multipart` as part of the `all` and `standard` Lilya packages.
 - Replaced `python-multipart` with a fully native multipart, urlencoded, and octet-stream form parser.
 - Improved RFC 5987 parameter decoding for proper handling of UTF-8 filenames and headers.
-
+- `AuthenticationError` exception is now located in `lilya.exceptions`.
 
 ## 0.20.5
 
