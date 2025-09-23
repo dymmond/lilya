@@ -3,6 +3,8 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable
 from typing import Any
 
+from lilya.conf import _monkay
+from lilya.contrib.security.csrf import get_or_set_csrf_token
 from lilya.controllers import Controller
 from lilya.exceptions import ImproperlyConfigured  # noqa
 from lilya.requests import Request
@@ -99,7 +101,19 @@ class BaseTemplateController(Controller, metaclass=TemplateControllerMetaclass):
     """
 
     template_name: str = None
+    csrf_enabled: bool = False
+    csrf_token_form_name: str = "csrf_token"
     templates: Jinja2Template = templates
+
+    async def get_csrf_token(self, request: Request) -> Any:
+        """
+        Generates the CSRF token for the given request.
+        """
+        return get_or_set_csrf_token(
+            request,
+            secret=_monkay.settings.secret_key,
+            httponly=True,
+        )
 
     async def get_context_data(self, request: Request, **kwargs: Any) -> dict:
         """
@@ -119,6 +133,8 @@ class BaseTemplateController(Controller, metaclass=TemplateControllerMetaclass):
         # Lilya requires 'request' in the context for url_for and other template features
         # Add existing kwargs to the context, allowing subclasses to pass initial data.
         context = {"request": request}
+        if self.csrf_enabled and request.method.lower in {"GET", "HEAD"}:
+            context[self.csrf_token_form_name] = await self.get_csrf_token(request)
         context.update(kwargs)
         return context
 

@@ -4,6 +4,7 @@ import re
 import urllib.parse
 from typing import Literal
 
+from lilya.conf import _monkay
 from lilya.contrib.security.csrf import generate_csrf_token, tokens_match
 from lilya.datastructures import Cookie, Header
 from lilya.enums import MediaType, ScopeType
@@ -40,7 +41,7 @@ class CSRFMiddleware(MiddlewareProtocol):
         httponly: bool = False,
         samesite: Literal["lax", "strict", "none"] = "lax",
         domain: str | None = None,
-        form_field_name: str = "csrf_token",
+        form_field_name: str | None = None,
         max_body_size: int = 2 * 1024 * 1024,
     ) -> None:
         super().__init__(app)
@@ -54,7 +55,7 @@ class CSRFMiddleware(MiddlewareProtocol):
         self.cookie_httponly = httponly
         self.cookie_samesite = samesite
         self.cookie_domain = domain
-        self.form_field_name = form_field_name
+        self.form_field_name = form_field_name or _monkay.settings.csrf_token_name
         self.max_body_size = max_body_size
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
