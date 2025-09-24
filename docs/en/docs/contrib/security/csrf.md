@@ -89,49 +89,7 @@ CSRFMiddleware(
 
 ## Real‑World Usage
 
-### 1. Classic HTML Forms (no JavaScript)
-
-```python
-from lilya.apps import Lilya
-from lilya.middleware import DefineMiddleware
-from lilya.middleware.csrf import CSRFMiddleware
-from lilya.responses import HTML, Ok
-from lilya.requests import Request
-from lilya.routing import Path
-from lilya.contrib.security.csrf import get_or_set_csrf_token
-
-HTML_TEMPLATE = """
-/login
-  <input type="text" name="username" />
-  <input type="password" name="password" />
-  <input type="hidden" name="csrf_token" value="{token}" />
-  <button type="submit">Login</button>
-</form>
-"""
-
-async def get_login(request: Request):
-    # Prepare the response first so we can attach Set-Cookie before sending
-    response = HTML(HTML_TEMPLATE.format(token=""))
-    token = get_or_set_csrf_token(
-        request, response=response, secret="your-long-unique-secret", httponly=False
-    )
-    response.body = HTML_TEMPLATE.format(token=token).encode("utf-8")
-    return response
-
-async def post_login(request: Request):
-    form = await request.form()
-    return Ok({"username": form.get("username")})
-
-app = Lilya(
-    routes=[Path("/login", get_login, methods=["GET"]), Path("/login", post_login, methods=["POST"])],
-    middleware=[DefineMiddleware(CSRFMiddleware, secret="your-long-unique-secret", httponly=False)],
-)
-```
-
-**Why `httponly=False`?** The template must read the CSRF cookie to render it in the hidden field.
-If you exclusively use the **header** approach, you can keep `httponly=True`.
-
-### 2. XHR / fetch & SPA/HTMX
+### 1. XHR / fetch & SPA/HTMX
 
 ```javascript
 async function postData(url, data) {
@@ -157,11 +115,11 @@ async function postData(url, data) {
 !!! info "Observation"
     This path is ideal for SPAs, HTMX, and progressive enhancement—no need to read the cookie in templates.
 
-### 3. File Upload Forms (multipart)
+### 2. File Upload Forms (multipart)
 
 Add a hidden field with the token. The middleware understands `multipart/form-data`:
 
-### 4. Custom Hidden Field Name
+### 3. Custom Hidden Field Name
 
 Prefer a different name (e.g., `csrfmiddlewaretoken`)? Configure it:
 
@@ -285,30 +243,9 @@ from lilya.responses import HTML, Ok
 from lilya.contrib.security.csrf import get_or_set_csrf_token
 from lilya.templating.controllers import TemplateController
 
-CSRF_SECRET = "change-me-long-random"  # from settings in real apps
-
 class LoginController(TemplateController):
     template_name = "login.html"
-
-    async def get_context_data(self, request: Request, **kwargs) -> Any:
-        """
-        Add the token to the context that is automatically
-        injected by the `TemplateController` of Lilya
-        """
-        context = await super().get_context_data(request, **kwargs)
-
-        # Get or generate the CSRF Token
-        token = get_or_set_csrf_token(
-            request,
-            secret=CSRF_SECRET,
-            # You can keep HttpOnly=True because we're not reading the cookie in JS;
-            # we render the token directly into HTML from the server.
-            httponly=True,
-        )
-        context.update({
-            "token": token
-        })
-        return context
+    csrf_enabled = True
 
     async def get(self, request: Request) -> HTML:
         return await self.render_template(request)
@@ -322,6 +259,9 @@ class LoginController(TemplateController):
 
     # Return your HTML response
 ```
+
+With `csrf_enabled=True`, Lilya will inject the `csrf_token` automatically for you in the variable `csrf_token`.
+You can override this value by overriding the `csrf_token_form_name` to whatever value you desire.
 
 **The application**
 

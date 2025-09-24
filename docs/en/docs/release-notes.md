@@ -21,6 +21,10 @@ that is injected in the context of the template for the CSRF token when `csrf_en
 
 - Make `response` optional in the `get_or_set_csrf_token`.
 
+### Removed
+
+- Wrong example for the CSRF token in the [security with CSRF](./contrib/security/csrf.md).
+
 ## 0.20.6
 
 ### Added

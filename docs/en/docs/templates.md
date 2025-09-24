@@ -154,6 +154,31 @@ Lilya provides a base class and specific implementations to simplify these tasks
 Controllers like `TemplateController` and `ListController` inherit from this base to gain its core template rendering
 capabilities.
 
+The `BaseTemplateController` also controls the `csrf_token` (if the middleware is enabled) using two variables:
+
+* **`csrf_enabled`** - Default to false and enables CSRF for the controller.
+* **`csrf_token_form_name`** - Default to `csrf_token` and its the name of the variable being injected in the context of the controller to the HTML.
+
+**Example**
+
+class LoginController(TemplateController):
+    template_name = "login.html"
+    csrf_enabled = True
+    csrf_token_form_name = "csrf_token"
+
+    async def get(self, request: Request) -> HTML:
+        return await self.render_template(request)
+
+    async def post(self, request: Request) -> HTML:
+        # Get the form
+        form = await request.form()
+
+        # Do things and return
+        ...
+
+    # Return your HTML response
+```
+
 ### TemplateController
 
 The `TemplateController` is a simple, concrete implementation of `BaseTemplateController` designed for rendering a
