@@ -15,6 +15,7 @@ hide:
 - `csrf_token_form_name` to `TemplateController`. This defaults to `csrf_token` and corresponds to the name of the variable
 that is injected in the context of the template for the CSRF token when `csrf_enabled`.
 - Support for `@directive` to be display when calling `lilya` client.
+- [display_in_cli](./directives/directive-decorator.md#the-display_in_cli-option) to `@directive`.
 
 ### Changed
 
