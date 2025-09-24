@@ -227,6 +227,8 @@ def fetch_custom_directive_by_location(location: str) -> Any:
 
     try:
         klass = load_directive_class_by_filename(app_name, str(path), skip_exit=True)
+    except TypeError:
+        raise
     except Exception as exc:  # be specific if you have custom exceptions
         raise DirectiveError(detail=f"Failed to load directive from {location}: {exc}") from exc
 
@@ -269,5 +271,5 @@ def get_custom_directives_to_cli(location: str) -> dict:
             if command is not None and command.__display_in_cli__:
                 directives[name] = command
         except DirectiveError:
-            ...
+            raise
     return directives
