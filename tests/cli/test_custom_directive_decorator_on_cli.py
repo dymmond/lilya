@@ -53,7 +53,7 @@ def generate():
     (o, e, ss) = run_cmd("tests.cli.main:app", "lilya createapp myapp")
 
 
-async def test_custom_directive(create_folders):
+async def test_custom_directive(create_folders, client):
     original_path = os.getcwd()
 
     generate()
@@ -68,5 +68,6 @@ async def test_custom_directive(create_folders):
     )
 
     # Execute custom directive
-    name = "Lilya"
-    (o, e, ss) = run_cmd("tests.cli.main:app", f"lilya create-user -n {name}")
+    (o, e, ss) = run_cmd("tests.cli.main:app", "lilya")
+
+    assert "create-user" in str(o)

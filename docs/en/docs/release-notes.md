@@ -14,6 +14,7 @@ hide:
 - `csrf_enabled` flag to `TemplateController`. This will automatically inject the `csrf` token in the context of the templates.
 - `csrf_token_form_name` to `TemplateController`. This defaults to `csrf_token` and corresponds to the name of the variable
 that is injected in the context of the template for the CSRF token when `csrf_enabled`.
+- Support for `@directive` to be display when calling `lilya` client.
 
 ### Changed
 
