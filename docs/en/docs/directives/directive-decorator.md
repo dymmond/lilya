@@ -246,3 +246,59 @@ $ lilya run createsuperuser --first-name Lilya --last-name Framework --email exa
 ```
 
 As you can see, the `@directive` acts as the class based directives but in a different syntax.
+
+## The `display_in_cli` option
+
+You probably read everything about directives in Lilya by now and that is awesome.
+
+Now there is one last thing that would be good for you to know, the `display_in_cli`
+
+!!! Warning "Pay Attention!"
+    This only works with `@directive` decorator and nothing else.
+
+Wouldn't you like to have the option when you create a directive, instead of doing:
+
+```shell
+lilya run <DIRECTIVE>
+```
+
+You could do directly:
+
+```shell
+lilya <DIRECTIVE
+```
+
+This is nice, isn't it? Well, now it is possible thanks to the `display_in_cli` parameter
+of the `@directive` decorator.
+
+This also means that your directives are now automatically recognised by Lilya and display as
+one of the available **Lilya** commands.
+
+Let us redo the `createsuperuser` to use this method.
+
+```python title="myproject/directives/operations/createsuperuser.py"
+{!> ../../../docs_src/directives/example/createsuperuser_decorator_in_cli.py !}
+```
+
+As you can see, the `@directive(display_in_cli=True)` is now present. You can now do
+
+```
+lilya --help
+```
+
+And your directive should display as if it was a native command of Lilya. Amazing!
+
+Since this is a [Sayer](https://sayer.dymmond.com) `@command`, this means the way of calling
+your directive is via `create-user`.
+
+```shell
+lilya create-user --first-name Lilya --last-name Framework --email example@lilya.dev --username lilya --password lilya
+```
+
+You can also do now `--help` on the command.
+
+```
+lilya create-user --help
+```
+
+As per normal Lilya directives.

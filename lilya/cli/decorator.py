@@ -2,30 +2,36 @@ from collections.abc import Callable
 from typing import Any
 
 
-def directive(func: Callable[..., Any]) -> Callable:
+def directive(
+    func: Callable[..., Any] | None = None,
+    *,
+    display_in_cli: bool = False,
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     Marks a function-based Sayer CLI command as a custom Lilya directive.
 
-    This decorator is used to register user-defined CLI commands that follow the
-    function-based directive pattern. It tags the command with a special attribute
-    (__is_custom_directive__ = True) so Lilya's CLI system can treat it differently
-    from internal class-based directives.
-
-    The command must already be decorated with `@command` from Sayer before applying this.
+    This decorator factory allows optional configuration via parameters, such as `show_on_cli`.
 
     Example usage:
 
-        @directive
+        @directive(display_in_cli=True)
         @command(name="create")
         async def create(name: Annotated[str, Option(help="Your name")]):
             ...
 
-    Returns:
-        Callable: The original command object, with a marker and registered in the main CLI.
-    """
-    from lilya.cli.cli import lilya_cli
+    Parameters:
+        display_in_cli (bool): Whether the directive should be visible in the CLI help output.
 
-    func.__is_custom_directive__ = True
-    func.get_help = lilya_cli.get_help
-    lilya_cli.add_command(func)
-    return func
+    Returns:
+        Callable: A decorator that marks the function as a custom directive.
+    """
+
+    def wrapper(f: Callable[..., Any]) -> Callable[..., Any]:
+        f.__is_custom_directive__ = True
+        f.__display_in_cli__ = display_in_cli
+        return f
+
+    if func is not None:
+        return wrapper(func)
+
+    return wrapper

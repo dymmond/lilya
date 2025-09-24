@@ -14,10 +14,16 @@ hide:
 - `csrf_enabled` flag to `TemplateController`. This will automatically inject the `csrf` token in the context of the templates.
 - `csrf_token_form_name` to `TemplateController`. This defaults to `csrf_token` and corresponds to the name of the variable
 that is injected in the context of the template for the CSRF token when `csrf_enabled`.
+- Support for `@directive` to be display when calling `lilya` client.
+- [display_in_cli](./directives/directive-decorator.md#the-display_in_cli-option) to `@directive`.
 
 ### Changed
 
 - Make `response` optional in the `get_or_set_csrf_token`.
+
+### Removed
+
+- Wrong example for the CSRF token in the [security with CSRF](./contrib/security/csrf.md).
 
 ## 0.20.6
 
