@@ -63,6 +63,8 @@ all = [
     "uvicorn[standard]>=0.29.0",
     # HTTP client for Lilya
     "httpx>=0.25.0",
+    # For sessions
+    "itsdangerous>=2.2.0",
     # For the shell support in the CLI
     "ipython",
     "ptpython",
@@ -80,6 +82,8 @@ cli = [
 ]
 
 standard = [
+    # For sessions
+    "itsdangerous>=2.2.0",
     # The templating engine
     "jinja2>=3.1.3",
     # Used for the runserver CLI command

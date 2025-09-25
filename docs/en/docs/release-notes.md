@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.20.8
+
+### Added
+
+- `itsdangerous` to requirements `all` and `standard`.
+
 ## 0.20.7
 
 ### Added
