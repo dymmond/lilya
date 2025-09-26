@@ -9,11 +9,10 @@ from importlib import import_module
 from pathlib import Path
 from typing import Any
 
+from sayer import error, warning
+
 from lilya.cli.base import BaseDirective
 from lilya.cli.exceptions import DirectiveError
-from lilya.cli.terminal import Print
-
-printer = Print()
 
 IGNORE_FOLDERS = ["__pycache__"]
 OPERATIONS = "operations"
@@ -71,7 +70,7 @@ def load_directive_class_by_filename(app_name: str, location: str, skip_exit: bo
 
     spec = importlib.util.spec_from_file_location(app_name, location)
     if not spec or spec is None:
-        printer.write_error(f"{app_name} not found")
+        error(f"{app_name} not found")
         sys.exit(1)
 
     module = importlib.util.module_from_spec(spec)
@@ -89,7 +88,7 @@ def load_directive_class_by_filename(app_name: str, location: str, skip_exit: bo
             return obj
 
     if not skip_exit:
-        printer.write_error(f"No directive found in {app_name}")
+        error(f"No directive found in {app_name}")
         sys.exit(1)
 
 
@@ -138,7 +137,7 @@ def fetch_custom_directive(subdirective: Any, location: str | None) -> Any:
             matches.extend(get_close_matches(subdirective, directive))
 
             if matches and len(directives) == counter:
-                printer.write_error(f"Did you mean {matches[0]}?")
+                error(f"Did you mean {matches[0]}?")
 
             if len(directives) == counter:
                 return None
@@ -149,7 +148,7 @@ def fetch_custom_directive(subdirective: Any, location: str | None) -> Any:
         matches.extend(get_close_matches(subdirective, directive))
 
         if matches:
-            printer.write_error(f"Did you mean {matches[0]}?")
+            error(f"Did you mean {matches[0]}?")
             return None
         return None
 
@@ -185,7 +184,7 @@ def fetch_directive(subdirective: Any, location: str | None, is_custom: bool = F
             matches.extend(get_close_matches(subdirective, directive))
 
             if matches and len(directives) == counter:
-                printer.write_error(f"Did you mean {matches[0]}?")
+                error(f"Did you mean {matches[0]}?")
 
             if len(directives) == counter:
                 return None
@@ -215,13 +214,16 @@ def fetch_custom_directive_by_location(location: str) -> Any:
     path = Path(location)
 
     if not path.exists():
-        raise DirectiveError(detail=f"Directive location not found: {location}")
+        error(detail=f"Directive location not found: {location}")
+        sys.exit(1)
 
     if path.is_dir():
-        raise DirectiveError(detail=f"Expected a .py file, got directory: {location}")
+        error(detail=f"Expected a .py file, got directory: {location}")
+        sys.exit(1)
 
     if path.suffix != ".py":
-        raise DirectiveError(detail=f"Expected a .py file, got: {location}")
+        error(detail=f"Expected a .py file, got: {location}")
+        sys.exit(1)
 
     app_name = path.stem
 
@@ -230,7 +232,8 @@ def fetch_custom_directive_by_location(location: str) -> Any:
     except TypeError:
         raise
     except Exception as exc:  # be specific if you have custom exceptions
-        raise DirectiveError(detail=f"Failed to load directive from {location}: {exc}") from exc
+        warning(detail=f"Failed to load directive from {location}: {exc}")
+        raise DirectiveError from exc
 
     # Only accept classes explicitly marked as custom directives.
     if getattr(klass, "__is_custom_directive__", False):
@@ -271,5 +274,6 @@ def get_custom_directives_to_cli(location: str) -> dict:
             if command is not None and command.__display_in_cli__:
                 directives[name] = command
         except DirectiveError:
-            raise
+            # Silently ignore errors related to loading directives
+            continue
     return directives

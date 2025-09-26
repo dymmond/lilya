@@ -1,5 +1,6 @@
 import os
 import shutil
+import sys
 
 import pytest
 
@@ -53,7 +54,7 @@ def generate():
     (o, e, ss) = run_cmd("tests.cli.main:app", "lilya createapp myapp")
 
 
-async def test_custom_directive(create_folders, client):
+async def test_custom_directive_display(create_folders, client):
     original_path = os.getcwd()
 
     generate()
@@ -71,3 +72,24 @@ async def test_custom_directive(create_folders, client):
     (o, e, ss) = run_cmd("tests.cli.main:app", "lilya")
 
     assert "create-user" in str(o)
+
+
+async def test_custom_directive_run(create_folders, client):
+    original_path = os.getcwd()
+
+    generate()
+
+    # Back to starting point
+    os.chdir(original_path)
+    sys.path.insert(0, original_path)
+
+    # Copy the createuser custom directive
+    shutil.copyfile(
+        "createusercli.py",
+        "myproject/myproject/apps/myapp/directives/operations/createusercli.py",
+    )
+
+    # Execute custom directive
+    (o, e, ss) = run_cmd("tests.cli.main:app", "lilya create-user --name lilya")
+
+    assert "Superuser lilya created successfully." in str(o)
