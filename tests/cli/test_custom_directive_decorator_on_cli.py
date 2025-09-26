@@ -1,95 +1,59 @@
 import os
 import shutil
-import sys
+from pathlib import Path
 
-import pytest
+from sayer.testing import SayerTestClient
 
-from lilya.conf import settings
-from tests.cli.utils import run_cmd
-
-models = settings.registry
-pytestmark = pytest.mark.anyio
+from tests.cli.utils import force_discovery_and_get_app, generate_project, pushd, resolve_fixture
 
 
-@pytest.fixture(scope="module")
-def create_folders():
-    os.chdir(os.path.split(os.path.abspath(__file__))[0])
-    try:
-        os.remove("app.db")
-    except OSError:
-        pass
-    try:
-        shutil.rmtree("myproject")
+def test_custom_directive_display(tmp_path, client):
+    os.environ["LILYA_DEFAULT_APP"] = "tests.cli.main:app"
 
-    except OSError:
-        pass
-    try:
-        shutil.rmtree("temp_folder")
-    except OSError:
-        pass
+    project_root = generate_project(client, base_dir=tmp_path)  # /tmp/.../myproject
+    ops_dir = project_root / "myproject" / "apps" / "myapp" / "directives" / "operations"
+    ops_dir.mkdir(parents=True, exist_ok=True)
 
-    yield
+    here = Path(__file__).resolve()
+    src_directive = resolve_fixture("createusercli.py", here)
+    shutil.copyfile(src_directive, ops_dir / "createusercli.py")
 
-    try:
-        os.remove("app.db")
-    except OSError:
-        pass
-    try:
-        shutil.rmtree("myproject")
-
-    except OSError:
-        pass
-    try:
-        shutil.rmtree("temp_folder")
-    except OSError:
-        pass
-
-
-def generate():
-    (o, e, ss) = run_cmd("tests.cli.main:app", "lilya createproject myproject --with-structure")
-    assert ss == 0
-
-    os.chdir("myproject/myproject/apps")
-
-    (o, e, ss) = run_cmd("tests.cli.main:app", "lilya createapp myapp")
-
-
-async def test_custom_directive_display(create_folders, client):
-    original_path = os.getcwd()
-
-    generate()
-
-    # Back to starting point
-    os.chdir(original_path)
-
-    # Copy the createuser custom directive
-    shutil.copyfile(
-        "createusercli.py",
-        "myproject/myproject/apps/myapp/directives/operations/createusercli.py",
+    app = force_discovery_and_get_app(
+        project_root=project_root,
+        directive_pkg="myproject.apps.myapp.directives.operations.createusercli",
+        app_mod="tests.cli.main",
+        app_attr="app",
     )
 
-    # Execute custom directive
-    (o, e, ss) = run_cmd("tests.cli.main:app", "lilya")
+    runner = SayerTestClient(app.cli)
+    with pushd(project_root):
+        result = runner.invoke(["--help"])
 
-    assert "create-user" in str(o)
+    assert result.exit_code == 0
+    assert "create-user" in result.output
 
 
-async def test_custom_directive_run(create_folders, client):
-    original_path = os.getcwd()
+def test_custom_directive_run(tmp_path, client):
+    os.environ["LILYA_DEFAULT_APP"] = "tests.cli.main:app"
 
-    generate()
+    project_root = generate_project(client, base_dir=tmp_path)
+    ops_dir = project_root / "myproject" / "apps" / "myapp" / "directives" / "operations"
+    ops_dir.mkdir(parents=True, exist_ok=True)
 
-    # Back to starting point
-    os.chdir(original_path)
-    sys.path.insert(0, original_path)
+    here = Path(__file__).resolve()
+    src_directive = resolve_fixture("createusercli.py", here)
+    shutil.copyfile(src_directive, ops_dir / "createusercli.py")
 
-    # Copy the createuser custom directive
-    shutil.copyfile(
-        "createusercli.py",
-        "myproject/myproject/apps/myapp/directives/operations/createusercli.py",
+    app = force_discovery_and_get_app(
+        project_root=project_root,
+        directive_pkg="myproject.apps.myapp.directives.operations.createusercli",
+        app_mod="tests.cli.main",
+        app_attr="app",
     )
 
-    # Execute custom directive
-    (o, e, ss) = run_cmd("tests.cli.main:app", "lilya create-user --name lilya")
+    runner = SayerTestClient(app.cli)
+    with pushd(project_root):
+        result = runner.invoke(["create-user", "--name", "lilya"])
 
-    assert "Superuser lilya created successfully." in str(o)
+    assert result.exit_code == 0
+    assert "Superuser lilya created successfully." in result.output

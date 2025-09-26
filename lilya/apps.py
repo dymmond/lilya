@@ -3,6 +3,8 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from typing import Annotated, Any, ClassVar, ParamSpec, cast
 
+from sayer import Sayer
+
 from lilya._internal._connection import Connection  # noqa
 from lilya._internal._middleware import wrap_middleware  # noqa
 from lilya._internal._module_loading import import_string  # noqa
@@ -1084,6 +1086,24 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
 
         config_to_use = openapi_config or OpenAPIConfig()
         config_to_use.enable(self)
+
+    @property
+    def cli(self) -> Sayer:
+        """
+        Returns the Sayer CLI application instance.
+
+        **Example**
+
+        ```python
+        from lilya.apps import Lilya
+
+        app = Lilya()
+        app.cli()
+        ```
+        """
+        from lilya.cli.cli import lilya_cli
+
+        return lilya_cli
 
     @property
     def version(self) -> str:

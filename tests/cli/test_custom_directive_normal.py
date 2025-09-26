@@ -6,7 +6,7 @@ import pytest
 from tests.cli.utils import run_cmd
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function", autouse=True)
 def create_folders():
     os.chdir(os.path.split(os.path.abspath(__file__))[0])
     try:
@@ -25,6 +25,7 @@ def create_folders():
 
     yield
 
+    os.chdir(os.path.split(os.path.abspath(__file__))[0])
     try:
         os.remove("app.db")
     except OSError:
@@ -40,19 +41,21 @@ def create_folders():
         pass
 
 
-def generate():
-    (o, e, ss) = run_cmd("tests.cli.main:app", "lilya createproject myproject --with-structure")
-    assert ss == 0
+def generate(client):
+    result = client.invoke(["createproject", "--with-structure", "myproject"])
+    assert result.exit_code == 0
 
     os.chdir("myproject/myproject/apps")
 
-    (o, e, ss) = run_cmd("tests.cli.main:app", "lilya createapp myapp")
+    result = client.invoke(["createapp", "myapp"])
+    assert result.exit_code == 0
 
 
-def test_custom_directive(create_folders):
+def test_custom_directive(create_folders, client):
+    os.environ["LILYA_DEFAULT_APP"] = "tests.cli.main:app"
     original_path = os.getcwd()
 
-    generate()
+    generate(client)
 
     # Back to starting point
     os.chdir(original_path)

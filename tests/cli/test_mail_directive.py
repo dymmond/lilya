@@ -23,6 +23,7 @@ def create_folders():
 
     yield
 
+    os.chdir(os.path.split(os.path.abspath(__file__))[0])
     try:
         os.remove("app.db")
     except OSError:
@@ -38,15 +39,15 @@ def create_folders():
         pass
 
 
-def test_send_mail_directive(client):
+def test_send_mail_directive(client, create_folders):
     # Create the project
     os.environ["LILYA_DEFAULT_APP"] = "tests.cli.main:app"
-    result = client.invoke(["createproject", "myproject", "--location", "tests/cli"])
+    result = client.invoke(["createproject", "myproject"])
 
     assert result.exit_code == 0
 
     # Change directory to the project
-    os.chdir("tests/cli/myproject")
+    os.chdir("myproject")
 
     # Run the sendtest mail directive
     result = client.invoke(
@@ -66,15 +67,15 @@ def test_send_mail_directive(client):
     assert "Test email sent to 'user@example.com' using console backend." in result.output
 
 
-def test_send_mail_directive_to_multiple(client):
+def test_send_mail_directive_to_multiple(client, create_folders):
     # Create the project
     os.environ["LILYA_DEFAULT_APP"] = "tests.cli.main:app"
-    result = client.invoke(["createproject", "myproject", "--location", "tests/cli"])
+    result = client.invoke(["createproject", "myproject"])
 
     assert result.exit_code == 0
 
     # Change directory to the project
-    os.chdir("tests/cli/myproject")
+    os.chdir("myproject")
 
     # Run the sendtest mail directive
     result = client.invoke(
@@ -99,15 +100,15 @@ def test_send_mail_directive_to_multiple(client):
     )
 
 
-def test_send_mail_directive_html(client):
+def test_send_mail_directive_html(client, create_folders):
     # Create the project
     os.environ["LILYA_DEFAULT_APP"] = "tests.cli.main:app"
-    result = client.invoke(["createproject", "myproject", "--location", "tests/cli"])
+    result = client.invoke(["createproject", "myproject"])
 
     assert result.exit_code == 0
 
     # Change directory to the project
-    os.chdir("tests/cli/myproject")
+    os.chdir("./myproject")
 
     # Run the sendtest mail directive
     result = client.invoke(
