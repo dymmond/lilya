@@ -1,3 +1,4 @@
+import contextlib
 import functools
 import importlib
 import os
@@ -214,16 +215,16 @@ def fetch_custom_directive_by_location(location: str) -> Any:
     path = Path(location)
 
     if not path.exists():
-        error(detail=f"Directive location not found: {location}")
-        sys.exit(1)
+        error(f"Directive location not found: {location}")
+        raise DirectiveError(f"Directive location not found: {location}")
 
     if path.is_dir():
-        error(detail=f"Expected a .py file, got directory: {location}")
-        sys.exit(1)
+        error(f"Expected a .py file, got directory: {location}")
+        raise DirectiveError(f"Expected a .py file, got directory: {location}")
 
     if path.suffix != ".py":
-        error(detail=f"Expected a .py file, got: {location}")
-        sys.exit(1)
+        error(f"Expected a .py file, got: {location}")
+        raise DirectiveError(f"Expected a .py file, got: {location}")
 
     app_name = path.stem
 
@@ -232,8 +233,9 @@ def fetch_custom_directive_by_location(location: str) -> Any:
     except TypeError:
         raise
     except Exception as exc:  # be specific if you have custom exceptions
-        warning(detail=f"Failed to load directive from {location}: {exc}")
-        raise DirectiveError from exc
+        message = f"Failed to load directive from {location}: {exc}"
+        warning(message)
+        raise DirectiveError(message) from exc
 
     # Only accept classes explicitly marked as custom directives.
     if getattr(klass, "__is_custom_directive__", False):
@@ -268,12 +270,10 @@ def get_custom_directives_to_cli(location: str) -> dict:
         directive_location = directive["location"]
 
         directive_location = f"{directive_location}/{name}.py"
-        try:
-            command = fetch_custom_directive_by_location(directive_location)
 
+        with contextlib.suppress(DirectiveError):
+            command = fetch_custom_directive_by_location(directive_location)
             if command is not None and command.__display_in_cli__:
                 directives[name] = command
-        except DirectiveError:
-            # Silently ignore errors related to loading directives
-            continue
+                continue
     return directives
