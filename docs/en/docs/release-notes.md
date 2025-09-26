@@ -10,6 +10,12 @@ hide:
 ### Added
 
 - `itsdangerous` to requirements `all` and `standard`.
+  
+### Changed
+
+- `@directive(display_in_cli=True)` discovery improved by showing errors and not throw directly
+an exception.
+- Update minimum Sayer version to 0.5.3.
 
 ## 0.20.7
 
