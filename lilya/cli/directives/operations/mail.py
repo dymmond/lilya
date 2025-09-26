@@ -59,7 +59,7 @@ def sendtest(
         )
         await mailer.send(msg)
         to_list = ", ".join(to)
-        success(f"Test email sent to {to_list} using {backend} backend.")
+        success(f"Test email sent to '{to_list}' using {backend} backend.")
 
     asyncio.run(_send())
 

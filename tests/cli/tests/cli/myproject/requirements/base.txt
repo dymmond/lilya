@@ -1,0 +1,3 @@
+lilya[standard]>=0.20.8
+gunicorn
+uvicorn
