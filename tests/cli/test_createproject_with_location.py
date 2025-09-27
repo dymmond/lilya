@@ -3,13 +3,8 @@ import shutil
 
 import pytest
 
-from lilya.apps import Lilya
-from tests.cli.utils import run_cmd
 
-app = Lilya(routes=[])
-
-
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function", autouse=True)
 def create_folders():
     os.chdir(os.path.split(os.path.abspath(__file__))[0])
     try:
@@ -28,6 +23,7 @@ def create_folders():
 
     yield
 
+    os.chdir(os.path.split(os.path.abspath(__file__))[0])
     try:
         os.remove("app.db")
     except OSError:
@@ -43,11 +39,17 @@ def create_folders():
         pass
 
 
-def test_create_project_with_structure(create_folders):
-    (o, e, ss) = run_cmd(
-        "tests.cli.main:app", "lilya createproject myproject --with-structure --location ./auto"
+def test_create_project_with_structure(create_folders, client):
+    result = client.invoke(
+        [
+            "createproject",
+            "myproject",
+            "--with-structure",
+            "--location",
+            "./auto",
+        ]
     )
-    assert ss == 0
+    assert result.exit_code == 0
 
     with open("auto/myproject/.gitignore") as f:
         assert f.readline().strip() == "# Byte-compiled / optimized / DLL files"
@@ -77,32 +79,50 @@ def _run_asserts():
     assert os.path.isfile("auto/myproject/requirements/development.txt") is True
 
 
-def test_create_project_files_with_env_var(create_folders):
-    (o, e, ss) = run_cmd(
-        "tests.cli.main:app", "lilya createproject myproject  --with-structure --location ./auto"
+def test_create_project_files_with_env_var(create_folders, client):
+    os.environ["LILYA_DEFAULT_APP"] = "tests.cli.main:app"
+
+    result = client.invoke(
+        [
+            "createproject",
+            "myproject",
+            "--with-structure",
+            "--location",
+            "./auto",
+        ]
     )
-    assert ss == 0
+    assert result.exit_code == 0
 
     _run_asserts()
 
 
-def test_create_project_files_without_env_var(create_folders):
-    (o, e, ss) = run_cmd(
-        "tests.cli.main:app",
-        "lilya createproject myproject --with-structure --location ./auto",
-        is_app=False,
+def test_create_project_files_without_env_var(create_folders, client):
+    result = client.invoke(
+        [
+            "createproject",
+            "myproject",
+            "--with-structure",
+            "--location",
+            "./auto",
+        ]
     )
-    assert ss == 0
+    assert result.exit_code == 0
 
     _run_asserts()
 
 
-def test_create_project_files_without_env_var_and_with_app_flag(create_folders):
-    (o, e, ss) = run_cmd(
-        "tests.cli.main:app",
-        "lilya --app tests.cli.main:app createproject myproject --with-structure --location ./auto",
-        is_app=False,
+def test_create_project_files_without_env_var_and_with_app_flag(create_folders, client):
+    result = client.invoke(
+        [
+            "--app",
+            "tests.cli.main:app",
+            "createproject",
+            "myproject",
+            "--with-structure",
+            "--location",
+            "./auto",
+        ]
     )
-    assert ss == 0
+    assert result.exit_code == 0
 
     _run_asserts()

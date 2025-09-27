@@ -3,13 +3,8 @@ import shutil
 
 import pytest
 
-from lilya.apps import Lilya
-from tests.cli.utils import run_cmd
 
-app = Lilya(routes=[])
-
-
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function", autouse=True)
 def create_folders():
     os.chdir(os.path.split(os.path.abspath(__file__))[0])
     try:
@@ -28,6 +23,7 @@ def create_folders():
 
     yield
 
+    os.chdir(os.path.split(os.path.abspath(__file__))[0])
     try:
         os.remove("app.db")
     except OSError:
@@ -54,47 +50,43 @@ def _run_asserts():
     assert os.path.isfile("myapp/directives/operations/__init__.py") is True
 
 
-def test_create_app_with_env_var(create_folders):
-    (o, e, ss) = run_cmd("tests.cli.main:app", "lilya createproject --with-structure myproject")
-    assert ss == 0
+def test_create_app_with_env_var(create_folders, client):
+    os.environ["LILYA_DEFAULT_APP"] = "tests.cli.main:app"
 
-    (o, e, ss) = run_cmd(
-        "tests.cli.main:app",
-        "lilya createapp myapp --version v10 --location ./myproject/myproject/apps/auto/",
+    result = client.invoke(["createproject", "myproject", "--with-structure"])
+
+    assert result.exit_code == 0
+
+    result = client.invoke(
+        [
+            "createapp",
+            "myapp",
+            "--version",
+            "v10",
+            "--location",
+            "myproject/myproject/apps/auto/",
+        ]
     )
 
     os.chdir("myproject/myproject/apps/auto/")
     _run_asserts()
 
 
-def test_create_app_without_env_var(create_folders):
-    (o, e, ss) = run_cmd(
-        "tests.cli.main:app", "lilya createproject --with-structure myproject", is_app=False
+def test_create_app_without_env_var(create_folders, client):
+    result = client.invoke(["createproject", "myproject", "--with-structure"])
+    assert result.exit_code == 0
+
+    result = client.invoke(
+        [
+            "createapp",
+            "myapp",
+            "--version",
+            "v10",
+            "--location",
+            "tests/cli/myproject/myproject/apps/auto/",
+        ]
     )
-    assert ss == 0
-
-    (o, e, ss) = run_cmd(
-        "tests.cli.main:app",
-        "lilya createapp myapp --version v10 --location ./myproject/myproject/apps/auto/",
-        is_app=False,
-    )
-
-    os.chdir("myproject/myproject/apps/auto/")
-
-    _run_asserts()
-
-
-def test_create_app_without_env_var_with_app_flag(create_folders):
-    (o, e, ss) = run_cmd(
-        "tests.cli.main:app", "lilya createproject --with-structure myproject", is_app=False
-    )
-    assert ss == 0
-
-    (o, e, ss) = run_cmd(
-        "tests.cli.main:app",
-        "lilya --app tests.cli.main:app createapp myapp --version v10 --location ./myproject/myproject/apps/auto/",
-        is_app=False,
-    )
+    assert result.exit_code == 0
 
     os.chdir("myproject/myproject/apps/auto/")
 
