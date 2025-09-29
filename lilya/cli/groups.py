@@ -6,7 +6,7 @@ import sys
 import typing
 from collections.abc import Callable
 from functools import wraps
-from typing import TypeVar
+from typing import Any, TypeVar
 
 import click
 from sayer import error
@@ -28,7 +28,7 @@ T = TypeVar("T")
 class DirectiveGroup(SayerGroup):
     """Custom directive group to handle with the context and directives commands"""
 
-    def add_command(self, cmd: click.Command, name: str | None = None) -> None:
+    def add_command(self, cmd: click.Command, name: str | None = None, **kwargs: Any) -> None:
         if cmd.callback:
             cmd.callback = self.wrap_args(cmd.callback)
         return super().add_command(cmd, name)
