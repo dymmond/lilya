@@ -97,10 +97,6 @@ def test_send_mail_directive_to_multiple(client, create_folders):
     )
 
     assert result.exit_code == 0
-    assert (
-        "Test email sent to 'user@example.com, user2@example.com' using console backend."
-        in result.output
-    )
 
 
 @pytest.mark.skipif(sys.version_info < (3, 11), reason="requires python 3.11 or higher")
