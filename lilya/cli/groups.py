@@ -10,6 +10,7 @@ from typing import TypeVar
 
 import click
 from sayer import error
+from sayer.core.commands.config import CustomCommandConfig
 from sayer.core.groups.sayer import SayerGroup
 
 from lilya.cli.constants import (
@@ -27,6 +28,12 @@ T = TypeVar("T")
 
 class DirectiveGroup(SayerGroup):
     """Custom directive group to handle with the context and directives commands"""
+
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._custom_command_config: CustomCommandConfig = CustomCommandConfig(
+            title="Custom directives"
+        )
 
     def add_command(
         self, cmd: click.Command, name: str | None = None, is_custom: bool = False

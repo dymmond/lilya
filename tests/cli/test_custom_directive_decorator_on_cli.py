@@ -71,3 +71,4 @@ async def test_custom_directive(create_folders, client):
     (o, e, ss) = run_cmd("tests.cli.main:app", "lilya")
 
     assert "create-user" in str(o)
+    assert "Custom directive" in str(o)

@@ -1,5 +1,6 @@
 import os
 import shutil
+import sys
 
 import pytest
 
@@ -39,6 +40,7 @@ def create_folders():
         pass
 
 
+@pytest.mark.skipif(sys.version_info < (3, 11), reason="requires python 3.11 or higher")
 def test_send_mail_directive(client, create_folders):
     # Create the project
     os.environ["LILYA_DEFAULT_APP"] = "tests.cli.main:app"
@@ -67,6 +69,7 @@ def test_send_mail_directive(client, create_folders):
     assert "Test email sent to 'user@example.com' using console backend." in result.output
 
 
+@pytest.mark.skipif(sys.version_info < (3, 11), reason="requires python 3.11 or higher")
 def test_send_mail_directive_to_multiple(client, create_folders):
     # Create the project
     os.environ["LILYA_DEFAULT_APP"] = "tests.cli.main:app"
@@ -100,6 +103,7 @@ def test_send_mail_directive_to_multiple(client, create_folders):
     )
 
 
+@pytest.mark.skipif(sys.version_info < (3, 11), reason="requires python 3.11 or higher")
 def test_send_mail_directive_html(client, create_folders):
     # Create the project
     os.environ["LILYA_DEFAULT_APP"] = "tests.cli.main:app"
