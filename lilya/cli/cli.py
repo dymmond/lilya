@@ -75,7 +75,6 @@ lilya_cli.add_command(create_deployment)
 lilya_cli.add_command(shell)
 lilya_cli.add_app("mail", mail)
 
-
 # Load custom directives if any
 application_directives = get_custom_directives_to_cli(str(Path.cwd()))
 
@@ -83,6 +82,6 @@ application_directives = get_custom_directives_to_cli(str(Path.cwd()))
 if application_directives:
     for _, command in application_directives.items():
         if isinstance(command, Sayer):
-            lilya_cli.add_app(command._group.name, command)
+            lilya_cli.add_custom_command(command, command._group.name)
         else:
-            lilya_cli.add_command(command)
+            lilya_cli.add_custom_command(command)

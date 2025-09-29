@@ -11,6 +11,13 @@ hide:
 
 - `itsdangerous` to requirements `all` and `standard`.
 
+### Changed
+
+- `@directive(display_in_cli=True)` discovery improved by showing errors and not throw directly
+an exception.
+- Update minimum Sayer version to 0.6.0.
+- Custom directives under `@directive` are now displayed in a "Custom directives" group.
+
 ## 0.20.7
 
 ### Added

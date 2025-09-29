@@ -6,10 +6,11 @@ import sys
 import typing
 from collections.abc import Callable
 from functools import wraps
-from typing import Any, TypeVar
+from typing import TypeVar
 
 import click
 from sayer import error
+from sayer.core.commands.config import CustomCommandConfig
 from sayer.core.groups.sayer import SayerGroup
 
 from lilya.cli.constants import (
@@ -28,10 +29,18 @@ T = TypeVar("T")
 class DirectiveGroup(SayerGroup):
     """Custom directive group to handle with the context and directives commands"""
 
-    def add_command(self, cmd: click.Command, name: str | None = None, **kwargs: Any) -> None:
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._custom_command_config: CustomCommandConfig = CustomCommandConfig(
+            title="Custom directives"
+        )
+
+    def add_command(
+        self, cmd: click.Command, name: str | None = None, is_custom: bool = False
+    ) -> None:
         if cmd.callback:
             cmd.callback = self.wrap_args(cmd.callback)
-        return super().add_command(cmd, name)
+        return super().add_command(cmd, name, is_custom=is_custom)
 
     def wrap_args(self, func: Callable[..., T]) -> Callable[..., T]:
         original = inspect.unwrap(func)
