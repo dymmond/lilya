@@ -58,7 +58,7 @@ all = [
     # Used for the runserver CLI command
     "rich_toolkit>=0.14.7",
     # The base client for Lilya
-    "sayer>=0.5.5",
+    "sayer>=0.6.0",
     # The server for runserver command
     "uvicorn[standard]>=0.29.0",
     # HTTP client for Lilya
@@ -76,7 +76,7 @@ cli = [
     # Used for the runserver CLI command
     "rich_toolkit>=0.14.7",
     # The base client for Lilya
-    "sayer>=0.5.5",
+    "sayer>=0.6.0",
     # The server for runserver command
     "uvicorn[standard]>=0.29.0",
 ]
@@ -89,7 +89,7 @@ standard = [
     # Used for the runserver CLI command
     "rich_toolkit>=0.14.7",
     # The base client for Lilya
-    "sayer>=0.5.5",
+    "sayer>=0.6.0",
     # The server for runserver command
     "uvicorn[standard]>=0.29.0",
 ]
@@ -128,7 +128,7 @@ testing = [
 ]
 
 docs = [
-    "sayer>=0.5.5",
+    "sayer>=0.6.0",
     "griffe-typingdoc>=0.2.2,<1.0",
     "mkdocs>=1.1.2,<2.0.0",
     "mkdocs-material>=9.4.4",
