@@ -5,7 +5,7 @@ hide:
 
 # Release Notes
 
-## 0.28.9
+## 0.20.9
 
 This was supposed to go in the version 0.20.8 and it was forgotten.
 
