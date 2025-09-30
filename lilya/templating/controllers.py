@@ -100,6 +100,7 @@ class BaseTemplateController(Controller, metaclass=TemplateControllerMetaclass):
         templates: The initialized Jinja2Template instance used for rendering.
     """
 
+    __exclude_from_openapi__: bool = True
     template_name: str = None
     csrf_enabled: bool = False
     csrf_token_form_name: str = "csrf_token"
