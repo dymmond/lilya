@@ -18,6 +18,7 @@ from lilya.websockets import WebSocket
 
 
 class BaseController(BaseHandler):
+    __exclude_from_openapi__: bool = False
     permissions: list[Callable[..., Coroutine[Any, Any, bool]]] = []
     middleware: list[Callable[..., Coroutine[Any, Any, None]]] = []
     exception_handlers: dict[int, Callable[[Request, Exception], Response]] = {}

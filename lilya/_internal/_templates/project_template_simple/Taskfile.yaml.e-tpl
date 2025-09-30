@@ -10,7 +10,7 @@ tasks:
   run:
     desc: Starts {{ project_name }}
     cmds:
-      - python ./{{ project_name }}/app.py
+      - lilya runserver --reload
 
   requirements:
     desc: Install requirements

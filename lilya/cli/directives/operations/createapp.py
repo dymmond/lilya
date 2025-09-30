@@ -13,7 +13,7 @@ from lilya.cli.terminal import Print
 printer = Print()
 
 
-@command(name="createapp")  # type: ignore
+@command(name="createapp")
 def create_app(
     name: Annotated[str, Argument(help="The name of the app.")],
     version: Annotated[str, Option("v1", help="The API version of the app.")],

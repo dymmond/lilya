@@ -5,6 +5,22 @@ hide:
 
 # Release Notes
 
+## 0.20.9
+
+This was supposed to go in the version 0.20.8 and it was forgotten.
+
+### Added
+
+- `__exclude_from_openapi__` Added to the base controller allowing the exclusion from the BaseTemplates.
+
+### Changed
+
+- Lilya create project default was still using an old version of the generator.
+
+### Fixed
+
+- OpenAPI documentation was not excluding templating system and statics.
+
 ## 0.20.8
 
 ### Added

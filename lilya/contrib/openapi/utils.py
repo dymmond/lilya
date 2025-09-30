@@ -85,11 +85,23 @@ def get_openapi(
                 gathered.append((prefix + raw, route))
         return gathered
 
-    for full_path, route in _gather_routes(routes, prefix=""):
+    all_routes = _gather_routes(routes, prefix="")
+
+    for full_path, route in all_routes:
         if not getattr(route, "include_in_schema", False):
             continue
+
         raw_path = full_path
         if not raw_path:
+            continue
+
+        if not hasattr(route, "handler"):
+            continue
+
+        # Exclude templating system
+        if is_class_and_subclass(route.handler, Controller) and getattr(
+            route.handler, "__exclude_from_openapi__", False
+        ):
             continue
 
         methods = (
