@@ -13,7 +13,7 @@ from lilya.cli.terminal import Print
 printer = Print()
 
 
-@command(name="createproject")  # type: ignore
+@command(name="createproject")
 def create_project(
     name: Annotated[str, Argument(help="The name of the project to create.")],
     verbosity: Annotated[int, Option(1, "-v", help="Verbosity level for the output.")],

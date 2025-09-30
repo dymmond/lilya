@@ -8,7 +8,7 @@ from lilya.cli.exceptions import DirectiveError
 from lilya.cli.templates import TemplateDirective
 
 
-@command(name="createdeployment")  # type: ignore
+@command(name="createdeployment")
 def create_deployment(
     name: Annotated[str, Argument(help="The name of the current project.")],
     verbosity: Annotated[
