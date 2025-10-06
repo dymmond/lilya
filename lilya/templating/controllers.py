@@ -134,7 +134,7 @@ class BaseTemplateController(Controller, metaclass=TemplateControllerMetaclass):
         # Lilya requires 'request' in the context for url_for and other template features
         # Add existing kwargs to the context, allowing subclasses to pass initial data.
         context = {"request": request}
-        if self.csrf_enabled and request.method.lower in {"GET", "HEAD"}:
+        if self.csrf_enabled and request.method.upper() in {"GET", "HEAD"}:
             context[self.csrf_token_form_name] = await self.get_csrf_token(request)
         context.update(kwargs)
         return context

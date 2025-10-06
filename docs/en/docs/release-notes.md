@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.20.10
+
+### Fixed
+
+- Validation `upper()` was not being applied properly in the csrf token.
+
 ## 0.20.9
 
 This was supposed to go in the version 0.20.8 and it was forgotten.
