@@ -161,6 +161,7 @@ The `BaseTemplateController` also controls the `csrf_token` (if the middleware i
 
 **Example**
 
+```python
 class LoginController(TemplateController):
     template_name = "login.html"
     csrf_enabled = True
@@ -186,7 +187,6 @@ single template. It's analogous to Django's `TemplateView`.
 
 Subclasses of `TemplateController` are required to define the `template_name` attribute, specifying which template
 file should be rendered when the controller is invoked (typically via a `get` method handler).
-
 
 **Example:**
 
