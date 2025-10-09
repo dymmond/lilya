@@ -2,12 +2,12 @@
 
 Lilya is built on top of an asynchronous event loop (via ASGI). If you write an endpoint or background task as
 a regular synchronous function (using `def`), and it does any blocking work (CPU‑bound computations,
-I/O that doesn’t release the loop, etc.), it would freeze the entire server until it finishes.
+I/O that doesn't release the loop, etc.), it would freeze the entire server until it finishes.
 
 To prevent this, Lilya transparently offloads your blocking code into worker threads so your main event loop
 stays free to handle other requests!
 
-Under the hood, Lilya delegates all synchronous calls to AnyIO’s thread‑pool runner:
+Under the hood, Lilya delegates all synchronous calls to AnyIO's thread‑pool runner:
 
 ```python
 anyio.to_thread.run_sync(your_sync_function, *args, **kwargs)
@@ -37,7 +37,7 @@ This ensures that:
 
 ## What Are “Tokens” (and Why They Matter)?
 
-AnyIO’s thread pool is *bounded*. It uses a token-based limiter to prevent you from endlessly spawning OS
+AnyIO's thread pool is *bounded*. It uses a token-based limiter to prevent you from endlessly spawning OS
 threads and overwhelming your machine.
 
 * **Token** = permission to run one blocking operation in the pool.
@@ -54,7 +54,7 @@ you may hit this limit and see requests stall until a thread frees up.
 
 ## Adjusting the Pool Size
 
-You can increase (or decrease) the number of concurrent threads by tweaking the pool’s token count at startup:
+You can increase (or decrease) the number of concurrent threads by tweaking the pool's token count at startup:
 
 ```python
 import anyio.to_thread
@@ -68,7 +68,7 @@ limiter.total_tokens = 100
 
 ### When to Tweak
 
-* **Increase** if you expect many simultaneous blocking tasks and you’re not seeing CPU/memory issues.
+* **Increase** if you expect many simultaneous blocking tasks and you're not seeing CPU/memory issues.
 * **Decrease** if you want to conserve memory or limit parallelism on a resource‑constrained host.
 
 ---
@@ -121,7 +121,7 @@ async def start_background():
 
 1. **At import time**, we grab and resize the thread pool.
 2. **`compute_endpoint`** runs `heavy_computation` inside a worker thread.
-3. **`start-background`** uses Lilya’s `Tasks` helper, which likewise invokes `anyio.to_thread.run_sync`.
+3. **`start-background`** uses Lilya's `Tasks` helper, which likewise invokes `anyio.to_thread.run_sync`.
 
 ---
 

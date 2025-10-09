@@ -1,7 +1,7 @@
 # `jsonify`
 
 The `jsonify` helper in Lilya makes it simple to return JSON responses from your endpoints,
-similar to Flask’s `jsonify`.
+similar to Flask's `jsonify`.
 
 It automatically encodes Python objects into JSON, sets the correct `Content-Type`,
 and allows you to customize status codes, headers, and cookies.
@@ -123,7 +123,7 @@ Set-Cookie: session=abc123; Path=/
 
 ## Error Handling
 
-It’s not allowed to mix both positional arguments and keyword arguments:
+It's not allowed to mix both positional arguments and keyword arguments:
 
 ```python
 # ❌ This raises TypeError

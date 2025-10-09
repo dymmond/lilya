@@ -74,7 +74,7 @@ It supports multiple backends, including:
 2. **Redis Caching**
 3. **Custom Backends**
 
-Lilya’s caching system integrates seamlessly with request handlers using the `@cache` decorator.
+Lilya's caching system integrates seamlessly with request handlers using the `@cache` decorator.
 
 ---
 
@@ -132,7 +132,7 @@ Instead of specifying the backend every time, we can configure a global cache ba
 
 ## **6. Building Custom Caching Backends**
 
-You can extend Lilya’s caching system by creating your own backend.
+You can extend Lilya's caching system by creating your own backend.
 
 ### **6.1 Custom File-Based Cache Backend**
 

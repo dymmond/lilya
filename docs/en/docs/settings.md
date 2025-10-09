@@ -251,7 +251,7 @@ The following are the available parameters you can configure inside your `Settin
   Environment name (`development`, `production`, `testing`, etc.). Purely informational.
 
 * **`version`**: `str | int | float`
-  The version of the application. Defaults to Lilya’s internal version if not set.
+  The version of the application. Defaults to Lilya's internal version if not set.
 
 * **`logging_level`**: `str`
   The default logging level for the application. Defaults to `"DEBUG"`.

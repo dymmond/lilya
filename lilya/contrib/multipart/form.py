@@ -486,7 +486,7 @@ def parse_form(
     """
     Read from a file-like ``input_stream`` and emit fields/files via callbacks.
 
-    Mirrors python-multipart’s ``parse_form`` function.
+    Mirrors python-multipart's ``parse_form`` function.
 
     Args:
         headers: Case-insensitive HTTP headers.

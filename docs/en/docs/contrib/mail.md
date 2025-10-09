@@ -2,7 +2,7 @@
 
 The `lilya.contrib.mail` module provides a **powerful, async-native email system** built for modern applications.
 
-It’s designed to be lightweight yet as powerful as other’s email framework — but without blocking your event loop.
+It's designed to be lightweight yet as powerful as other's email framework — but without blocking your event loop.
 
 ## What is the Mail System?
 
@@ -17,13 +17,13 @@ It abstracts common tasks like:
 
 ---
 
-## Why Use Lilya’s Mail System?
+## Why Use Lilya's Mail System?
 
-1. **Async-first**: Unlike Django’s sync system, Lilya integrates natively with asyncio/anyio.
+1. **Async-first**: Unlike Django's sync system, Lilya integrates natively with asyncio/anyio.
 2. **Flexible backends**: Choose SMTP, debugging backends, or third-party APIs.
 3. **Production-ready**: Connection pooling, batch sending, lifecycle hooks.
 4. **Customizable**: Write your own backend for any provider.
-5. **Lightweight**: You only import what you need, it’s not tied to ORM or heavy dependencies.
+5. **Lightweight**: You only import what you need, it's not tied to ORM or heavy dependencies.
 
 ---
 
@@ -388,7 +388,7 @@ With this setup:
 In addition to accessing `app.state.mailer` directly, Lilya provides an out-of-the-box dependency
 you can inject into any handler: `Mail`.
 
-This is powered by Lilya’s dependency injection system and resolves to the configured global
+This is powered by Lilya's dependency injection system and resolves to the configured global
 `Mailer` instance (the one you set up via `setup_mail`).
 
 ---
@@ -458,7 +458,7 @@ app = Lilya(routes=[
 RuntimeError: No Mailer configured. Did you forget to call setup_mail(app, backend=...)?
 ```
 
-* If you override `app.state.mailer` with something invalid, you’ll see the same error.
+* If you override `app.state.mailer` with something invalid, you'll see the same error.
 
 ---
 
@@ -514,7 +514,7 @@ async def signup(user: dict, mailer: Mail):
 
 * Use `setup_mail` once in `main.py` (or whatever file you have your application instance).
 * Inject the configured `Mailer` anywhere with `dependencies={"mailer": Mail}`.
-* Clean error messages if it isn’t configured.
+* Clean error messages if it isn't configured.
 * Easy to override in tests.
 
 ---
@@ -537,4 +537,4 @@ async def signup(user: dict, mailer: Mail):
 * `BaseMailBackend`: Pluggable backends (SMTP, Console, File, InMemory).
 * **Custom backends**: Easy integration with services like Mailgun, Brevo, Mailchimp, etc.
 
-With these tools, Lilya’s mail system is **powerful**, but async-native, lighter, and more flexible.
+With these tools, Lilya's mail system is **powerful**, but async-native, lighter, and more flexible.

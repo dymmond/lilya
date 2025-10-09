@@ -7,13 +7,13 @@ that its to make sure you don't need to have a new learning curve in terms of un
 
 ## The `username` and `password`
 
-We’re going to use **Lilya** security utilities to handle the `username` and `password`.
+We're going to use **Lilya** security utilities to handle the `username` and `password`.
 
 According to the OAuth2 specification, when using the "password flow" (which we are using), the client/user must send `username` and `password` fields as form data.
 
-The specification requires these fields to be named exactly as `username` and `password` so names like `user-name` or `email` won’t work in this case.
+The specification requires these fields to be named exactly as `username` and `password` so names like `user-name` or `email` won't work in this case.
 
-However, don’t worry, you can display these fields however you like in the frontend, and your database models can use different names if needed.
+However, don't worry, you can display these fields however you like in the frontend, and your database models can use different names if needed.
 
 But for the login *path operation*, we need to follow these names to stay compliant with the specification (and to ensure compatibility with tools like the integrated API documentation).
 
@@ -82,9 +82,9 @@ The `OAuth2PasswordRequestForm` is a class dependency that defines a form body c
 ## The form data
 
 !!! Tip
-    The instance of the `OAuth2PasswordRequestForm` dependency class won’t have a `scope` attribute containing the long string separated by spaces. Instead, it will have a `scopes` attribute, which is a list of individual strings representing each scope sent.
+    The instance of the `OAuth2PasswordRequestForm` dependency class won't have a `scope` attribute containing the long string separated by spaces. Instead, it will have a `scopes` attribute, which is a list of individual strings representing each scope sent.
 
-    Although we’re not using `scopes` in this example, the functionality is available if you need it.
+    Although we're not using `scopes` in this example, the functionality is available if you need it.
 
 Retrieve the user data from the (fake) database using the `username` from the form field.
 
@@ -102,7 +102,7 @@ First, we will place the user data into the Pydantic `UserDB` model.
 
 Since storing plaintext passwords is unsafe, we'll use a (fake) password hashing system for verification.
 
-If the passwords don’t match, we'll return the same error as before.
+If the passwords don't match, we'll return the same error as before.
 
 #### What is Password Hashing?
 

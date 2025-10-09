@@ -1,10 +1,10 @@
 # OAuth2 with Password, Bearer with JWT tokens
 
-Now that we’ve outlined the security flow, let’s secure the application using JWT tokens and secure password hashing.
+Now that we've outlined the security flow, let's secure the application using JWT tokens and secure password hashing.
 
 The following code is production-ready. You can store hashed passwords in your database and integrate it into your application.
 
-We’ll build on the foundation from the previous chapter and enhance it further.
+We'll build on the foundation from the previous chapter and enhance it further.
 
 ## What is the JWT
 
@@ -122,11 +122,11 @@ Use the following command to generate a secure random secret key:
 $ openssl rand -hex 32
 ```
 
-Here’s a clearer and more concise version of the instructions:
+Here's a clearer and more concise version of the instructions:
 
 1. Copy the output of the random secret key generation into the `SECRET_KEY` variable (do not use the example key).
 2. Create a variable `ALGORITHM` and set it to `"HS256"`, the algorithm used for signing the JWT token.
-3. Define a variable for the token’s expiration time.
+3. Define a variable for the token's expiration time.
 4. Define a Pydantic model to use for the response in the token endpoint.
 5. Create a utility function to generate a new access token.
 
@@ -188,7 +188,7 @@ Now it time to call the endpoint `/users/me` and you should get a response like 
 
 <img src="https://res.cloudinary.com/dymmond/image/upload/v1733833977/esmerald/security/me_l7bci2.png" alt="Me">
 
-When you open the developer tools, you’ll notice that the data sent includes only the JWT token. The password is sent only in the initial request to authenticate the user and obtain the access token. After that, the password is not transmitted in subsequent requests.
+When you open the developer tools, you'll notice that the data sent includes only the JWT token. The password is sent only in the initial request to authenticate the user and obtain the access token. After that, the password is not transmitted in subsequent requests.
 
 ## Advanced usage with `scopes`
 

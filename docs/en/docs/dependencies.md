@@ -1,6 +1,6 @@
 # Dependency Injection
 
-Welcome to the definitive guide for using dependency injection in Lilya. In this document, we’ll explore
+Welcome to the definitive guide for using dependency injection in Lilya. In this document, we'll explore
 how to leverage the `Provide` and `Provides` primitives to cleanly manage shared resources, services, and configuration across your application,
 includes (sub-applications), and individual routes.
 
@@ -13,7 +13,7 @@ Dependency injection helps:
 * **Override** behavior in testing or in specific sub-applications without changing core code.
 * **Compose** complex services by injecting one into another (e.g., a token provider that needs a client).
 
-Lilya’s lightweight DI makes these patterns straightforward, whether at the app level, include (module) level, or individual route level.
+Lilya's lightweight DI makes these patterns straightforward, whether at the app level, include (module) level, or individual route level.
 
 ---
 
@@ -297,4 +297,4 @@ scopes and so on as usual.
 * **Document** which dependencies each handler needs with clear parameter names.
 * `Depends` and `inject` are used **outside** the request/response cycle and must not be mistaken for the rest.
 
-With these patterns, you’ll keep your Lilya code clean, testable, and maintainable.
+With these patterns, you'll keep your Lilya code clean, testable, and maintainable.

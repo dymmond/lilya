@@ -141,7 +141,7 @@ class Relay:
         a custom transport. This must be called before the proxy can
         forward any HTTP requests.
 
-        Typically, you register this in the application’s
+        Typically, you register this in the application's
         `on_startup` event so the client is ready before handling traffic.
 
         Example:
@@ -168,7 +168,7 @@ class Relay:
         After shutdown, the proxy cannot handle HTTP traffic until
         `startup()` is called again.
 
-        Typically, you register this in the application’s
+        Typically, you register this in the application's
         `on_shutdown` event to ensure a clean shutdown.
         """
         if self._client is not None:
@@ -351,7 +351,7 @@ class Relay:
 
         This method takes the incoming request path and query string
         from the ASGI `scope`, joins it with the configured upstream
-        prefix, and combines it with the proxy’s base URL.
+        prefix, and combines it with the proxy's base URL.
 
         Behavior:
             - Uses `scope["raw_path"]` if available, otherwise falls back
@@ -797,7 +797,7 @@ class Relay:
         Behavior:
             - Collects all cookies from `response.headers`.
             - Removes any existing `Set-Cookie` entries from the `headers` list.
-            - Re-appends rewritten cookies based on the callback’s logic.
+            - Re-appends rewritten cookies based on the callback's logic.
             - If no cookies are present, returns headers unchanged.
 
         Args:

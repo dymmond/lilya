@@ -89,7 +89,7 @@ Both will result in the same handler parameters being populated.
 
 ## Nested Fields with Dotted Keys
 
-Forms can’t natively encode nested structures. Lilya supports **dotted key**
+Forms can't natively encode nested structures. Lilya supports **dotted key**
 notation to express them:
 
 ```http
@@ -211,4 +211,4 @@ Result:
 
 ---
 
-This makes Lilya’s body inference flexible enough to handle **real-world  form submissions** without sacrificing strong typing.
+This makes Lilya's body inference flexible enough to handle **real-world  form submissions** without sacrificing strong typing.

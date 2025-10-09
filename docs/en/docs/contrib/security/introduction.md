@@ -49,12 +49,12 @@ Lets check and click it!
 
 This isn't the frontend interface intended for end users. Instead, it serves as a powerful, interactive tool for documenting your API.
 
-It’s useful for the frontend team (which might also be you), for third-party applications and systems, and even for your own use.
+It's useful for the frontend team (which might also be you), for third-party applications and systems, and even for your own use.
 You can rely on it to debug, review, and test your application efficiently.
 
 ## The `password` flow
 
-Now, let’s take a step back and clarify what this all means.
+Now, let's take a step back and clarify what this all means.
 
 The `password` "flow" is one of the methods (or "flows") defined in OAuth2 for managing security and authentication.
 
@@ -62,13 +62,13 @@ OAuth2 was originally designed to separate the backend or API from the server re
 
 However, in this scenario, the same Lilya application will handle both the API and the authentication process.
 
-Let’s examine it from this simplified perspective:
+Let's examine it from this simplified perspective:
 
-Here’s how the password "flow" works step by step:
+Here's how the password "flow" works step by step:
 
 1. **User Login**: The user enters their `username` and `password` in the frontend and submits the form by hitting `Enter`.
 
-2. **Frontend Request**: The frontend (running in the user’s browser) sends the `username` and `password` to a specific URL on the API, typically defined with `tokenUrl="token"`.
+2. **Frontend Request**: The frontend (running in the user's browser) sends the `username` and `password` to a specific URL on the API, typically defined with `tokenUrl="token"`.
 
 3. **API Validation**:
    - The API verifies the provided `username` and `password`.
@@ -76,7 +76,7 @@ Here’s how the password "flow" works step by step:
      - A **token** is essentially a string containing information that can later be used to authenticate the user.
      - Tokens usually have an expiration time:
        - After expiration, the user must log in again.
-       - This limits the risk if the token is stolen since it won’t work indefinitely (in most cases).
+       - This limits the risk if the token is stolen since it won't work indefinitely (in most cases).
 
 4. **Token Storage**: The frontend temporarily stores the token securely.
 
@@ -84,7 +84,7 @@ Here’s how the password "flow" works step by step:
 
 6. **Authenticated API Requests**:
    - To access protected endpoints, the frontend includes an `Authorization` header in its request.
-   - The header’s value is `Bearer ` followed by the token.
+   - The header's value is `Bearer ` followed by the token.
    - For example, if the token is `foobar`, the `Authorization` header would look like this:
 
      ```plaintext
@@ -95,13 +95,13 @@ Here’s how the password "flow" works step by step:
 
 **Lilya** offers various tools, at different levels of abstraction, to implement security features.
 
-In this example, we’ll use **OAuth2** with the **Password** flow, utilizing a **Bearer** token. To do this, we’ll use the `OAuth2PasswordBearer` class.
+In this example, we'll use **OAuth2** with the **Password** flow, utilizing a **Bearer** token. To do this, we'll use the `OAuth2PasswordBearer` class.
 
 !!! info
 
-    A "bearer" token isn’t the only option for authentication. However, it’s the most suitable for our use case and often the best choice for most scenarios.
+    A "bearer" token isn't the only option for authentication. However, it's the most suitable for our use case and often the best choice for most scenarios.
 
-    Unless you’re an OAuth2 expert and know of another option that better fits your needs, **Lilya** gives you the flexibility to implement other options as well.
+    Unless you're an OAuth2 expert and know of another option that better fits your needs, **Lilya** gives you the flexibility to implement other options as well.
 
     When creating an instance of the `OAuth2PasswordBearer` class, we provide the `tokenUrl` parameter. This specifies the URL that the frontend (running in the user's browser) will use to send the `username` and `password` in order to obtain the token.
 
@@ -112,13 +112,13 @@ When we create an instance of the `OAuth2PasswordBearer` class, we provide the `
 ```
 
 !!! Tip
-    Here, `tokenUrl="token"` refers to a relative URL, `token`, which we haven’t created yet. Since it’s a relative URL, it’s equivalent to `./token`.
+    Here, `tokenUrl="token"` refers to a relative URL, `token`, which we haven't created yet. Since it's a relative URL, it's equivalent to `./token`.
 
     This means that if your API is hosted at `https://example.com/`, the full URL would be `https://example.com/token`. If your API is at `https://example.com/api/v1/`, then the full URL would be `https://example.com/api/v1/token`.
 
     Using a relative URL is important, as it ensures your application continues to function correctly, even in more advanced scenarios, like when running **Behind a Proxy**.
 
-This parameter doesn’t automatically create the `/token` endpoint or path operation. Instead, it simply declares that the URL `/token` will be the endpoint that the client should use to obtain the token.
+This parameter doesn't automatically create the `/token` endpoint or path operation. Instead, it simply declares that the URL `/token` will be the endpoint that the client should use to obtain the token.
 
 This information is then used in OpenAPI and displayed in the interactive API documentation, guiding the client on where to send the request for the token.
 

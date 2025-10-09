@@ -6,7 +6,7 @@ from pydantic.fields import FieldInfo
 class Query(FieldInfo):
     """
     Use this in `@openapi(query=...)` to declare one or more query parameters.
-    Inherits from pydantic.FieldInfo so you can pass the same arguments you’d pass to `Field(...)`.
+    Inherits from pydantic.FieldInfo so you can pass the same arguments you'd pass to `Field(...)`.
     """
 
     def __init__(

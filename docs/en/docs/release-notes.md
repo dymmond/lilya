@@ -5,6 +5,34 @@ hide:
 
 # Release Notes
 
+## 0.21.1
+
+### Added
+
+- **OpenTelemetry integration** under `lilya.contrib.opentelemetry`:
+  - Introduced `OpenTelemetryMiddleware` for automatic request tracing.
+    - Creates one `SERVER` span per HTTP request.
+    - Records standard HTTP attributes (`method`, `path`, `status`, `client.address`, `url.query`, etc.).
+    - Captures exceptions and marks spans with `StatusCode.ERROR`.
+    - Handles parent context extraction from inbound headers for trace propagation.
+  - Added `setup_tracing(config: OpenTelemetryConfig | None)` helper.
+    - Initializes a global `TracerProvider` with a `BatchSpanProcessor`.
+    - Automatically selects between `ConsoleSpanExporter`, `OTLP/gRPC`, and `OTLP/HTTP` exporters.
+    - Safe to call multiple times (idempotent).
+  - Added `OpenTelemetryConfig` dataclass for configuration.
+    - Supports fields:
+      - `service_name`: logical name reported to telemetry backends.
+      - `exporter`: `"otlp"` or `"console"`.
+      - `otlp_endpoint`: e.g. `"http://localhost:4317"` or `"http://collector:4318"`.
+      - `otlp_insecure`: disable TLS verification for gRPC exporters.
+      - `sampler`: `"parentbased_always_on"`, `"always_on"`, or `"always_off"`.
+  - Added `get_tracer_provider()` utility to retrieve the active `TracerProvider`.
+- **Async testing utilities**:
+    - Introduced [`AsyncTestClient`](./test-client.md#the-async-test-client) and [`create_async_client()`](./test-client.md#context-manager-create_async_client) to allow fully asynchronous testing of Lilya apps.
+    - Both support full middleware stacks, including `OpenTelemetryMiddleware`.
+    - Enables concurrent request tests and real async span creation with in-memory exporters.
+
+
 ## 0.21.0
 
 ### Added
@@ -566,7 +594,7 @@ dependency injection system of Lilya.
     * Stabilized `request.scope["app"]` availability across HTTP, WS, and lifespan events
 
 * **Serialization Improvements**
-    * Ensured `Provides()` defaults aren’t accidentally passed to JSON encoders
+    * Ensured `Provides()` defaults aren't accidentally passed to JSON encoders
 
 ### Fixed
 

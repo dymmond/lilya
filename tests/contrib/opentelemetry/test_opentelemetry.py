@@ -38,7 +38,7 @@ async def test_otlp_middleware_creates_span(monkeypatch):
     provider = TracerProvider(resource=Resource.create({"service.name": "test"}))
     provider.add_span_processor(SimpleSpanProcessor(exporter))
 
-    # Monkeypatch Lilya’s middleware to use this provider instead of the global
+    # Monkeypatch Lilya's middleware to use this provider instead of the global
     monkeypatch.setattr(trace, "get_tracer_provider", lambda: provider)
 
     async def hello(request):

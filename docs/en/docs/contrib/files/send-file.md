@@ -1,7 +1,7 @@
 # Sending Files
 
 The `send_file` utility in Lilya makes it easy to return files from your endpoints,
-similar to Flask’s `send_file`.
+similar to Flask's `send_file`.
 
 It can return files from the filesystem or from in-memory file-like objects, and supports options
 such as forcing downloads, setting custom filenames, and controlling cache headers.
@@ -90,7 +90,7 @@ async def stream_file(request):
     return send_file(file_like, mimetype="text/plain")
 ```
 
-This is useful for dynamically generated content that you don’t want to store on disk.
+This is useful for dynamically generated content that you don't want to store on disk.
 
 ---
 

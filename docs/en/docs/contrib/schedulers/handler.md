@@ -169,7 +169,7 @@ Triggers once on the given datetime. If `run_date` is left empty, current time i
 **Parameters**:
 
 * **run_date** (*datetime*|*str*) – The date/time to run the task at.
-* **timezone** (*datetime*.*tzinfo*|*str*) – Time zone for run_date if it doesn’t have one already.
+* **timezone** (*datetime*.*tzinfo*|*str*) – Time zone for run_date if it doesn't have one already.
 
 ```python
 {!> ../../../docs_src/scheduler/tasks/triggers/date.py !}

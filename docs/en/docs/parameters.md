@@ -5,7 +5,7 @@ from HTTP requests.
 
 1. **What** each parameter type is
 2. **Why** and **when** to use them
-3. **Benefits** of Lilya’s parameter system
+3. **Benefits** of Lilya's parameter system
 4. **How** to declare and inject them
 
 ---
@@ -27,7 +27,7 @@ from HTTP requests.
 
 ---
 
-## Benefits of Lilya’s Parameter System
+## Benefits of Lilya's Parameter System
 
 * **Clean signatures**: No manual extraction from `request`; Lilya handles it.
 * **Automatic validation**: Missing required fields or invalid types immediately return 422.

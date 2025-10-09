@@ -40,6 +40,20 @@ You can use any of the `httpx` standard API like authentication, session cookies
     By default the TestClient checks the ASGI protocol conformance. For a more lenient handling of defects use
     `client = TestClient(app, check_asgi_conformance=False)`. This is however not recommended.
 
+## The async test client
+
+**AsyncTestClient**
+
+```python
+{!> ../../../docs_src/testclient/async_example1.py !}
+```
+
+Another example:
+
+```python
+{!> ../../../docs_src/testclient/async_example2.py !}
+```
+
 ## Lifespan events
 
 !!! Note
@@ -62,6 +76,14 @@ The tests work with both `sync` and `async` functions.
 !!! info
     The example above is used to also show the tests can be as complex as you desire and it will work with the
     context manager.
+
+### Context manager `create_async_client`
+
+This function is prepared to be used as a context manager for your async tests and ready to use at any given time.
+
+```python
+{!> ../../../docs_src/testclient/async_example3.py !}
+```
 
 ## override_settings
 

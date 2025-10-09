@@ -60,7 +60,7 @@ descriptions, query parameters, and response schemas, and stores them on the fun
 * **What happens?**
 
 * `@openapi(summary="Hello endpoint")` attaches metadata to `say_hello`.
-* `enable_openapi=True` is a flag on the Lilya app (we’ll assume your code has been configured to honor that flag and call the generator).
+* `enable_openapi=True` is a flag on the Lilya app (we'll assume your code has been configured to honor that flag and call the generator).
 
 When you later call the function that produces the OpenAPI spec, it will see `/hello` and produce:
 
@@ -255,7 +255,7 @@ If you want to return XML, you can:
 
 ## Organizing Routes: `Path`, `Include`, and Child Apps
 
-Lilya’s routing allows you to compose URLs via:
+Lilya's routing allows you to compose URLs via:
 
 1. **`Path(path_format, handler, methods=[...], include_in_schema=True)`**
 2. **`Include(prefix, routes=[ ... ])`**
@@ -325,7 +325,7 @@ Only the *leaf* path parameters remain visible. For example:
 Include("/api", app=child_app)
 ```
 
-* Lilya’s internal route might be `"/api/{path:path}"`.
+* Lilya's internal route might be `"/api/{path:path}"`.
 * The generator sees `"/api/{path:path}"`, splits on `"/{"`, takes `"/api"`, and recurses.
 * Future recursion gets `"/api/hello"`, which stays intact—so you never see `"{path}"` in the final doc.
 
@@ -333,7 +333,7 @@ Include("/api", app=child_app)
 
 ## Generating the OpenAPI Document
 
-Once all your handlers are decorated with `@openapi` and your Lilya app’s `routes` are fully defined, you call a single function commonly named
+Once all your handlers are decorated with `@openapi` and your Lilya app's `routes` are fully defined, you call a single function commonly named
 `get_openapi` to produce a dictionary representing the OpenAPI JSON.
 
 ### The OpenAPI configuration
@@ -381,9 +381,9 @@ The `OpenAPIConfig` model encapsulates all settings that control how Lilya gener
 
 ##### `version: str | None`
 
-* **Description**: The version string for your API documentation, mapped to `info.version`. By default, it uses Lilya’s own `__version__`.
+* **Description**: The version string for your API documentation, mapped to `info.version`. By default, it uses Lilya's own `__version__`.
 * **Type**: `str` (nullable)
-* **Default**: `__version__` (e.g. `"0.1.0"`, depending on Lilya’s installed version)
+* **Default**: `__version__` (e.g. `"0.1.0"`, depending on Lilya's installed version)
 * **Usage**:
 
   * Appears in the OpenAPI JSON:
@@ -430,7 +430,7 @@ The `OpenAPIConfig` model encapsulates all settings that control how Lilya gener
 
 ##### `contact: dict[str, str|Any] | None`
 
-* **Description**: Contact information for the API owner/maintainer. Must follow OpenAPI’s contact object schema (keys like `name`, `url`, `email`).
+* **Description**: Contact information for the API owner/maintainer. Must follow OpenAPI's contact object schema (keys like `name`, `url`, `email`).
 * **Type**:
 
   ```python
@@ -465,7 +465,7 @@ The `OpenAPIConfig` model encapsulates all settings that control how Lilya gener
 
 ##### `terms_of_service: AnyUrl | None`
 
-* **Description**: A URL pointing to your API’s Terms of Service. Placed in `info.termsOfService`.
+* **Description**: A URL pointing to your API's Terms of Service. Placed in `info.termsOfService`.
 * **Type**: `AnyUrl` (Pydantic‐validated URL) or `None`
 * **Default**: `None`
 * **Usage**:
@@ -484,7 +484,7 @@ The `OpenAPIConfig` model encapsulates all settings that control how Lilya gener
 
 ##### `license: dict[str, str|Any] | None`
 
-* **Description**: License information for the API, following OpenAPI’s license object schema (e.g. `{"name": "MIT", "url": "https://opensource.org/licenses/MIT"}`).
+* **Description**: License information for the API, following OpenAPI's license object schema (e.g. `{"name": "MIT", "url": "https://opensource.org/licenses/MIT"}`).
 * **Type**:
 
   ```python
@@ -510,7 +510,7 @@ The `OpenAPIConfig` model encapsulates all settings that control how Lilya gener
 
 ##### `security: Any | None`
 
-* **Description**: Global security requirements for the API, following OpenAPI’s security requirement object format. For example, to require a Bearer token on every endpoint:
+* **Description**: Global security requirements for the API, following OpenAPI's security requirement object format. For example, to require a Bearer token on every endpoint:
 
   ```python
   [{"BearerAuth": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}}]
@@ -569,7 +569,7 @@ The `OpenAPIConfig` model encapsulates all settings that control how Lilya gener
       { "name": "users" }
     ]
     ```
-  * Each endpoint’s metadata can specify one or more of these tags; UI groups ops under each tag.
+  * Each endpoint's metadata can specify one or more of these tags; UI groups ops under each tag.
 
 ---
 
@@ -616,7 +616,7 @@ The `OpenAPIConfig` model encapsulates all settings that control how Lilya gener
 * **Default**: `True`
 * **Usage**:
 
-  * Lilya checks `request.scope["root_path"]`, and if it’s not already in `servers`, it inserts it at index 0.
+  * Lilya checks `request.scope["root_path"]`, and if it's not already in `servers`, it inserts it at index 0.
   * Ensures that UIs will use the correct base URL even if you mount the app under `/myapp`.
 
 ---
@@ -648,7 +648,7 @@ The `OpenAPIConfig` model encapsulates all settings that control how Lilya gener
 
 ##### `swagger_ui_oauth2_redirect_url: str | None`
 
-* **Description**: The relative path for the OAuth2 redirect page used by Swagger’s “Authorize” button.
+* **Description**: The relative path for the OAuth2 redirect page used by Swagger's “Authorize” button.
 * **Type**: `str` (nullable)
 * **Default**: `"/docs/oauth2-redirect"`
 * **Usage**:
@@ -688,7 +688,7 @@ The `OpenAPIConfig` model encapsulates all settings that control how Lilya gener
 
 ##### `swagger_ui_init_oauth: dict[str, Any] | None`
 
-* **Description**: A dictionary of OAuth2 configuration parameters that are passed to Swagger UI’s `initOAuth(...)` call.
+* **Description**: A dictionary of OAuth2 configuration parameters that are passed to Swagger UI's `initOAuth(...)` call.
 * **Type**: `dict` or `None`
 * **Default**: `None`
 * **Usage**:
@@ -773,7 +773,7 @@ The `OpenAPIConfig` model encapsulates all settings that control how Lilya gener
     ```html
     <link rel="icon" href="https://lilya.dev/statics/images/favicon.ico" />
     ```
-  * Change this to your own brand’s favicon.
+  * Change this to your own brand's favicon.
 
 ---
 
@@ -895,7 +895,7 @@ The `OpenAPIConfig` model encapsulates all settings that control how Lilya gener
 
 ##### `webhooks: Sequence[Any] | None`
 
-* **Description**: A list of webhook definitions, following OpenAPI’s “webhooks” object schema. Each item can be a dictionary or a Pydantic‐validated webhook schema.
+* **Description**: A list of webhook definitions, following OpenAPI's “webhooks” object schema. Each item can be a dictionary or a Pydantic‐validated webhook schema.
 * **Type**: `Sequence[Any]` or `None`
 * **Default**: `None`
 * **Usage**:
@@ -1007,7 +1007,7 @@ child_app = Lilya(routes=[Path("/x", handler)])
 app = Lilya(routes=[Include("/child", app=child_app)])
 ```
 
-Internally, Lilya’s mount might be `"/child/{path:path}/x"`. The OpenAPI generator strips out `"/{path:path}"` so that you only see
+Internally, Lilya's mount might be `"/child/{path:path}/x"`. The OpenAPI generator strips out `"/{path:path}"` so that you only see
 `"/child/x"` in the final documentation.
 
 !!! Note
@@ -1036,7 +1036,7 @@ Internally, Lilya’s mount might be `"/child/{path:path}/x"`. The OpenAPI gener
 
 !!! Warning
     Do **not** pass `model=list[User]` directly to the decorator; if you do, you must convert it to `[User]` so the wrapper can unwrap it properly.
-    The decorator’s logic will detect a Python `list` or `tuple` and take the first element as the inner Pydantic model.
+    The decorator's logic will detect a Python `list` or `tuple` and take the first element as the inner Pydantic model.
 
 ### Exclude a Route from Documentation
 
