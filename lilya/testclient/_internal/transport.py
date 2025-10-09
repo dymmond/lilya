@@ -176,6 +176,7 @@ class TestClientTransport(httpx.BaseTransport):
             subprotocols: Sequence[str] = []
         else:
             subprotocols = [value.strip() for value in subprotocol.split(",")]
+
         scope = {
             "type": "websocket",
             "path": unquote(path),
@@ -434,6 +435,233 @@ class TestClientTransport(httpx.BaseTransport):
                     raise ASGISpecViolation(
                         f'Response header "{header_key!r}" value ("{header_value!r}") contains a newline.'
                     )
+
+        response = httpx.Response(**raw_kwargs, request=request)
+        if template is not None:
+            response.template = template
+            response.context = context
+        return response
+
+
+class AsyncTestClientTransport(httpx.AsyncBaseTransport):
+    encoding: str = "ascii"
+
+    def __init__(
+        self,
+        app: ASGI3App,
+        *,
+        raise_server_exceptions: bool = True,
+        root_path: str = "",
+        check_asgi_conformance: bool = True,
+        app_state: dict[str, Any],
+    ) -> None:
+        self.app = app
+        self.raise_server_exceptions = raise_server_exceptions
+        self.check_asgi_conformance = check_asgi_conformance
+        self.root_path = root_path
+        self.app_state = app_state
+
+    async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
+        scheme, netloc, path, raw_path, query = self._parse_url(request.url)
+        host, port, default_port = self._parse_host_and_port(netloc, scheme)
+        headers = self._build_headers(request.headers, host, port, default_port)
+
+        if scheme in {"ws", "wss"}:
+            session = await self._handle_websocket_request(
+                request, scheme, path, cast(str, raw_path), query, headers, host, port
+            )
+            raise UpgradeException(session)
+
+        scope = self._build_http_scope(
+            request, scheme, path, cast(str, raw_path), query, headers, host, port
+        )
+
+        return await self._process_http_request(scope, request)
+
+    def _parse_url(
+        self, url: httpx.URL
+    ) -> tuple[str, str, str, str, str] | tuple[str, str, str, bytes, str]:
+        scheme = url.scheme
+        netloc = url.netloc.decode(encoding=self.encoding)
+        path = url.path
+        raw_path = url.raw_path
+        query = url.query.decode(encoding=self.encoding)
+        return scheme, netloc, path, raw_path, query
+
+    def _parse_host_and_port(self, netloc: str, scheme: str) -> tuple[str, int, int]:
+        default_port = {"http": 80, "ws": 80, "https": 443, "wss": 443}[scheme]
+        if ":" in netloc:
+            host, port_str = netloc.split(":", 1)
+            port = int(port_str)
+        else:
+            host = netloc
+            port = default_port
+        return host, port, default_port
+
+    def _build_headers(
+        self, request_headers: httpx.Headers, host: str, port: int, default_port: int
+    ) -> list[tuple[bytes, bytes]]:
+        if "host" in request_headers:
+            headers: list[Any] = []
+        elif port == default_port:
+            headers = [(b"host", host.encode())]
+        else:
+            headers = [(b"host", f"{host}:{port}".encode())]
+        headers += [(k.lower().encode(), v.encode()) for k, v in request_headers.multi_items()]
+        return headers
+
+    async def _handle_websocket_request(
+        self,
+        request: httpx.Request,
+        scheme: str,
+        path: str,
+        raw_path: str,
+        query: str,
+        headers: list[tuple[bytes, bytes]],
+        host: str,
+        port: int,
+    ) -> WebSocketTestSession:
+        subprotocol = request.headers.get("sec-websocket-protocol", None)
+        subprotocols: Sequence[str] = (
+            [v.strip() for v in subprotocol.split(",")] if subprotocol else []
+        )
+        scope = {
+            "type": "websocket",
+            "path": unquote(path),
+            "raw_path": raw_path,
+            "root_path": self.root_path,
+            "scheme": scheme,
+            "query_string": query.encode(),
+            "headers": headers,
+            "client": None,
+            "server": [host, port],
+            "subprotocols": subprotocols,
+            "state": self.app_state.copy(),
+            "extensions": {"websocket.http.response": {}},
+        }
+        # WebSocket handling should still use the same test session abstraction
+        return WebSocketTestSession(self.app, scope, portal_factory=None)
+
+    def _build_http_scope(
+        self,
+        request: httpx.Request,
+        scheme: str,
+        path: str,
+        raw_path: str,
+        query: str,
+        headers: list[tuple[bytes, bytes]],
+        host: str,
+        port: int,
+    ) -> dict[str, Any]:
+        return {
+            "type": "http",
+            "http_version": "1.1",
+            "method": request.method,
+            "path": unquote(path),
+            "raw_path": raw_path,
+            "root_path": self.root_path,
+            "scheme": scheme,
+            "query_string": query.encode(),
+            "headers": headers,
+            "client": None,
+            "server": [host, port],
+            "extensions": {"http.response.debug": {}},
+            "state": self.app_state.copy(),
+        }
+
+    async def _process_http_request(
+        self, scope: dict[str, Any], request: httpx.Request
+    ) -> httpx.Response:
+        request_complete = False
+        response_started = False
+        response_complete = anyio.Event()
+        raw_kwargs: dict[str, Any] = {"stream": io.BytesIO()}
+        template = None
+        context = None
+
+        async def receive() -> Message:
+            nonlocal request_complete
+            if request_complete:
+                if not response_complete.is_set():
+                    await response_complete.wait()
+                return {"type": "http.disconnect"}
+
+            body = request.read()
+
+            if isinstance(body, str):  # type: ignore[unreachable]
+                if self.check_asgi_conformance:  # type: ignore[unreachable]
+                    raise ASGISpecViolation("ASGI Spec violation: body must be bytes")
+                body_bytes = body.encode("utf-8")
+
+            elif body is None:
+                body_bytes = b""
+
+            elif isinstance(body, GeneratorType):  # type: ignore[unreachable]
+                try:  # type: ignore[unreachable]
+                    chunk = next(body)
+                    if isinstance(chunk, str):
+                        if self.check_asgi_conformance:
+                            raise ASGISpecViolation("ASGI Spec violation: chunk must be bytes")
+                        chunk = chunk.encode("utf-8")
+                    return {"type": "http.request", "body": chunk, "more_body": True}
+                except StopIteration:
+                    request_complete = True
+                    return {"type": "http.request", "body": b""}
+            else:
+                body_bytes = body
+
+            request_complete = True
+            return {"type": "http.request", "body": body_bytes}
+
+        async def send(message: Message) -> None:
+            nonlocal raw_kwargs, response_started, template, context
+
+            if message["type"] == "http.response.start":
+                assert not response_started
+                raw_kwargs["status_code"] = message["status"]
+                raw_kwargs["headers"] = list(message.get("headers", []))
+                response_started = True
+
+            elif message["type"] == "http.response.body":
+                assert response_started
+                body = message.get("body", b"")
+                if self.check_asgi_conformance and not isinstance(
+                    body, (bytes, memoryview, bytearray)
+                ):
+                    raise ASGISpecViolation("ASGI Spec violation: body must be bytes")
+                if request.method != "HEAD":
+                    raw_kwargs["stream"].write(body)
+                if not message.get("more_body", False):
+                    raw_kwargs["stream"].seek(0)
+                    response_complete.set()
+
+            elif message["type"] == "http.response.debug":
+                template = message["info"]["template"]
+                context = message["info"]["context"]
+
+        # Run the ASGI app natively
+        try:
+            await self.app(scope, receive, send)
+        except BaseException:
+            if self.raise_server_exceptions:
+                raise
+        finally:
+            response_complete.set()
+
+        if not response_started:
+            if self.raise_server_exceptions or self.check_asgi_conformance:
+                raise ASGISpecViolation("TestClient did not receive any response.")
+            raw_kwargs.update(
+                status_code=500, headers=[], stream=io.BytesIO(b"Internal Server Error")
+            )
+
+        raw_kwargs["stream"] = httpx.ByteStream(raw_kwargs["stream"].read())
+        raw_kwargs["headers"] = list(raw_kwargs["headers"])
+
+        if self.check_asgi_conformance:
+            for key, val in raw_kwargs["headers"]:
+                if not isinstance(key, bytes) or not isinstance(val, bytes):
+                    raise ASGISpecViolation("ASGI Spec violation: headers must be bytes")
 
         response = httpx.Response(**raw_kwargs, request=request)
         if template is not None:

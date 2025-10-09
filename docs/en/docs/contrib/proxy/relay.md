@@ -15,7 +15,7 @@ With `Relay`, you mount a single catch‑all route on App 2 (e.g., `/auth`) that
 ## Why a Proxy?
 
 - **Single public surface**: Expose `/auth/**` from App 2; keep App 1 private.
-- **No duplication**: Don’t re-implement login/logout; just forward.
+- **No duplication**: Don't re-implement login/logout; just forward.
 - **Transparent behaviour**: Requests/responses stream through without buffering.
 - **Header controls**: Drop hop-by-hop headers, or use an allow-list mode.
 - **Retries & timeouts**: Built-in retry policy with exponential backoff; maps timeouts to **504 Gateway Timeout**.

@@ -355,7 +355,7 @@ async def test_only_requested_dependency_is_injected():
 
 async def test_missing_requested_dependency_raises_500():
     """
-    If the handler asks for a dependency that hasn’t been registered,
+    If the handler asks for a dependency that hasn't been registered,
     we should get a 500/ImproperlyConfigured.
     """
 

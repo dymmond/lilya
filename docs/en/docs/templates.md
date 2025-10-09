@@ -275,7 +275,7 @@ By using `FormController`, you can:
 ## FormController
 
 The `FormController` provides a clean, class-based pattern for handling forms in Lilya.
-It is inspired by Django’s `FormView` but adapted for Lilya’s async-first and validation-agnostic design.
+It is inspired by Django's `FormView` but adapted for Lilya's async-first and validation-agnostic design.
 
 Unlike Django, `FormController` is **not tied to any form library**, you can use **Pydantic**, **msgspec**, **attrs**, dataclasses,
 or any other mechanism for instantiating and validating submitted form data. See the [encoders](./encoders.md) for more

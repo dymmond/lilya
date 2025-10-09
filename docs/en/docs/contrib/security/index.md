@@ -11,7 +11,7 @@ often accounting for 50% or more of the total codebase.
 These tools enable you to implement secure systems quickly, efficiently,
 and in compliance with standards—without needing to dive deeply into all the technical specifications of security.
 
-Before diving in, let’s explore a few key concepts.
+Before diving in, let's explore a few key concepts.
 
 ## Quick Note
 

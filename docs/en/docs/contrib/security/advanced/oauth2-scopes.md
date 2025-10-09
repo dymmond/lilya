@@ -4,13 +4,13 @@ Lilya supports OAuth2 scopes, offering a detailed permission system that adheres
 
 OAuth2 scopes are widely used by major providers such as Facebook, Google, GitHub, Microsoft, and Twitter. Whenever an application allows you to "log in with" these platforms, it leverages OAuth2 with scopes to define specific permissions.
 
-In this guide, we’ll explore how to manage authentication and authorization using OAuth2 scopes in Lilya.
+In this guide, we'll explore how to manage authentication and authorization using OAuth2 scopes in Lilya.
 
 !!! Warning
 
     This section delves into advanced concepts, so beginners may prefer to skip it for now.
 
-    While OAuth2 scopes aren't mandatory, they offer a structured way to handle permissions, seamlessly integrating with OpenAPI and API documentation. However, it’s crucial to enforce scopes or any other security measures directly in your code.
+    While OAuth2 scopes aren't mandatory, they offer a structured way to handle permissions, seamlessly integrating with OpenAPI and API documentation. However, it's crucial to enforce scopes or any other security measures directly in your code.
 
     In many cases, OAuth2 scopes might be excessive. Still, if your application requires them or you're eager to learn, continue reading to explore their implementation and benefits.
 
@@ -31,13 +31,13 @@ Each scope is a string (without spaces) used to specify security permissions, su
 
 ## Global View
 
-We’ll quickly review the updates in the main [OAuth2 with Password, Bearer with JWT tokens](../oauth-jwt.md){.internal-link target=_blank}, now enhanced with OAuth2 scopes:
+We'll quickly review the updates in the main [OAuth2 with Password, Bearer with JWT tokens](../oauth-jwt.md){.internal-link target=_blank}, now enhanced with OAuth2 scopes:
 
 ```python
 {!> ../../../docs_src/security/advanced/app.py !}
 ```
 
-Next, we’ll break these changes down step by step for better understanding.
+Next, we'll break these changes down step by step for better understanding.
 
 ## OAuth2 Security Scheme
 

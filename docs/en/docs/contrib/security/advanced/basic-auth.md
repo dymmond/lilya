@@ -77,7 +77,7 @@ if "charlie_adminx" == "charlie_admin" and "sunshine" == "openSesame":
 
 Python will need to compare the entire string `charlie_admi` in both `charlie_adminx` and `charlie_admin` before determining they are not the same. This will take a few extra microseconds to respond with "Invalid username or password."
 
-Here’s the rewritten version with new names and terms:
+Here's the rewritten version with new names and terms:
 
 #### The time to respond helps attackers
 

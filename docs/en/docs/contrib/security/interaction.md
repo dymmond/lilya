@@ -8,9 +8,9 @@ This token was extracted from the `Authorization` header of the incoming request
 {!> ../../../docs_src/security/app.py !}
 ```
 
-That’s still not very useful as it is.
+That's still not very useful as it is.
 
-Let’s enhance it by returning the current user instead.
+Let's enhance it by returning the current user instead.
 
 ## Create a user model
 
@@ -87,7 +87,7 @@ You can use any model, class, or database structure that fits your application's
 
 This example might seem a bit verbose, but remember, we're combining security, data models, utility functions, and *path operations* in the same file.
 
-Here’s the key takeaway:
+Here's the key takeaway:
 
 The security and dependency injection setup is written **once**.
 

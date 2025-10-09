@@ -1,6 +1,6 @@
 class ParseError(Exception):
     """
-    Base class for all parsing-related errors in Lilya’s multipart/querystring
+    Base class for all parsing-related errors in Lilya's multipart/querystring
     handling system.
 
     This should not be raised directly; instead, raise one of the more specific

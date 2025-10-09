@@ -134,7 +134,7 @@ API Key authentication involves sending a unique key in the request header. This
 4. **Server Validates API Key:** Upon receiving the request, the server checks the API key against its database of valid keys. If the key is valid, the server processes the request and returns the appropriate response. If the key is invalid or missing, the server denies access.
 
 **Example:**
-Here’s an example of how an API key might be included in an HTTP request header:
+Here's an example of how an API key might be included in an HTTP request header:
 
 ```http
 GET /api/resource HTTP/1.1
@@ -156,7 +156,7 @@ Authorization: Api-Key abc123xyz456
 **Best Practices**:
 
 * **Use HTTPS**: Always use HTTPS to encrypt the API key during transmission.
-* **Limit Scop**e: Restrict the API key’s permissions to only what is necessary.
+* **Limit Scop**e: Restrict the API key's permissions to only what is necessary.
 * **Rotate Keys**: Regularly rotate API keys to minimize the impact of a compromised key.
 * **Monitor Usage**: Track the usage of API keys to detect any unusual or unauthorized activity.
 
