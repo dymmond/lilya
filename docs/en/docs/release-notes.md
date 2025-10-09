@@ -38,6 +38,7 @@ hide:
     - `json_error()`: send JSON error responses with status codes.
     - `stream()`: stream response content from async generators.
     - `empty()`: return empty 204 No Content responses.
+    - `redirect()`: send HTTP redirects with proper status codes and headers.
 
 ### Changed
 

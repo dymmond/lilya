@@ -178,6 +178,46 @@ async def delete_user(request):
 
 `Response`: an empty HTTP response.
 
+### `redirect()`
+
+```python
+from lilya.contrib.responses.shortcuts import redirect
+```
+
+#### Description
+
+Creates a `RedirectResponse` that instructs the client to load a different URL.
+Ideal for POST-redirect-GET patterns, login flows, or temporary route changes.
+
+#### Example
+
+```python
+from lilya.contrib.responses.shortcuts import redirect
+
+async def login_success():
+    return redirect("/dashboard")
+```
+
+#### Parameters
+
+| Name          | Type                                 | Description                                                 |
+| ------------- | ------------------------------------ | ----------------------------------------------------------- |
+| `url`         | `str` | `URL`                        | The target URL to redirect to.                              |
+| `status_code` | `int`                                | Redirect status code (default: `307`).                      |
+| `headers`     | `Mapping[str, str]` | `None`         | Optional extra headers.                                     |
+| `background`  | `Task` | `None`                      | Optional background task to execute alongside the response. |
+| `encoders`    | `Sequence[Encoder \| type[Encoder]]` | Optional sequence of encoders for response serialization.   |
+
+#### Behavior
+
+* Returns a standard HTTP redirect.
+* Sets `Location` header to the target URL automatically.
+* Supports background tasks and custom encoders.
+
+#### Returns
+
+`RedirectResponse`: a response object that redirects to the given URL.
+
 ### When to Use These Shortcuts
 
 | Use Case                            | Shortcut       |
@@ -186,6 +226,7 @@ async def delete_user(request):
 | Returning an error payload          | `json_error()` |
 | Sending live or large output        | `stream()`     |
 | Returning no content (e.g., DELETE) | `empty()`      |
+| Redirecting to another URL          | `redirect()`   |
 
 ### Comparison with [`abort()`](./abort.md)
 
@@ -196,3 +237,4 @@ async def delete_user(request):
 | `send_json()`  | Normal JSON response for successful operations.            | ❌ No              |
 | `stream()`     | Streams chunks of data incrementally.                      | ❌ No              |
 | `empty()`      | Indicates success with no body.                            | ❌ No              |
+| `redirect()`   | Redirects the client to a different URL.                   | ❌ No              |
