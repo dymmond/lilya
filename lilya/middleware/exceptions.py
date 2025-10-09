@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
-from typing import Any
+from typing import Any, cast
 
 from lilya import status
 from lilya._internal._exception_handlers import (
@@ -139,8 +139,13 @@ class ExceptionMiddleware(MiddlewareProtocol):
 
         """
         assert isinstance(exc, HTTPException)
+
+        if getattr(exc, "response", None) is not None:
+            return cast(Response, exc.response)
+
         if exc.status_code in {status.HTTP_204_NO_CONTENT, status.HTTP_304_NOT_MODIFIED}:
             return Response(status_code=exc.status_code, headers=exc.headers)
+
         return PlainText(exc.detail, status_code=exc.status_code, headers=exc.headers)
 
     async def websocket_exception(self, websocket: WebSocket, exc: Exception) -> None:

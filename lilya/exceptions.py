@@ -55,6 +55,7 @@ class HTTPException(LilyaException):
         status_code: int | None = None,
         detail: str | None = None,
         headers: dict[str, str] | None = None,
+        response: Any | None = None,
         **extra: Any,
     ) -> None:
         detail = detail or getattr(self, "detail", None)
@@ -65,6 +66,7 @@ class HTTPException(LilyaException):
         self.status_code = status_code
         self.detail = detail
         self.headers = headers
+        self.response = response
         self.args = (f"{self.status_code}: {self.detail}", *args)
         self.extra = extra
 
