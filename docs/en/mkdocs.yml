@@ -139,6 +139,8 @@ nav:
     - contrib/files/jsonify.md
   - Proxy:
     - contrib/proxy/relay.md
+  - Shortcuts:
+    - contrib/shortcuts/abort.md
   - contrib/mail.md
   - contrib/opentelemetry.md
 - contributing.md

@@ -28,9 +28,11 @@ hide:
       - `sampler`: `"parentbased_always_on"`, `"always_on"`, or `"always_off"`.
   - Added `get_tracer_provider()` utility to retrieve the active `TracerProvider`.
 - **Async testing utilities**:
-    - Introduced [`AsyncTestClient`](./test-client.md#the-async-test-client) and [`create_async_client()`](./test-client.md#context-manager-create_async_client) to allow fully asynchronous testing of Lilya apps.
+    - Introduced [AsyncTestClient](./test-client.md#the-async-test-client) and [create_async_client()](./test-client.md#context-manager-create_async_client) to allow fully asynchronous testing of Lilya apps.
     - Both support full middleware stacks, including `OpenTelemetryMiddleware`.
     - Enables concurrent request tests and real async span creation with in-memory exporters.
+- Contrib Shortcuts:
+  - New [abort](./contrib/shortcuts/abort.md) function to raise HTTP exceptions.
 
 ### Fixed
 
