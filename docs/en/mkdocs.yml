@@ -140,6 +140,7 @@ nav:
   - Proxy:
     - contrib/proxy/relay.md
   - contrib/mail.md
+  - opentelemetry.md
 - contributing.md
 - sponsorship.md
 - release-notes.md

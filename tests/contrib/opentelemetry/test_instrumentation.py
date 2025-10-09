@@ -121,7 +121,6 @@ def test_setup_tracing_selects_otlp_http(monkeypatch):
     processors = getattr(provider._active_span_processor, "_span_processors", [])
     exporters = [extract_exporter(p) for p in processors]
 
-    # ✅ Fallback: if worker not yet started, ensure at least the processor exists
     found = any(isinstance(p, BatchSpanProcessor) for p in processors) and any(
         isinstance(e, (DummyExporter, type(None))) for e in exporters
     )
