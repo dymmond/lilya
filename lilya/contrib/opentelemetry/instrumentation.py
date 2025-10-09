@@ -62,6 +62,7 @@ def setup_tracing(config: OpenTelemetryConfig | None = None) -> None:
         exporter = ConsoleSpanExporter()
     else:
         endpoint = cfg.otlp_endpoint or "http://localhost:4317"
+
         if endpoint.endswith(":4317"):
             exporter = OTLPgRPCExporter(endpoint=endpoint, insecure=cfg.otlp_insecure)  # type: ignore
         else:

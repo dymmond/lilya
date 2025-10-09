@@ -6,6 +6,7 @@ from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
 from lilya.contrib.opentelemetry import OpenTelemetryMiddleware
+from lilya.contrib.opentelemetry.instrumentation import get_tracer_provider, setup_tracing
 from lilya.middleware import DefineMiddleware
 from lilya.responses import PlainText, Response
 from lilya.routing import Path
@@ -241,3 +242,11 @@ async def test_span_includes_server_port(otel_setup):
 
     assert "server.address" in span.attributes
     assert span.attributes["server.address"] == "testserver"
+
+
+def test_setup_tracing_creates_provider(monkeypatch):
+    setup_tracing()
+    provider = get_tracer_provider()
+
+    assert provider is not None
+    assert "service.name" in provider.resource.attributes

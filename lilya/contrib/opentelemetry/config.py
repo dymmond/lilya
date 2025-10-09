@@ -7,14 +7,23 @@ from typing import Literal
 @dataclass
 class OpenTelemetryConfig:
     """
-    Configuration for OpenTelemetry setup.
+    Configuration options for OpenTelemetry setup in Lilya.
 
-    Only used by :func:`setup_tracing`. If you don't call that helper,
-    you can configure OpenTelemetry yourself and still use the middleware.
+    Used exclusively by :func:`setup_tracing` in
+    ``lilya.contrib.opentelemetry.instrumentation``.
     """
 
-    service_name: str = "lilya-app"
+    service_name: str = "lilya-service"
+    """Logical service name reported to telemetry backends."""
+
     exporter: Literal["otlp", "console"] = "otlp"
-    otlp_endpoint: str | None = None  # e.g. http://localhost:4317 or :4318
+    """Which exporter to use: 'otlp' for remote OTLP or 'console' for stdout."""
+
+    otlp_endpoint: str | None = "http://localhost:4317"
+    """Target OTLP endpoint (e.g., 'http://localhost:4317' or 'http://collector:4318')."""
+
     otlp_insecure: bool = True
+    """If True, disables TLS verification for gRPC exporter."""
+
     sampler: Literal["parentbased_always_on", "always_on", "always_off"] = "parentbased_always_on"
+    """Sampling strategy: ParentBased(ALWAYS_ON) by default."""
