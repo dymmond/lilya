@@ -337,11 +337,44 @@ class TestClient(httpx.Client):
 
         return self
 
+    async def __aenter__(self) -> TestClient:
+        """
+        Enter the test client in an asynchronous context.
+
+        Allows:
+            async with create_client(...) as client:
+                response = await client.get("/")
+        """
+        self._tg = anyio.create_task_group()
+        await self._tg.__aenter__()  # manually enter task group
+
+        send1, receive1 = anyio.create_memory_object_stream(math.inf)
+        send2, receive2 = anyio.create_memory_object_stream(math.inf)
+        self.stream_send = StapledObjectStream(send1, receive1)
+        self.stream_receive = StapledObjectStream(send2, receive2)
+
+        # Run lifespan task within this loop
+        self.task = await self._tg.start(self._lifespan_runner)
+        await self.wait_startup()
+        return self
+
     def __exit__(self, *args: Any) -> None:
         """
         Exits the context manager.
         """
         self.exit_stack.close()
+
+    async def __aexit__(self, *args: Any) -> None:
+        """
+        Exit the asynchronous context, performing a graceful shutdown.
+        """
+        await self.wait_shutdown()
+        await self._tg.__aexit__(None, None, None)
+
+    async def _lifespan_runner(self, *, task_status: anyio.abc.TaskStatus = anyio.TASK_STATUS_IGNORED) -> None:
+        """Helper task running the ASGI lifespan inside async context."""
+        task_status.started()
+        await self.lifespan()
 
     async def lifespan(self) -> None:
         """
