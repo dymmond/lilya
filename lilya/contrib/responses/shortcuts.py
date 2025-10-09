@@ -1,7 +1,7 @@
 from typing import Any
 
 from lilya.exceptions import HTTPException
-from lilya.responses import JSONResponse, Response
+from lilya.responses import JSONResponse, Response, StreamingResponse
 
 
 def abort(
@@ -10,12 +10,45 @@ def abort(
     headers: dict[str, Any] | None = None,
 ) -> None:
     """
-    Immediately raise an HTTPException that stops request processing.
+    Immediately raise an :class:`~lilya.exceptions.HTTPException` to stop request processing.
 
-    Examples:
-        abort(404)
-        abort(401, "Unauthorized")
-        abort(400, {"error": "Bad Request"})
+    The :func:`abort` shortcut provides a clean, expressive way to interrupt the current
+    request flow and return an HTTP error response without manually raising exceptions
+    or returning response objects.
+
+    Depending on the ``detail`` parameter, Lilya will automatically determine the appropriate
+    response type:
+
+    * If ``detail`` is a dictionary or list, a :class:`~lilya.responses.JSONResponse` is created.
+    * If ``detail`` is a string, a :class:`~lilya.responses.Response` with plain text is created.
+    * If ``detail`` is ``None``, the default HTTP status phrase (e.g., *"Not Found"*) is used.
+
+    Example:
+        ```python
+        from lilya.contrib.responses.shortcuts import abort
+
+        async def not_found(request):
+            abort(404)
+
+        async def unauthorized(request):
+            abort(401, "Unauthorized access")
+
+        async def bad_request(request):
+            abort(400, {"error": "Invalid payload", "code": 400})
+        ```
+
+    Args:
+        status_code: The HTTP status code to send (e.g., 400, 404, 500).
+        detail: Optional content or message for the response. Can be a string, list, dict, or ``None``.
+        headers: Optional dictionary of HTTP headers to include in the response.
+
+    Raises:
+        :class:`~lilya.exceptions.HTTPException`: Raised internally to trigger an immediate HTTP error response.
+
+    Behavior:
+        * Execution after :func:`abort` will never continue.
+        * The raised exception is automatically caught by the
+          :class:`~lilya.middleware.exceptions.ExceptionMiddleware` and transformed into a response.
     """
     response: Response
 
@@ -28,3 +61,133 @@ def abort(
 
     response = Response(detail, status_code=status_code, headers=headers)
     raise HTTPException(status_code=status_code, detail=detail, headers=headers, response=response)
+
+
+def send_json(
+    data: dict | list,
+    status_code: int = 200,
+    headers: dict[str, str] | None = None,
+) -> JSONResponse:
+    """
+    Quickly return a :class:`~lilya.responses.JSONResponse`.
+
+    This is a convenience function for endpoints that need to
+    return JSON data without explicitly importing and instantiating
+    :class:`~lilya.responses.JSONResponse`.
+
+    Example:
+        ```python
+        from lilya.contrib.responses.shortcuts import send_json
+
+        async def user_info(request):
+            return send_json({"id": 1, "name": "Alice"})
+        ```
+
+    Args:
+        data: The Python object (dict or list) to serialize into JSON.
+        status_code: The HTTP status code for the response.
+        headers: Optional dictionary of HTTP headers to include.
+
+    Returns:
+        :class:`~lilya.responses.JSONResponse`: A JSON response with
+        the serialized payload.
+    """
+    return JSONResponse(data, status_code=status_code, headers=headers)
+
+
+def json_error(
+    message: str | dict,
+    status_code: int = 400,
+    headers: dict[str, str] | None = None,
+) -> JSONResponse:
+    """
+    Return a structured JSON error response without raising an exception.
+
+    This is a lightweight alternative to :func:`abort` when you want to
+    return an error payload explicitly rather than stopping execution.
+
+    Example:
+        ```python
+        from lilya.contrib.responses.shortcuts import json_error
+
+        async def invalid(request):
+            return json_error("Invalid email format", status_code=422)
+        ```
+
+    Args:
+        message: The error message as a string or a structured dictionary.
+        status_code: The HTTP status code for the response (default: 400).
+        headers: Optional dictionary of additional HTTP headers.
+
+    Returns:
+        :class:`~lilya.responses.JSONResponse`: A JSON response containing
+        the error payload.
+    """
+    payload = {"error": message} if isinstance(message, str) else message
+    return JSONResponse(payload, status_code=status_code, headers=headers)
+
+
+def stream(
+    content: Any,
+    mimetype: str = "text/plain",
+    headers: dict[str, str] | None = None,
+) -> StreamingResponse:
+    """
+    Send a streaming response.
+
+    This helper automatically wraps the given content in a
+    :class:`~lilya.responses.StreamingResponse`, supporting both
+    synchronous and asynchronous iterators or generators.
+
+    Example:
+        ```python
+        from lilya.contrib.responses.shortcuts import stream
+        import asyncio
+
+        async def numbers(request):
+            async def generator():
+                for i in range(5):
+                    yield f"{i}\\n"
+                    await asyncio.sleep(1)
+
+            return stream(generator(), mimetype="text/plain")
+        ```
+
+    Args:
+        content: The iterable, async iterable, or generator yielding bytes or strings.
+        mimetype: The MIME type for the response body (default: ``"text/plain"``).
+        headers: Optional dictionary of additional HTTP headers.
+
+    Returns:
+        :class:`~lilya.responses.StreamingResponse`: The streaming HTTP response.
+    """
+    return StreamingResponse(content, media_type=mimetype, headers=headers)
+
+
+def empty(
+    status_code: int = 204,
+    headers: dict[str, str] | None = None,
+) -> Response:
+    """
+    Return an empty :class:`~lilya.responses.Response`.
+
+    Useful for endpoints that need to indicate success without returning a body,
+    such as DELETE or PUT requests.
+
+    Example:
+        ```python
+        from lilya.contrib.responses.shortcuts import empty
+
+        async def delete_user(request):
+            # perform deletion...
+            return empty()  # returns 204 No Content
+        ```
+
+    Args:
+        status_code: The HTTP status code to return (default: ``204``).
+        headers: Optional dictionary of HTTP headers.
+
+    Returns:
+        :class:`~lilya.responses.Response`: An empty HTTP response.
+    """
+    return Response(status_code=status_code, headers=headers)

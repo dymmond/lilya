@@ -141,6 +141,7 @@ nav:
     - contrib/proxy/relay.md
   - Shortcuts:
     - contrib/shortcuts/abort.md
+    - contrib/shortcuts/responses.md
   - contrib/mail.md
   - contrib/opentelemetry.md
 - contributing.md

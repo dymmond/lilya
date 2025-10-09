@@ -33,6 +33,11 @@ hide:
     - Enables concurrent request tests and real async span creation with in-memory exporters.
 - Contrib Shortcuts:
   - New [abort](./contrib/shortcuts/abort.md) function to raise HTTP exceptions.
+  - New [responses shorcuts](./contrib/shortcuts/responses.md) including:
+    - `send_json()`: send JSON responses with proper headers.
+    - `json_error()`: send JSON error responses with status codes.
+    - `stream()`: stream response content from async generators.
+    - `empty()`: return empty 204 No Content responses.
 
 ### Fixed
 
