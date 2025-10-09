@@ -775,13 +775,15 @@ def make_response(
     headers: Mapping[str, str] | None = None,
     background: Task | None = None,
     encoders: Sequence[Encoder | type[Encoder]] | None = None,
-    # passing mutables as default argument is not a good style but here is no other way
-    json_encode_extra_kwargs: dict | None = {},  # noqa: B006
+    json_encode_extra_kwargs: dict | None = None,  # noqa: B006
 ) -> Response:
     """
     Build JSON responses from a given content and
     providing extra parameters.
     """
+    if json_encode_extra_kwargs is None:
+        json_encode_extra_kwargs = {}
+
     with response_class.with_transform_kwargs(json_encode_extra_kwargs):
         return response_class(
             content=content,
@@ -791,32 +793,3 @@ def make_response(
             background=background,
             encoders=encoders,
         )
-
-
-def redirect(
-    url: str | URL,
-    status_code: int = status.HTTP_307_TEMPORARY_REDIRECT,
-    headers: Mapping[str, str] | None = None,
-    background: Task | None = None,
-    encoders: Sequence[Encoder | type[Encoder]] | None = None,
-) -> RedirectResponse:
-    """
-    Redirect to a different URL.
-
-    Args:
-        url (Union[str, URL]): The URL to redirect to.
-        status_code (int, optional): The status code of the redirect response (default is 307).
-        headers (Union[Mapping[str, str], None], optional): Additional headers to include (default is None).
-        background (Union[Task, None], optional): A background task to run (default is None).
-        encoders (Union[Sequence[Encoder | type[Encoder]], None], optional): A sequence of encoders to use (default is None).
-
-    Returns:
-        RedirectResponse: A response object that redirects to the given URL.
-    """
-    return RedirectResponse(
-        url=url,
-        status_code=status_code,
-        headers=headers,
-        background=background,
-        encoders=encoders,
-    )

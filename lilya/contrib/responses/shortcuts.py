@@ -1,7 +1,17 @@
+from collections.abc import (
+    Mapping,
+    Sequence,
+)
 from typing import Any
 
+from lilya import status
+from lilya.background import Task
+from lilya.datastructures import URL
+from lilya.encoders import EncoderProtocol, MoldingProtocol
 from lilya.exceptions import HTTPException
-from lilya.responses import JSONResponse, Response, StreamingResponse
+from lilya.responses import JSONResponse, RedirectResponse, Response, StreamingResponse
+
+Encoder = EncoderProtocol | MoldingProtocol
 
 
 def abort(
@@ -191,3 +201,32 @@ def empty(
         :class:`~lilya.responses.Response`: An empty HTTP response.
     """
     return Response(status_code=status_code, headers=headers)
+
+
+def redirect(
+    url: str | URL,
+    status_code: int = status.HTTP_307_TEMPORARY_REDIRECT,
+    headers: Mapping[str, str] | None = None,
+    background: Task | None = None,
+    encoders: Sequence[Encoder | type[Encoder]] | None = None,
+) -> RedirectResponse:
+    """
+    Redirect to a different URL.
+
+    Args:
+        url (Union[str, URL]): The URL to redirect to.
+        status_code (int, optional): The status code of the redirect response (default is 307).
+        headers (Union[Mapping[str, str], None], optional): Additional headers to include (default is None).
+        background (Union[Task, None], optional): A background task to run (default is None).
+        encoders (Union[Sequence[Encoder | type[Encoder]], None], optional): A sequence of encoders to use (default is None).
+
+    Returns:
+        RedirectResponse: A response object that redirects to the given URL.
+    """
+    return RedirectResponse(
+        url=url,
+        status_code=status_code,
+        headers=headers,
+        background=background,
+        encoders=encoders,
+    )

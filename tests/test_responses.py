@@ -12,6 +12,7 @@ from lilya import status
 from lilya.apps import Lilya
 from lilya.background import Task
 from lilya.compat import md5_hexdigest
+from lilya.contrib.responses.shortcuts import redirect
 from lilya.datastructures import Header
 from lilya.encoders import Encoder
 from lilya.middleware import DefineMiddleware
@@ -26,7 +27,6 @@ from lilya.responses import (
     RedirectResponse,
     Response,
     StreamingResponse,
-    redirect,
 )
 from lilya.routing import Path
 from lilya.testclient import TestClient

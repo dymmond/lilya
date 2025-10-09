@@ -39,9 +39,14 @@ hide:
     - `stream()`: stream response content from async generators.
     - `empty()`: return empty 204 No Content responses.
 
+### Changed
+
+- `redirect` now is in `lilya.contrib.responses.shortcuts`.
+
 ### Fixed
 
 - `send_file` now correctly sets `Content-Disposition` headers for file downloads.
+- Late binding in the `make_response`.
 
 ## 0.21.0
 
