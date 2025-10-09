@@ -54,8 +54,11 @@ class OpenTelemetryMiddleware(MiddlewareProtocol):
         with tracer.start_as_current_span(name, kind=SpanKind.SERVER, context=parent) as span:
             span.set_attribute("http.request.method", request.method)
             span.set_attribute("server.address", request.url.hostname or "")
+
             if request.url.port:
-                span.set_attribute("server.port", int(request.url.port))
+                port = request.url.port or (443 if request.url.scheme == "https" else 80)
+                span.set_attribute("server.port", int(port))
+
             span.set_attribute("url.path", request.url.path)
             if request.url.query:
                 span.set_attribute("url.query", request.url.query)

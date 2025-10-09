@@ -176,6 +176,7 @@ class TestClientTransport(httpx.BaseTransport):
             subprotocols: Sequence[str] = []
         else:
             subprotocols = [value.strip() for value in subprotocol.split(",")]
+
         scope = {
             "type": "websocket",
             "path": unquote(path),
@@ -184,7 +185,7 @@ class TestClientTransport(httpx.BaseTransport):
             "scheme": scheme,
             "query_string": query.encode(),
             "headers": headers,
-            "client": ("testclient", 12345),
+            "client": None,
             "server": [host, port],
             "subprotocols": subprotocols,
             "state": self.app_state.copy(),
@@ -231,7 +232,7 @@ class TestClientTransport(httpx.BaseTransport):
             "scheme": scheme,
             "query_string": query.encode(),
             "headers": headers,
-            "client": ("testclient", 12345),
+            "client": None,
             "server": [host, port],
             "extensions": {"http.response.debug": {}},
             "state": self.app_state.copy(),
@@ -532,7 +533,7 @@ class AsyncTestClientTransport(httpx.AsyncBaseTransport):
             "scheme": scheme,
             "query_string": query.encode(),
             "headers": headers,
-            "client": ("testclient", 12345),
+            "client": None,
             "server": [host, port],
             "subprotocols": subprotocols,
             "state": self.app_state.copy(),
@@ -562,7 +563,7 @@ class AsyncTestClientTransport(httpx.AsyncBaseTransport):
             "scheme": scheme,
             "query_string": query.encode(),
             "headers": headers,
-            "client": ("testclient", 12345),
+            "client": None,
             "server": [host, port],
             "extensions": {"http.response.debug": {}},
             "state": self.app_state.copy(),

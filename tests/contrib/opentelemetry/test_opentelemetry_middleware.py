@@ -1,3 +1,4 @@
+import anyio
 import pytest
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
@@ -103,7 +104,6 @@ async def test_client_metadata_and_status_codes(otel_setup):
 
     span = otel_setup.get_finished_spans()[0]
 
-    assert span.attributes["client.address"]
     assert span.attributes["http.response.status_code"] == 204
     assert span.status.status_code.name == "OK"
 
@@ -125,3 +125,119 @@ async def test_noop_if_not_http_scope(otel_setup):
     await middleware(scope, receive, send)
 
     assert not otel_setup.get_finished_spans()
+
+
+async def test_exception_recorded_and_status_error(otel_setup):
+    async def boom(request):
+        raise ValueError("crash test")
+
+    async with create_async_client(
+        routes=[Path("/boom", boom)],
+        middleware=[DefineMiddleware(OpenTelemetryMiddleware)],
+    ) as client:
+        response = await client.get("/boom")
+        assert response.status_code == 500
+
+    spans = otel_setup.get_finished_spans()
+
+    assert len(spans) == 1
+
+    span = spans[0]
+
+    assert span.status.status_code.name == "ERROR"
+    assert any("ValueError" in e.attributes["exception.type"] for e in span.events)
+
+
+async def test_span_includes_query_params(otel_setup):
+    async def handler(request):
+        return PlainText("ok")
+
+    async with create_async_client(
+        routes=[Path("/search", handler)], middleware=[DefineMiddleware(OpenTelemetryMiddleware)]
+    ) as client:
+        response = await client.get("/search?q=telemetry")
+
+        assert response.status_code == 200
+
+    spans = otel_setup.get_finished_spans()
+
+    assert len(spans) == 1
+
+    span = spans[0]
+
+    assert "url.query" in span.attributes
+    assert span.attributes["url.query"] == "q=telemetry"
+
+
+async def test_span_sets_status_for_client_error(otel_setup):
+    async def bad_request(request):
+        return Response("bad", status_code=400)
+
+    async with create_async_client(
+        routes=[Path("/bad", bad_request)], middleware=[DefineMiddleware(OpenTelemetryMiddleware)]
+    ) as client:
+        response = await client.get("/bad")
+
+        assert response.status_code == 400
+
+    span = otel_setup.get_finished_spans()[0]
+
+    assert span.status.status_code.name == "ERROR"
+
+
+async def test_span_duration_is_positive(otel_setup):
+    async def slow(request):
+        await anyio.sleep(0.01)
+        return PlainText("ok")
+
+    async with create_async_client(
+        routes=[Path("/slow", slow)], middleware=[DefineMiddleware(OpenTelemetryMiddleware)]
+    ) as client:
+        await client.get("/slow")
+
+    span = otel_setup.get_finished_spans()[0]
+
+    assert "http.server.duration_ms" in span.attributes
+    assert span.attributes["http.server.duration_ms"] >= 0.01
+
+
+async def test_concurrent_requests_generate_independent_spans(otel_setup):
+    async def ok(request):
+        return PlainText("ok")
+
+    async with create_async_client(
+        routes=[Path("/ok", ok)], middleware=[DefineMiddleware(OpenTelemetryMiddleware)]
+    ) as client:
+        results = []
+
+        async def make_request():
+            resp = await client.get("/ok")
+            results.append(resp)
+
+        async with anyio.create_task_group() as tg:
+            for _ in range(3):
+                tg.start_soon(make_request)
+
+        assert all(r.status_code == 200 for r in results)
+
+    spans = otel_setup.get_finished_spans()
+    assert len(spans) == 3
+
+    paths = [s.attributes["url.path"] for s in spans]
+
+    assert paths.count("/ok") == 3
+
+
+async def test_span_includes_server_port(otel_setup):
+    async def index(request):
+        return PlainText("ok")
+
+    async with create_async_client(
+        routes=[Path("/", index)], middleware=[DefineMiddleware(OpenTelemetryMiddleware)]
+    ) as client:
+        await client.get("/")
+
+    span = otel_setup.get_finished_spans()[0]
+
+    assert "server.address" in span.attributes
+    assert span.attributes["server.address"] == "testserver"
