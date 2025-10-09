@@ -12,6 +12,7 @@ class OpenTelemetryConfig:
     Only used by :func:`setup_tracing`. If you don't call that helper,
     you can configure OpenTelemetry yourself and still use the middleware.
     """
+
     service_name: str = "lilya-app"
     exporter: Literal["otlp", "console"] = "otlp"
     otlp_endpoint: str | None = None  # e.g. http://localhost:4317 or :4318

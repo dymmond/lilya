@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from .middleware import OpenTelemetryMiddleware
-from .instrumentation import setup_tracing, get_tracer_provider
 from .config import OpenTelemetryConfig
+from .instrumentation import get_tracer_provider, setup_tracing
+from .middleware import OpenTelemetryMiddleware
 
 __all__ = [
     "OpenTelemetryMiddleware",

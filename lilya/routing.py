@@ -1322,8 +1322,17 @@ class BaseRouter:
             route: The matched route.
             path_handler (PathHandler): The PathHandler.
         """
-        new_scope = dict(path_handler.scope)
-        new_scope.update(path_handler.child_scope)
+        base_scope = path_handler.scope
+        child = path_handler.child_scope or {}
+
+        if "path_params" in child:
+            base_scope.setdefault("path_params", {}).update(child["path_params"])
+        # expose the matched route + template
+        base_scope["route"] = route
+        base_scope["route_path_template"] = getattr(route, "path", None)
+
+        new_scope = dict(base_scope)
+        new_scope.update(child)
         await route.handle_dispatch(new_scope, path_handler.receive, path_handler.send)  # type: ignore
 
     async def handle_partial(self, route: BasePath, path_handler: PathHandler) -> None:

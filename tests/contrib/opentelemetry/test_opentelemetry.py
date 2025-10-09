@@ -1,19 +1,18 @@
 import pytest
-
-from lilya.apps import Lilya
-from lilya.middleware import DefineMiddleware
-from lilya.responses import PlainText
-from lilya.contrib.opentelemetry import OpenTelemetryMiddleware
-
 from opentelemetry import trace
+from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
-from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
-from lilya.testclient import create_client
+
+from lilya.contrib.opentelemetry import OpenTelemetryMiddleware
+from lilya.middleware import DefineMiddleware
+from lilya.responses import PlainText
 from lilya.routing import Path
+from lilya.testclient import create_client
 
 pytestmark = pytest.mark.asyncio
+
 
 async def test_otlp_middleware_creates_span():
     if trace is None:
@@ -30,7 +29,7 @@ async def test_otlp_middleware_creates_span():
     with create_client(
         routes=[Path("/hello", hello)],
         middleware=[DefineMiddleware(OpenTelemetryMiddleware)],
-        debug=True
+        debug=True,
     ) as client:
         response = client.get("/hello?x=1")
         assert response.status_code in (200, 404)

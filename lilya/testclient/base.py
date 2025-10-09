@@ -345,15 +345,17 @@ class TestClient(httpx.Client):
             async with create_client(...) as client:
                 response = await client.get("/")
         """
+        # Use a native AnyIO TaskGroup instead of blocking portals
         self._tg = anyio.create_task_group()
-        await self._tg.__aenter__()  # manually enter task group
+        await self._tg.__aenter__()  # manually enter group
 
+        # setup streams (same as sync path)
         send1, receive1 = anyio.create_memory_object_stream(math.inf)
         send2, receive2 = anyio.create_memory_object_stream(math.inf)
         self.stream_send = StapledObjectStream(send1, receive1)
         self.stream_receive = StapledObjectStream(send2, receive2)
 
-        # Run lifespan task within this loop
+        # Run the lifespan coroutine as a background task
         self.task = await self._tg.start(self._lifespan_runner)
         await self.wait_startup()
         return self
@@ -371,7 +373,9 @@ class TestClient(httpx.Client):
         await self.wait_shutdown()
         await self._tg.__aexit__(None, None, None)
 
-    async def _lifespan_runner(self, *, task_status: anyio.abc.TaskStatus = anyio.TASK_STATUS_IGNORED) -> None:
+    async def _lifespan_runner(
+        self, *, task_status: anyio.abc.TaskStatus = anyio.TASK_STATUS_IGNORED
+    ) -> None:
         """Helper task running the ASGI lifespan inside async context."""
         task_status.started()
         await self.lifespan()
@@ -384,7 +388,8 @@ class TestClient(httpx.Client):
         try:
             await self.app(scope, self.stream_receive.receive, self.stream_send.send)
         finally:
-            await self.stream_send.send(None)
+            with contextlib.suppress(anyio.ClosedResourceError):
+                await self.stream_send.send(None)
 
     async def wait_startup(self) -> None:
         """
@@ -417,7 +422,9 @@ class TestClient(httpx.Client):
                 self.task.result()
             return message
 
-        async with self.stream_send:
+        async_mode = hasattr(self, "_tg")
+
+        if async_mode:
             await self.stream_receive.send({"type": "lifespan.shutdown"})
             message = await receive()
             assert message["type"] in (
@@ -426,3 +433,13 @@ class TestClient(httpx.Client):
             )
             if message["type"] == "lifespan.shutdown.failed":
                 await receive()
+        else:
+            async with self.stream_send:
+                await self.stream_receive.send({"type": "lifespan.shutdown"})
+                message = await receive()
+                assert message["type"] in (
+                    "lifespan.shutdown.complete",
+                    "lifespan.shutdown.failed",
+                )
+                if message["type"] == "lifespan.shutdown.failed":
+                    await receive()
