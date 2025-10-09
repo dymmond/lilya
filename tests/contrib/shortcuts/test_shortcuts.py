@@ -4,7 +4,15 @@ import json
 import pytest
 
 from lilya.apps import Lilya
-from lilya.contrib.responses.shortcuts import empty, json_error, send_json, stream
+from lilya.contrib.responses.shortcuts import (
+    empty,
+    forbidden,
+    json_error,
+    not_found,
+    send_json,
+    stream,
+    unauthorized,
+)
 from lilya.responses import JSONResponse, Response, StreamingResponse
 from lilya.routing import Path
 from lilya.testclient import TestClient
@@ -90,6 +98,7 @@ def test_stream_with_async_generator(backend):
     client = TestClient(app, backend=backend)
 
     response = client.get("/astream")
+
     assert response.status_code == 200
     assert "Chunk 0" in response.text
     assert "Chunk 1" in response.text
@@ -114,6 +123,7 @@ def test_empty_returns_204_by_default():
 
 def test_empty_with_custom_status_and_headers():
     response = empty(status_code=304, headers={"X-NoContent": "yes"})
+
     assert response.status_code == 304
     assert response.headers["x-nocontent"] == "yes"
 
@@ -127,5 +137,98 @@ def test_empty_in_route_returns_no_body(backend):
     client = TestClient(app, backend=backend)
 
     response = client.get("/empty")
+
     assert response.status_code == 204
     assert response.text == ""
+
+
+def test_unauthorized_returns_json_response():
+    response = unauthorized("Login required")
+
+    assert isinstance(response, JSONResponse)
+    assert response.status_code == 401
+
+    data = json.loads(response.body.decode())
+
+    assert data == {"error": "Login required"}
+    assert response.headers["content-type"].startswith("application/json")
+
+
+def test_forbidden_returns_json_response():
+    response = forbidden("Access denied")
+
+    assert isinstance(response, JSONResponse)
+    assert response.status_code == 403
+
+    data = json.loads(response.body.decode())
+
+    assert data == {"error": "Access denied"}
+    assert response.headers["content-type"].startswith("application/json")
+
+
+def test_not_found_returns_json_response():
+    response = not_found("Item not found")
+
+    assert isinstance(response, JSONResponse)
+    assert response.status_code == 404
+
+    data = json.loads(response.body.decode())
+
+    assert data == {"error": "Item not found"}
+    assert response.headers["content-type"].startswith("application/json")
+
+
+@pytest.mark.parametrize("backend", ["asyncio", "trio"])
+def test_unauthorized_in_route(backend):
+    async def endpoint(request):
+        return unauthorized()
+
+    app = Lilya(routes=[Path("/unauthorized", endpoint)])
+    client = TestClient(app, backend=backend)
+
+    response = client.get("/unauthorized")
+
+    assert response.status_code == 401
+    assert "Unauthorized" in response.text
+    assert response.headers["content-type"].startswith("application/json")
+
+
+@pytest.mark.parametrize("backend", ["asyncio", "trio"])
+def test_forbidden_in_route(backend):
+    async def endpoint(request):
+        return forbidden("Stop right there")
+
+    app = Lilya(routes=[Path("/forbidden", endpoint)])
+    client = TestClient(app, backend=backend)
+
+    response = client.get("/forbidden")
+
+    assert response.status_code == 403
+    assert "Stop right there" in response.text
+    assert response.headers["content-type"].startswith("application/json")
+
+
+@pytest.mark.parametrize("backend", ["asyncio", "trio"])
+def test_not_found_in_route(backend):
+    async def endpoint(request):
+        return not_found("User not found")
+
+    app = Lilya(routes=[Path("/notfound", endpoint)])
+    client = TestClient(app, backend=backend)
+
+    response = client.get("/notfound")
+
+    assert response.status_code == 404
+    assert "User not found" in response.text
+    assert response.headers["content-type"].startswith("application/json")
+
+
+def test_shortcuts_accept_custom_headers():
+    response = unauthorized("No token", headers={"X-Failed": "true"})
+    assert response.headers["x-failed"] == "true"
+
+    response = forbidden("Forbidden", headers={"X-Reason": "policy"})
+    assert response.headers["x-reason"] == "policy"
+
+    response = not_found("Lost", headers={"X-Missing": "object"})
+    assert response.headers["x-missing"] == "object"

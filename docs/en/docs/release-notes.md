@@ -39,6 +39,9 @@ hide:
     - `stream()`: stream response content from async generators.
     - `empty()`: return empty 204 No Content responses.
     - `redirect()`: send HTTP redirects with proper status codes and headers.
+    - `forbidden()`: send 403 Forbidden responses.
+    - `not_found()`: send 404 Not Found responses.
+    - `unauthorized()`: send 401 Unauthorized responses.
 
 ### Changed
 

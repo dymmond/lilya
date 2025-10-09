@@ -230,3 +230,96 @@ def redirect(
         background=background,
         encoders=encoders,
     )
+
+
+def unauthorized(
+    message: str = "Unauthorized",
+    headers: dict[str, str] | None = None,
+) -> JSONResponse:
+    """
+    Return a 401 **Unauthorized** JSON response.
+
+    This helper is used when authentication is required but has failed
+    or has not yet been provided. It returns a JSON payload with an
+    `"error"` key and a 401 status code.
+
+    Example:
+        ```python
+        from lilya.contrib.responses.shortcuts import unauthorized
+
+        async def protected(request):
+            if not request.user.is_authenticated:
+                return unauthorized("Authentication required")
+        ```
+
+    Args:
+        message: The error message to include in the response.
+        headers: Optional dictionary of HTTP headers.
+
+    Returns:
+        :class:`~lilya.responses.JSONResponse`: A JSON response with
+        status code 401 and the error message.
+    """
+    return JSONResponse({"error": message}, status_code=401, headers=headers)
+
+
+def forbidden(
+    message: str = "Forbidden",
+    headers: dict[str, str] | None = None,
+) -> JSONResponse:
+    """
+    Return a 403 **Forbidden** JSON response.
+
+    This shortcut is used when the client is authenticated but does not
+    have permission to access the requested resource.
+
+    Example:
+        ```python
+        from lilya.contrib.responses.shortcuts import forbidden
+
+        async def admin_only(request):
+            if not request.user.is_admin:
+                return forbidden("You are not allowed to access this section")
+        ```
+
+    Args:
+        message: The error message to include in the response.
+        headers: Optional dictionary of HTTP headers.
+
+    Returns:
+        :class:`~lilya.responses.JSONResponse`: A JSON response with
+        status code 403 and the error message.
+    """
+    return JSONResponse({"error": message}, status_code=403, headers=headers)
+
+
+def not_found(
+    message: str = "Not Found",
+    headers: dict[str, str] | None = None,
+) -> JSONResponse:
+    """
+    Return a 404 **Not Found** JSON response.
+
+    This shortcut is used when the requested resource cannot be located
+    on the server. It provides a consistent error payload structure for
+    missing entities or routes.
+
+    Example:
+        ```python
+        from lilya.contrib.responses.shortcuts import not_found
+
+        async def get_user(request):
+            user = await db.users.get(id=42)
+            if not user:
+                return not_found("User not found")
+        ```
+
+    Args:
+        message: The error message to include in the response.
+        headers: Optional dictionary of HTTP headers.
+
+    Returns:
+        :class:`~lilya.responses.JSONResponse`: A JSON response with
+        status code 404 and the error message.
+    """
+    return JSONResponse({"error": message}, status_code=404, headers=headers)

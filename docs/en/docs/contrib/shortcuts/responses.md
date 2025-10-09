@@ -218,6 +218,122 @@ async def login_success():
 
 `RedirectResponse`: a response object that redirects to the given URL.
 
+### `unauthorized()`
+
+```python
+from lilya.contrib.responses.shortcuts import unauthorized
+```
+
+#### Description
+
+Returns a `401 Unauthorized` JSON response, typically used when authentication
+credentials are missing or invalid.
+
+#### Example
+
+```python
+from lilya.contrib.responses.shortcuts import unauthorized
+
+async def protected_route(request):
+    token = request.headers.get("Authorization")
+    if not token:
+        return unauthorized("Authentication token required")
+```
+
+#### Parameters
+
+| Name      | Type            | Description                                           |                        |
+| --------- | --------------- | ----------------------------------------------------- | ---------------------- |
+| `message` | `str`           | Error message to include (default: `"Unauthorized"`). |                        |
+| `headers` | `dict[str, str] | None`                                                 | Optional HTTP headers. |
+
+#### Behavior
+
+* Returns a JSON payload in the form `{"error": message}`.
+* Sets HTTP status code to `401`.
+* Does **not** raise an exception — it simply returns a `JSONResponse`.
+
+#### Returns
+
+`JSONResponse`: the 401 response containing the structured error payload.
+
+### `forbidden()`
+
+```python
+from lilya.contrib.responses.shortcuts import forbidden
+```
+
+#### Description
+
+Returns a `403 Forbidden` JSON response, typically used when a user is authenticated
+but not authorized to perform the requested action.
+
+#### Example
+
+```python
+from lilya.contrib.responses.shortcuts import forbidden
+
+async def admin_dashboard(request):
+    if not request.user.is_admin:
+        return forbidden("You do not have permission to access this page.")
+```
+
+#### Parameters
+
+| Name      | Type            | Description                             |                        |
+| --------- | --------------- | --------------------------------------- | ---------------------- |
+| `message` | `str`           | Error message (default: `"Forbidden"`). |                        |
+| `headers` | `dict[str, str] | None`                                   | Optional HTTP headers. |
+
+#### Behavior
+
+* Returns a JSON response like `{"error": message}`.
+* Sets HTTP status code to `403`.
+* Meant for permission-denied scenarios.
+
+#### Returns
+
+`JSONResponse`: the 403 response containing the structured error payload.
+
+### `not_found()`
+
+```python
+from lilya.contrib.responses.shortcuts import not_found
+```
+
+#### Description
+
+Returns a `404 Not Found` JSON response, used when a requested resource
+cannot be located.
+
+#### Example
+
+```python
+from lilya.contrib.responses.shortcuts import not_found
+
+async def get_user():
+    user = await db.users.get(id=42)
+    if not user:
+        return not_found("User not found")
+```
+
+#### Parameters
+
+| Name      | Type            | Description                             |                        |
+| --------- | --------------- | --------------------------------------- | ---------------------- |
+| `message` | `str`           | Error message (default: `"Not Found"`). |                        |
+| `headers` | `dict[str, str] | None`                                   | Optional HTTP headers. |
+
+#### Behavior
+
+* Returns a structured JSON payload like `{"error": message}`.
+* Sets HTTP status code to `404`.
+* Commonly used in RESTful APIs for missing resources.
+
+#### Returns
+
+`JSONResponse`: the 404 response with the given error message.
+
 ### When to Use These Shortcuts
 
 | Use Case                            | Shortcut       |
@@ -227,6 +343,10 @@ async def login_success():
 | Sending live or large output        | `stream()`     |
 | Returning no content (e.g., DELETE) | `empty()`      |
 | Redirecting to another URL          | `redirect()`   |
+| Missing authentication credentials  | `unauthorized()` |
+| Authenticated but lacks permission  | `forbidden()`    |
+| Requested resource not found        | `not_found()`    |
+
 
 ### Comparison with [`abort()`](./abort.md)
 
@@ -238,3 +358,6 @@ async def login_success():
 | `stream()`     | Streams chunks of data incrementally.                      | ❌ No              |
 | `empty()`      | Indicates success with no body.                            | ❌ No              |
 | `redirect()`   | Redirects the client to a different URL.                   | ❌ No              |
+| `unauthorized()` | Returns a `401 Unauthorized` JSON error payload.           | ❌ No              |
+| `forbidden()`    | Returns a `403 Forbidden` JSON error payload.              | ❌ No              |
+| `not_found()`    | Returns a `404 Not Found` JSON error payload.              | ❌ No              |
