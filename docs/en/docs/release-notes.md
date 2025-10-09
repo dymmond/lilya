@@ -32,6 +32,9 @@ hide:
     - Both support full middleware stacks, including `OpenTelemetryMiddleware`.
     - Enables concurrent request tests and real async span creation with in-memory exporters.
 
+### Fixed
+
+- `send_file` now correctly sets `Content-Disposition` headers for file downloads.
 
 ## 0.21.0
 
