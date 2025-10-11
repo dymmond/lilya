@@ -13,6 +13,13 @@ hide:
 - [YAMLResponse](./responses.md#yamlresponse) as a new available response for YAML files directly in the `lilya.responses`.
 - [XMLResponse](./responses.md#xmlresponse) as a new available response for XML files directly in the `lilya.responses`.
 - [MessagePackResponse](./responses.md#messagepackresponse) as a new available response for MessagePack files directly in the `lilya.responses`.
+- [NDJSONResponse](./responses.md#ndjsonresponse) as a new available response for Newline Delimited JSON files directly in the `lilya.responses`.
+- [ImageResponse](./responses.md#imageresponse) as a new available response for images directly in the `lilya.responses`.
+- `TextResponse` as a new available response for plain text files directly in the `lilya.responses`.
+
+### Fixed
+
+- CompactSerializer was not overriding kwargs properly.
 
 ## 0.21.1
 

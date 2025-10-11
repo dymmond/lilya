@@ -417,6 +417,67 @@ making it ideal for **high-performance APIs**, **IoT**, or **internal service co
 * `media_type` — Always `"application/x-msgpack"`.
 * `charset` — Defaults to `"utf-8"`.
 
+## NDJSONResponse
+
+`NDJSONResponse` allows you to return newline-delimited JSON — a lightweight streaming-friendly format often used for logs, events, or real-time updates.
+
+### Example
+
+```python
+{!> ../../../docs_src/responses/ndjson.py !}
+```
+
+This produces a response body like:
+
+```
+{"event": "start"}
+{"event": "progress"}
+{"event": "done"}
+```
+
+Each JSON object is written on a separate line, making it easy for clients to parse incrementally.
+
+### Media Type
+
+```
+application/x-ndjson
+```
+
+## ImageResponse
+
+`ImageResponse` is a convenient way to send raw image bytes directly to the client.
+It automatically sets the correct `Content-Type` and `Content-Length` headers based on the image data.
+
+### Example
+
+```python
+{!> ../../../docs_src/responses/image.py !}
+```
+
+This sends the binary content of `logo.png` with appropriate headers:
+
+```
+Content-Type: image/png
+Content-Length: <calculated automatically>
+```
+
+### Supported Media Types
+
+* `image/png`
+* `image/jpeg`
+* `image/webp`
+* `image/gif`
+* `image/svg+xml`
+* or any other valid MIME type string.
+
+You must specify the correct `media_type` when instantiating the response, or it will default to `image/png`.
+
+### Notes
+
+* Lilya does **not** perform image validation or conversion, it simply streams the bytes as-is.
+* The response is fully ASGI-compatible and can be sent using `await response(scope, receive, send)` in any Lilya or ASGI-based app.
+* Ideal for serving dynamically generated images, in-memory thumbnails, or image previews stored in memory.
+
 ## Importing the appropriate class
 
 This is the classic most used way of using the responses. The [available responses](#available-responses)
@@ -427,6 +488,7 @@ contains a list of available responses of Lilya but you are also free to design 
 ```python
 {!> ../../../docs_src/responses/json.py !}
 ```
+
 
 ## Build the Response
 
