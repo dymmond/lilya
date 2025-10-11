@@ -149,7 +149,7 @@ from lilya.contrib.responses.shortcuts import empty
 
 #### Description
 
-Returns an empty `Response` object, typically for actions that don’t need to return content
+Returns an empty `Response` object, typically for actions that don't need to return content
 (such as `DELETE`, `PUT`, or successful `POST` endpoints that redirect elsewhere).
 
 #### Example

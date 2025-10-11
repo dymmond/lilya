@@ -41,7 +41,18 @@ from lilya.datastructures import URL, Header
 from lilya.encoders import ENCODER_TYPES, EncoderProtocol, MoldingProtocol, json_encode
 from lilya.enums import Event, HTTPMethod, MediaType
 from lilya.ranges import ContentRanges, Range, parse_range_value
+from lilya.serializers import serializer
 from lilya.types import Receive, Scope, Send
+
+try:
+    import yaml
+except ImportError:  # pragma: no cover
+    yaml = None
+
+try:
+    import msgpack
+except ImportError:  # pragma: no cover
+    msgpack = None
 
 Content = str | bytes
 Encoder = EncoderProtocol | MoldingProtocol
@@ -321,6 +332,9 @@ class Error(HTMLResponse):
 
 class PlainText(Response):
     media_type = MediaType.TEXT
+
+
+class TestResponse(PlainText): ...
 
 
 class JSONResponse(Response):
@@ -766,6 +780,129 @@ class TemplateResponse(HTMLResponse):
                 }
             )
         await super().__call__(scope, receive, send)
+
+
+class CSVResponse(Response):
+    media_type = "text/csv"
+
+    def make_response(self, content: Iterable[dict[str, Any]] | None) -> bytes:
+        """
+        Converts a list of dictionaries to a CSV formatted byte string.
+
+        Args:
+            content (Iterable[dict[str, Any]] | None): Iterable of dicts representing the CSV rows
+        """
+        if not content:
+            return b""
+
+        rows = list(content)
+        if not rows:
+            return b""
+
+        headers = list(rows[0].keys())
+        lines = [",".join(headers)]
+        for row in rows:
+            lines.append(",".join(str(row.get(h, "")) for h in headers))
+        return "\n".join(lines).encode()
+
+
+class XMLResponse(Response):
+    media_type = "application/xml"
+
+    def make_response(self, content: Any) -> bytes:
+        """
+        Converts a Python object (dict, list, str, bytes) to an XML formatted byte string.
+
+        Args:
+            content (Any): The content to be converted to XML.
+        """
+        if content is None:
+            return b""
+
+        if isinstance(content, (bytes, bytearray)):
+            return bytes(content)
+
+        if isinstance(content, str):
+            return content.encode(self.charset)
+
+        def to_xml(value: Any, tag: str) -> Any:
+            # For dict: recurse into children
+            if isinstance(value, dict):
+                inner = "".join(to_xml(v, k) for k, v in value.items())
+                return f"<{tag}>{inner}</{tag}>"
+
+            # For list: repeat same tag for each element
+            elif isinstance(value, list):
+                return "".join(to_xml(item, tag) for item in value)
+            else:
+                return f"<{tag}>{value}</{tag}>"
+
+        # When top-level is a dict, wrap each key directly
+        if isinstance(content, dict):
+            xml_str = "".join(to_xml(v, k) for k, v in content.items())
+            xml_str = f"<root>{xml_str}</root>"
+
+        # When top-level is a list, wrap each item in <root>
+        elif isinstance(content, list):
+            xml_str = "".join(to_xml(item, "root") for item in content)
+        else:
+            xml_str = f"<root>{content}</root>"
+
+        return xml_str.encode(self.charset)
+
+
+class YAMLResponse(Response):
+    media_type = "application/x-yaml"
+
+    def make_response(self, content: Any) -> bytes:
+        """
+        Converts a Python object to a YAML formatted byte string.
+
+        Args:
+            content (Any): The content to be converted to YAML.
+        """
+        if content is None:
+            return b""
+        return cast(bytes, yaml.safe_dump(content, sort_keys=False).encode(self.charset))
+
+
+class MessagePackResponse(Response):
+    media_type = "application/x-msgpack"
+
+    def make_response(self, content: Any) -> bytes:
+        """
+        Converts a Python object to a MessagePack formatted byte string.
+        """
+        if content is None:
+            return b""
+        return cast(bytes, msgpack.packb(content, use_bin_type=True))
+
+
+class NDJSONResponse(Response):
+    media_type = "application/x-ndjson"
+
+    def make_response(self, content: Iterable[dict[str, Any]] | None) -> bytes:
+        """
+        Converts an iterable of dictionaries to a NDJSON formatted byte string.
+        """
+        if not content:
+            return b""
+
+        lines = [serializer.dumps(item, separators=(",", ": ")) for item in content]
+        return ("\n".join(lines)).encode(self.charset)
+
+
+class ImageResponse(Response):
+    def __init__(
+        self,
+        content: bytes,
+        media_type: str = "image/png",
+        status_code: int = 200,
+        headers: dict[str, str] | None = None,
+    ):
+        super().__init__(
+            content=content, status_code=status_code, headers=headers, media_type=media_type
+        )
 
 
 def make_response(

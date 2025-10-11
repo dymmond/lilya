@@ -74,24 +74,41 @@ class SerializerConfig(ABC):
         raise NotImplementedError("`get_serializer()` must be implemented in subclasses.")
 
 
+def _handle_default_kwargs(**kwargs: Any) -> Any:
+    """
+    Handles default keyword arguments for JSON serialization.
+    This function ensures that certain keyword arguments are set to default values
+    if they are not already provided in the `kwargs` dictionary.
+
+    Args:
+        **kwargs: Arbitrary keyword arguments for JSON serialization.
+    """
+    if not kwargs.get("ensure_ascii", None):
+        kwargs.setdefault("ensure_ascii", False)
+
+    if not kwargs.get("allow_nan", None):
+        kwargs.setdefault("allow_nan", False)
+
+    if not kwargs.get("indent", None):
+        kwargs.setdefault("indent", None)
+
+    if not kwargs.get("separators", None):
+        kwargs.setdefault("separators", (",", ":"))
+    return kwargs
+
+
 class CompactSerializer:
     load = json.load
     loads = json.loads
 
     @staticmethod
     def dump(obj: Any, **kwargs: Any) -> None:
-        kwargs.setdefault("ensure_ascii", False)
-        kwargs.setdefault("allow_nan", False)
-        kwargs.setdefault("indent", None)
-        kwargs.setdefault("separators", (",", ":"))
+        kwargs = _handle_default_kwargs(**kwargs)
         json.dump(obj, **kwargs)
 
     @staticmethod
     def dumps(obj: Any, **kwargs: Any) -> str:
-        kwargs.setdefault("ensure_ascii", False)
-        kwargs.setdefault("allow_nan", False)
-        kwargs.setdefault("indent", None)
-        kwargs.setdefault("separators", (",", ":"))
+        kwargs = _handle_default_kwargs(**kwargs)
         return json.dumps(obj, **kwargs)
 
 

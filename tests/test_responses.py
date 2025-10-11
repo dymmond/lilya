@@ -1,4 +1,5 @@
 import datetime as dt
+import json
 import os
 import time
 import typing
@@ -6,7 +7,9 @@ from asyncio import Queue
 from http.cookies import SimpleCookie
 
 import anyio
+import msgpack
 import pytest
+import yaml
 
 from lilya import status
 from lilya.apps import Lilya
@@ -20,13 +23,19 @@ from lilya.middleware.sessions import SessionMiddleware
 from lilya.ranges import Range
 from lilya.requests import Request
 from lilya.responses import (
+    CSVResponse,
     Error,
     FileResponse,
+    ImageResponse,
     JSONResponse,
+    MessagePackResponse,
+    NDJSONResponse,
     Ok,
     RedirectResponse,
     Response,
     StreamingResponse,
+    XMLResponse,
+    YAMLResponse,
 )
 from lilya.routing import Path
 from lilya.testclient import TestClient
@@ -961,3 +970,256 @@ async def test_streaming_response_stops_if_receiving_http_disconnect():
     with anyio.move_on_after(1) as cancel_scope:
         await response({"type": "http"}, receive_disconnect, send)
     assert not cancel_scope.cancel_called, "Content streaming should stop itself."
+
+
+async def test_empty_content_returns_empty_bytes(test_client_factory):
+    response = CSVResponse()
+    content = []
+    result = response.make_response(content)
+
+    assert result == b""
+    assert response.media_type == "text/csv"
+
+
+async def test_single_row_generates_correct_csv(test_client_factory):
+    response = CSVResponse()
+    content = [{"name": "Lilya", "age": 35}]
+    result = response.make_response(content)
+    expected = b"name,age\nLilya,35"
+
+    assert result == expected
+
+
+async def test_multiple_rows_same_headers(test_client_factory):
+    response = CSVResponse()
+    content = [
+        {"name": "Lilya", "age": 35},
+        {"name": "Maria", "age": 28},
+    ]
+    result = response.make_response(content)
+    expected = b"name,age\nLilya,35\nMaria,28"
+
+    assert result == expected
+
+
+async def test_handles_non_string_values(test_client_factory):
+    response = CSVResponse()
+    content = [{"id": 1, "active": True, "balance": 10.55}]
+    result = response.make_response(content)
+    expected = b"id,active,balance\n1,True,10.55"
+
+    assert result == expected
+
+
+async def test_order_of_columns_follows_first_row(test_client_factory):
+    response = CSVResponse()
+    content = [
+        {"b": 2, "a": 1},
+        {"b": 3, "a": 4},
+    ]
+    result = response.make_response(content)
+    # Columns must follow first dict keys order: b, a
+    expected = b"b,a\n2,1\n3,4"
+
+    assert result == expected
+
+
+async def test_uneven_rows_missing_keys(test_client_factory):
+    response = CSVResponse()
+    content = [
+        {"a": 1, "b": 2},
+        {"a": 3},  # missing 'b'
+    ]
+    result = response.make_response(content)
+    expected = b"a,b\n1,2\n3,"
+
+    assert result == expected
+
+
+async def test_special_characters_in_values(test_client_factory):
+    response = CSVResponse()
+    content = [{"name": "John, Doe", "note": "Hello\nWorld"}]
+    # This version does not escape commas/newlines — so we test literal join behavior
+    result = response.make_response(content)
+    expected = b"name,note\nJohn, Doe,Hello\nWorld"
+
+    assert result == expected
+
+
+async def test_xml_response_with_string_content(test_client_factory):
+    response = XMLResponse("<note>Hello</note>")
+    result = response.make_response("<note>Hello</note>")
+
+    assert result == b"<note>Hello</note>"
+    assert response.media_type == "application/xml"
+
+
+async def test_xml_response_with_dict_content(test_client_factory):
+    response = XMLResponse()
+    content = {"person": {"name": "Lilya", "age": 35}}
+    result = response.make_response(content)
+    expected = b"<root><person><name>Lilya</name><age>35</age></person></root>"
+
+    assert result == expected
+
+
+async def test_xml_response_with_list_content(test_client_factory):
+    response = XMLResponse()
+    content = [{"a": 1}, {"a": 2}]
+    result = response.make_response(content)
+    expected = b"<root><a>1</a></root><root><a>2</a></root>"
+
+    assert result == expected
+
+
+async def test_xml_response_with_bytes_content(test_client_factory):
+    response = XMLResponse()
+    content = b"<root><data>123</data></root>"
+    result = response.make_response(content)
+
+    assert result == content
+
+
+async def test_xml_response_with_none_content_returns_empty_bytes(test_client_factory):
+    response = XMLResponse()
+    result = response.make_response(None)
+
+    assert result == b""
+
+
+async def test_yaml_response_with_dict(test_client_factory):
+    content = {"framework": "Lilya", "version": 1}
+    response = YAMLResponse()
+    result = response.make_response(content)
+    expected = yaml.safe_dump(content, sort_keys=False).encode("utf-8")
+
+    assert result == expected
+    assert response.media_type == "application/x-yaml"
+
+
+async def test_yaml_response_with_list(test_client_factory):
+    content = [1, 2, 3]
+    response = YAMLResponse()
+    result = response.make_response(content)
+    expected = yaml.safe_dump(content, sort_keys=False).encode("utf-8")
+
+    assert result == expected
+
+
+async def test_yaml_response_with_none_returns_empty_bytes(test_client_factory):
+    response = YAMLResponse()
+    result = response.make_response(None)
+
+    assert result == b""
+
+
+async def test_messagepack_response_with_dict(test_client_factory):
+    content = {"ok": True, "value": 123}
+    response = MessagePackResponse()
+    result = response.make_response(content)
+    unpacked = msgpack.unpackb(result, raw=False)
+
+    assert unpacked == content
+    assert response.media_type == "application/x-msgpack"
+
+
+async def test_messagepack_response_with_list(test_client_factory):
+    content = [1, 2, 3]
+    response = MessagePackResponse()
+    result = response.make_response(content)
+    unpacked = msgpack.unpackb(result, raw=False)
+
+    assert unpacked == content
+
+
+async def test_messagepack_response_with_none_returns_empty_bytes(test_client_factory):
+    from lilya.responses import MessagePackResponse
+
+    response = MessagePackResponse()
+    result = response.make_response(None)
+
+    assert result == b""
+
+
+async def test_ndjson_response_with_multiple_dicts(test_client_factory):
+    response = NDJSONResponse()
+    content = [
+        {"event": "start"},
+        {"event": "progress"},
+        {"event": "done"},
+    ]
+    result = response.make_response(content)
+    expected_lines = [json.dumps(item) for item in content]
+    expected = ("\n".join(expected_lines)).encode("utf-8")
+
+    assert result == expected
+    assert response.media_type == "application/x-ndjson"
+
+
+async def test_ndjson_response_with_empty_list(test_client_factory):
+    response = NDJSONResponse()
+    result = response.make_response([])
+
+    assert result == b""
+
+
+async def test_ndjson_response_with_none_returns_empty_bytes(test_client_factory):
+    response = NDJSONResponse()
+    result = response.make_response(None)
+
+    assert result == b""
+
+
+async def test_ndjson_response_with_nested_data(test_client_factory):
+    response = NDJSONResponse()
+    content = [
+        {"user": {"name": "Lilya", "age": 35}},
+        {"active": True},
+    ]
+    result = response.make_response(content)
+    # Ensure each line is valid JSON
+    lines = result.decode().splitlines()
+    decoded = [json.loads(line) for line in lines]
+
+    assert decoded == content
+
+
+async def test_image_response_with_png_bytes(test_client_factory):
+    png_bytes = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR"
+    response = ImageResponse(content=png_bytes, media_type="image/png")
+
+    assert response.media_type == "image/png"
+    assert response.body == png_bytes
+    assert response.status_code == 200
+
+
+async def test_image_response_with_jpeg_bytes(test_client_factory):
+    jpeg_bytes = b"\xff\xd8\xff\xe0\x00\x10JFIF"
+    response = ImageResponse(content=jpeg_bytes, media_type="image/jpeg")
+
+    assert response.media_type == "image/jpeg"
+    assert response.body == jpeg_bytes
+
+
+async def test_image_response_sets_content_length_and_type(test_client_factory):
+    content = b"1234567890"
+    response = ImageResponse(content=content, media_type="image/png")
+
+    # Lilya automatically sets headers
+    assert response.headers["content-type"] == "image/png"
+    assert response.headers["content-length"] == str(len(content))
+
+
+@pytest.mark.asyncio
+async def test_image_response_can_be_sent_via_asgi(test_client_factory):
+    async def app(scope, receive, send):
+        content = b"\x89PNG\r\n\x1a\n"
+        response = ImageResponse(content=content, media_type="image/png")
+        await response(scope, receive, send)
+
+    client = test_client_factory(app)
+    resp = client.get("/")
+
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("image/png")
+    assert resp.content.startswith(b"\x89PNG")
