@@ -147,7 +147,7 @@ from lilya.responses import Error
 {!> ../../../docs_src/responses/error.py !}
 ```
 
-### PlainText
+### PlainText (You can also use TextResponse as alias)
 
 Response that can be used to return `text/plain`.
 
@@ -256,6 +256,166 @@ or different multipart parsing you can modify the `FileResponse`
 
 Note however that some clients doesn't behave well (or just fallback to non-range download) if multi-range requests are answered
 with a single range response and vice versa.
+
+### CSVResponse
+
+Response used to return data in **CSV (Comma-Separated Values)** format.
+
+```python
+from lilya.responses import CSVResponse
+```
+
+**Example**
+
+```python
+{!> ../../../docs_src/responses/csv.py !}
+```
+
+This will return a CSV response with the following content:
+
+```
+name,age
+Lilya,35
+Maria,28
+```
+
+#### How it works
+
+The `CSVResponse` converts an iterable of dictionaries into a properly formatted CSV string.
+Each dictionary represents one row, and its keys define the column headers.
+
+If the iterable is empty or `None`, an empty body (`b""`) is returned.
+
+**Arguments**
+
+* `content` — An iterable of dictionaries (`Iterable[dict[str, Any]]`) representing rows in the CSV.
+* `status_code` — Optional HTTP status code. Defaults to `200`.
+* `headers` — Optional custom headers.
+* `media_type` — Always `"text/csv"` by default.
+* `charset` — Defaults to `"utf-8"`.
+
+#### Example with custom headers
+
+```python
+{!> ../../../docs_src/responses/csv_2.py !}
+```
+
+The above endpoint prompts the browser to download a file named `users.csv`.
+
+### **XMLResponse**
+
+Response used to return data in **XML** format.
+
+```python
+from lilya.responses import XMLResponse
+```
+
+**Example**
+
+```python
+{!> ../../../docs_src/responses/xml.py !}
+```
+
+This will return an XML response with:
+
+```xml
+<root><person><name>Lilya</name><age>35</age></person></root>
+```
+
+#### How it works
+
+The `XMLResponse` converts common Python data structures (`dict`, `list`, `str`, `bytes`) into XML.
+Each dictionary key becomes a tag name, and nested dictionaries or lists are converted recursively.
+
+**Arguments**
+
+* `content` — The data to serialize into XML. Supports `dict`, `list`, `str`, or `bytes`.
+* `status_code` — Optional HTTP status code. Defaults to `200`.
+* `headers` — Optional custom headers.
+* `media_type` — Always `"application/xml"`.
+* `charset` — Defaults to `"utf-8"`.
+
+#### Example with list content
+
+```python
+{!> ../../../docs_src/responses/xml_2.py !}
+```
+
+Returns:
+
+```xml
+<root><id>1</id><name>A</name></root><root><id>2</id><name>B</name></root>
+```
+
+### **YAMLResponse**
+
+Response used to return data in **YAML** format.
+
+```python
+from lilya.responses import YAMLResponse
+```
+
+!!! Warning **Requires `PyYAML`**
+    To use this response, install it first `pip install pyyaml`
+
+**Example**
+
+```python
+{!> ../../../docs_src/responses/yaml.py !}
+```
+
+Response body:
+
+```yaml
+framework: Lilya
+version: 1.0
+```
+
+#### How it works
+
+The `YAMLResponse` serializes Python objects into YAML format using `yaml.safe_dump()`.
+It's particularly useful for configuration APIs or developer-oriented endpoints.
+
+**Arguments**
+
+* `content` — Any YAML-serializable Python object.
+* `status_code` — Optional HTTP status code. Defaults to `200`.
+* `headers` — Optional custom headers.
+* `media_type` — Always `"application/x-yaml"`.
+* `charset` — Defaults to `"utf-8"`.
+
+### **MessagePackResponse**
+
+Response used to return **binary-encoded** data using the [MessagePack](https://msgpack.org/) format.
+
+```python
+from lilya.responses import MessagePackResponse
+```
+
+!!! Warning **Requires `msgpack`**
+    To use this response, install it first `pip install msgpack`
+
+**Example**
+
+```python
+{!> ../../../docs_src/responses/msgpack.py !}
+```
+
+This will return a compact binary representation of the object.
+Clients can decode it using MessagePack in any language.
+
+#### How it works
+
+`MessagePackResponse` serializes data using `msgpack.packb()` with `use_bin_type=True`,
+making it ideal for **high-performance APIs**, **IoT**, or **internal service communication**.
+
+**Arguments**
+
+* `content` — Any MessagePack-serializable Python object.
+* `status_code` — Optional HTTP status code. Defaults to `200`.
+* `headers` — Optional custom headers.
+* `media_type` — Always `"application/x-msgpack"`.
+* `charset` — Defaults to `"utf-8"`.
 
 ## Importing the appropriate class
 

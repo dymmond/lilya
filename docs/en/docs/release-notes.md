@@ -5,6 +5,15 @@ hide:
 
 # Release Notes
 
+## 0.21.2
+
+### Added
+
+- [CSVResponse](./responses.md#csvresponse) as a new available response for CSV files directly in the `lilya.responses`.
+- [YAMLResponse](./responses.md#yamlresponse) as a new available response for YAML files directly in the `lilya.responses`.
+- [XMLResponse](./responses.md#xmlresponse) as a new available response for XML files directly in the `lilya.responses`.
+- [MessagePackResponse](./responses.md#messagepackresponse) as a new available response for MessagePack files directly in the `lilya.responses`.
+
 ## 0.21.1
 
 ### Added
