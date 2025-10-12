@@ -5,9 +5,14 @@ hide:
 
 # Release Notes
 
-## 0.21.2
+## 0.22.0
 
 ### Added
+
+- New [Lifecycle](./lifecycle.md) system allowing to create global and app level lifecycle hooks. With more explanatory
+documentation.
+
+### New Responses
 
 - [CSVResponse](./responses.md#csvresponse) as a new available response for CSV files directly in the `lilya.responses`.
 - [YAMLResponse](./responses.md#yamlresponse) as a new available response for YAML files directly in the `lilya.responses`.
