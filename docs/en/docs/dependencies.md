@@ -286,7 +286,54 @@ you still want to use some sort of dependency injection for a myriad of reasons.
 This new `Depends` and `@inject` will allow you to do just that and it will take care of generators,
 scopes and so on as usual.
 
----
+## Dependency Scopes
+
+Starting from **Lilya 0.22.0**, the dependency system supports **scopes**, allowing you to control *how long*
+a dependency instance lives.
+
+This is especially useful when managing expensive or shared resources (like database connections, Redis clients, or API clients) that
+shouldn't always be recreated per request.
+
+### Available Scopes
+
+| Scope           | Lifetime        | Description                                                                                | Typical Use                                               |
+| :-------------- | :-------------- | :----------------------------------------------------------------------------------------- | :-------------------------------------------------------- |
+| `Scope.REQUEST` | Per request     | A new instance is created and used for the lifetime of a single HTTP or WebSocket request. | Database sessions, user context, request-specific caches. |
+| `Scope.APP`     | Per application | One instance is created for the entire lifespan of the app. Shared across all requests.    | API clients, feature flag services, in-memory data.       |
+| `Scope.GLOBAL`  | Per process     | A single instance reused across multiple app instances (same process).                     | Configuration managers, telemetry, global registries.     |
+
+You can set the scope when defining a dependency with `Provide`.
+
+### Example: Request Scope (default)
+
+```python
+{!> ../../../docs_src/dependencies/scope.py !}
+```
+
+Each request gets its own DB session instance, which is automatically cleaned up at the end of the request.
+
+### Example: App Scope
+
+```python
+{!> ../../../docs_src/dependencies/app_scope.py !}
+```
+
+The same `AsyncClient` instance is reused for all requests until the application shuts down.
+
+### Example: Global Scope
+
+```python
+{!> ../../../docs_src/dependencies/global_scope.py !}
+```
+
+Here, `config` is created once globally and shared across multiple app instances running in the same process.
+
+### Notes on Scopes
+
+* **Use `REQUEST` scope** for anything tied to a single incoming request (e.g., DB sessions).
+* **Use `APP` scope** for shared infrastructure like API clients, feature toggles, or metrics reporters.
+* **Use `GLOBAL` scope** sparingly, typically for immutable data or global registries.
+* **Avoid mixing lifetimes** in the same dependency chain (e.g., injecting a request-scoped dependency into a global one).
 
 ## Best Practices
 

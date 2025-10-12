@@ -6,8 +6,9 @@ from functools import cached_property, lru_cache, wraps
 from types import GeneratorType
 from typing import Any, cast
 
+from lilya._internal._scopes import scope_manager
 from lilya.compat import is_async_callable, run_sync
-from lilya.enums import SignatureDefault
+from lilya.enums import Scope, SignatureDefault
 from lilya.requests import Request
 from lilya.websockets import WebSocket
 
@@ -50,12 +51,14 @@ class Provide:
         dependency: Callable[..., Any],
         *args: Any,
         use_cache: bool = False,
+        scope: Scope | None = Scope.REQUEST,
         **kwargs: Any,
     ) -> None:
         self.dependency = dependency
         self.provided_args = args
         self.provided_kwargs = kwargs
         self.use_cache = use_cache
+        self.scope = scope
         self._cache: Any = None
         self._resolved: bool = False
         self.__dependency_signature__: inspect.Signature | None = None
@@ -79,6 +82,30 @@ class Provide:
         if self.use_cache and self._resolved:
             return self._cache
 
+        if self.scope in (Scope.APP, Scope.GLOBAL):
+
+            async def _factory() -> Any:
+                # Delegate to internal logic (the rest of the method)
+                return await self._resolve_internal(request, dependencies_map)
+
+            return await scope_manager.get_or_create(
+                self.scope,
+                self.dependency,
+                _factory,
+            )
+
+        return await self._resolve_internal(request, dependencies_map)
+
+    async def _resolve_internal(
+        self,
+        request: Request,
+        dependencies_map: dict[str, Self | Any],
+    ) -> Any:
+        """
+        Internal dependency resolution logic.
+        Used by resolve() and scope_manager to separate
+        lifetime control from the actual call logic.
+        """
         # If the dependency is a class, we need to instantiate it
         # and pass the request to it
         if self.__signature__.parameters:
@@ -404,6 +431,7 @@ class _Depends:
         dependency: Callable[..., Any] | Any,
         *args: Any,
         use_cache: bool = False,
+        scope: Scope | None = Scope.REQUEST,
         **kwargs: Any,
     ) -> None:
         if not isinstance(dependency, _Depends) and not callable(dependency):
@@ -412,6 +440,7 @@ class _Depends:
         self.provided_args = args
         self.provided_kwargs = kwargs
         self.use_cache = use_cache
+        self.scope = scope
         self._cache: Any = None
         self._resolved: bool = False
         self.__dependency_signature__: inspect.Signature | None = None
@@ -444,6 +473,34 @@ class _Depends:
         dependencies_map = dependencies_map or {}
         overrides = overrides or {}
 
+        if self.scope in (Scope.APP, Scope.GLOBAL):
+
+            async def _factory() -> Any:
+                # the actual internal resolution logic below
+                return await self._resolve_internal(dependencies_map, overrides, scope)
+
+            if isinstance(self.dependency, _Depends):
+
+                def dep_callable() -> Any:
+                    return self.dependency
+            elif callable(self.dependency):
+                dep_callable = self.dependency
+            else:
+                dep_callable = _constant(self.dependency)
+
+            return await scope_manager.get_or_create(
+                self.scope,
+                dep_callable,
+                _factory,
+            )
+        return await self._resolve_internal(dependencies_map, overrides, scope)
+
+    async def _resolve_internal(
+        self,
+        dependencies_map: dict[str, Any],
+        overrides: dict[Any, Any],
+        scope: PureScope | None,
+    ) -> Any:
         # If args/kwargs explicitly provided or this is a class, call directly.
         if self.provided_args or self.provided_kwargs or inspect.isclass(self.dependency):
             dep_callable = overrides.get(self.dependency, self.dependency)

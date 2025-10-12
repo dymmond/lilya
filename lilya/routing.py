@@ -30,6 +30,7 @@ from lilya.datastructures import URL, Header, ScopeHandler, SendReceiveSniffer, 
 from lilya.dependencies import wrap_dependency
 from lilya.enums import EventType, HTTPMethod, Match, ScopeType
 from lilya.exceptions import ContinueRouting, HTTPException, ImproperlyConfigured
+from lilya.lifecycle import get_hooks as _lifecycle_get_hooks
 from lilya.middleware.base import DefineMiddleware
 from lilya.permissions.base import DefinePermission
 from lilya.requests import Request
@@ -1216,6 +1217,15 @@ class BaseRouter:
 
         self.on_startup = [] if on_startup is None else list(on_startup)
         self.on_shutdown = [] if on_shutdown is None else list(on_shutdown)
+
+        # Inject global lifecycle hooks (from lilya.lifecycle)
+        hooks = _lifecycle_get_hooks()
+
+        # Global startup hooks run before app-defined ones
+        self.on_startup = [*hooks["startup"], *self.on_startup]
+
+        # Global shutdown hooks run after app-defined ones
+        self.on_shutdown = [*self.on_shutdown, *hooks["shutdown"]]
 
         # Wrap dependencies
         _dependencies = dependencies if dependencies is not None else {}
