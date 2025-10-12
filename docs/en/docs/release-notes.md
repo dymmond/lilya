@@ -16,6 +16,7 @@ hide:
 - [NDJSONResponse](./responses.md#ndjsonresponse) as a new available response for Newline Delimited JSON files directly in the `lilya.responses`.
 - [ImageResponse](./responses.md#imageresponse) as a new available response for images directly in the `lilya.responses`.
 - `TextResponse` as a new available response for plain text files directly in the `lilya.responses`.
+- [EventStreamResponse](./responses.md#eventstreamresponse) as a new available response for Server-Sent Events directly in the `lilya.responses`.
 
 ### Fixed
 
