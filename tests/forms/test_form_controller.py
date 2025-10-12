@@ -100,7 +100,7 @@ class RedirectFormController(FormController):
     success_url = "/done"
     form_class = SimpleForm
     templates = _FakeTemplates()
-    # uses default form_valid → RedirectResponse(303)
+    # uses default form_valid -> RedirectResponse(303)
 
 
 class InvalidFormController(FormController):

@@ -16,6 +16,7 @@ documentation.
     - `Scope.APP`: Application-wide shared dependencies.
     - `Scope.GLOBAL`: Process-level shared instances.
 - New security [SignedURL](./contrib/security/signed-urls.md) utility for generating and verifying time-limited signed URLs.
+- New [SSEChannel](./contrib/sse.md) class for creating in-memory Server-Sent Events channels with pub/sub support.
 
 ### New Responses
 
