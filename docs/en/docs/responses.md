@@ -478,6 +478,96 @@ You must specify the correct `media_type` when instantiating the response, or it
 * The response is fully ASGI-compatible and can be sent using `await response(scope, receive, send)` in any Lilya or ASGI-based app.
 * Ideal for serving dynamically generated images, in-memory thumbnails, or image previews stored in memory.
 
+
+## EventStreamResponse
+
+Response used to return **Server-Sent Events (SSE)**. A simple, one-way streaming mechanism where the server continuously
+pushes updates to the client over a single HTTP connection.
+
+```python
+from lilya.responses import EventStreamResponse
+```
+
+**Example**
+
+```python
+{!> ../../../docs_src/responses/eventstream.py !}
+```
+
+This example continuously streams a sequence of events such as:
+
+```
+event: tick
+data: {"count": 0}
+
+event: tick
+data: {"count": 1}
+
+event: done
+data: "Stream finished"
+```
+
+Each block is formatted as a **Server-Sent Event**, with `event`, `data`, `id`, and `retry` fields, separated by blank lines.
+
+### How it works
+
+The `EventStreamResponse` accepts an **asynchronous** or **synchronous generator** that yields dictionaries representing events.
+Each dictionary can contain the following fields:
+
+| Field   | Description                                                                                                 |
+| ------- | ----------------------------------------------------------------------------------------------------------- |
+| `event` | The event type name.                                                                                        |
+| `data`  | The payload of the event. Supports `str`, `dict`, or `list` — complex types are JSON-encoded automatically. |
+| `id`    | (Optional) Event ID for resuming streams.                                                                   |
+| `retry` | (Optional) Reconnection time (in milliseconds) for the client.                                              |
+
+Each event is formatted according to the SSE specification and sent as UTF-8 text chunks to the client.
+
+### Example with async generator
+
+```python
+{!> ../../../docs_src/responses/eventstream_2.py !}
+```
+
+This allows clients to receive events in real time without polling.
+
+### Example with `EventSource` in the browser
+
+You can easily consume `EventStreamResponse` streams from JavaScript using the built-in `EventSource` API:
+
+```html
+<script>
+const source = new EventSource("/events");
+
+source.addEventListener("tick", (event) => {
+  const data = JSON.parse(event.data);
+  console.log("Tick:", data.count);
+});
+
+source.addEventListener("done", () => {
+  console.log("Stream finished");
+  source.close();
+});
+</script>
+```
+
+### Arguments
+
+* `content` — A synchronous or asynchronous generator yielding dicts representing events.
+* `status_code` — Optional HTTP status code. Defaults to `200`.
+* `headers` — Optional custom headers.
+* `media_type` — Always `"text/event-stream"`.
+* `charset` — Defaults to `"utf-8"`.
+* `retry` — Optional global retry interval (in milliseconds) applied to all events unless overridden individually.
+
+### Notes
+
+* Automatically sets `Content-Type: text/event-stream`.
+* Both synchronous and asynchronous generators are supported.
+* Connections remain open until the generator completes or the client disconnects.
+* JSON-encodes dict or list payloads with standard spacing (`{"key": value}`).
+* Ideal for real-time dashboards, logs, notifications, and background job status updates.
+
 ## Importing the appropriate class
 
 This is the classic most used way of using the responses. The [available responses](#available-responses)
@@ -488,7 +578,6 @@ contains a list of available responses of Lilya but you are also free to design 
 ```python
 {!> ../../../docs_src/responses/json.py !}
 ```
-
 
 ## Build the Response
 
