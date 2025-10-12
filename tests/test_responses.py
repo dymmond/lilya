@@ -25,6 +25,7 @@ from lilya.requests import Request
 from lilya.responses import (
     CSVResponse,
     Error,
+    EventStreamResponse,
     FileResponse,
     ImageResponse,
     JSONResponse,
@@ -1223,3 +1224,98 @@ async def test_image_response_can_be_sent_via_asgi(test_client_factory):
     assert resp.status_code == 200
     assert resp.headers["content-type"].startswith("image/png")
     assert resp.content.startswith(b"\x89PNG")
+
+
+async def async_event_generator():
+    for i in range(3):
+        yield {"event": "tick", "data": i}
+
+
+def sync_event_generator():
+    for i in range(2):
+        yield {"event": "sync", "data": i}
+
+
+async def test_eventstream_response_with_async_generator(test_client_factory):
+    """
+    Ensures EventStreamResponse correctly encodes async events to SSE format.
+    """
+    response = EventStreamResponse(async_event_generator())
+    body = b"".join([chunk async for chunk in response.body_iterator])
+
+    expected = b"event: tick\ndata: 0\n\nevent: tick\ndata: 1\n\nevent: tick\ndata: 2\n\n"
+
+    assert body == expected
+    assert response.media_type == "text/event-stream"
+
+
+async def test_eventstream_response_with_sync_generator(test_client_factory):
+    """
+    Ensures EventStreamResponse supports synchronous iterables.
+    """
+    response = EventStreamResponse(sync_event_generator())
+    body = b"".join([chunk async for chunk in response.body_iterator])
+
+    expected = b"event: sync\ndata: 0\n\nevent: sync\ndata: 1\n\n"
+
+    assert body == expected
+
+
+async def test_eventstream_response_with_retry_and_id_fields(test_client_factory):
+    """
+    Ensures optional 'id' and 'retry' fields are formatted correctly.
+    """
+
+    async def gen():
+        yield {"id": "abc123", "event": "ping", "data": "hello", "retry": 3000}
+
+    response = EventStreamResponse(gen())
+    body = b"".join([chunk async for chunk in response.body_iterator])
+
+    expected = b"id: abc123\nevent: ping\ndata: hello\nretry: 3000\n\n"
+    assert body == expected
+
+
+async def test_eventstream_response_with_json_data(test_client_factory):
+    """
+    Ensures dict/list data is serialized as JSON.
+    """
+
+    async def gen():
+        yield {"event": "data", "data": {"value": 42}}
+
+    response = EventStreamResponse(gen())
+    body = b"".join([chunk async for chunk in response.body_iterator])
+
+    # Minimal JSON (no spaces)
+    assert b"event: data\n" in body
+    assert b'data: {"value": 42}\n\n' in body
+
+
+async def test_eventstream_response_with_global_retry(test_client_factory):
+    """
+    Ensures the global retry value is applied if per-event retry not set.
+    """
+
+    async def gen():
+        yield {"event": "tick", "data": 1}
+        yield {"event": "tick", "data": 2}
+
+    response = EventStreamResponse(gen(), retry=5000)
+    body = b"".join([chunk async for chunk in response.body_iterator])
+
+    assert b"retry: 5000" in body
+
+
+async def test_eventstream_response_empty_generator(test_client_factory):
+    """
+    Ensures empty streams produce no body content.
+    """
+
+    async def gen():
+        if False:
+            yield {"event": "never"}
+
+    response = EventStreamResponse(gen())
+    body = b"".join([chunk async for chunk in response.body_iterator])
+    assert body == b""

@@ -3,12 +3,14 @@ from __future__ import annotations
 import contextlib
 import functools
 import http.cookies
+import inspect
 import os
 import stat
 import time
 import typing
 import warnings
 from collections.abc import (
+    AsyncGenerator,
     AsyncIterable,
     Awaitable,
     Callable,
@@ -471,6 +473,94 @@ class StreamingResponse(Response):
 
         if self.background is not None:
             await self.background()
+
+
+class EventStreamResponse(StreamingResponse):
+    """
+    A response for sending Server-Sent Events (SSE) to the client.
+
+    This subclass of `StreamingResponse` automatically formats the
+    stream according to the SSE protocol (`text/event-stream`).
+
+    Example:
+        async def event_stream():
+            for i in range(5):
+                yield {"event": "tick", "data": i}
+
+        response = EventStreamResponse(event_stream())
+    """
+
+    media_type = "text/event-stream"
+
+    def __init__(
+        self,
+        content: AsyncGenerator[dict[str, Any], None]
+        | AsyncIterable[dict[str, Any]]
+        | Generator[dict[str, Any], None, None]
+        | Iterable[dict[str, Any]],
+        *,
+        retry: int | None = None,
+        **kwargs: Any,
+    ) -> None:
+        self.retry = retry
+
+        if (
+            inspect.isasyncgen(content)
+            or inspect.isasyncgenfunction(content)
+            or isinstance(content, AsyncIterable)
+        ):
+            iterator = self._format_async(content)  # type: ignore[arg-type]
+        else:
+            iterator = self._format_sync(content)
+
+        super().__init__(iterator, media_type=self.media_type, **kwargs)
+
+    async def _format_async(
+        self, content: AsyncIterable[dict[str, Any]]
+    ) -> AsyncGenerator[bytes, None]:
+        """
+        Formats events from an asynchronous iterable into SSE-compliant text bytes.
+
+        Args:
+            content (AsyncIterable[dict[str, Any]]): An asynchronous iterable of event dictionaries.
+        """
+        async for event in content:
+            yield self.encode_event(event)
+
+    async def _format_sync(self, content: Iterable[dict[str, Any]]) -> AsyncGenerator[bytes, None]:
+        """
+        Formats events from a synchronous iterable into SSE-compliant text bytes.
+
+        Args:
+            content (Iterable[dict[str, Any]]): An iterable of event dictionaries.
+        """
+        for event in content:
+            yield self.encode_event(event)
+
+    def encode_event(self, event: dict[str, Any]) -> bytes:
+        """
+        Encodes a single event dictionary into SSE-compliant text bytes.
+
+        Args:
+            event (dict[str, Any]): A dictionary representing the event.
+                Supported keys are 'event', 'data', 'id', and 'retry'.
+        """
+        lines: list[str] = []
+
+        if "id" in event:
+            lines.append(f"id: {event['id']}")
+        if "event" in event:
+            lines.append(f"event: {event['event']}")
+        if "data" in event:
+            data = event["data"]
+            if isinstance(data, (dict, list)):
+                data = serializer.dumps(data, separators=(",", ": "))
+            lines.append(f"data: {data}")
+        if "retry" in event or self.retry:
+            retry = event.get("retry", self.retry)
+            if retry is not None:
+                lines.append(f"retry: {retry}")
+        return ("\n".join(lines) + "\n\n").encode("utf-8")
 
 
 class FileResponse(Response):
