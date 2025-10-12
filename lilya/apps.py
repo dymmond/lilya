@@ -1054,17 +1054,18 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
             "include_in_schema", include_in_schema, is_boolean=True
         )
 
-        # Merge global lifecycle hooks into app-level hooks
-        hooks = _lifecycle_get_hooks()
-        if on_startup:
-            on_startup = [*hooks["startup"], *on_startup]
-        else:
-            on_startup = hooks["startup"]
+        if lifespan is None:
+            # Merge global lifecycle hooks into app-level hooks
+            hooks = _lifecycle_get_hooks()
+            if on_startup:
+                on_startup = [*hooks["startup"], *on_startup]
+            else:
+                on_startup = hooks["startup"]
 
-        if on_shutdown:
-            on_shutdown = [*on_shutdown, *hooks["shutdown"]]
-        else:
-            on_shutdown = hooks["shutdown"]
+            if on_shutdown:
+                on_shutdown = [*on_shutdown, *hooks["shutdown"]]
+            else:
+                on_shutdown = hooks["shutdown"]
 
         if self.router_class is not None:
             self.router = self.router_class(
