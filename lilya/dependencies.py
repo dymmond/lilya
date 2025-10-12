@@ -51,13 +51,22 @@ class Provide:
         dependency: Callable[..., Any],
         *args: Any,
         use_cache: bool = False,
-        scope: Scope | None = Scope.REQUEST,
+        scope: Scope | str | None = Scope.REQUEST,
         **kwargs: Any,
     ) -> None:
         self.dependency = dependency
         self.provided_args = args
         self.provided_kwargs = kwargs
         self.use_cache = use_cache
+
+        if isinstance(scope, str):
+            try:
+                scope = Scope[scope.upper()]
+            except KeyError as exc:
+                raise ValueError(
+                    f"Invalid scope '{scope}'. Use one of: {[s.name for s in Scope]}"
+                ) from exc
+
         self.scope = scope
         self._cache: Any = None
         self._resolved: bool = False
@@ -85,12 +94,39 @@ class Provide:
         if self.scope in (Scope.APP, Scope.GLOBAL):
 
             async def _factory() -> Any:
-                # Delegate to internal logic (the rest of the method)
+                # Delegate to internal resolution logic
                 return await self._resolve_internal(request, dependencies_map)
 
+            if self.scope == Scope.APP:
+                app = getattr(request, "app", None)
+                attr_name = f"__lilya_app_depkey_{id(self.dependency)}"
+
+                if app is not None:
+                    # real Lilya app — reuse per-app wrapper
+                    dep_key = getattr(app, attr_name, None)
+                    if dep_key is None:
+
+                        def _app_scoped_key(*args: Any, **kwargs: Any) -> Any:
+                            return self.dependency(*args, **kwargs)
+
+                        setattr(app, attr_name, _app_scoped_key)
+                        dep_key = _app_scoped_key
+                else:
+                    # fallback for no app, stable per Provide key
+                    if not hasattr(self, "_app_scope_key"):
+
+                        def _app_scoped_key(*args: Any, **kwargs: Any) -> Any:
+                            return self.dependency(*args, **kwargs)
+
+                        self._app_scope_key = _app_scoped_key
+                    dep_key = self._app_scope_key
+            else:
+                dep_key = self.dependency
+
+            # retrieve or create from scope_manager
             return await scope_manager.get_or_create(
                 self.scope,
-                self.dependency,
+                dep_key,  # callable identity
                 _factory,
             )
 
@@ -431,7 +467,7 @@ class _Depends:
         dependency: Callable[..., Any] | Any,
         *args: Any,
         use_cache: bool = False,
-        scope: Scope | None = Scope.REQUEST,
+        scope: Scope | str | None = Scope.REQUEST,
         **kwargs: Any,
     ) -> None:
         if not isinstance(dependency, _Depends) and not callable(dependency):
@@ -440,6 +476,15 @@ class _Depends:
         self.provided_args = args
         self.provided_kwargs = kwargs
         self.use_cache = use_cache
+
+        if isinstance(scope, str):
+            try:
+                scope = Scope[scope.upper()]
+            except KeyError as exc:
+                raise ValueError(
+                    f"Invalid scope '{scope}'. Use one of: {[s.name for s in Scope]}"
+                ) from exc
+
         self.scope = scope
         self._cache: Any = None
         self._resolved: bool = False
