@@ -132,6 +132,7 @@ nav:
     - contrib/security/advanced/oauth2-scopes.md
     - contrib/security/advanced/basic-auth.md
     - contrib/security/available-security.md
+    - contrib/security/signed-urls.md
     - CSRF:
       - contrib/security/csrf.md
   - Files:

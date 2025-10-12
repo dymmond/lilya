@@ -15,6 +15,7 @@ documentation.
     - `Scope.REQUEST`: Default per-request lifetime.
     - `Scope.APP`: Application-wide shared dependencies.
     - `Scope.GLOBAL`: Process-level shared instances.
+- New security [SignedURL](./contrib/security/signed-urls.md) utility for generating and verifying time-limited signed URLs.
 
 ### New Responses
 
