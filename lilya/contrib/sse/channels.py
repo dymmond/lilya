@@ -286,6 +286,13 @@ class SSEChannelManager:
         async with self._lock:
             self._channels.clear()
 
+    async def list_channels(self) -> list[str]:
+        """Return a list of active channel names."""
+        return list(self._channels.keys())
+
+    def __contains__(self, name: str) -> bool:
+        return name in self._channels
+
 
 # Default global manager instance. It can be used directly or injected via DI.
 sse_manager: SSEChannelManager = SSEChannelManager()
