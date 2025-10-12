@@ -581,7 +581,7 @@ def test_excludes_head_method():
     async def head_test(request):
         return {"msg": "h"}
 
-    # Force HEAD method to appear in methods → HEAD should not be documented
+    # Force HEAD method to appear in methods -> HEAD should not be documented
     app = Lilya(routes=[Path("/h", head_test, methods=["GET", "HEAD"])], enable_openapi=True)
     spec = get_openapi(
         app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes

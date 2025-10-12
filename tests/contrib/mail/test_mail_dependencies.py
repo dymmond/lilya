@@ -49,7 +49,7 @@ async def test_mail_dependency_without_setup_raises(test_client_factory):
 
     client = TestClient(app)
 
-    # No setup_mail called → should raise RuntimeError
+    # No setup_mail called -> should raise RuntimeError
     with pytest.raises(RuntimeError):
         client.get("/test")
 

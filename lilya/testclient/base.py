@@ -135,6 +135,7 @@ class TestClient(httpx.Client):
         follow_redirects: bool | None = None,
         timeout: TimeoutTypes | httpx._client.UseClientDefault = httpx._client.USE_CLIENT_DEFAULT,
         extensions: dict[str, Any] | None = None,
+        stream: bool = False,
     ) -> httpx.Response:
         """
         Sends an HTTP request.
@@ -161,6 +162,25 @@ class TestClient(httpx.Client):
         redirect: bool | httpx._client.UseClientDefault = httpx._client.USE_CLIENT_DEFAULT
         if follow_redirects is not None:
             redirect = follow_redirects
+
+        if stream:
+            # Return an open streaming response context.
+            # Open a streaming context and return the httpx.Response (not Request)
+            return self.stream(
+                method=method,
+                url=url,
+                content=content,
+                data=data,
+                files=files,
+                json=json,
+                params=params,
+                headers=headers,
+                cookies=cookies,
+                auth=auth,
+                timeout=timeout,
+                extensions=extensions,
+                follow_redirects=follow_redirects,
+            ).__enter__()
 
         return super().request(
             method,

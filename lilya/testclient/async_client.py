@@ -108,11 +108,29 @@ class AsyncTestClient(httpx.AsyncClient):
         follow_redirects: bool | None = None,
         timeout: TimeoutTypes | httpx._client.UseClientDefault = httpx._client.USE_CLIENT_DEFAULT,
         extensions: dict[str, Any] | None = None,
+        stream: bool = False,
     ) -> httpx.Response:
         url = self._merge_url(url)
         redirect: bool | httpx._client.UseClientDefault = httpx._client.USE_CLIENT_DEFAULT
         if follow_redirects is not None:
             redirect = follow_redirects
+
+        if stream:
+            return await self.stream(
+                method=method,
+                url=url,
+                content=content,
+                data=data,
+                files=files,
+                json=json,
+                params=params,
+                headers=headers,
+                cookies=cookies,
+                auth=auth,
+                timeout=timeout,
+                extensions=extensions,
+                follow_redirects=follow_redirects,
+            ).__aenter__()
 
         return await super().request(
             method,
