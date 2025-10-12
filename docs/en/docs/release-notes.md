@@ -11,6 +11,10 @@ hide:
 
 - New [Lifecycle](./lifecycle.md) system allowing to create global and app level lifecycle hooks. With more explanatory
 documentation.
+- **Dependency Scopes** — Introduced a flexible scoping system for dependency lifetimes.
+    - `Scope.REQUEST`: Default per-request lifetime.
+    - `Scope.APP`: Application-wide shared dependencies.
+    - `Scope.GLOBAL`: Process-level shared instances.
 
 ### New Responses
 

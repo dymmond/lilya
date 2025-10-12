@@ -307,7 +307,7 @@ You can set the scope when defining a dependency with `Provide`.
 ### Example: Request Scope (default)
 
 ```python
-{!> ../../../docs_src/dependencies/depends/scope.py !}
+{!> ../../../docs_src/dependencies/scope.py !}
 ```
 
 Each request gets its own DB session instance, which is automatically cleaned up at the end of the request.
@@ -315,7 +315,7 @@ Each request gets its own DB session instance, which is automatically cleaned up
 ### Example: App Scope
 
 ```python
-{!> ../../../docs_src/dependencies/depends/app_scope.py !}
+{!> ../../../docs_src/dependencies/app_scope.py !}
 ```
 
 The same `AsyncClient` instance is reused for all requests until the application shuts down.
@@ -323,17 +323,17 @@ The same `AsyncClient` instance is reused for all requests until the application
 ### Example: Global Scope
 
 ```python
-{!> ../../../docs_src/dependencies/depends/global_scope.py !}
+{!> ../../../docs_src/dependencies/global_scope.py !}
 ```
 
 Here, `config` is created once globally and shared across multiple app instances running in the same process.
 
 ### Notes on Scopes
 
-**Use `REQUEST` scope** for anything tied to a single incoming request (e.g., DB sessions).
-**Use `APP` scope** for shared infrastructure like API clients, feature toggles, or metrics reporters.
-**Use `GLOBAL` scope** sparingly, typically for immutable data or global registries.
-**Avoid mixing lifetimes** in the same dependency chain (e.g., injecting a request-scoped dependency into a global one).
+* **Use `REQUEST` scope** for anything tied to a single incoming request (e.g., DB sessions).
+* **Use `APP` scope** for shared infrastructure like API clients, feature toggles, or metrics reporters.
+* **Use `GLOBAL` scope** sparingly, typically for immutable data or global registries.
+* **Avoid mixing lifetimes** in the same dependency chain (e.g., injecting a request-scoped dependency into a global one).
 
 ## Best Practices
 
