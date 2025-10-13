@@ -1,7 +1,7 @@
 services:
   db:
     restart: always
-    image: postgres:18
+    image: docker.io/postgres:18
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
       POSTGRES_USER: "postgres"
@@ -16,7 +16,7 @@ services:
 
   redis:
     restart: always
-    image: redis:latest
+    image: docker.io/redis:latest
     ports:
       # if you don't specify e.g. localhost, it is by default exposed to the world
       # given the bad pws we shouldn't do that
