@@ -31,8 +31,6 @@ jobs:
           POSTGRES_DB: lilya
         ports:
           - 5432:5432
-        command: >-
-          --jit=false
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
