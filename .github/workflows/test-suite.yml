@@ -24,13 +24,15 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16
+        image: postgres:18
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: lilya
         ports:
           - 5432:5432
+        command: >-
+          --jit=false
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
