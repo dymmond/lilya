@@ -43,4 +43,4 @@ class JWTAuthMiddleware(BaseAuthMiddleware):
         token = Token.decode(token=token, key=self.signing_key, algorithm=self.algorithm)
 
         user = await self.retrieve_user(token.sub)
-        return (AuthCredentials(), user)
+        return AuthCredentials(), user

@@ -5,6 +5,18 @@ hide:
 
 # Release Notes
 
+## 0.22.1
+
+### Changed
+
+- Lilya `requires` now accepts a parameter for custom connection name checking and removes the enforcing of
+the connection name to be None.
+- Extend the `authenticate` signature with extra kwargs for `lilay.authentication.AuthenticationBackend`.
+
+### Fixed
+
+- Documentation typos.
+
 ## 0.22.0
 
 ### Added

@@ -14,7 +14,6 @@ When not using an user management we can also do something like:
 {!> ../../../docs_src/authentication/static_pw_auth.py !}
 ```
 
-
 ## Backends
 
 For backends you need the AuthenticationMiddleware (not the BaseAuthMiddleware). Only here you can provide them
@@ -31,7 +30,7 @@ Backends are retrievable on the middleware via the `backend` attribute. It is al
 Once you have installed `AuthenticationMiddleware`, the `request.user` interface becomes
 available to your endpoints and other middleware.
 
-The implementation should implement the inteface `UserInterface`, which includes two properties and any additional information your user model requires.
+The implementation should implement the interface `UserInterface`, which includes two properties and any additional information your user model requires.
 
 * `.is_authenticated`
 * `.display_name`
@@ -153,7 +152,7 @@ def on_auth_error(request: Request, exc: Exception):
 
 app = Lilya(
     middleware=[
-        Middleware(AuthenticationMiddleware, backend=BasicAuthBackend(), on_error=on_auth_error),
+        DefineMiddleware(AuthenticationMiddleware, backend=BasicAuthBackend(), on_error=on_auth_error),
     ],
 )
 ```
