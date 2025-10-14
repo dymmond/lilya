@@ -94,7 +94,7 @@ parameter **should always be an app** and the `__call__` should **always return 
 ## BaseAuthMiddleware & AuthenticationMiddleware
 
 These are a very special middlewares and and helps with any authentication middleware that can be used within
-an **Lilya** application but like everything else, you can design your own.
+a **Lilya** application but like everything else, you can design your own.
 
 `BaseAuthMiddleware` is also an abstract class that simply enforces the implementation of the `authenticate` method and
 assigning the result object into a `tuple[AuthCredentials | None, UserInterface | None]` or None and make it available on every request.
@@ -116,7 +116,7 @@ See [Authentication](./authentication.md) for more details.
 === "From the application instance"
 
     ```python
-    from lilya import Lilya
+    from lilya.apps import Lilya
     from lilya.middleware import DefineMiddleware
     from .middleware.jwt import JWTAuthMiddleware
 
@@ -127,8 +127,6 @@ See [Authentication](./authentication.md) for more details.
 === "From the settings"
 
     ```python
-    from typing import List
-
     from lilya.conf.global_settings import Settings
     from lilya.middleware import DefineMiddleware
 
@@ -136,7 +134,7 @@ See [Authentication](./authentication.md) for more details.
     class AppSettings(Settings):
 
         @property
-        def middleware(self) -> List[DefineMiddleware]:
+        def middleware(self) -> list[DefineMiddleware]:
             return [
                 # you can also use absolute import strings
                 DefineMiddleware("project.middleware.jwt.JWTAuthMiddleware")
