@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import functools
 import inspect
-import typing
 from abc import ABC, abstractmethod
-from typing import ParamSpec
+from collections.abc import Callable, Sequence
+from typing import Any, ParamSpec, Protocol, runtime_checkable
 from urllib.parse import urlencode
 
 from lilya.compat import is_async_callable
@@ -18,13 +18,13 @@ P = ParamSpec("P")
 AuthResult = tuple["AuthCredentials", "UserInterface"]
 
 
-def has_required_scope(conn: Connection, scopes: typing.Sequence[str]) -> bool:
+def has_required_scope(conn: Connection, scopes: Sequence[str]) -> bool:
     """
     Check if the connection has all the required scopes.
 
     Args:
         conn (Connection): The connection object containing authentication details.
-        scopes (typing.Sequence[str]): A sequence of required scope strings.
+        scopes (Sequence[str]): A sequence of required scope strings.
 
     Returns:
         bool: True if all required scopes are present in the connection's scopes, False otherwise.
@@ -34,116 +34,142 @@ def has_required_scope(conn: Connection, scopes: typing.Sequence[str]) -> bool:
 
 
 def requires(
-    scopes: str | typing.Sequence[str],
+    scopes: str | Sequence[str],
     status_code: int = 403,
     redirect: str | None = None,
-) -> typing.Callable[[typing.Callable[P, typing.Any]], typing.Callable[P, typing.Any]]:
+    raise_for_missing_conn: bool = True,
+    conn_param: str | None = None,
+) -> Callable[[Callable[P, Any]], Callable[P, Any]]:
     """
     Decorator to enforce required scopes on a function.
 
     Args:
-        scopes (str | typing.Sequence[str]): A single scope or a sequence of required scopes.
+        scopes (str | Sequence[str]): A single scope or a sequence of required scopes.
         status_code (int, optional): The HTTP status code to return if the scope check fails. Defaults to 403.
         redirect (str | None, optional): The URL to redirect to if the scope check fails. Defaults to None.
+        raise_for_missing_conn (bool, optional): If True, raise an exception if the scope check fails. Defaults to False.
+        conn_param (str | None, optional): The name of the connection parameter
+        (e.g., "request" or "websocket"). If None, it will be auto-detected. Defaults to None.
 
     Returns:
-        typing.Callable[[typing.Callable[P, typing.Any]], typing.Callable[P, typing.Any]]: The decorated function.
+        Callable[[Callable[P, Any]], Callable[P, Any]]: The decorated function.
     """
-    scopes_list = [scopes] if isinstance(scopes, str) else list(scopes)
+    # Normalize the input scopes into a list of strings
+    scopes_list: list[str] = [scopes] if isinstance(scopes, str) else list(scopes)
 
-    def decorator(
-        func: typing.Callable[P, typing.Any],
-    ) -> typing.Callable[P, typing.Any]:
-        """
-        Inner decorator function to wrap the original function.
-
-        Args:
-            func (typing.Callable[P, typing.Any]): The original function to be decorated.
-
-        Returns:
-            typing.Callable[P, typing.Any]: The wrapped function.
-        """
+    def decorator(func: Callable[P, Any]) -> Callable[P, Any]:
+        """The actual decorator applied to the route handler."""
         sig = inspect.signature(func)
-        __type__ = None
-        for idx, parameter in enumerate(sig.parameters.values()):  # noqa B007
-            if parameter.name in {"request", "websocket"}:
-                __type__ = parameter.name
+        nonlocal conn_param
+        connection_param: str | None = conn_param
+
+        # Try to locate a connection-like parameter (request/websocket/conn)
+        for name, _ in sig.parameters.items():
+            if name in {"request", "websocket", conn_param}:
+                connection_param = name
                 break
 
-        if __type__ is None:
-            raise Exception(f'No "request" or "websocket" argument on function "{func}"')
+        # If the parameter wasn't found and we must enforce the check
+        if connection_param is None and raise_for_missing_conn:
+            raise Exception(f'No "request" or "websocket" argument on function "{func.__name__}"')
 
-        if __type__ == "websocket":
+        async def _check_scopes(conn: Connection) -> bool:
+            """
+            Asynchronously checks the required scopes on the connection.
+            """
+            if not hasattr(conn, "auth") or conn.auth is None:
+                return False
+            # Call the external utility function
+            return has_required_scope(conn, scopes_list)
 
+        async def _handle_redirect_or_error(conn: Request) -> Any:
+            """
+            Handles failed authorization for an HTTP Request, either redirecting
+            or raising an HTTP exception.
+            """
+            if redirect is not None:
+                # Store the original request URL as a 'next' query parameter
+                orig_request_qparam: str = urlencode({"next": str(conn.url)})
+
+                # Resolve the redirect route URL
+                # NOTE: Assuming conn.path_for(redirect) works with route names
+                try:
+                    next_url: str = f"{conn.path_for(redirect)}?{orig_request_qparam}"
+                except RuntimeError:
+                    # Fallback if path_for fails (e.g., redirect is not a route name)
+                    next_url: str = f"{redirect}?{orig_request_qparam}"  # type: ignore
+
+                return RedirectResponse(url=next_url, status_code=303)
+
+            # If no redirect, raise the configured HTTPException
+            raise HTTPException(status_code=status_code)
+
+        # --- Wrapper Logic ---
+
+        if is_async_callable(func):
+            # --- Async Handler Wrapper ---
             @functools.wraps(func)
-            async def websocket_wrapper(*args: P.args, **kwargs: P.kwargs) -> None:
-                """
-                Wrapper for websocket functions to enforce scope checks.
+            async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
+                """The wrapper for an async route handler."""
+                conn: Connection | None = (
+                    kwargs.get(connection_param) if connection_param else None  # type: ignore
+                )
 
-                Args:
-                    *args: Positional arguments for the original function.
-                    **kwargs: Keyword arguments for the original function.
-                """
-                websocket = kwargs.get("websocket", args[idx] if idx < len(args) else None)
-                assert isinstance(websocket, WebSocket)
+                if conn is not None:
+                    # Type narrowing for WebSocket
+                    if isinstance(conn, WebSocket):
+                        if not await _check_scopes(conn):
+                            await conn.close(code=1000)  # Close with normal status
+                            return
 
-                if not has_required_scope(websocket, scopes_list):
-                    await websocket.close()
-                else:
-                    await func(*args, **kwargs)
+                    # Type narrowing for Request
+                    elif isinstance(conn, Request):
+                        if not await _check_scopes(conn):
+                            return await _handle_redirect_or_error(conn)
 
-            return websocket_wrapper
-
-        elif is_async_callable(func):
-
-            @functools.wraps(func)
-            async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> typing.Any:
-                """
-                Wrapper for async request/response functions to enforce scope checks.
-
-                Args:
-                    *args: Positional arguments for the original function.
-                    **kwargs: Keyword arguments for the original function.
-
-                Returns:
-                    typing.Any: The result of the original function or a redirect/exception.
-                """
-                request = kwargs.get("request", args[idx] if idx < len(args) else None)
-                assert isinstance(request, Request)
-
-                if not has_required_scope(request, scopes_list):
-                    if redirect is not None:
-                        orig_request_qparam = urlencode({"next": str(request.url)})
-                        next_url = f"{request.path_for(redirect)}?{orig_request_qparam}"
-                        return RedirectResponse(url=next_url, status_code=303)
-                    raise HTTPException(status_code=status_code)
+                # No connection param or all good: proceed to the original function
                 return await func(*args, **kwargs)
 
             return async_wrapper
 
         else:
-
+            # --- Sync Handler Wrapper ---
             @functools.wraps(func)
-            def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> typing.Any:
-                """
-                Wrapper for sync request/response functions to enforce scope checks.
+            def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
+                """The wrapper for a sync route handler."""
+                conn: Connection | None = (
+                    kwargs.get(connection_param) if connection_param else None  # type: ignore
+                )
 
-                Args:
-                    *args: Positional arguments for the original function.
-                    **kwargs: Keyword arguments for the original function.
+                if conn is not None:
+                    # Type narrowing for Request (handled sync)
+                    if isinstance(conn, Request):
+                        if not has_required_scope(conn, scopes_list):
+                            # Sync error handling for Request
+                            if redirect is not None:
+                                orig_request_qparam: str = urlencode({"next": str(conn.url)})
+                                try:
+                                    next_url: str = (
+                                        f"{conn.path_for(redirect)}?{orig_request_qparam}"
+                                    )
+                                except RuntimeError:
+                                    next_url: str = f"{redirect}?{orig_request_qparam}"  # type: ignore
 
-                Returns:
-                    typing.Any: The result of the original function or a redirect/exception.
-                """
-                request = kwargs.get("request", args[idx] if idx < len(args) else None)
-                assert isinstance(request, Request)
+                                return RedirectResponse(url=next_url, status_code=303)
 
-                if not has_required_scope(request, scopes_list):
-                    if redirect is not None:
-                        orig_request_qparam = urlencode({"next": str(request.url)})
-                        next_url = f"{request.path_for(redirect)}?{orig_request_qparam}"
-                        return RedirectResponse(url=next_url, status_code=303)
-                    raise HTTPException(status_code=status_code)
+                            raise HTTPException(status_code=status_code)
+
+                    # Type narrowing for WebSocket (handled sync)
+                    elif isinstance(conn, WebSocket):
+                        if not has_required_scope(conn, scopes_list):
+                            # Sync error handling for WebSocket: attempt to close
+                            try:
+                                conn.close(code=1000)  # type: ignore
+                            except Exception:
+                                pass  # Ignore exceptions if connection is already closed
+                            return
+
+                # No connection param or all good: proceed to the original function
                 return func(*args, **kwargs)
 
             return sync_wrapper
@@ -153,18 +179,16 @@ def requires(
 
 class AuthenticationBackend(ABC):
     @abstractmethod
-    async def authenticate(
-        self, connection: Connection, **kwargs: typing.Any
-    ) -> AuthResult | None: ...
+    async def authenticate(self, connection: Connection, **kwargs: Any) -> AuthResult | None: ...
 
 
 class AuthCredentials:
-    def __init__(self, scopes: typing.Sequence[str] | None = None):
+    def __init__(self, scopes: Sequence[str] | None = None):
         self.scopes = [] if scopes is None else list(scopes)
 
 
-@typing.runtime_checkable
-class UserInterface(typing.Protocol):
+@runtime_checkable
+class UserInterface(Protocol):
     @property
     def is_authenticated(self) -> bool:
         raise NotImplementedError()

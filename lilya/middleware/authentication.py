@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
+from typing import Any
 
 from lilya._internal._connection import Connection
 from lilya.authentication import (
@@ -70,7 +71,7 @@ class BaseAuthMiddleware(ABC, MiddlewareProtocol):
         await self.app(scope, receive, send)
 
     @abstractmethod
-    async def authenticate(self, conn: Connection) -> None | AuthResult:
+    async def authenticate(self, conn: Connection, **kwargs: Any) -> None | AuthResult:
         """Authorize users here."""
 
     async def _process_exception(
