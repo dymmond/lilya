@@ -13,7 +13,7 @@ import pytest
 from lilya._internal._message import Address
 from lilya.datastructures import DataUpload, State
 from lilya.requests import ClientDisconnect, Request
-from lilya.responses import JSONResponse, PlainText, Response
+from lilya.responses import JSONResponse, Ok, PlainText, Response
 from lilya.routing import Path
 from lilya.testclient import create_client
 from lilya.types import Message, Scope
@@ -480,6 +480,24 @@ def test_cookies_invalid(set_cookie, expected, test_client_factory):
     response = client.get("/", headers={"cookie": set_cookie})
     result = response.json()
     assert result["cookies"] == expected
+
+
+def test_allow_multiple_cookie_headers(test_client_factory) -> None:
+    async def app(scope, receive, send) -> None:
+        scope["headers"] = [
+            (b"cookie", b"test=123"),
+            (b"cookie", b"another=lilya"),
+            (b"cookie", b"last=qwerty"),
+        ]
+        request = Request(scope, receive)
+
+        response = Ok({"cookies": request.cookies})
+        await response(scope, receive, send)
+
+    client = test_client_factory(app)
+    response = client.get("/")
+    result = response.json()
+    assert result["cookies"] == {"test": "123", "another": "lilya", "last": "qwerty"}
 
 
 def test_chunked_encoding(test_client_factory):
