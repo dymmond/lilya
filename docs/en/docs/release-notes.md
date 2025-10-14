@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.22.2
+
+### Added
+
+- Support for multiple cookie headers in the `Request` object. This follows the [RFC 7540](https://datatracker.ietf.org/doc/html/rfc7540).
+
 ## 0.22.1
 
 ### Changed
