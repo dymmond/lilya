@@ -123,11 +123,15 @@ class Connection(Mapping[str, Any]):
 
     @property
     def cookies(self) -> dict[str, str]:
+        """
+        This addresses multiple cookies and duplicates as per RFC 7540.
+        https://datatracker.ietf.org/doc/html/rfc7540
+        """
         cookies: dict[str, str] = {}
         if self._cookies is None:
-            cookie_header = self.headers.get("cookie", None)
-            if cookie_header:
-                cookies = cookie_parser(cookie_header)
+            cookie_headers = self.headers.getlist("cookie")
+            for header in cookie_headers:
+                cookies.update(cookie_parser(header))
             self._cookies = cookies
         return self._cookies
 
