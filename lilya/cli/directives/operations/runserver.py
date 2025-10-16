@@ -121,7 +121,8 @@ def runserver(
         if os.environ.get("LILYA_SETTINGS_MODULE"):
             from lilya.conf import settings as lilya_settings
 
-            server_environment = f"{lilya_settings.environment}"
+            environment = getattr(lilya_settings, "environment", "development")
+            server_environment = f"{environment}"
 
         if not server_environment:
             server_environment = "development"
