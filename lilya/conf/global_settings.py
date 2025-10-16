@@ -246,6 +246,48 @@ class Internal(ContribSettings):
         ),
     ] = "~/.config/ptpython/config.py"
 
+    @property
+    def runserver_theme(self) -> dict[str, str]:
+        """
+        Returns a dictionary defining the color theme for the terminal UI
+        when running the runserver.
+
+        The theme includes styles for various elements such as tags, placeholders,
+        text, selected items, results, progress indicators, errors, and log info.
+
+        **Example**
+
+        ```python
+        from lilya.conf import Settings
+
+        class AppSettings(Settings):
+            @property
+            def runserver_theme(self) -> dict[str, str]:
+                return {
+                    "tag.title": "white on #02a6f2",
+                    "tag": "white on #025af2",
+                    "placeholder": "grey85",
+                    "text": "white",
+                    "selected": "#025af2",
+                    "result": "grey85",
+                    "progress": "on #025af2",
+                    "error": "red",
+                    "log.info": "black on blue",
+                }
+        ```
+        """
+        return {
+            "tag.title": "white on #02a6f2",
+            "tag": "white on #025af2",
+            "placeholder": "grey85",
+            "text": "white",
+            "selected": "#025af2",
+            "result": "grey85",
+            "progress": "on #025af2",
+            "error": "red",
+            "log.info": "black on blue",
+        }
+
 
 class Settings(Internal):
     debug: Annotated[

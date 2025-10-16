@@ -7,14 +7,11 @@ from typing import Annotated, Any, cast
 
 import click
 from rich.tree import Tree
-from sayer import Option, command, error
+from sayer import Argument, Option, command, error
 
 from lilya.cli.env import DirectiveEnv
 from lilya.cli.exceptions import DirectiveError
-from lilya.cli.terminal import Terminal
 from lilya.cli.terminal.utils import get_log_config, get_ui_toolkit
-
-terminal = Terminal()
 
 
 def get_app_tree(module_paths: list[Path], discovery_file: str) -> Tree:
@@ -42,6 +39,8 @@ def get_app_tree(module_paths: list[Path], discovery_file: str) -> Tree:
 
 @command
 def runserver(
+    path: Annotated[str | None, Argument(help="Path to the application.", required=False)],
+    *,
     port: Annotated[
         int, Option(8000, "-p", help="Port to run the development server.", show_default=True)
     ],
@@ -159,7 +158,6 @@ def runserver(
             tag="docs",
         )
 
-        app = env.app
         if os.environ.get("LILYA_SETTINGS_MODULE"):
             custom_message = f"'{os.environ.get('LILYA_SETTINGS_MODULE')}'"
             toolkit.print(
@@ -176,7 +174,7 @@ def runserver(
 
         toolkit.print_line()
         toolkit.print(
-            "[yellow]Remember, [bold]runserver is for development purposes[/bold]. For production, use a proper ASGI server.[/yellow]",
+            "[green]You can use the runserver to run in production too.[/green]",
             tag="note",
         )
 
@@ -185,10 +183,31 @@ def runserver(
 
         toolkit.print_line()
 
+        # Determine which app path or object to run
+        if path:
+            # User explicitly provided the app path (e.g., myproject.main:app)
+            app_target = path
+            toolkit.print(f"Using app path provided: [green]{path}[/green]", tag="Lilya")
+        elif getattr(env, "path", None):
+            # Use discovered or environment app path
+            app_target = env.path
+        else:
+            error(
+                "No application path found. Provide it via CLI or environment variable 'LILYA_DEFAULT_APP'."
+            )
+            sys.exit(1)
+
+        if not reload and not workers:
+            # Run using the actual loaded app instance when possible
+            app_to_run = env.app or app_target
+        else:
+            # Use import path string for reload/workers compatibility
+            app_to_run = app_target  # type: ignore[assignment]
+
         uvicorn.run(
             # in case of no reload and workers, we might end up initializing twice when
             # using a function, so use app instead
-            app=app if not reload and not workers else env.path,
+            app=app_to_run,
             port=port,
             host=host,
             reload=reload,
