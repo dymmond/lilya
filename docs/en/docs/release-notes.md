@@ -5,6 +5,17 @@ hide:
 
 # Release Notes
 
+## 0.22.3
+
+### Added
+
+- `runserver_theme` to `Lilya` settings and `runserver` directive. This allows you to customise the theme of the
+`lilya runserver` command.
+
+### Fixed
+
+- Regression in runserver with a path provided.
+
 ## 0.22.2
 
 ### Added

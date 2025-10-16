@@ -5,6 +5,8 @@ from rich_toolkit import RichToolkit, RichToolkitTheme
 from rich_toolkit.styles import TaggedStyle
 from uvicorn.logging import DefaultFormatter
 
+from lilya.conf import settings
+
 
 class CustomFormatter(DefaultFormatter):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -54,9 +56,6 @@ def get_log_config() -> dict[str, Any]:
     }
 
 
-logger = logging.getLogger(__name__)
-
-
 def get_ui_toolkit() -> RichToolkit:
     """
     Returns a RichToolkit instance with a custom theme for the terminal UI.
@@ -77,17 +76,7 @@ def get_ui_toolkit() -> RichToolkit:
     """
     theme = RichToolkitTheme(
         style=TaggedStyle(tag_width=11),
-        theme={
-            "tag.title": "white on #02a6f2",
-            "tag": "white on #025af2",
-            "placeholder": "grey85",
-            "text": "white",
-            "selected": "#025af2",
-            "result": "grey85",
-            "progress": "on #025af2",
-            "error": "red",
-            "log.info": "black on blue",
-        },
+        theme=settings.runserver_theme,
     )
 
     return RichToolkit(theme=theme)
