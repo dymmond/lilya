@@ -1325,16 +1325,13 @@ async def test_eventstream_response_empty_generator(test_client_factory):
 
 
 async def test_eventstream_response_send_timeout(test_client_factory):
-    """
-    Ensures that send_timeout triggers graceful closure.
-    """
-
     async def gen():
         yield {"event": "tick", "data": 1}
         await anyio.sleep(0.2)  # exceeds send_timeout
         yield {"event": "tick", "data": 2}
 
-    response = EventStreamResponse(gen(), send_timeout=0.05)
+    # Timeout is in seconds (0.00005s = 50 ms)
+    response = EventStreamResponse(gen(), send_timeout=0.00005)
 
     sent_chunks: list[bytes] = []
 
@@ -1345,6 +1342,7 @@ async def test_eventstream_response_send_timeout(test_client_factory):
     async def receive():
         await anyio.sleep_forever()
 
+    # Expect a single TimeoutError, not an ExceptionGroup
     with pytest.raises(Exception) as excinfo:
         await response({"type": "http"}, receive, send)
 

@@ -571,6 +571,21 @@ class EventStreamResponse(Response):
             background=background,
         )
 
+    async def _send_chunk(self, send: Send, data: str) -> None:
+        if not data.endswith("\n\n"):
+            data += "\n\n"
+        try:
+            with anyio.fail_after(self.send_timeout):
+                await send(
+                    {
+                        "type": "http.response.body",
+                        "body": data.encode("utf-8"),
+                        "more_body": True,
+                    }
+                )
+        except TimeoutError as exc:
+            raise TimeoutError("SSE send timed out") from exc
+
     async def _stream_response(self, send: Send) -> None:
         """
         Stream Server-Sent Events (SSE) to the client.
@@ -618,13 +633,7 @@ class EventStreamResponse(Response):
 
                 # Encode & send normally
                 chunk = self._encode_event(event)
-                await send(
-                    {
-                        "type": "http.response.body",
-                        "body": chunk,
-                        "more_body": True,
-                    }
-                )
+                await self._send_chunk(send, chunk.decode() if isinstance(chunk, bytes) else chunk)
 
         finally:
             async with self._send_lock:
