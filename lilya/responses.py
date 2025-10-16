@@ -20,7 +20,7 @@ from collections.abc import (
     Sequence,
 )
 from contextvars import ContextVar
-from datetime import datetime, timezone
+from datetime import datetime
 from email.utils import format_datetime, formatdate
 from inspect import isawaitable, isclass
 from mimetypes import guess_type
@@ -517,7 +517,6 @@ class EventStreamResponse(Response):
         self.sep = separator or self.DEFAULT_SEPARATOR
         self.retry = retry
 
-        # Normalize to async iterator yielding BYTES, not dicts
         if inspect.isasyncgen(content) or isinstance(content, AsyncIterable):
 
             async def async_bytes_gen() -> AsyncIterable[bytes]:
@@ -525,6 +524,7 @@ class EventStreamResponse(Response):
                     yield self._encode_event(event)
 
             self.body_iterator = async_bytes_gen()
+
         else:
 
             async def sync_bytes_gen() -> AsyncIterable[bytes]:  # type: ignore
@@ -562,7 +562,8 @@ class EventStreamResponse(Response):
 
     async def _stream_response(self, send: Send) -> None:
         """
-        Stream the events from body_iterator to the client.
+        Stream Server-Sent Events (SSE) to the client.
+        Includes per-event timeout and graceful closure.
         """
         await send(
             {
@@ -572,40 +573,95 @@ class EventStreamResponse(Response):
             }
         )
 
-        async for event in self.body_iterator:
-            chunk = self._encode_event(event)  # type: ignore
-            logger.debug("SSE chunk: %r", chunk)
-            with anyio.move_on_after(self.send_timeout) as cancel_scope:
-                await send({"type": "http.response.body", "body": chunk, "more_body": True})
+        aiter_obj = self.body_iterator.__aiter__()
 
-            if cancel_scope.cancel_called:
-                # gracefully close stream if timeout
-                if hasattr(self.body_iterator, "aclose"):
-                    await self.body_iterator.aclose()
+        try:
+            while True:
+                try:
+                    if self.send_timeout is not None:
+                        try:
+                            # Wait for the next event with a timeout.
+                            with anyio.fail_after(self.send_timeout):
+                                event = await aiter_obj.__anext__()
+                        except TimeoutError:
+                            logger.warning("SSE send timed out after %.3fs", self.send_timeout)
+                            self.active = False
+                            async with self._send_lock:
+                                await send(
+                                    {"type": "http.response.body", "body": b"", "more_body": False}
+                                )
+                            raise TimeoutError("SSE send timed out") from None
+                        except anyio.get_cancelled_exc_class():
+                            logger.warning("SSE send timed out after %.3fs", self.send_timeout)
+                            self.active = False
+                            async with self._send_lock:
+                                await send(
+                                    {"type": "http.response.body", "body": b"", "more_body": False}
+                                )
+                            raise TimeoutError("SSE send timed out") from None
+                    else:
+                        event = await aiter_obj.__anext__()
+
+                except StopAsyncIteration:
+                    break
+
+                # Encode & send normally
+                chunk = self._encode_event(event)
+                await send(
+                    {
+                        "type": "http.response.body",
+                        "body": chunk,
+                        "more_body": True,
+                    }
+                )
+
+        finally:
+            async with self._send_lock:
                 self.active = False
-                raise TimeoutError("SSE send timed out")
-
-        async with self._send_lock:
-            self.active = False
-            await send({"type": "http.response.body", "body": b"", "more_body": False})
+                await send({"type": "http.response.body", "body": b"", "more_body": False})
 
     async def _ping(self, send: Send) -> None:
         """
-        Periodically send ping messages to keep the connection alive.
+        Periodically sends ping comments or custom ping messages.
         """
-        while self.active:
-            await anyio.sleep(self.ping_interval)
+        if not self.ping_interval:
+            return
+
+        try:
+            # Immediate first ping
             ping_event = (
-                self.ping_message_factory()
-                if self.ping_message_factory
-                else {":": f"ping - {datetime.now(timezone.utc)}"}
+                self.ping_message_factory() if self.ping_message_factory else {":": "ping"}
             )
-            ping_bytes = self._encode_event(ping_event)
-            async with self._send_lock:
-                if self.active:
-                    await send(
-                        {"type": "http.response.body", "body": ping_bytes, "more_body": True}
-                    )
+            await send(
+                {
+                    "type": "http.response.body",
+                    "body": self._encode_event(ping_event),
+                    "more_body": True,
+                }
+            )
+
+            # Give control back to event loop to allow _stream_response to close
+            await anyio.sleep(0)
+
+            # Exit early if stream already done (short-lived)
+            if not self.active:
+                return
+
+            # Continue periodic pings
+            while self.active:
+                await anyio.sleep(self.ping_interval)
+                ping_event = (
+                    self.ping_message_factory() if self.ping_message_factory else {":": "ping"}
+                )
+                await send(
+                    {
+                        "type": "http.response.body",
+                        "body": self._encode_event(ping_event),
+                        "more_body": True,
+                    }
+                )
+        except Exception:
+            ...
 
     async def _listen_for_disconnect(self, receive: Receive) -> None:
         """
@@ -634,28 +690,37 @@ class EventStreamResponse(Response):
         """
         async with anyio.create_task_group() as tg:
 
-            async def cancel_on_finish(coro: Callable[[], Awaitable[None]]) -> None:
-                await coro()
+            async def cancel_on_finish() -> None:
+                await self._stream_response(send)
                 tg.cancel_scope.cancel()
 
-            tg.start_soon(cancel_on_finish, lambda: self._stream_response(send))
-            tg.start_soon(cancel_on_finish, lambda: self._ping(send))
-            tg.start_soon(cancel_on_finish, self._listen_for_exit_signal)
+            async def cancel_on_disconnect() -> None:
+                await self._listen_for_disconnect(receive)
+                tg.cancel_scope.cancel()
+
+            tg.start_soon(cancel_on_finish)
+            tg.start_soon(self._ping, send)
+            tg.start_soon(cancel_on_disconnect)
+            tg.start_soon(self._listen_for_exit_signal)
 
             if self.data_sender_callable:
                 tg.start_soon(self.data_sender_callable)
 
-            # disconnect listener runs last
-            tg.start_soon(cancel_on_finish, lambda: self._listen_for_disconnect(receive))
-
         if self.background:
             await self.background()
 
-    def _encode_event(self, event: dict[str, Any]) -> bytes:
-        if ":" in event:
-            return f": {event[':']}{self.sep}{self.sep}".encode()
+    def _encode_event(self, event: dict[str, Any] | bytes) -> bytes:
+        """
+        Encodes a single event dictionary into SSE-compliant text bytes.
+        """
+        if isinstance(event, bytes):
+            return event
 
         lines: list[str] = []
+
+        if ":" in event:  # comment line
+            lines.append(f": {event[':']}")
+
         if "id" in event:
             lines.append(f"id: {event['id']}")
         if "event" in event:
@@ -663,11 +728,13 @@ class EventStreamResponse(Response):
         if "data" in event:
             data = event["data"]
             if isinstance(data, (dict, list)):
-                data = serializer.dumps(data, separators=(",", ": "))
+                data = serializer.dumps(data, separators=(", ", ": "))
             lines.append(f"data: {data}")
-        retry = event.get("retry", self.retry)  # ✅ use global retry if not per-event
-        if retry is not None:
-            lines.append(f"retry: {retry}")
+        if "retry" in event or self.retry:
+            retry = event.get("retry", self.retry)
+            if retry is not None:
+                lines.append(f"retry: {retry}")
+
         return (self.sep.join(lines) + self.sep * 2).encode("utf-8")
 
 

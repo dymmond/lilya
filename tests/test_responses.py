@@ -45,6 +45,9 @@ from lilya.testclient import TestClient
 class Foo: ...
 
 
+pytestmark = pytest.mark.asyncio
+
+
 def to_position_labeled_params(inp: list[tuple], pos: int) -> list[pytest.param]:
     return [pytest.param(*param, id=param[pos]) for param in inp]
 
@@ -1319,3 +1322,134 @@ async def test_eventstream_response_empty_generator(test_client_factory):
     response = EventStreamResponse(gen())
     body = b"".join([chunk async for chunk in response.body_iterator])
     assert body == b""
+
+
+async def test_eventstream_response_send_timeout(test_client_factory):
+    """
+    Ensures that send_timeout triggers graceful closure.
+    """
+
+    async def gen():
+        yield {"event": "tick", "data": 1}
+        await anyio.sleep(0.2)  # exceeds send_timeout
+        yield {"event": "tick", "data": 2}
+
+    response = EventStreamResponse(gen(), send_timeout=0.05)
+
+    sent_chunks: list[bytes] = []
+
+    async def send(msg):
+        if msg["type"] == "http.response.body":
+            sent_chunks.append(msg["body"])
+
+    async def receive():
+        await anyio.sleep_forever()
+
+    with pytest.raises(Exception) as excinfo:
+        await response({"type": "http"}, receive, send)
+
+    assert len(excinfo.value.exceptions) == 1
+    assert isinstance(excinfo.value.exceptions[0], TimeoutError)
+    assert str(excinfo.value.exceptions[0]) == "SSE send timed out"
+
+
+async def test_eventstream_response_client_disconnect_handler_called(test_client_factory):
+    called = False
+
+    async def client_close_handler(message):
+        nonlocal called
+        called = True
+        assert message["type"] == "http.disconnect"
+
+    async def gen():
+        yield {"event": "tick", "data": "A"}
+
+    response = EventStreamResponse(gen(), client_close_handler=client_close_handler)
+
+    async def receive():
+        return {"type": "http.disconnect"}
+
+    async def send(msg): ...
+
+    await response({"type": "http"}, receive, send)
+    assert called
+
+
+async def test_eventstream_response_custom_ping_message_factory(test_client_factory):
+    async def gen():
+        yield {"event": "data", "data": 1}
+
+    def custom_ping():
+        return {":": "custom-ping"}
+
+    response = EventStreamResponse(
+        gen(),
+        ping_interval=0.01,
+        ping_message_factory=custom_ping,
+    )
+
+    sent = []
+
+    async def send(msg):
+        if msg["type"] == "http.response.body":
+            sent.append(msg["body"])
+
+    async def receive():
+        await anyio.sleep(0.05)
+        return {"type": "http.disconnect"}
+
+    await response({"type": "http"}, receive, send)
+    combined = b"".join(sent)
+    assert b": custom-ping" in combined
+
+
+def test_eventstream_response_invalid_separator_raises():
+    with pytest.raises(ValueError):
+        EventStreamResponse([], separator="INVALID")
+
+
+async def test_eventstream_response_sync_iterable_bytes(test_client_factory):
+    content = [{"event": "msg", "data": "sync"}]
+    response = EventStreamResponse(content)
+    chunks = [chunk async for chunk in response.body_iterator]
+    assert chunks == [b"event: msg\ndata: sync\n\n"]
+
+
+async def test_eventstream_response_json_dict_serialization(test_client_factory):
+    async def gen():
+        yield {"event": "data", "data": {"nested": [1, 2, 3]}}
+
+    response = EventStreamResponse(gen())
+    chunks = [chunk async for chunk in response.body_iterator]
+    assert b'data: {"nested": [1, 2, 3]}' in chunks[0]
+
+
+async def test_eventstream_response_sends_ping_comment():
+    """
+    Ensures periodic ping comments are sent to keep the connection alive.
+    """
+    events = [{"event": "tick", "data": 1}]
+
+    async def app(scope, receive, send):
+        response = EventStreamResponse(
+            content=events,
+            ping_interval=0.01,  # very frequent pings
+        )
+        with anyio.move_on_after(0.05) as cancel_scope:
+            await response(scope, receive, send)
+        assert not cancel_scope.cancel_called
+
+    async def receive():
+        await anyio.sleep(0.05)
+        return {"type": "http.disconnect"}
+
+    sent = []
+
+    async def send(message):
+        if message["type"] == "http.response.body":
+            sent.append(message["body"])
+
+    await app({"type": "http"}, receive, send)
+    joined = b"".join(sent)
+    assert b"data: 1" in joined
+    assert b": ping" in joined
