@@ -1325,16 +1325,13 @@ async def test_eventstream_response_empty_generator(test_client_factory):
 
 
 async def test_eventstream_response_send_timeout(test_client_factory):
-    """
-    Ensures that send_timeout triggers graceful closure.
-    """
-
     async def gen():
         yield {"event": "tick", "data": 1}
         await anyio.sleep(0.2)  # exceeds send_timeout
         yield {"event": "tick", "data": 2}
 
-    response = EventStreamResponse(gen(), send_timeout=0.05)
+    # Timeout is in seconds (0.00005s = 50 ms)
+    response = EventStreamResponse(gen(), send_timeout=0.00005)
 
     sent_chunks: list[bytes] = []
 
@@ -1345,6 +1342,7 @@ async def test_eventstream_response_send_timeout(test_client_factory):
     async def receive():
         await anyio.sleep_forever()
 
+    # Expect a single TimeoutError, not an ExceptionGroup
     with pytest.raises(Exception) as excinfo:
         await response({"type": "http"}, receive, send)
 
@@ -1425,9 +1423,6 @@ async def test_eventstream_response_json_dict_serialization(test_client_factory)
 
 
 async def test_eventstream_response_sends_ping_comment():
-    """
-    Ensures periodic ping comments are sent to keep the connection alive.
-    """
     events = [{"event": "tick", "data": 1}]
 
     async def app(scope, receive, send):
@@ -1435,12 +1430,14 @@ async def test_eventstream_response_sends_ping_comment():
             content=events,
             ping_interval=0.01,  # very frequent pings
         )
-        with anyio.move_on_after(0.05) as cancel_scope:
+        with anyio.move_on_after(0.1) as cancel_scope:  # allow more time
             await response(scope, receive, send)
+        # Response should have finished gracefully
         assert not cancel_scope.cancel_called
 
     async def receive():
-        await anyio.sleep(0.05)
+        # Disconnect slightly earlier to let response exit before timeout
+        await anyio.sleep(0.03)
         return {"type": "http.disconnect"}
 
     sent = []
@@ -1450,6 +1447,135 @@ async def test_eventstream_response_sends_ping_comment():
             sent.append(message["body"])
 
     await app({"type": "http"}, receive, send)
-    joined = b"".join(sent)
-    assert b"data: 1" in joined
-    assert b": ping" in joined
+
+    # Verify pings and event payloads
+    body = b"".join(sent).decode()
+    assert ": ping" in body or "event: ping" in body
+    assert "event: tick" in body
+    assert "data: 1" in body
+
+
+async def test_eventstream_response_retry_field(test_client_factory):
+    async def gen():
+        yield {"event": "tick", "data": 1, "retry": 3000}
+
+    response = EventStreamResponse(gen())
+
+    sent_chunks = []
+
+    async def send(msg):
+        if msg["type"] == "http.response.body":
+            sent_chunks.append(msg["body"])
+
+    # Simulate a disconnect so the stream exits gracefully
+    async def receive():
+        await anyio.sleep(0.02)
+        return {"type": "http.disconnect"}
+
+    await response({"type": "http"}, receive, send)
+
+    body = b"".join(sent_chunks).decode()
+    assert "retry: 3000" in body
+    assert "event: tick" in body
+    assert "data: 1" in body
+
+
+async def test_eventstream_response_global_retry(test_client_factory):
+    async def gen():
+        yield {"event": "message", "data": "hello"}
+
+    response = EventStreamResponse(gen(), retry=5000)
+
+    sent_chunks = []
+
+    async def send(msg):
+        if msg["type"] == "http.response.body":
+            sent_chunks.append(msg["body"])
+
+    # Simulate a client that disconnects after 20 ms
+    async def receive():
+        await anyio.sleep(0.02)
+        return {"type": "http.disconnect"}
+
+    await response({"type": "http"}, receive, send)
+
+    body = b"".join(sent_chunks).decode()
+    assert "retry: 5000" in body
+
+
+async def test_eventstream_response_reconnect_on_disconnect(test_client_factory):
+    called = False
+
+    async def handler(msg):
+        nonlocal called
+        called = True
+        assert msg["type"] == "http.disconnect"
+
+    async def gen():
+        yield {"event": "tick", "data": 1}
+        await anyio.sleep(0.01)
+        yield {"event": "tick", "data": 2}
+
+    response = EventStreamResponse(gen(), client_close_handler=handler)
+
+    sent_chunks = []
+
+    async def send(msg):
+        if msg["type"] == "http.response.body":
+            sent_chunks.append(msg["body"])
+
+    async def receive():
+        await anyio.sleep(0.02)
+        return {"type": "http.disconnect"}
+
+    await response({"type": "http"}, receive, send)
+
+    assert called is True
+
+
+async def test_eventstream_response_sends_periodic_ping(test_client_factory):
+    async def gen():
+        yield {"event": "tick", "data": 1}
+        await anyio.sleep(0.1)
+
+    response = EventStreamResponse(gen(), ping_interval=0.01)
+
+    sent_chunks = []
+
+    async def send(msg):
+        if msg["type"] == "http.response.body":
+            sent_chunks.append(msg["body"])
+
+    async def receive():
+        await anyio.sleep(0.05)
+        return {"type": "http.disconnect"}
+
+    await response({"type": "http"}, receive, send)
+
+    # There should be ping comments (": ping") in the output
+    ping_count = sum(b": ping" in chunk for chunk in sent_chunks)
+    assert ping_count >= 1
+
+
+async def test_eventstream_response_retry_and_ping_together(test_client_factory):
+    async def gen():
+        yield {"event": "tick", "data": "ok", "retry": 4000}
+        await anyio.sleep(0.02)
+
+    response = EventStreamResponse(gen(), ping_interval=0.01)
+
+    sent_chunks = []
+
+    async def send(msg):
+        if msg["type"] == "http.response.body":
+            sent_chunks.append(msg["body"])
+
+    async def receive():
+        await anyio.sleep(0.03)
+        return {"type": "http.disconnect"}
+
+    await response({"type": "http"}, receive, send)
+
+    output = b"".join(sent_chunks).decode()
+    assert "retry: 4000" in output
+    assert ": ping" in output

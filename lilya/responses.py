@@ -536,9 +536,16 @@ class EventStreamResponse(Response):
         self.status_code = status_code
         self.media_type = media_type or self.media_type
         self.background = background
-        self.ping_interval = ping_interval or self.DEFAULT_PING_INTERVAL
         self.ping_message_factory = ping_message_factory
-        self.send_timeout = send_timeout
+
+        ping_interval = ping_interval or self.DEFAULT_PING_INTERVAL
+        send_timeout = send_timeout
+
+        self.ping_interval = (
+            ping_interval * 1000 if ping_interval is not None else self.DEFAULT_PING_INTERVAL
+        )
+        self.send_timeout = send_timeout * 1000 if send_timeout is not None else None
+
         self.data_sender_callable = data_sender_callable
         self.client_close_handler = client_close_handler
         self.active = True
@@ -548,9 +555,13 @@ class EventStreamResponse(Response):
             "Cache-Control": "no-store",
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",
+            "Transfer-Encoding": "chunked",
         }
         if headers:
             default_headers.update(headers)
+
+        default_headers.pop("content-length", None)
+        default_headers.pop("Content-Length", None)
 
         super().__init__(
             content=None,
@@ -559,6 +570,21 @@ class EventStreamResponse(Response):
             media_type=self.media_type,
             background=background,
         )
+
+    async def _send_chunk(self, send: Send, data: str) -> None:
+        if not data.endswith("\n\n"):
+            data += "\n\n"
+        try:
+            with anyio.fail_after(self.send_timeout):
+                await send(
+                    {
+                        "type": "http.response.body",
+                        "body": data.encode("utf-8"),
+                        "more_body": True,
+                    }
+                )
+        except TimeoutError as exc:
+            raise TimeoutError("SSE send timed out") from exc
 
     async def _stream_response(self, send: Send) -> None:
         """
@@ -607,13 +633,7 @@ class EventStreamResponse(Response):
 
                 # Encode & send normally
                 chunk = self._encode_event(event)
-                await send(
-                    {
-                        "type": "http.response.body",
-                        "body": chunk,
-                        "more_body": True,
-                    }
-                )
+                await self._send_chunk(send, chunk.decode() if isinstance(chunk, bytes) else chunk)
 
         finally:
             async with self._send_lock:
@@ -692,7 +712,8 @@ class EventStreamResponse(Response):
 
             async def cancel_on_finish() -> None:
                 await self._stream_response(send)
-                tg.cancel_scope.cancel()
+                if self.active:
+                    tg.cancel_scope.cancel()
 
             async def cancel_on_disconnect() -> None:
                 await self._listen_for_disconnect(receive)
