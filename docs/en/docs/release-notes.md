@@ -11,6 +11,10 @@ hide:
 
 - Support for multiple cookie headers in the `Request` object. This follows the [RFC 7540](https://datatracker.ietf.org/doc/html/rfc7540).
 
+## Changed
+
+- Core implementation for EventStreamResponse to support multiple headers and parameters.
+
 ## 0.22.1
 
 ### Changed

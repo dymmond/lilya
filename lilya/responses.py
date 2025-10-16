@@ -10,10 +10,10 @@ import time
 import typing
 import warnings
 from collections.abc import (
-    AsyncGenerator,
     AsyncIterable,
     Awaitable,
     Callable,
+    Coroutine,
     Generator,
     Iterable,
     Mapping,
@@ -42,9 +42,10 @@ from lilya.concurrency import iterate_in_threadpool
 from lilya.datastructures import URL, Header
 from lilya.encoders import ENCODER_TYPES, EncoderProtocol, MoldingProtocol, json_encode
 from lilya.enums import Event, HTTPMethod, MediaType
+from lilya.logging import logger
 from lilya.ranges import ContentRanges, Range, parse_range_value
 from lilya.serializers import serializer
-from lilya.types import Receive, Scope, Send
+from lilya.types import Message, Receive, Scope, Send
 
 try:
     import yaml
@@ -475,77 +476,250 @@ class StreamingResponse(Response):
             await self.background()
 
 
-class EventStreamResponse(StreamingResponse):
+class EventStreamResponse(Response):
     """
-    A response for sending Server-Sent Events (SSE) to the client.
+    Server-Sent Events (SSE) streaming response for Lilya.
 
-    This subclass of `StreamingResponse` automatically formats the
-    stream according to the SSE protocol (`text/event-stream`).
+    Fully async and anyio-native, matching Starlette's EventSourceResponse
+    behavior while keeping Lilya conventions.
 
-    Example:
-        async def event_stream():
-            for i in range(5):
-                yield {"event": "tick", "data": i}
-
-        response = EventStreamResponse(event_stream())
+    Supports:
+    - async and sync iterables
+    - pings (keep-alive comments)
+    - send timeout
+    - graceful shutdown
+    - client disconnect detection
     """
+
+    DEFAULT_PING_INTERVAL = 15
+    DEFAULT_SEPARATOR = "\n"
 
     media_type = "text/event-stream"
 
     def __init__(
         self,
-        content: AsyncGenerator[dict[str, Any], None]
-        | AsyncIterable[dict[str, Any]]
-        | Generator[dict[str, Any], None, None]
-        | Iterable[dict[str, Any]],
+        content: AsyncIterable[dict[str, Any]],
         *,
+        status_code: int = 200,
+        headers: Mapping[str, str] | None = None,
+        media_type: str = "text/event-stream",
+        background: Task | None = None,
         retry: int | None = None,
-        **kwargs: Any,
+        ping_interval: int | None = None,
+        separator: str | None = None,
+        ping_message_factory: Callable[[], dict[str, Any]] | None = None,
+        send_timeout: float | None = None,
+        data_sender_callable: Callable[[], Coroutine[None, None, None]] | None = None,
+        client_close_handler: Callable[[Message], Awaitable[None]] | None = None,
     ) -> None:
+        if separator not in (None, "\r\n", "\r", "\n"):
+            raise ValueError(f"sep must be one of: \\r\\n, \\r, \\n, got: {separator}")
+        self.sep = separator or self.DEFAULT_SEPARATOR
         self.retry = retry
 
-        if (
-            inspect.isasyncgen(content)
-            or inspect.isasyncgenfunction(content)
-            or isinstance(content, AsyncIterable)
-        ):
-            iterator = self._format_async(content)  # type: ignore[arg-type]
+        if inspect.isasyncgen(content) or isinstance(content, AsyncIterable):
+
+            async def async_bytes_gen() -> AsyncIterable[bytes]:
+                async for event in content:
+                    yield self._encode_event(event)
+
+            self.body_iterator = async_bytes_gen()
+
         else:
-            iterator = self._format_sync(content)
 
-        super().__init__(iterator, media_type=self.media_type, **kwargs)
+            async def sync_bytes_gen() -> AsyncIterable[bytes]:  # type: ignore
+                for event in content:
+                    yield self._encode_event(event)
 
-    async def _format_async(
-        self, content: AsyncIterable[dict[str, Any]]
-    ) -> AsyncGenerator[bytes, None]:
+            self.body_iterator = sync_bytes_gen()
+
+        self.status_code = status_code
+        self.media_type = media_type or self.media_type
+        self.background = background
+        self.ping_interval = ping_interval or self.DEFAULT_PING_INTERVAL
+        self.ping_message_factory = ping_message_factory
+        self.send_timeout = send_timeout
+        self.data_sender_callable = data_sender_callable
+        self.client_close_handler = client_close_handler
+        self.active = True
+        self._send_lock = anyio.Lock()
+
+        default_headers = {
+            "Cache-Control": "no-store",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        }
+        if headers:
+            default_headers.update(headers)
+
+        super().__init__(
+            content=None,
+            status_code=status_code,
+            headers=default_headers,
+            media_type=self.media_type,
+            background=background,
+        )
+
+    async def _stream_response(self, send: Send) -> None:
         """
-        Formats events from an asynchronous iterable into SSE-compliant text bytes.
-
-        Args:
-            content (AsyncIterable[dict[str, Any]]): An asynchronous iterable of event dictionaries.
+        Stream Server-Sent Events (SSE) to the client.
+        Includes per-event timeout and graceful closure.
         """
-        async for event in content:
-            yield self.encode_event(event)
+        await send(
+            {
+                "type": "http.response.start",
+                "status": self.status_code,
+                "headers": self.raw_headers,
+            }
+        )
 
-    async def _format_sync(self, content: Iterable[dict[str, Any]]) -> AsyncGenerator[bytes, None]:
+        aiter_obj = self.body_iterator.__aiter__()
+
+        try:
+            while True:
+                try:
+                    if self.send_timeout is not None:
+                        try:
+                            # Wait for the next event with a timeout.
+                            with anyio.fail_after(self.send_timeout):
+                                event = await aiter_obj.__anext__()
+                        except TimeoutError:
+                            logger.warning("SSE send timed out after %.3fs", self.send_timeout)
+                            self.active = False
+                            async with self._send_lock:
+                                await send(
+                                    {"type": "http.response.body", "body": b"", "more_body": False}
+                                )
+                            raise TimeoutError("SSE send timed out") from None
+                        except anyio.get_cancelled_exc_class():
+                            logger.warning("SSE send timed out after %.3fs", self.send_timeout)
+                            self.active = False
+                            async with self._send_lock:
+                                await send(
+                                    {"type": "http.response.body", "body": b"", "more_body": False}
+                                )
+                            raise TimeoutError("SSE send timed out") from None
+                    else:
+                        event = await aiter_obj.__anext__()
+
+                except StopAsyncIteration:
+                    break
+
+                # Encode & send normally
+                chunk = self._encode_event(event)
+                await send(
+                    {
+                        "type": "http.response.body",
+                        "body": chunk,
+                        "more_body": True,
+                    }
+                )
+
+        finally:
+            async with self._send_lock:
+                self.active = False
+                await send({"type": "http.response.body", "body": b"", "more_body": False})
+
+    async def _ping(self, send: Send) -> None:
         """
-        Formats events from a synchronous iterable into SSE-compliant text bytes.
-
-        Args:
-            content (Iterable[dict[str, Any]]): An iterable of event dictionaries.
+        Periodically sends ping comments or custom ping messages.
         """
-        for event in content:
-            yield self.encode_event(event)
+        if not self.ping_interval:
+            return
 
-    def encode_event(self, event: dict[str, Any]) -> bytes:
+        try:
+            # Immediate first ping
+            ping_event = (
+                self.ping_message_factory() if self.ping_message_factory else {":": "ping"}
+            )
+            await send(
+                {
+                    "type": "http.response.body",
+                    "body": self._encode_event(ping_event),
+                    "more_body": True,
+                }
+            )
+
+            # Give control back to event loop to allow _stream_response to close
+            await anyio.sleep(0)
+
+            # Exit early if stream already done (short-lived)
+            if not self.active:
+                return
+
+            # Continue periodic pings
+            while self.active:
+                await anyio.sleep(self.ping_interval)
+                ping_event = (
+                    self.ping_message_factory() if self.ping_message_factory else {":": "ping"}
+                )
+                await send(
+                    {
+                        "type": "http.response.body",
+                        "body": self._encode_event(ping_event),
+                        "more_body": True,
+                    }
+                )
+        except Exception:
+            ...
+
+    async def _listen_for_disconnect(self, receive: Receive) -> None:
+        """
+        Watch for a disconnect message from the client.
+        """
+        while self.active:
+            message = await receive()
+            if message["type"] == "http.disconnect":
+                self.active = False
+                logger.debug("Client disconnected from SSE stream.")
+                if self.client_close_handler:
+                    await self.client_close_handler(message)
+                break
+
+    async def _listen_for_exit_signal(self) -> None:
+        """
+        Hook for future Lilya shutdown signals (if available).
+        Currently just a placeholder for Starlette-like behavior.
+        """
+        # could integrate Lilya AppStatus here if available
+        await anyio.sleep_forever()
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """
+        Entrypoint for Lilya's ASGI contract.
+        """
+        async with anyio.create_task_group() as tg:
+
+            async def cancel_on_finish() -> None:
+                await self._stream_response(send)
+                tg.cancel_scope.cancel()
+
+            async def cancel_on_disconnect() -> None:
+                await self._listen_for_disconnect(receive)
+                tg.cancel_scope.cancel()
+
+            tg.start_soon(cancel_on_finish)
+            tg.start_soon(self._ping, send)
+            tg.start_soon(cancel_on_disconnect)
+            tg.start_soon(self._listen_for_exit_signal)
+
+            if self.data_sender_callable:
+                tg.start_soon(self.data_sender_callable)
+
+        if self.background:
+            await self.background()
+
+    def _encode_event(self, event: dict[str, Any] | bytes) -> bytes:
         """
         Encodes a single event dictionary into SSE-compliant text bytes.
-
-        Args:
-            event (dict[str, Any]): A dictionary representing the event.
-                Supported keys are 'event', 'data', 'id', and 'retry'.
         """
+        if isinstance(event, bytes):
+            return event
+
         lines: list[str] = []
+
+        if ":" in event:  # comment line
+            lines.append(f": {event[':']}")
 
         if "id" in event:
             lines.append(f"id: {event['id']}")
@@ -554,13 +728,14 @@ class EventStreamResponse(StreamingResponse):
         if "data" in event:
             data = event["data"]
             if isinstance(data, (dict, list)):
-                data = serializer.dumps(data, separators=(",", ": "))
+                data = serializer.dumps(data, separators=(", ", ": "))
             lines.append(f"data: {data}")
         if "retry" in event or self.retry:
             retry = event.get("retry", self.retry)
             if retry is not None:
                 lines.append(f"retry: {retry}")
-        return ("\n".join(lines) + "\n\n").encode("utf-8")
+
+        return (self.sep.join(lines) + self.sep * 2).encode("utf-8")
 
 
 class FileResponse(Response):
