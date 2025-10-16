@@ -712,7 +712,8 @@ class EventStreamResponse(Response):
 
             async def cancel_on_finish() -> None:
                 await self._stream_response(send)
-                tg.cancel_scope.cancel()
+                if self.active:
+                    tg.cancel_scope.cancel()
 
             async def cancel_on_disconnect() -> None:
                 await self._listen_for_disconnect(receive)
