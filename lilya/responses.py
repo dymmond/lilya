@@ -536,9 +536,16 @@ class EventStreamResponse(Response):
         self.status_code = status_code
         self.media_type = media_type or self.media_type
         self.background = background
-        self.ping_interval = ping_interval or self.DEFAULT_PING_INTERVAL
         self.ping_message_factory = ping_message_factory
-        self.send_timeout = send_timeout
+
+        ping_interval = ping_interval or self.DEFAULT_PING_INTERVAL
+        send_timeout = send_timeout
+
+        self.ping_interval = (
+            ping_interval * 1000 if ping_interval is not None else self.DEFAULT_PING_INTERVAL
+        )
+        self.send_timeout = send_timeout * 1000 if send_timeout is not None else None
+
         self.data_sender_callable = data_sender_callable
         self.client_close_handler = client_close_handler
         self.active = True
@@ -548,9 +555,13 @@ class EventStreamResponse(Response):
             "Cache-Control": "no-store",
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",
+            "Transfer-Encoding": "chunked",
         }
         if headers:
             default_headers.update(headers)
+
+        default_headers.pop("content-length", None)
+        default_headers.pop("Content-Length", None)
 
         super().__init__(
             content=None,

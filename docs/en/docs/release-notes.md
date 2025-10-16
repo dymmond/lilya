@@ -5,6 +5,14 @@ hide:
 
 # Release Notes
 
+## 0.22.4
+
+This was missed from the 0.22.3 release.
+
+### Fixed
+
+- Fixed `EventStreamResponse` when it was not establishing the connection properly.
+
 ## 0.22.3
 
 ### Added
