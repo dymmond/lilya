@@ -545,6 +545,7 @@ class EventStreamResponse(Response):
             ping_interval * 1000 if ping_interval is not None else self.DEFAULT_PING_INTERVAL
         )
         self.send_timeout = send_timeout * 1000 if send_timeout is not None else None
+        self.timeout_in_seconds = send_timeout if send_timeout else None
 
         self.data_sender_callable = data_sender_callable
         self.client_close_handler = client_close_handler
@@ -609,7 +610,7 @@ class EventStreamResponse(Response):
                             with anyio.fail_after(self.send_timeout):
                                 event = await aiter_obj.__anext__()
                         except TimeoutError:
-                            logger.warning("SSE send timed out after %.3fs", self.send_timeout)
+                            logger.warning("SSE send timed out after %.3fs", self.timeout_in_seconds)
                             self.active = False
                             async with self._send_lock:
                                 await send(
@@ -617,7 +618,7 @@ class EventStreamResponse(Response):
                                 )
                             raise TimeoutError("SSE send timed out") from None
                         except anyio.get_cancelled_exc_class():
-                            logger.warning("SSE send timed out after %.3fs", self.send_timeout)
+                            logger.warning("SSE send timed out after %.3fs", self.timeout_in_seconds)
                             self.active = False
                             async with self._send_lock:
                                 await send(
