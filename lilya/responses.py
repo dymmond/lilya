@@ -560,7 +560,6 @@ class EventStreamResponse(Response):
         if headers:
             default_headers.update(headers)
 
-        default_headers.pop("content-length", None)
         default_headers.pop("Content-Length", None)
 
         super().__init__(
