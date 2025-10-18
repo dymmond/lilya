@@ -5,6 +5,16 @@ hide:
 
 # Release Notes
 
+## 0.22.5
+
+### Changed
+
+- `EnvironLoader` now support native YAML files.
+
+### Fixed
+
+- Fixed `EventStreamResponse` error message to display in seconds and not milliseconds.
+
 ## 0.22.4
 
 This was missed from the 0.22.3 release.
