@@ -610,7 +610,9 @@ class EventStreamResponse(Response):
                             with anyio.fail_after(self.send_timeout):
                                 event = await aiter_obj.__anext__()
                         except TimeoutError:
-                            logger.warning("SSE send timed out after %.3fs", self.timeout_in_seconds)
+                            logger.warning(
+                                "SSE send timed out after %.3fs", self.timeout_in_seconds
+                            )
                             self.active = False
                             async with self._send_lock:
                                 await send(
@@ -618,7 +620,9 @@ class EventStreamResponse(Response):
                                 )
                             raise TimeoutError("SSE send timed out") from None
                         except anyio.get_cancelled_exc_class():
-                            logger.warning("SSE send timed out after %.3fs", self.timeout_in_seconds)
+                            logger.warning(
+                                "SSE send timed out after %.3fs", self.timeout_in_seconds
+                            )
                             self.active = False
                             async with self._send_lock:
                                 await send(
