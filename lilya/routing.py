@@ -1231,6 +1231,8 @@ class BaseRouter:
         _dependencies = dependencies if dependencies is not None else {}
         self.dependencies = {key: wrap_dependency(dep) for key, dep in _dependencies.items()}
 
+        self.dependency_overrides: dict[str, Any] = {}
+
         self.lifespan_context = handle_lifespan_events(
             on_startup=on_startup, on_shutdown=on_shutdown, lifespan=lifespan
         )
@@ -1340,6 +1342,9 @@ class BaseRouter:
         # expose the matched route + template
         base_scope["route"] = route
         base_scope["route_path_template"] = getattr(route, "path", None)
+
+        if self.dependency_overrides:
+            base_scope["dependency_overrides"] = self.dependency_overrides
 
         new_scope = dict(base_scope)
         new_scope.update(child)

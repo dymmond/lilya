@@ -558,6 +558,10 @@ class BaseHandler:
         if handler and (route_deps := getattr(handler, "_lilya_dependencies", None)):
             merged.update(route_deps)
 
+        # Apply any dependency overrides defined at the app level
+        overrides = request.scope.get("dependency_overrides", {})
+        merged.update(overrides)
+
         # 2) FILTER to only the ones the handler signature actually names as Provides()
         requested: dict[str, Provide | Resolve | Security] = {}
         for name, param in signature.parameters.items():
@@ -667,7 +671,8 @@ class BaseHandler:
                 merged: dict[str, Any] = {}
 
                 # app-level
-                app_obj = getattr(scope.get("app", None), "dependencies", {}) or {}
+                app = scope.get("app", None)
+                app_obj = getattr(app, "dependencies", {}) or {}
                 merged.update(app_obj)
 
                 # include-level
@@ -679,6 +684,10 @@ class BaseHandler:
                 merged.update(route_map)
 
                 websocket = WebSocket(scope, receive, send)
+
+                overrides = websocket.scope.get("dependency_overrides", {})
+                merged.update(overrides)
+
                 # now for each Provides() param, resolve it
                 for name, param in signature.parameters.items():
                     if isinstance(param.default, Provides):

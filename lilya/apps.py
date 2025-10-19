@@ -1035,6 +1035,10 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
         _dependencies = self.load_settings_value("dependencies", dependencies) or {}
         self.dependencies = {key: wrap_dependency(dep) for key, dep in _dependencies.items()}
 
+        # Used for testing purposes
+        # Allows overriding dependencies in tests
+        self.dependency_overrides: dict[str, Any] = {}
+
         self.logging_config = self.load_settings_value("logging_config", logging_config)
         self.serializer_config = self.load_settings_value("serializer_config", serializer_config)
         self.state = State()
@@ -1092,6 +1096,19 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
 
         if self.register_as_global_instance:
             _monkay.set_instance(self)
+
+    def override_dependency(self, name: str, override: Callable[..., Any]) -> None:
+        """
+        Register a global override for a dependency by name.
+        The override will be applied anywhere the dependency is used.
+        """
+        self.dependency_overrides[name] = wrap_dependency(override)
+        self.router.dependency_overrides.update(self.dependency_overrides)
+
+    def reset_dependency_overrides(self) -> None:
+        """Clear all registered dependency overrides."""
+        self.dependency_overrides.clear()
+        self.router.dependency_overrides.clear()
 
     def configure_openapi(self, openapi_config: Any | None = None) -> None:
         from lilya.contrib.openapi.config import OpenAPIConfig
