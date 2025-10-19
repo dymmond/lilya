@@ -183,7 +183,6 @@ def test_eventstreamresponse_integration(monkeypatch):
 
     # Use the streaming context so the connection is closed cleanly
     with client.stream("GET", "/events") as resp:
-        # read just one chunk so we don’t hang
         chunk = next(resp.iter_bytes())
         text = chunk.decode()
 
