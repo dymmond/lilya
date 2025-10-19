@@ -338,7 +338,7 @@ Here, `config` is created once globally and shared across multiple app instances
 
 ## Dependency Overrides
 
-Starting from **Lilya 0.24.0**, you can override registered dependencies dynamically at runtime — typically used in **testing** or **temporary configuration** scenarios.
+Starting from now, you can override registered dependencies dynamically at runtime — typically used in **testing** or **temporary configuration** scenarios.
 
 This feature lets you replace any declared dependency (app-, include-, or route-level) with an alternative implementation **without modifying your source code**.
 
