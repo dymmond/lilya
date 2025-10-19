@@ -15,6 +15,7 @@ or in specific includes. This is particularly useful for testing and mocking dep
 ### Changed
 
 - `EnvironLoader` now support native YAML files.
+- [Environments](./environments.md) documentation section with examples and usage.
 
 ### Fixed
 
