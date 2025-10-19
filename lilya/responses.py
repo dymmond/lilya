@@ -337,7 +337,7 @@ class PlainText(Response):
     media_type = MediaType.TEXT
 
 
-class TestResponse(PlainText): ...
+class TextResponse(PlainText): ...
 
 
 class JSONResponse(Response):
