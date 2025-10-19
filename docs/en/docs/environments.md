@@ -250,8 +250,6 @@ loader.load_from_files(env_file=".env", strict=False)
 
 Warnings will be issued instead of errors.
 
----
-
 ## Summary
 
 | Capability                         |  Supported |   |
@@ -268,7 +266,3 @@ Warnings will be issued instead of errors.
 | Immutable reads                    |      ✅     |   |
 
 Lilya's `EnvironLoader` gives you a single, elegant API for managing configuration safely across environments and deployment targets.
-
----
-
-Would you like me to also generate the example snippets (`normal.py`, `yaml_example.py`, `overrides_example.py`) for inclusion in `docs_src/environments/` to match the existing `{!> ... !}` structure?
