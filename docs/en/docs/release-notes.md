@@ -7,6 +7,11 @@ hide:
 
 ## 0.22.5
 
+### Added
+
+- Support for [dependency overrides](./dependencies.md#dependency-overrides). This allows you to override dependencies globally in the application
+or in specific includes. This is particularly useful for testing and mocking dependencies.
+
 ### Changed
 
 - `EnvironLoader` now support native YAML files.

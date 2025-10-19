@@ -39,6 +39,7 @@ def create_client(
     enable_openapi: bool = True,
     openapi_config: Any | None = None,
     enable_intercept_global_exceptions: bool = True,
+    dependency_overrides: dict[str, Any] | None = None,
     **kwargs: Any,
 ) -> TestClient:
     """
@@ -54,7 +55,7 @@ def create_client(
         response = client.get("/")
     ```
     """
-    return TestClient(
+    client = TestClient(
         app=Lilya(
             settings_module=settings_module,
             debug=debug,
@@ -83,6 +84,11 @@ def create_client(
         check_asgi_conformance=check_asgi_conformance,
         cookies=cookies,
     )
+
+    if dependency_overrides is not None:
+        for key, override in dependency_overrides.items():
+            client.app.override_dependency(key, override)
+    return client
 
 
 def create_async_client(
@@ -111,6 +117,7 @@ def create_async_client(
     enable_openapi: bool = True,
     openapi_config: Any | None = None,
     enable_intercept_global_exceptions: bool = True,
+    dependency_overrides: dict[str, Any] | None = None,
     **kwargs: Any,
 ) -> AsyncTestClient:
     """
@@ -122,7 +129,7 @@ def create_async_client(
         async with create_async_client(routes=...) as client:
             response = await client.get("/")
     """
-    return AsyncTestClient(
+    client = AsyncTestClient(
         app=Lilya(
             settings_module=settings_module,
             debug=debug,
@@ -151,3 +158,8 @@ def create_async_client(
         check_asgi_conformance=check_asgi_conformance,
         cookies=cookies,
     )
+
+    if dependency_overrides is not None:
+        for key, override in dependency_overrides.items():
+            client.app.override_dependency(key, override)
+    return client

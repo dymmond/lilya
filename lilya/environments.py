@@ -11,7 +11,6 @@ from typing import Any, TypeVar
 from multidict import MultiDict
 
 from lilya.exceptions import EnvError
-from lilya.types import Empty
 
 try:
     from yaml import CSafeLoader as SafeLoader, YAMLError
@@ -33,6 +32,14 @@ RE_EXPAND = re.compile(
     r"\$(?:(?P<braced>{(?P<name1>[\w\-\.]+)(?:\|(?P<default1>.*?))?})|(?P<name2>[\w\-\.]+)(?:\|(?P<default2>.*))?)"
 )
 
+
+class _Empty:
+    """A sentinel class to detect if a default value was provided."""
+
+    ...
+
+
+Empty = _Empty()
 
 # A mapping of common string representations to boolean values.
 _BOOLEAN_MAPPING: dict[str, bool] = {
@@ -91,6 +98,7 @@ class EnvironLoader(MultiDict):
         env_file: str | Path | None = None,
         prefix: str | None = None,
         ignore_case: bool = False,
+        strict: bool = False,
     ) -> None:
         """
         Initializes the EnvironLoader.
@@ -106,6 +114,8 @@ class EnvironLoader(MultiDict):
         self._ignore_case = ignore_case
         self._read_keys: set[str] = set()
         self._prefix = prefix or ""
+        self._strict = strict
+
         if self._ignore_case:
             self._prefix = self._prefix.upper()
 
@@ -127,6 +137,45 @@ class EnvironLoader(MultiDict):
 
         if actual_env_file:
             self.load_from_files(env_file=actual_env_file)
+
+    def load_all(
+        self,
+        *,
+        env_file: str | Path | None = None,
+        yaml_file: str | Path | None = None,
+        include_os_env: bool = True,
+        flatten: bool = True,
+        overrides: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """
+        Loads and returns a merged configuration dictionary from environment sources,
+        file sources, and explicit overrides.
+
+        This function is a **convenience wrapper** that:
+        1. Calls `self.load_from_files()` with the loader's stored `self._strict` flag.
+        2. Returns the final, compiled configuration using `self.export()`.
+
+        Args:
+            env_file: Path to a `.env` file to load environment variables from.
+            yaml_file: Path to a YAML configuration file to load structural configuration from.
+            include_os_env: If `True`, includes environment variables already present in `os.environ`.
+            flatten: If `True`, flattens the structured YAML configuration into a single
+                     dictionary using dot notation keys.
+            overrides: A dictionary of key/value pairs that explicitly override any settings
+                       loaded from files or the environment.
+
+        Returns:
+            The final, merged, and processed configuration as a dictionary.
+        """
+        self.load_from_files(
+            env_file=env_file,
+            yaml_file=yaml_file,
+            include_os_env=include_os_env,
+            strict=self._strict,
+            flatten=flatten,
+            overrides=overrides,
+        )
+        return self.export()
 
     def _expand_variable(
         self, match: re.Match, context: dict[str, Any], strict: bool

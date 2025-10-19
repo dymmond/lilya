@@ -335,6 +335,75 @@ Here, `config` is created once globally and shared across multiple app instances
 * **Use `GLOBAL` scope** sparingly, typically for immutable data or global registries.
 * **Avoid mixing lifetimes** in the same dependency chain (e.g., injecting a request-scoped dependency into a global one).
 
+
+## Dependency Overrides
+
+Starting from **Lilya 0.24.0**, you can override registered dependencies dynamically at runtime — typically used in **testing** or **temporary configuration** scenarios.
+
+This feature lets you replace any declared dependency (app-, include-, or route-level) with an alternative implementation **without modifying your source code**.
+
+### Example: Testing with Overrides
+
+```python
+from lilya.apps import Lilya
+from lilya.dependencies import Provide, Provides
+from lilya.testclient import TestClient
+
+async def get_db():
+    return "real_db"
+
+async def get_mock_db():
+    return "mock_db"
+
+app = Lilya(dependencies={"db": Provide(get_db)})
+
+@app.get("/items")
+async def items(db = Provides()):
+    return {"db": db}
+
+# --- testing-time override ---
+app.override_dependency("db", get_mock_db)
+
+client = TestClient(app)
+res = client.get("/items")
+
+assert res.json() == {"db": "mock_db"}
+```
+
+### How It Works
+
+* Overrides are stored on the application as a mapping:
+
+  ```python
+  app.dependency_overrides: dict[str, Callable[..., Any]]
+  ```
+
+* Each request carries the overrides in its **ASGI scope** (`scope["dependency_overrides"]`).
+* During dependency resolution, Lilya first checks if a dependency name exists in that mapping before using the original `Provide` factory.
+
+Overrides therefore apply automatically to all nested `Include` apps and routes, no special wiring needed.
+
+### Runtime API
+
+| Method                                | Description                                            |
+| :------------------------------------ | :----------------------------------------------------- |
+| `app.override_dependency(name, func)` | Registers or updates an override for a dependency key. |
+| `app.reset_dependency_overrides()`    | Clears all registered overrides.                       |
+
+### Use Cases
+
+* **Unit tests**: replace external clients or heavy resources with mocks.
+* **Staging mode**: inject stub services for preview environments.
+* **Hot-swap features**: temporarily substitute a dependency at runtime.
+
+### Notes & Limitations
+
+* Overrides affect **all includes and routes** under the app automatically.
+* They only apply to dependencies resolved through `Provide` / `Provides`.
+* They do **not** apply to [`Resolve`](#the-resolve-dependency-object) or [`Depends`](#depends-and-inject),
+which always call the given function directly.
+* Use `reset_dependency_overrides()` between tests to restore default behavior.
+
 ## Best Practices
 
 * **Keep factories pure**: avoid side effects outside creating the dependency.
