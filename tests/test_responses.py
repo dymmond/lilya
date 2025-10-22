@@ -1552,7 +1552,6 @@ async def test_eventstream_response_sends_periodic_ping(test_client_factory):
 
     await response({"type": "http"}, receive, send)
 
-    # There should be ping comments (": ping") in the output
     ping_count = sum(b": ping" in chunk for chunk in sent_chunks)
     assert ping_count >= 1
 
