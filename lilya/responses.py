@@ -581,11 +581,11 @@ class EventStreamResponse(Response):
 
         # Nginx/Proxy-safe headers
         default_headers = {
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "Content-Type": "text/event-stream",
-            "X-Accel-Buffering": "no",
-            "Transfer-Encoding": "chunked",
+            "cache-control": "no-cache",
+            "connection": "keep-alive",
+            "content-type": "text/event-stream",
+            "x-accel-buffering": "no",
+            "transfer-encoding": "chunked",
         }
         if headers:
             default_headers.update(headers)
@@ -599,6 +599,8 @@ class EventStreamResponse(Response):
             media_type=self.media_type,
             background=background,
         )
+        self.headers["content-type"] = "text/event-stream"
+        self.headers.pop("content-length", None)
 
     async def _send_chunk(self, send: Send, data: str | bytes) -> None:
         """
@@ -650,6 +652,7 @@ class EventStreamResponse(Response):
         )
 
         aiter_obj = self.body_iterator.__aiter__()
+
         try:
             while True:
                 try:
@@ -663,28 +666,45 @@ class EventStreamResponse(Response):
                 except TimeoutError:
                     msg = (
                         f"SSE send timed out after {self._timeout_for_log:.3f}s"
-                        if self._timeout_for_log is not None
+                        if self._timeout_for_log
                         else "SSE send timed out"
                     )
                     logger.warning(msg)
                     self.active = False
                     async with self._send_lock:
-                        await send({"type": "http.response.body", "body": b"", "more_body": False})
+                        await send(
+                            {
+                                "type": "http.response.body",
+                                "body": b"",
+                                "more_body": False,
+                            }
+                        )
                     raise TimeoutError("SSE send timed out") from None
                 except anyio.get_cancelled_exc_class():
-                    msg = (
-                        f"SSE send timed out after {self._timeout_for_log:.3f}s"
-                        if self._timeout_for_log is not None
-                        else "SSE send timed out"
-                    )
-                    logger.warning(msg)
                     self.active = False
                     async with self._send_lock:
-                        await send({"type": "http.response.body", "body": b"", "more_body": False})
+                        await send(
+                            {
+                                "type": "http.response.body",
+                                "body": b"",
+                                "more_body": False,
+                            }
+                        )
                     raise TimeoutError("SSE send timed out") from None
 
+                # Send the encoded event as a body chunk
                 await self._send_chunk(send, event_bytes)
+
         finally:
+            # Always end cleanly for proxies
+            async with self._send_lock:
+                await send(
+                    {
+                        "type": "http.response.body",
+                        "body": b"",
+                        "more_body": False,
+                    }
+                )
             self.active = False
 
     async def _ping(self, send: Send) -> None:
@@ -773,20 +793,20 @@ class EventStreamResponse(Response):
         Runs the SSE stream, listens for disconnects, and ensures graceful teardown.
         """
         async with anyio.create_task_group() as tg:
-            # Start disconnect listener *first*
-            tg.start_soon(self._listen_for_disconnect, receive, tg.cancel_scope)
-            tg.start_soon(self._ping, send)
 
             async def run_stream() -> None:
                 try:
                     await self._stream_response(send)
-                    # short grace window before shutdown
+                    # Short grace window for final disconnects
                     with anyio.move_on_after(0.05):
                         await anyio.sleep(0.05)
                 finally:
                     tg.cancel_scope.cancel()
 
             tg.start_soon(run_stream)
+
+            tg.start_soon(self._ping, send)
+            tg.start_soon(self._listen_for_disconnect, receive, tg.cancel_scope)
             tg.start_soon(self._listen_for_exit_signal)
 
             if self.data_sender_callable:
