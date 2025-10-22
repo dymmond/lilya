@@ -1552,7 +1552,6 @@ async def test_eventstream_response_sends_periodic_ping(test_client_factory):
 
     await response({"type": "http"}, receive, send)
 
-    # There should be ping comments (": ping") in the output
     ping_count = sum(b": ping" in chunk for chunk in sent_chunks)
     assert ping_count >= 1
 
@@ -1579,3 +1578,81 @@ async def test_eventstream_response_retry_and_ping_together(test_client_factory)
     output = b"".join(sent_chunks).decode()
     assert "retry: 4000" in output
     assert ": ping" in output
+
+
+async def test_eventstream_response_nginx_safe_headers_and_flush():
+    """
+    Ensures the SSE response sends proxy-safe headers immediately
+    and never sets a Content-Length that could cause a 502 via NGINX.
+    """
+
+    async def gen():
+        yield {"event": "tick", "data": "ok"}
+
+    response = EventStreamResponse(gen())
+
+    sent_messages = []
+
+    async def send(message):
+        sent_messages.append(message)
+
+    async def receive():
+        # Simulate no disconnect; NGINX would be waiting
+        await anyio.sleep(0.01)
+        return {"type": "http.disconnect"}
+
+    await response({"type": "http"}, receive, send)
+
+    # first message must be response.start
+    start_msg = sent_messages[0]
+
+    assert start_msg["type"] == "http.response.start"
+
+    headers = dict((k.decode(), v.decode()) for k, v in start_msg["headers"])  # noqa
+
+    # It must have the correct NGINX-safe headers
+    assert headers["content-type"] == "text/event-stream"
+    assert headers["connection"] == "keep-alive"
+    assert headers["x-accel-buffering"] == "no"
+    assert headers["transfer-encoding"] == "chunked"
+    assert "content-length" not in headers  # 🚫 would cause 502
+
+    # It must actually send a body chunk (flush)
+    body_msgs = [m for m in sent_messages if m["type"] == "http.response.body"]
+
+    assert body_msgs, "SSE should have sent at least one chunk"
+
+    first_chunk = body_msgs[0]["body"].decode()
+
+    assert "data: ok" in first_chunk or ": ping" in first_chunk
+
+
+async def test_eventstream_response_no_premature_close():
+    """
+    Ensures the SSE stream remains active long enough for NGINX to see data,
+    preventing '502 Bad Gateway' due to premature close.
+    """
+
+    events = [{"event": "msg", "data": "hello"}]
+
+    response = EventStreamResponse(events, ping_interval=0.01)
+
+    sent_messages = []
+
+    async def send(msg):
+        sent_messages.append(msg)
+
+    async def receive():
+        # Simulate short-lived connection (no immediate disconnect)
+        await anyio.sleep(0.02)
+        return {"type": "http.disconnect"}
+
+    await response({"type": "http"}, receive, send)
+
+    # Verify there were multiple sends (start + body)
+    types = [m["type"] for m in sent_messages]
+
+    assert "http.response.start" in types
+    assert "http.response.body" in types
+    # Ensure the last chunk closes gracefully (no exception)
+    assert sent_messages[-1]["more_body"] is False

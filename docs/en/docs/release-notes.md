@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.22.6
+
+### Fixed
+
+- Fix 502 Gateway timeout when using `EventStreamResponse` with long-lived connections.
+
 ## 0.22.5
 
 ### Added
