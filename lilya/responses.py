@@ -58,6 +58,11 @@ try:
 except ImportError:  # pragma: no cover
     msgpack = None
 
+try:
+    import magic
+except ImportError:  # pragma: no cover
+    magic = None
+
 Content = str | bytes
 Encoder = EncoderProtocol | MoldingProtocol
 SyncContentStream = Iterable[Content]
@@ -90,7 +95,7 @@ class Response:
         background: Task | None = None,
         encoders: Sequence[Encoder | type[Encoder]] | None = None,
         passthrough_body_types: tuple[type, ...] | None = None,
-        deduce_media_type: bool = False,
+        deduce_media_type_from_body: bool = False,
     ) -> None:
         if passthrough_body_types is not None:
             self.passthrough_body_types = passthrough_body_types
@@ -100,7 +105,7 @@ class Response:
             self.media_type = media_type
         self.background = background
         self.cookies = cookies
-        self.deduce_media_type = deduce_media_type
+        self.deduce_media_type_from_body = deduce_media_type_from_body
         self.encoders: list[Encoder] = [
             encoder() if isclass(encoder) else encoder for encoder in encoders or _empty
         ]
@@ -111,14 +116,11 @@ class Response:
         self.make_headers(headers)
 
         if (
-            self.deduce_media_type
+            self.deduce_media_type_from_body
             and getattr(self, "body", None) is not None
             and "content-type" not in self.headers
         ):
-            import magic
-
-            mime = magic.from_buffer(self.body[:2048], mime=True)
-            self.headers["content-type"] = mime
+            self.headers["content-type"] = self.find_media_type()
 
     async def resolve_async_content(self) -> None:
         if getattr(self, "async_content", None) is not None:
@@ -130,11 +132,11 @@ class Response:
             ):
                 self.headers["content-length"] = str(len(self.body))
             # deduce media type
-            if self.deduce_media_type and "content-type" not in self.headers:
-                import magic
+            if self.deduce_media_type_from_body and "content-type" not in self.headers:
+                self.headers["content-type"] = self.find_media_type()
 
-                mime = magic.from_buffer(self.body[:2048], mime=True)
-                self.headers["content-type"] = mime
+    def find_media_type(self) -> str:
+        return magic.from_buffer(self.body[:2048], mime=True) or MediaType.OCTET
 
     @classmethod
     @contextlib.contextmanager
@@ -885,6 +887,7 @@ class FileResponse(Response):
         method: str | None = None,
         content_disposition_type: str = "attachment",
         encoders: Sequence[Encoder | type[Encoder]] | None = None,
+        deduce_media_type_from_body: bool = False,
         allow_range_requests: bool = True,
         range_multipart_boundary: bool | str = False,
     ) -> None:
@@ -893,6 +896,7 @@ class FileResponse(Response):
                 '"method" parameter is obsolete. It is now automatically deduced.', stacklevel=2
             )
         self.path = path
+        self.deduce_media_type_from_body = deduce_media_type_from_body
         self.status_code = status_code
         self.allow_range_requests = allow_range_requests
         if not allow_range_requests:
@@ -901,7 +905,7 @@ class FileResponse(Response):
         self.filename = filename
         if media_type is None:
             # by default it must be octet
-            media_type = guess_type(filename or path)[0] or MediaType.OCTET
+            media_type = self.find_media_type()
         self.media_type = media_type
         self.background = background
 
@@ -925,6 +929,11 @@ class FileResponse(Response):
         self.stat_result = stat_result
         if stat_result is not None:
             self.set_stat_headers(stat_result)
+
+    def find_media_type(self) -> str:
+        if self.deduce_media_type_from_body:
+            return magic.from_file(self.path, mime=True)
+        return guess_type(self.filename or self.path)[0] or MediaType.OCTET
 
     def make_boundary(self) -> str:
         return f"{time.time()}-{self.headers['etag']}"
@@ -1357,31 +1366,38 @@ class NDJSONResponse(StreamingResponse):
         await send({"type": "http.response.body", "body": b"", "more_body": False})
 
 
-def DeducingResponse(
-    content: bytes | BinaryIO | os.PathLike,
-    status_code: int = status.HTTP_200_OK,
-    headers: Mapping[str, str] | None = None,
-    media_type: str | None = None,
-    background: Task | None = None,
-    deduce_media_type: bool = True,
-) -> Response:
-    if isinstance(content, bytes | BinaryIO):
-        return Response(
-            content=content,
-            status_code=status_code,
-            headers=headers,
-            media_type=media_type,
-            background=background,
-            deduce_media_type=deduce_media_type,
-        )
-    else:
-        return FileResponse(
-            path=content,
-            status_code=status_code,
-            headers=headers,
-            media_type=media_type,
-            background=background,
-        )
+class DeducingResponse(Response):
+    def __new__(
+        cls,
+        content: bytes | BinaryIO | os.PathLike,
+        status_code: int = status.HTTP_200_OK,
+        headers: Mapping[str, str] | None = None,
+        media_type: str | None = None,
+        background: Task | None = None,
+        deduce_media_type_from_body: bool | None = None,
+    ) -> Response:
+        if isinstance(content, bytes | BinaryIO):
+            return Response(
+                content=content,
+                status_code=status_code,
+                headers=headers,
+                media_type=media_type,
+                background=background,
+                deduce_media_type_from_body=deduce_media_type_from_body
+                if deduce_media_type_from_body is not None
+                else True,
+            )
+        else:
+            return FileResponse(
+                path=content,
+                status_code=status_code,
+                headers=headers,
+                media_type=media_type,
+                background=background,
+                deduce_media_type_from_body=deduce_media_type_from_body
+                if deduce_media_type_from_body is not None
+                else False,
+            )
 
 
 ImageResponse = DeducingResponse
