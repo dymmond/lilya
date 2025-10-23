@@ -48,6 +48,10 @@ from lilya.responses import Response
 {!> ../../../docs_src/responses/response.py !}
 ```
 
+##### Parameters
+
+- `deduce_media_type_from_body` - Use the bytes of the file to deduce the media_type. By default `False`, requires `python-magic`.
+
 ##### Set cookie
 
 Lilya provides the `set_cookie` that allows settings a cookie on a given response. All the responses
@@ -233,6 +237,7 @@ Streams a file asynchronously as the response, employing a distinct set of argum
 - `background` - A [task](./tasks.md) instance.
 - `allow_range_requests` - Should enable support for http ranges? By default `True`. You certainly want this for continuing downloads.
 - `range_multipart_boundary` - Enable multipart http ranges. Either bool or explicit string value used for the boundary. By default `False` (multipart is disabled).
+- `deduce_media_type_from_body` - Use the bytes of file to deduce the media_type. By default `False`, requires `python-magic`.
 
 **Example**
 
@@ -443,10 +448,12 @@ Each JSON object is written on a separate line, making it easy for clients to pa
 application/x-ndjson
 ```
 
-## ImageResponse
+## DeducingFileResponse
 
-`ImageResponse` is a convenient way to send raw image bytes directly to the client.
-It automatically sets the correct `Content-Type` and `Content-Length` headers based on the image data.
+`DeducingFileResponse` (or `ImageResponse`) is a convenient way to send raw image bytes (or image pathes) directly to the client.
+It automatically sets the correct `Content-Type` and `Content-Length` headers based on the data or path.
+It optionally uses `python-magic` to deduce for bytes objects the mime type.
+To force enforce either a deduction via magic use `deduce_media_type_from_body=True`.
 
 ### Example
 
@@ -461,22 +468,28 @@ Content-Type: image/png
 Content-Length: <calculated automatically>
 ```
 
-### Supported Media Types
+### Supported calls
 
-* `image/png`
-* `image/jpeg`
-* `image/webp`
-* `image/gif`
-* `image/svg+xml`
-* or any other valid MIME type string.
+You can also just pass the pathname of the file
+```python
+{!> ../../../docs_src/responses/image2.py !}
+```
 
-You must specify the correct `media_type` when instantiating the response, or it will default to `image/png`.
+**With python-magic**
+
+python-magic is used when no file-name is available (bytes) (`deduce_media_type_from_body=None`) but we can also
+control this explicitly:
+
+```python
+{!> ../../../docs_src/responses/image3.py !}
+```
 
 ### Notes
 
+* It has an alternative name: `ImageResponse`.
 * Lilya does **not** perform image validation or conversion, it simply streams the bytes as-is.
 * The response is fully ASGI-compatible and can be sent using `await response(scope, receive, send)` in any Lilya or ASGI-based app.
-* Ideal for serving dynamically generated images, in-memory thumbnails, or image previews stored in memory.
+* Ideal for serving dynamically generated images, in-memory thumbnails, or image previews.
 
 
 ## EventStreamResponse

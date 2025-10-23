@@ -976,34 +976,51 @@ async def test_streaming_response_stops_if_receiving_http_disconnect():
     assert not cancel_scope.cancel_called, "Content streaming should stop itself."
 
 
-async def test_empty_content_returns_empty_bytes(test_client_factory):
-    response = CSVResponse()
-    content = []
-    result = response.make_response(content)
+def test_empty_content_returns_empty_bytes(test_client_factory):
+    async def app(scope, receive, send):
+        response = CSVResponse(content=[])
+        await response(scope, receive, send)
 
-    assert result == b""
-    assert response.media_type == "text/csv"
+    client = test_client_factory(app)
+    resp = client.get("/")
+
+    assert resp.status_code == 200
+
+    assert resp.body == b""
+    assert resp.headers["media_type"] == "text/csv"
 
 
-async def test_single_row_generates_correct_csv(test_client_factory):
-    response = CSVResponse()
-    content = [{"name": "Lilya", "age": 35}]
-    result = response.make_response(content)
+def test_single_row_generates_correct_csv(test_client_factory):
+    async def app(scope, receive, send):
+        response = CSVResponse(content=[{"name": "Lilya", "age": 35}])
+        await response(scope, receive, send)
+
+    client = test_client_factory(app)
+    resp = client.get("/")
+
+    assert resp.status_code == 200
     expected = b"name,age\nLilya,35"
 
-    assert result == expected
+    assert resp.body == expected
 
 
-async def test_multiple_rows_same_headers(test_client_factory):
-    response = CSVResponse()
-    content = [
-        {"name": "Lilya", "age": 35},
-        {"name": "Maria", "age": 28},
-    ]
-    result = response.make_response(content)
+def test_multiple_rows_same_headers(test_client_factory):
+    async def app(scope, receive, send):
+        response = CSVResponse(
+            content=[
+                {"name": "Lilya", "age": 35},
+                {"name": "Maria", "age": 28},
+            ]
+        )
+        await response(scope, receive, send)
+
+    client = test_client_factory(app)
+    resp = client.get("/")
+
+    assert resp.status_code == 200
     expected = b"name,age\nLilya,35\nMaria,28"
 
-    assert result == expected
+    assert resp.body == expected
 
 
 async def test_handles_non_string_values(test_client_factory):
