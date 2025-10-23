@@ -156,3 +156,30 @@ app = Lilya(
     ],
 )
 ```
+
+## Disallow unauthenticated access
+
+If you want to fully disable unauthenticated access, you can define something like
+
+``` python
+
+from lilya.apps import Lilya
+from lilya.middleware import DefineMiddleware
+from lilya.middleware.authentication import AuthenticationMiddleware
+from lilya.requests import Request
+from lilya.responses import JSONResponse
+
+class DenyAll(AuthenticationBackend):
+    async def authenticate(self, connection: Connection) -> AuthResult | None:
+        raise AuthenticationError()
+
+app = Lilya(
+    middleware=[
+        DefineMiddleware(AuthenticationMiddleware, backend=[BasicAuthBackend(), DenyAll()]),
+    ],
+)
+```
+
+Here `DenyAll()` is the stopper.
+You can also apply the AuthenticationMiddleware to an Include via middleware parameter.
+Both ways are however not recommended, the `requires` way is far better.
