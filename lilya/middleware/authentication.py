@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
 from typing import Any
 
+from lilya import status
 from lilya._internal._connection import Connection
 from lilya.authentication import (
     AnonymousUser,
@@ -98,7 +99,7 @@ class BaseAuthMiddleware(ABC, MiddlewareProtocol):
 
     @staticmethod
     def default_on_error(connection: Connection, exc: Exception) -> Response:
-        return PlainText(str(exc), status_code=400)
+        return PlainText(str(exc), status_code=status.HTTP_400_BAD_REQUEST)
 
 
 class AuthenticationMiddleware(BaseAuthMiddleware):
