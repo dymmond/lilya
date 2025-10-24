@@ -142,41 +142,23 @@ class Provide:
         Used by resolve() and scope_manager to separate
         lifetime control from the actual call logic.
         """
-        # If the dependency is a class, we need to instantiate it
-        # and pass the request to it
+        # Try to update provided_kwargs with request data if relevant
         if self.__signature__.parameters:
-            json_data: dict[str, Any] = {}
-            signature_keys = self.__signature__.parameters.keys()
+            try:
+                json_data = cast(dict[str, Any], await request.data()) or {}
+            except Exception:
+                json_data = {}
+            param_names = self.__signature__.parameters.keys()
+            for key, value in json_data.items():
+                if key in param_names and key not in dependencies_map:
+                    self.provided_kwargs[key] = value
 
-            if isinstance(request, Request):
-                try:
-                    json_data = cast(dict[str, Any], await request.data()) or {}
-                except Exception:  # noqa
-                    ...
-
-                updated_keys: dict[str, Any] = {}
-
-                for key, value in json_data.items():
-                    # Only include keys that are in the signature
-                    # and not already provided via provided_kwargs or provided_args
-                    # This prevents overwriting explicitly provided values
-                    # We also ensure that we don't include keys that are not in the signature
-                    # This is important to avoid passing unexpected arguments
-                    # We also ensure that we don't include keys that are not in the signature
-                    if key in signature_keys and key not in dependencies_map:
-                        updated_keys[key] = value
-
-                if updated_keys:
-                    self.provided_kwargs.update(updated_keys)
-
-        # If the user passed explicit args/kwargs *or* pointed us at a class,
-        # just call the factory directly and skip the auto-resolution logic.
+        # If explicit args/kwargs passed or dependency is a class, call directly
         if self.provided_args or self.provided_kwargs or inspect.isclass(self.dependency):
             if inspect.iscoroutinefunction(self.dependency) or is_async_callable(self.dependency):
                 result = await self.dependency(*self.provided_args, **self.provided_kwargs)
             else:
                 result = self.dependency(*self.provided_args, **self.provided_kwargs)
-
             if self.use_cache:
                 self._cache = result
                 self._resolved = True
@@ -184,45 +166,76 @@ class Provide:
 
         sig = inspect.signature(self.dependency)
         kwargs: dict[str, Any] = {}
-
         # Resolve each parameter of this dependency
         for name, param in sig.parameters.items():
-            # Resolve each *named* parameter of this dependency (skip *args/**kwargs)
-            if param.kind in (
-                inspect.Parameter.VAR_POSITIONAL,
-                inspect.Parameter.VAR_KEYWORD,
-            ):
+            if param.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
                 continue
-
-            # Making sure we cover the Resolve and Security cases
             if isinstance(param.default, (Resolve, Security)):
                 kwargs[name] = await async_resolve_dependencies(
                     request=request,
                     func=self.dependency,
                 )
                 continue
-
             if name in dependencies_map:
-                # nested dependency
                 dep = dependencies_map[name]
-                kwargs[name] = await dep.resolve(request, dependencies_map)
-            else:
-                # fallback: try to pull from request attributes/query/body
-                if hasattr(request, name):
-                    kwargs[name] = getattr(request, name)
-                elif name in request.query_params:
-                    kwargs[name] = request.query_params[name]
-                elif name in SIGNATURE_TO_LIST:
-                    kwargs[name] = request
+                if isinstance(dep, Provide):
+                    kwargs[name] = await dep.resolve(request, dependencies_map)
+                elif hasattr(dep, "resolve"):
+                    try:
+                        result = await dep.resolve(dependencies_map)
+                    except TypeError:
+                        result = await dep.resolve(request, dependencies_map)
+                    kwargs[name] = result
+                elif callable(dep):
+                    dep_sig = inspect.signature(dep)
+                    dep_params = dep_sig.parameters
+
+                    # If dependency expects exactly one positional parameter, inject request
+                    if len(dep_params) == 1:
+                        param_obj = next(iter(dep_params.values()))
+                        if param_obj.kind in (
+                            inspect.Parameter.POSITIONAL_ONLY,
+                            inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                        ):
+                            result = dep(request)
+                        else:
+                            result = dep()
+                    else:
+                        result = dep()
+                    if inspect.isawaitable(result):
+                        result = await result
+                    kwargs[name] = result
                 else:
-                    raise RuntimeError(
-                        f"Could not resolve parameter '{name}' for dependency '{self.dependency.__name__}'"
-                    )
+                    kwargs[name] = dep
 
         call_kwargs = {**self.provided_kwargs, **kwargs}
 
-        # If the dependency is a coroutine function, await it; otherwise, call it directly.
-        # This allows for both synchronous and asynchronous dependencies.
+        dep_sig = inspect.signature(self.dependency)
+        dep_params = dep_sig.parameters
+
+        # Improved logic for automatic request injection
+        should_inject_request = False
+
+        if len(dep_params) > 0:
+            # Case 1: explicit "request" param
+            if "request" in dep_params and "request" not in call_kwargs:
+                should_inject_request = True
+            # Case 2: exactly one positional argument, no defaults
+            elif (
+                len(dep_params) == 1
+                and next(iter(dep_params.values())).kind
+                in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+                and next(iter(dep_params.values())).default is inspect._empty
+                and not self.provided_args
+                and not self.provided_kwargs
+                and next(iter(dep_params.keys())) not in call_kwargs
+            ):
+                should_inject_request = True
+
+        if should_inject_request:
+            param_name = next(iter(dep_params.keys()))
+            call_kwargs[param_name] = request
+
         if inspect.iscoroutinefunction(self.dependency) or is_async_callable(self.dependency):
             result = await self.dependency(*self.provided_args, **call_kwargs)
         else:
@@ -232,23 +245,21 @@ class Provide:
             self._cache = result
             self._resolved = True
 
-        # We need to account for generators
+        # Handle generator/coroutine cleanup
         if isinstance(result, GeneratorType):
             try:
                 value = next(result)
             except StopIteration:
                 return None
-            request.add_cleanup(result.close)  # noqa
+            request.add_cleanup(result.close)
             return value
-
         if inspect.isasyncgen(result):
             try:
                 value = await result.__anext__()
             except StopAsyncIteration:
                 return None
-            request.add_cleanup(result.aclose)  # noqa
+            request.add_cleanup(result.aclose)
             return value
-
         return result
 
 
@@ -538,6 +549,7 @@ class _Depends:
                 dep_callable,
                 _factory,
             )
+
         return await self._resolve_internal(dependencies_map, overrides, scope)
 
     async def _resolve_internal(
