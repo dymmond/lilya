@@ -5,6 +5,16 @@ hide:
 
 # Release Notes
 
+## 0.22.7
+
+### Changed
+
+- Improved the internals of the shell when loading.
+
+### Fixed
+
+- Encoders were overriding values stripping forbidden values. Evaluation is now done on the whole json.
+
 ## 0.22.6
 
 ### Fixed
