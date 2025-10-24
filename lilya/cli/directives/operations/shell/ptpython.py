@@ -2,6 +2,8 @@ import os
 import sys
 import typing
 
+from monkay.asgi import Lifespan
+
 from lilya.cli.directives.operations.shell.utils import import_objects
 from lilya.cli.terminal import Print
 from lilya.conf import settings
@@ -26,26 +28,21 @@ def get_ptpython(app: typing.Any, options: typing.Any = None) -> typing.Any:
     try:
         from ptpython.repl import embed, run_config
 
-        def run_ptpython() -> None:
+        async def run_ptpython() -> None:
             imported_objects = import_objects(app)
             history_filename = os.path.expanduser("~/.ptpython_history")
 
             config_file = os.path.expanduser(settings.ptpython_config_file)
-            if not os.path.exists(config_file):
-                embed(
+            async with Lifespan(app):
+                await embed(
                     globals=imported_objects,
                     history_filename=history_filename,
                     vi_mode=vi_mode(),
-                )
-            else:
-                embed(
-                    globals=imported_objects,
-                    history_filename=history_filename,
-                    vi_mode=vi_mode(),
-                    configure=run_config,
+                    configure=run_config if os.path.exists(config_file) else None,
+                    return_asyncio_coroutine=True,
                 )
 
-    except (ModuleNotFoundError, ImportError):
+    except ImportError:
         error = "You must have PTPython installed to run this. Run `pip install ptpython`"
         printer.write_error(error)
         sys.exit(1)

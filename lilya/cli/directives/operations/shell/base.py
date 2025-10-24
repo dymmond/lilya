@@ -4,7 +4,6 @@ import asyncio
 import select
 import sys
 from collections.abc import Callable, Sequence
-from contextvars import copy_context
 from typing import Annotated, Any
 
 import click
@@ -40,30 +39,23 @@ async def shell(
         exec(sys.stdin.read(), globals())
         return
 
-    on_startup = getattr(env.app, "on_startup", [])
-    on_shutdown = getattr(env.app, "on_shutdown", [])
-    lifespan = getattr(env.app, "lifespan", None)
-    lifespan = handle_lifespan_events(
-        on_startup=on_startup, on_shutdown=on_shutdown, lifespan=lifespan
-    )
-    await run_shell(env.app, lifespan, kernel)
+    await run_shell(env.app, kernel)
     return None
 
 
-async def run_shell(app: Any, lifespan: Any, kernel: str) -> None:
+async def run_shell(app: Any, kernel: str) -> None:
     """Executes the database shell connection"""
 
-    async with lifespan(app):
-        if kernel == ShellOption.IPYTHON:
-            from lilya.cli.directives.operations.shell.ipython import get_ipython
+    if kernel == ShellOption.IPYTHON:
+        from lilya.cli.directives.operations.shell.ipython import get_ipython
 
-            ipython_shell = get_ipython(app=app)
-            await asyncio.to_thread(copy_context().run, ipython_shell)
-        else:
-            from lilya.cli.directives.operations.shell.ptpython import get_ptpython
+        ipython_shell = get_ipython(app=app)
+        await asyncio.to_thread(ipython_shell)
+    else:
+        from lilya.cli.directives.operations.shell.ptpython import get_ptpython
 
-            ptpython = get_ptpython(app=app)
-            await asyncio.to_thread(copy_context().run, ptpython)
+        ptpython = get_ptpython(app=app)
+        await ptpython()
 
 
 def handle_lifespan_events(
