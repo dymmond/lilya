@@ -5,7 +5,7 @@ from httpx import ASGITransport, AsyncClient
 import lilya
 from lilya.apps import Lilya
 from lilya.dependencies import Depends, Provide, inject
-from lilya.requests import Request
+from lilya.requests import Connection, Request
 from lilya.testclient import TestClient
 
 pytestmark = pytest.mark.anyio
@@ -150,14 +150,18 @@ async def test_caching_behavior(test_client_factory):
     assert counter["calls"] == 1
 
 
-async def test_request_injection_with_custom_name(test_client_factory):
+@pytest.mark.parametrize(
+    "custom_name,obj",
+    [("req", Request), ("conn", Request), ("http_request", Request), ("connection", Connection)],
+)
+async def test_request_injection_with_custom_name(test_client_factory, custom_name, obj):
     """
     Ensure that dependencies receive the request object even if the parameter name is not 'request'.
     """
 
-    async def get_app_version(conn: Request):
+    async def get_app_version(custom_name: obj):
         # Should access the app via conn and return version from settings
-        return getattr(conn.app, "version", "unknown")
+        return getattr(custom_name.app, "version", "unknown")
 
     app = Lilya(dependencies={"version_info": Provide(get_app_version)})
 
