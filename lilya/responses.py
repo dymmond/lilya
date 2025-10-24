@@ -23,7 +23,6 @@ from contextvars import ContextVar
 from datetime import datetime
 from email.utils import format_datetime, formatdate
 from inspect import isawaitable, isclass
-from io import BinaryIO
 from mimetypes import guess_type
 from typing import (
     Any,
@@ -895,7 +894,7 @@ class FileResponse(Response):
             warnings.warn(
                 '"method" parameter is obsolete. It is now automatically deduced.', stacklevel=2
             )
-        self.path = path
+        self.path = os.fspath(path)
         self.deduce_media_type_from_body = deduce_media_type_from_body
         self.status_code = status_code
         self.allow_range_requests = allow_range_requests
@@ -1369,25 +1368,14 @@ class NDJSONResponse(StreamingResponse):
 class DeducingResponse(Response):
     def __new__(
         cls,
-        content: bytes | BinaryIO | os.PathLike,
+        content: bytes | os.PathLike | str,
         status_code: int = status.HTTP_200_OK,
         headers: Mapping[str, str] | None = None,
         media_type: str | None = None,
         background: Task | None = None,
         deduce_media_type_from_body: bool | None = None,
     ) -> Response:
-        if isinstance(content, bytes | BinaryIO):
-            return Response(
-                content=content,
-                status_code=status_code,
-                headers=headers,
-                media_type=media_type,
-                background=background,
-                deduce_media_type_from_body=deduce_media_type_from_body
-                if deduce_media_type_from_body is not None
-                else True,
-            )
-        else:
+        if isinstance(content, str) or hasattr(content, "__fspath__"):
             return FileResponse(
                 path=content,
                 status_code=status_code,
@@ -1397,6 +1385,17 @@ class DeducingResponse(Response):
                 deduce_media_type_from_body=deduce_media_type_from_body
                 if deduce_media_type_from_body is not None
                 else False,
+            )
+        else:
+            return Response(
+                content=content,
+                status_code=status_code,
+                headers=headers,
+                media_type=media_type,
+                background=background,
+                deduce_media_type_from_body=deduce_media_type_from_body
+                if deduce_media_type_from_body is not None
+                else True,
             )
 
 

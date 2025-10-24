@@ -443,10 +443,12 @@ Each JSON object is written on a separate line, making it easy for clients to pa
 application/x-ndjson
 ```
 
-## ImageResponse
+## DeducingFileResponse
 
-`ImageResponse` is a convenient way to send raw image bytes directly to the client.
-It automatically sets the correct `Content-Type` and `Content-Length` headers based on the image data.
+`DeducingFileResponse` (or `ImageResponse`) is a convenient way to send raw image bytes (or image pathes) directly to the client.
+It automatically sets the correct `Content-Type` and `Content-Length` headers based on the data or path.
+It optionally uses `python-magic` to deduce for bytes objects the mime type.
+To force enforce either a deduction via magic use `deduce_media_type_from_body=True`.
 
 ### Example
 
