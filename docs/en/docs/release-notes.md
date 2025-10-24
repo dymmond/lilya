@@ -5,6 +5,19 @@ hide:
 
 # Release Notes
 
+## 0.22.8
+
+### Changed
+
+- Improved dependency resolution logic to refine request injection rules.
+- Enhanced `Provide` to handle nested dependency injection with stricter argument checks.
+- Updated precedence handling to ensure consistent dependency resolution order across async libraries.
+
+### Fixed
+
+- Request objects were being injected into zero-argument dependencies.
+- Dependency injection precedence edge cases between global and route-level dependencies.
+
 ## 0.22.7
 
 ### Changed
