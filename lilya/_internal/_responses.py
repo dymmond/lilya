@@ -487,13 +487,15 @@ class BaseHandler:
             if name in SIGNATURE_TO_LIST or name in dependencies:
                 return payload
 
-            candidate = (
-                json_data[name]
-                if (isinstance(json_data, dict) and name in json_data)
-                else json_data
-            )
-            return {name: self._structure_to_annotation(encoder_object, candidate)}
-
+            try:
+                return {name: self._structure_to_annotation(encoder_object, json_data)}
+            except Exception:
+                candidate = (
+                    json_data[name]
+                    if (isinstance(json_data, dict) and name in json_data)
+                    else json_data
+                )
+                return {name: self._structure_to_annotation(encoder_object, candidate)}
         else:
             for name in body_param_names:
                 if name in SIGNATURE_TO_LIST:
@@ -504,6 +506,7 @@ class BaseHandler:
 
                 if name not in json_data:
                     raise ValueError(f"Missing expected body key and/or payload for '{name}'.")
+
                 encoder_object = parameters[name].annotation
                 payload[name] = self._structure_to_annotation(encoder_object, json_data[name])
 
