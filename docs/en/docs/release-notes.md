@@ -7,11 +7,21 @@ hide:
 
 ## 0.22.8
 
+### Added
+
+- Add `DeducingFileResponse` and internal `DispositionResponse`.
+
 ### Changed
 
 - Improved dependency resolution logic to refine request injection rules.
 - Enhanced `Provide` to handle nested dependency injection with stricter argument checks.
 - Updated precedence handling to ensure consistent dependency resolution order across async libraries.
+- Improved Responses:
+    - StreamingResponse eliminates one round-trip.
+    - Response has deduction capabilities of the media-type (python-magic required).
+    - ImageResponse is now an alias of `DeducingFileResponse`.
+    - Make `CSVResponse` and `NDJSONResponse` streaming.
+    - `send_file` uses now `DeducingFileResponse`.
 
 ### Fixed
 

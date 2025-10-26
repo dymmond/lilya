@@ -24,19 +24,14 @@ from datetime import datetime
 from email.utils import format_datetime, formatdate
 from inspect import isawaitable, isclass
 from mimetypes import guess_type
-from typing import (
-    Any,
-    Literal,
-    NoReturn,
-    cast,
-)
+from typing import IO, Any, Literal, NoReturn, cast
 from urllib.parse import quote
 
 import anyio
 
 from lilya import status
 from lilya._internal._helpers import HeaderHelper
-from lilya.background import Task
+from lilya.background import Task, Tasks
 from lilya.compat import md5_hexdigest
 from lilya.concurrency import iterate_in_threadpool
 from lilya.datastructures import URL, Header
@@ -112,6 +107,9 @@ class Response:
             self.async_content = content
         else:
             self.body = self.make_response(content)
+        # deduce media type
+        if self.deduce_media_type_from_body and self.media_type is None:
+            self.media_type = self.find_media_type()
         self.make_headers(headers)
 
         if (
@@ -130,9 +128,11 @@ class Response:
                 and "content-length" not in self.headers
             ):
                 self.headers["content-length"] = str(len(self.body))
-            # deduce media type
-            if self.deduce_media_type_from_body and "content-type" not in self.headers:
-                self.headers["content-type"] = self.find_media_type()
+            if self.deduce_media_type_from_body and self.media_type is None:
+                self.media_type = self.find_media_type()
+                self.headers["content-type"] = HeaderHelper.get_content_type(
+                    charset=self.charset, media_type=self.media_type
+                )
 
     def find_media_type(self) -> str:
         return magic.from_buffer(self.body[:2048], mime=True) or MediaType.OCTET
@@ -343,10 +343,8 @@ class HTMLResponse(Response):
     media_type = MediaType.HTML
 
 
-class HTML(HTMLResponse):
-    """
-    A simple alias for HTMLResponse for better readability.
-    """
+# alias
+HTML = HTMLResponse
 
 
 class Error(HTMLResponse):
@@ -357,7 +355,59 @@ class PlainText(Response):
     media_type = MediaType.TEXT
 
 
-class TextResponse(PlainText): ...
+TextResponse = PlainText
+
+
+class DispositionResponse(Response):
+    def __init__(
+        self,
+        *,
+        filename: str | None = None,
+        content_disposition_type: str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        self.filename = filename
+        self.content_disposition_type = content_disposition_type
+        super().__init__(**kwargs)
+
+    @staticmethod
+    def make_content_disposition_header(
+        *, content_disposition_type: str | None, filename: str | None
+    ) -> str | None:
+        if content_disposition_type == "inline":
+            return "inline"
+        elif content_disposition_type == "attachment":
+            if filename is not None:
+                content_disposition_filename = quote(filename)
+                if content_disposition_filename != filename:
+                    content_disposition = f"{content_disposition_type}; filename*=utf-8''{content_disposition_filename}"
+                else:
+                    content_disposition = f'{content_disposition_type}; filename="{filename}"'
+            else:
+                content_disposition = content_disposition_type
+            return content_disposition
+        elif content_disposition_type is None:
+            if filename is not None:
+                content_disposition_filename = quote(filename)
+                if content_disposition_filename != filename:
+                    content_disposition = (
+                        f"attachment; filename*=utf-8''{content_disposition_filename}"
+                    )
+                else:
+                    content_disposition = f'attachment; filename="{filename}"'
+                return content_disposition
+        return None
+
+    def make_headers(
+        self, content_headers: Mapping[str, str] | dict[str, str] | None = None
+    ) -> None:
+        super().make_headers(content_headers)
+        content_disposition = self.make_content_disposition_header(
+            content_disposition_type=self.content_disposition_type,
+            filename=self.filename,
+        )
+        if content_disposition is not None:
+            self.headers.setdefault("content-disposition", content_disposition)
 
 
 class JSONResponse(Response):
@@ -453,7 +503,8 @@ class StreamingResponse(Response):
         else:
             self.body_iterator = iterate_in_threadpool(content)
         self.status_code = status_code
-        self.media_type = self.media_type if media_type is None else media_type
+        if media_type is not None:
+            self.media_type = media_type
         self.background = background
         self.make_headers(headers)
 
@@ -464,12 +515,16 @@ class StreamingResponse(Response):
                 break
 
     async def stream(self, send: Send) -> None:
+        last_chunk: bytes | None = None
+        # save one round-trip by delaying sending of chunk
         async for chunk in self.body_iterator:
+            if last_chunk is not None:
+                await send({"type": "http.response.body", "body": last_chunk, "more_body": True})
             if not isinstance(chunk, bytes):
                 chunk = chunk.encode(self.charset)
-            await send({"type": "http.response.body", "body": chunk, "more_body": True})
+            last_chunk = chunk
 
-        await send({"type": "http.response.body", "body": b"", "more_body": False})
+        await send({"type": "http.response.body", "body": last_chunk or b"", "more_body": False})
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         prefix = "websocket." if scope["type"] == "websocket" else ""
@@ -879,7 +934,7 @@ class EventStreamResponse(Response):
         return (self.sep.join(lines) + self.sep * 2).encode("utf-8")
 
 
-class FileResponse(Response):
+class FileResponse(DispositionResponse):
     chunk_size = 64 * 1024
 
     def __init__(
@@ -892,7 +947,7 @@ class FileResponse(Response):
         filename: str | None = None,
         stat_result: os.stat_result | None = None,
         method: str | None = None,
-        content_disposition_type: str = "attachment",
+        content_disposition_type: str | None = None,
         encoders: Sequence[Encoder | type[Encoder]] | None = None,
         deduce_media_type_from_body: bool = False,
         allow_range_requests: bool = True,
@@ -909,11 +964,22 @@ class FileResponse(Response):
         if not allow_range_requests:
             range_multipart_boundary = False
         self.range_multipart_boundary = range_multipart_boundary
+        self.content_disposition_type = content_disposition_type
         self.filename = filename
         if media_type is None:
             # by default it must be octet
             media_type = self.find_media_type()
+        # close filedescriptors
+        task = None
+        if hasattr(path, "aclose"):
+            task = Task(path.aclose)
+        elif hasattr(path, "close"):
+            task = Task(path.close)
         self.media_type = media_type
+        if background is None:
+            background = task
+        elif task is not None:
+            background = Tasks([background, task])
         self.background = background
 
         self.encoders: list[Encoder] = [
@@ -924,15 +990,6 @@ class FileResponse(Response):
         if self.allow_range_requests:
             self.headers["accept-ranges"] = "bytes"
 
-        if self.filename is not None:
-            content_disposition_filename = quote(self.filename)
-            if content_disposition_filename != self.filename:
-                content_disposition = (
-                    f"{content_disposition_type}; filename*=utf-8''{content_disposition_filename}"
-                )
-            else:
-                content_disposition = f'{content_disposition_type}; filename="{self.filename}"'
-            self.headers.setdefault("content-disposition", content_disposition)
         self.stat_result = stat_result
         if stat_result is not None:
             self.set_stat_headers(stat_result)
@@ -1233,37 +1290,30 @@ class CSVResponse(StreamingResponse):
                 "more_body": True,
             }
         )
+        # send content
+        last_row = row1
         async for row in self.body_iterator:
+            # send last_row with \n
             await send(
                 {
                     "type": "http.response.body",
-                    "body": f"{','.join(str(row.get(h, '')) for h in headers)}\n".encode(
+                    "body": f"{','.join(str(last_row.get(h, '')) for h in headers)}\n".encode(
                         self.charset
                     ),
                     "more_body": True,
                 }
             )
-        await send({"type": "http.response.body", "body": b"", "more_body": False})
-
-    def make_response(self, content: Iterable[dict[str, Any]] | None) -> bytes:
-        """
-        Converts a list of dictionaries to a CSV formatted byte string.
-
-        Args:
-            content (Iterable[dict[str, Any]] | None): Iterable of dicts representing the CSV rows
-        """
-        if not content:
-            return b""
-
-        rows = list(content)
-        if not rows:
-            return b""
-
-        headers = list(rows[0].keys())
-        lines = [",".join(headers)]
-        for row in rows:
-            lines.append(",".join(str(row.get(h, "")) for h in headers))
-        return "\n".join(lines).encode()
+            last_row = row
+        # send really last row without newline
+        await send(
+            {
+                "type": "http.response.body",
+                "body": f"{','.join(str(last_row.get(h, '')) for h in headers)}".encode(
+                    self.charset
+                ),
+                "more_body": False,
+            }
+        )
 
 
 class XMLResponse(Response):
@@ -1366,48 +1416,107 @@ class NDJSONResponse(StreamingResponse):
         """
         Converts an iterable of dictionaries to a NDJSON formatted byte string.
         """
-        async for item in self.body_iterator:
+        last_row: bytes | None = None
+
+        new_params = RESPONSE_TRANSFORM_KWARGS.get()
+        if new_params:
+            new_params = new_params.copy()
+        else:
+            new_params = {}
+        new_params["post_transform_fn"] = None
+        if self.encoders:
+            new_params["with_encoders"] = (*self.encoders, *ENCODER_TYPES.get())
+        async for row in self.body_iterator:
+            if last_row is not None:
+                await send(
+                    {
+                        "type": "http.response.body",
+                        "body": b"%b\n" % last_row,
+                        "more_body": True,
+                    }
+                )
+            content = json_encode(row, **new_params)
+            if isinstance(content, (bytearray, memoryview)):
+                content = bytes(content)
+            elif isinstance(content, str):
+                content = content.encode(self.charset)
+            last_row = content
+        if last_row is not None:
             await send(
                 {
                     "type": "http.response.body",
-                    "body": serializer.dumps(item, separators=(",", ": ")).encode(self.charset),
-                    "more_body": True,
+                    "body": last_row,
+                    "more_body": False,
                 }
             )
-        await send({"type": "http.response.body", "body": b"", "more_body": False})
+        else:
+            await send({"type": "http.response.body", "body": b"", "more_body": False})
 
 
 class DeducingFileResponse(Response):
     def __new__(
         cls,
-        content: bytes | os.PathLike | str,
+        content: bytes | memoryview | os.PathLike | str | IO[bytes],
+        filename: str | None = None,
         status_code: int = status.HTTP_200_OK,
         headers: Mapping[str, str] | None = None,
         media_type: str | None = None,
         background: Task | None = None,
+        content_disposition_type: str = "inline",
         deduce_media_type_from_body: bool | None = None,
     ) -> Response:
         if isinstance(content, str) or hasattr(content, "__fspath__"):
             return FileResponse(
                 path=content,
+                filename=filename,
                 status_code=status_code,
                 headers=headers,
                 media_type=media_type,
                 background=background,
+                content_disposition_type=content_disposition_type,
                 deduce_media_type_from_body=deduce_media_type_from_body
                 if deduce_media_type_from_body is not None
                 else False,
             )
+        elif isinstance(content, bytes | memoryview):
+            return DispositionResponse(
+                content=content,
+                filename=filename,
+                status_code=status_code,
+                headers=headers,
+                media_type=media_type,
+                background=background,
+                content_disposition_type=content_disposition_type,
+                deduce_media_type_from_body=deduce_media_type_from_body
+                if deduce_media_type_from_body is not None
+                else True,
+            )
         else:
-            return Response(
+            # close filedescriptors
+            task = None
+            if hasattr(content, "aclose"):
+                task = Task(content.aclose)
+            elif hasattr(content, "close"):
+                task = Task(content.close)
+            if background is None:
+                background = task
+            elif task is not None:
+                background = Tasks([background, task])
+            headers = {} if headers is None else headers.copy()
+            content_disposition = DispositionResponse.make_content_disposition_header(
+                content_disposition_type=content_disposition_type,
+                filename=filename,
+            )
+            if content_disposition is not None:
+                headers = {} if headers is None else headers.copy()
+                headers.setdefault("content-disposition", content_disposition)
+
+            return StreamingResponse(
                 content=content,
                 status_code=status_code,
                 headers=headers,
                 media_type=media_type,
                 background=background,
-                deduce_media_type_from_body=deduce_media_type_from_body
-                if deduce_media_type_from_body is not None
-                else True,
             )
 
 

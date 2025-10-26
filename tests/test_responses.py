@@ -24,6 +24,7 @@ from lilya.ranges import Range
 from lilya.requests import Request
 from lilya.responses import (
     CSVResponse,
+    DeducingFileResponse,
     Error,
     EventStreamResponse,
     FileResponse,
@@ -41,11 +42,10 @@ from lilya.responses import (
 from lilya.routing import Path
 from lilya.testclient import TestClient
 
+pytestmark = pytest.mark.anyio
+
 
 class Foo: ...
-
-
-pytestmark = pytest.mark.asyncio
 
 
 def to_position_labeled_params(inp: list[tuple], pos: int) -> list[pytest.param]:
@@ -612,7 +612,7 @@ def test_file_response_with_inline_disposition(tmpdir, test_client_factory):
     app = FileResponse(path=path, filename=filename, content_disposition_type="inline")
     client = test_client_factory(app)
     response = client.get("/")
-    expected_disposition = 'inline; filename="hello.txt"'
+    expected_disposition = "inline"
     assert response.status_code == status.HTTP_200_OK
     assert response.content == content
     assert response.headers["content-disposition"] == expected_disposition
@@ -976,98 +976,63 @@ async def test_streaming_response_stops_if_receiving_http_disconnect():
     assert not cancel_scope.cancel_called, "Content streaming should stop itself."
 
 
-def test_empty_content_returns_empty_bytes(test_client_factory):
-    async def app(scope, receive, send):
-        response = CSVResponse(content=[])
-        await response(scope, receive, send)
-
-    client = test_client_factory(app)
-    resp = client.get("/")
-
-    assert resp.status_code == 200
-
-    assert resp.body == b""
-    assert resp.headers["media_type"] == "text/csv"
-
-
-def test_single_row_generates_correct_csv(test_client_factory):
-    async def app(scope, receive, send):
-        response = CSVResponse(content=[{"name": "Lilya", "age": 35}])
-        await response(scope, receive, send)
-
-    client = test_client_factory(app)
-    resp = client.get("/")
-
-    assert resp.status_code == 200
-    expected = b"name,age\nLilya,35"
-
-    assert resp.body == expected
-
-
-def test_multiple_rows_same_headers(test_client_factory):
-    async def app(scope, receive, send):
-        response = CSVResponse(
-            content=[
+@pytest.mark.parametrize(
+    "content,expected",
+    [
+        pytest.param(None, b"", id="None"),
+        pytest.param([], b"", id="empty"),
+        pytest.param([{"name": "Lilya", "age": 35}], b"name,age\nLilya,35", id="single_row"),
+        pytest.param(
+            [
                 {"name": "Lilya", "age": 35},
-                {"name": "Maria", "age": 28},
-            ]
-        )
+                {"age": 28, "name": "Maria"},
+            ],
+            b"name,age\nLilya,35\nMaria,28",
+            id="multiple_rows_same_header",
+        ),
+        pytest.param(
+            [{"id": 1, "active": True, "balance": 10.55}],
+            b"id,active,balance\n1,True,10.55",
+            id="non_string_values",
+        ),
+        pytest.param(
+            [
+                {"b": 2, "a": 1},
+                {"a": 4, "b": 3},
+            ],
+            b"b,a\n2,1\n3,4",
+            id="order_follows_the_first_row",
+        ),
+        pytest.param(
+            [
+                {"a": 1, "b": 2},
+                {"a": 3},  # missing 'b'
+            ],
+            b"a,b\n1,2\n3,",
+            id="uneven_rows_missing_keys",
+        ),
+        pytest.param(
+            [{"name": "John, Doe", "note": "Hello\nWorld"}],
+            b"name,note\nJohn, Doe,Hello\nWorld",
+            id="special_characters_in_values",
+        ),
+    ],
+)
+def test_csv_response_inputs(test_client_factory, content, expected):
+    async def app(scope, receive, send):
+        response = CSVResponse(content=content)
         await response(scope, receive, send)
 
     client = test_client_factory(app)
     resp = client.get("/")
 
     assert resp.status_code == 200
-    expected = b"name,age\nLilya,35\nMaria,28"
 
-    assert resp.body == expected
-
-
-async def test_handles_non_string_values(test_client_factory):
-    response = CSVResponse()
-    content = [{"id": 1, "active": True, "balance": 10.55}]
-    result = response.make_response(content)
-    expected = b"id,active,balance\n1,True,10.55"
-
-    assert result == expected
+    assert resp.content == expected
+    assert resp.headers["content-type"] == "text/csv; charset=utf-8"
 
 
-async def test_order_of_columns_follows_first_row(test_client_factory):
-    response = CSVResponse()
-    content = [
-        {"b": 2, "a": 1},
-        {"b": 3, "a": 4},
-    ]
-    result = response.make_response(content)
-    # Columns must follow first dict keys order: b, a
-    expected = b"b,a\n2,1\n3,4"
-
-    assert result == expected
-
-
-async def test_uneven_rows_missing_keys(test_client_factory):
-    response = CSVResponse()
-    content = [
-        {"a": 1, "b": 2},
-        {"a": 3},  # missing 'b'
-    ]
-    result = response.make_response(content)
-    expected = b"a,b\n1,2\n3,"
-
-    assert result == expected
-
-
-async def test_special_characters_in_values(test_client_factory):
-    response = CSVResponse()
-    content = [{"name": "John, Doe", "note": "Hello\nWorld"}]
-    # This version does not escape commas/newlines — so we test literal join behavior
-    result = response.make_response(content)
-    expected = b"name,note\nJohn, Doe,Hello\nWorld"
-
-    assert result == expected
-
-
-async def test_xml_response_with_string_content(test_client_factory):
+def test_xml_response_with_string_content(test_client_factory):
     response = XMLResponse("<note>Hello</note>")
     result = response.make_response("<note>Hello</note>")
 
@@ -1075,7 +1040,7 @@ async def test_xml_response_with_string_content(test_client_factory):
     assert response.media_type == "application/xml"
 
 
-async def test_xml_response_with_dict_content(test_client_factory):
+def test_xml_response_with_dict_content(test_client_factory):
     response = XMLResponse()
     content = {"person": {"name": "Lilya", "age": 35}}
     result = response.make_response(content)
@@ -1084,7 +1049,7 @@ async def test_xml_response_with_dict_content(test_client_factory):
     assert result == expected
 
 
-async def test_xml_response_with_list_content(test_client_factory):
+def test_xml_response_with_list_content(test_client_factory):
     response = XMLResponse()
     content = [{"a": 1}, {"a": 2}]
     result = response.make_response(content)
@@ -1093,7 +1058,7 @@ async def test_xml_response_with_list_content(test_client_factory):
     assert result == expected
 
 
-async def test_xml_response_with_bytes_content(test_client_factory):
+def test_xml_response_with_bytes_content():
     response = XMLResponse()
     content = b"<root><data>123</data></root>"
     result = response.make_response(content)
@@ -1101,14 +1066,14 @@ async def test_xml_response_with_bytes_content(test_client_factory):
     assert result == content
 
 
-async def test_xml_response_with_none_content_returns_empty_bytes(test_client_factory):
+def test_xml_response_with_none_content_returns_empty_bytes():
     response = XMLResponse()
     result = response.make_response(None)
 
     assert result == b""
 
 
-async def test_yaml_response_with_dict(test_client_factory):
+def test_yaml_response_with_dict():
     content = {"framework": "Lilya", "version": 1}
     response = YAMLResponse()
     result = response.make_response(content)
@@ -1118,7 +1083,7 @@ async def test_yaml_response_with_dict(test_client_factory):
     assert response.media_type == "application/x-yaml"
 
 
-async def test_yaml_response_with_list(test_client_factory):
+def test_yaml_response_with_list():
     content = [1, 2, 3]
     response = YAMLResponse()
     result = response.make_response(content)
@@ -1127,14 +1092,14 @@ async def test_yaml_response_with_list(test_client_factory):
     assert result == expected
 
 
-async def test_yaml_response_with_none_returns_empty_bytes(test_client_factory):
+def test_yaml_response_with_none_returns_empty_bytes():
     response = YAMLResponse()
     result = response.make_response(None)
 
     assert result == b""
 
 
-async def test_messagepack_response_with_dict(test_client_factory):
+def test_messagepack_response_with_dict():
     content = {"ok": True, "value": 123}
     response = MessagePackResponse()
     result = response.make_response(content)
@@ -1144,7 +1109,7 @@ async def test_messagepack_response_with_dict(test_client_factory):
     assert response.media_type == "application/x-msgpack"
 
 
-async def test_messagepack_response_with_list(test_client_factory):
+def test_messagepack_response_with_list():
     content = [1, 2, 3]
     response = MessagePackResponse()
     result = response.make_response(content)
@@ -1153,7 +1118,7 @@ async def test_messagepack_response_with_list(test_client_factory):
     assert unpacked == content
 
 
-async def test_messagepack_response_with_none_returns_empty_bytes(test_client_factory):
+def test_messagepack_response_with_none_returns_empty_bytes():
     from lilya.responses import MessagePackResponse
 
     response = MessagePackResponse()
@@ -1162,59 +1127,93 @@ async def test_messagepack_response_with_none_returns_empty_bytes(test_client_fa
     assert result == b""
 
 
-async def test_ndjson_response_with_multiple_dicts(test_client_factory):
-    response = NDJSONResponse()
-    content = [
-        {"event": "start"},
-        {"event": "progress"},
-        {"event": "done"},
-    ]
-    result = response.make_response(content)
-    expected_lines = [json.dumps(item) for item in content]
-    expected = ("\n".join(expected_lines)).encode("utf-8")
+@pytest.mark.parametrize(
+    "content",
+    [
+        pytest.param(None, id="None"),
+        pytest.param([], id="empty"),
+        pytest.param(
+            [
+                {"event": "start"},
+                {"event": "progress"},
+                {"event": "done"},
+            ],
+            id="multiple_rows",
+        ),
+        pytest.param(
+            [
+                {"user": {"name": "Lilya", "age": 35}},
+                {"active": True},
+            ],
+            id="nested_data",
+        ),
+    ],
+)
+def test_ndjson_response_with_inputs(test_client_factory, content):
+    async def app(scope, receive, send):
+        response = NDJSONResponse(content=content)
+        await response(scope, receive, send)
 
-    assert result == expected
-    assert response.media_type == "application/x-ndjson"
+    client = test_client_factory(app)
+    resp = client.get("/")
 
+    assert resp.status_code == 200
+    if content:
+        expected_lines = [json.dumps(item, separators=(",", ":")) for item in content]
+        expected = ("\n".join(expected_lines)).encode("utf-8")
+    else:
+        expected = b""
 
-async def test_ndjson_response_with_empty_list(test_client_factory):
-    response = NDJSONResponse()
-    result = response.make_response([])
-
-    assert result == b""
-
-
-async def test_ndjson_response_with_none_returns_empty_bytes(test_client_factory):
-    response = NDJSONResponse()
-    result = response.make_response(None)
-
-    assert result == b""
-
-
-async def test_ndjson_response_with_nested_data(test_client_factory):
-    response = NDJSONResponse()
-    content = [
-        {"user": {"name": "Lilya", "age": 35}},
-        {"active": True},
-    ]
-    result = response.make_response(content)
-    # Ensure each line is valid JSON
-    lines = result.decode().splitlines()
-    decoded = [json.loads(line) for line in lines]
-
-    assert decoded == content
+    assert resp.content == expected
+    assert resp.headers["content-type"] == "application/x-ndjson"
 
 
-async def test_image_response_with_png_bytes(test_client_factory):
-    png_bytes = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR"
-    response = ImageResponse(content=png_bytes, media_type="image/png")
+@pytest.mark.parametrize(
+    "content,content_type",
+    [
+        pytest.param(b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR", "image/png", id="png"),
+        pytest.param(b"\xff\xd8\xff\xe0\x00\x10JFIF", "image/jpeg", id="jpeg"),
+    ],
+)
+@pytest.mark.parametrize("response_class", [ImageResponse, DeducingFileResponse])
+def test_deducing_deducing_response_with(
+    test_client_factory, response_class, content, content_type
+):
+    async def app(scope, receive, send):
+        response = response_class(content=content)
+        await response(scope, receive, send)
 
-    assert response.media_type == "image/png"
-    assert response.body == png_bytes
-    assert response.status_code == 200
+    client = test_client_factory(app)
+    resp = client.get("/")
+
+    assert resp.status_code == 200
+    assert resp.headers["content-type"] == content_type
+    assert resp.content == content
 
 
-async def test_image_response_with_jpeg_bytes(test_client_factory):
+def test_deducing_file_response_file(tmpdir, test_client_factory):
+    path = os.path.join(tmpdir, "example.jpg")
+    jpeg_bytes = b"\xff\xd8\xff\xe0\x00\x10JFIF"
+    with open(path, "wb") as file:
+        file.write(jpeg_bytes)
+
+    async def app(scope, receive, send):
+        response = DeducingFileResponse(file.name)
+        await response(scope, receive, send)
+
+    client = test_client_factory(app)
+    response = client.head("/")
+    assert response.status_code == status.HTTP_200_OK
+    assert response.content == b""
+    assert response.headers["content-type"] == "image/jpeg"
+    response = client.get("/")
+    assert response.status_code == status.HTTP_200_OK
+    assert response.content == jpeg_bytes
+    assert response.headers["content-type"] == "image/jpeg"
+    assert "content-length" in response.headers
+
+
+def test_image_response_with_jpeg_bytes_and_mime():
     jpeg_bytes = b"\xff\xd8\xff\xe0\x00\x10JFIF"
     response = ImageResponse(content=jpeg_bytes, media_type="image/jpeg")
 
@@ -1222,7 +1221,7 @@ async def test_image_response_with_jpeg_bytes(test_client_factory):
     assert response.body == jpeg_bytes
 
 
-async def test_image_response_sets_content_length_and_type(test_client_factory):
+def test_image_response_sets_content_length_and_type(test_client_factory):
     content = b"1234567890"
     response = ImageResponse(content=content, media_type="image/png")
 
@@ -1231,8 +1230,7 @@ async def test_image_response_sets_content_length_and_type(test_client_factory):
     assert response.headers["content-length"] == str(len(content))
 
 
-@pytest.mark.asyncio
-async def test_image_response_can_be_sent_via_asgi(test_client_factory):
+def test_image_response_can_be_sent_via_asgi(test_client_factory):
     async def app(scope, receive, send):
         content = b"\x89PNG\r\n\x1a\n"
         response = ImageResponse(content=content, media_type="image/png")
@@ -1256,7 +1254,7 @@ def sync_event_generator():
         yield {"event": "sync", "data": i}
 
 
-async def test_eventstream_response_with_async_generator(test_client_factory):
+async def test_eventstream_response_with_async_generator():
     """
     Ensures EventStreamResponse correctly encodes async events to SSE format.
     """
@@ -1296,7 +1294,7 @@ async def test_eventstream_response_with_retry_and_id_fields(test_client_factory
     assert body == expected
 
 
-async def test_eventstream_response_with_json_data(test_client_factory):
+async def test_eventstream_response_with_json_data():
     """
     Ensures dict/list data is serialized as JSON.
     """
@@ -1312,7 +1310,7 @@ async def test_eventstream_response_with_json_data(test_client_factory):
     assert b'data: {"value": 42}\n\n' in body
 
 
-async def test_eventstream_response_with_global_retry(test_client_factory):
+async def test_eventstream_response_with_global_retry():
     """
     Ensures the global retry value is applied if per-event retry not set.
     """
@@ -1327,7 +1325,7 @@ async def test_eventstream_response_with_global_retry(test_client_factory):
     assert b"retry: 5000" in body
 
 
-async def test_eventstream_response_empty_generator(test_client_factory):
+async def test_eventstream_response_empty_generator():
     """
     Ensures empty streams produce no body content.
     """
@@ -1341,7 +1339,7 @@ async def test_eventstream_response_empty_generator(test_client_factory):
     assert body == b""
 
 
-async def test_eventstream_response_send_timeout(test_client_factory):
+async def test_eventstream_response_send_timeout():
     async def gen():
         yield {"event": "tick", "data": 1}
         await anyio.sleep(0.2)  # exceeds send_timeout
@@ -1368,7 +1366,7 @@ async def test_eventstream_response_send_timeout(test_client_factory):
     assert str(excinfo.value.exceptions[0]) == "SSE send timed out"
 
 
-async def test_eventstream_response_client_disconnect_handler_called(test_client_factory):
+async def test_eventstream_response_client_disconnect_handler_called():
     called = False
 
     async def client_close_handler(message):
@@ -1390,7 +1388,7 @@ async def test_eventstream_response_client_disconnect_handler_called(test_client
     assert called
 
 
-async def test_eventstream_response_custom_ping_message_factory(test_client_factory):
+async def test_eventstream_response_custom_ping_message_factory():
     async def gen():
         yield {"event": "data", "data": 1}
 
@@ -1423,14 +1421,14 @@ def test_eventstream_response_invalid_separator_raises():
         EventStreamResponse([], separator="INVALID")
 
 
-async def test_eventstream_response_sync_iterable_bytes(test_client_factory):
+async def test_eventstream_response_sync_iterable_bytes():
     content = [{"event": "msg", "data": "sync"}]
     response = EventStreamResponse(content)
     chunks = [chunk async for chunk in response.body_iterator]
     assert chunks == [b"event: msg\ndata: sync\n\n"]
 
 
-async def test_eventstream_response_json_dict_serialization(test_client_factory):
+async def test_eventstream_response_json_dict_serialization():
     async def gen():
         yield {"event": "data", "data": {"nested": [1, 2, 3]}}
 
@@ -1439,7 +1437,8 @@ async def test_eventstream_response_json_dict_serialization(test_client_factory)
     assert b'data: {"nested": [1, 2, 3]}' in chunks[0]
 
 
-async def test_eventstream_response_sends_ping_comment():
+@pytest.mark.parametrize("anyio_backend", ["asyncio"])
+async def test_eventstream_response_sends_ping_comment(anyio_backend):
     events = [{"event": "tick", "data": 1}]
 
     async def app(scope, receive, send):
@@ -1597,7 +1596,8 @@ async def test_eventstream_response_retry_and_ping_together(test_client_factory)
     assert ": ping" in output
 
 
-async def test_eventstream_response_nginx_safe_headers_and_flush():
+@pytest.mark.parametrize("anyio_backend", ["asyncio"])
+async def test_eventstream_response_nginx_safe_headers_and_flush(anyio_backend):
     """
     Ensures the SSE response sends proxy-safe headers immediately
     and never sets a Content-Length that could cause a 502 via NGINX.
