@@ -27,6 +27,7 @@ hide:
 
 - Request objects were being injected into zero-argument dependencies.
 - Dependency injection precedence edge cases between global and route-level dependencies.
+- Fix `BaseSettings` for python 3.14 and more complex inheritances.
 
 ## 0.22.7
 
