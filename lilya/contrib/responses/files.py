@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import IO
 
-from lilya.responses import DeducingFileResponse, Response
+from lilya.responses import Response, SimpleFileResponse
 
 
 def send_file(
@@ -35,7 +35,7 @@ def send_file(
     else:
         filename = attachment_filename or "download"
 
-    return DeducingFileResponse(
+    return SimpleFileResponse(
         filename_or_fp,
         media_type=mimetype,
         filename=filename,

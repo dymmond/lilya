@@ -24,7 +24,6 @@ from lilya.ranges import Range
 from lilya.requests import Request
 from lilya.responses import (
     CSVResponse,
-    DeducingFileResponse,
     Error,
     EventStreamResponse,
     FileResponse,
@@ -35,6 +34,7 @@ from lilya.responses import (
     Ok,
     RedirectResponse,
     Response,
+    SimpleFileResponse,
     StreamingResponse,
     XMLResponse,
     YAMLResponse,
@@ -544,7 +544,7 @@ async def test_file_response_byte_range_multipart(
         "bytes=1-10, 10-29",
     ],
 )
-async def test_file_response_byte_range_error(tmpdir, byterange, anyio_backend):
+async def test_file_response_byte_range_error(tmpdir, byterange):
     path = os.path.join(tmpdir, "xyz")
     content = os.urandom(1000)
     with open(path, "wb") as file:
@@ -616,6 +616,22 @@ def test_file_response_with_inline_disposition(tmpdir, test_client_factory):
     assert response.status_code == status.HTTP_200_OK
     assert response.content == content
     assert response.headers["content-disposition"] == expected_disposition
+
+
+def test_file_response_with_fd(tmpdir, test_client_factory):
+    content = b"file content"
+    filename = "hello.txt"
+    path = os.path.join(tmpdir, filename)
+    f = open(path, "w+b")
+    f.write(content)
+    f.seek(os.SEEK_SET, 0)
+    assert not f.closed
+    app = FileResponse(path=f)
+    client = test_client_factory(app)
+    response = client.get("/")
+    assert response.status_code == status.HTTP_200_OK
+    assert response.content == content
+    assert f.closed
 
 
 def test_set_cookie(test_client_factory, monkeypatch):
@@ -1175,10 +1191,8 @@ def test_ndjson_response_with_inputs(test_client_factory, content):
         pytest.param(b"\xff\xd8\xff\xe0\x00\x10JFIF", "image/jpeg", id="jpeg"),
     ],
 )
-@pytest.mark.parametrize("response_class", [ImageResponse, DeducingFileResponse])
-def test_deducing_deducing_response_with(
-    test_client_factory, response_class, content, content_type
-):
+@pytest.mark.parametrize("response_class", [ImageResponse, SimpleFileResponse])
+def test_simple_file_response_with(test_client_factory, response_class, content, content_type):
     async def app(scope, receive, send):
         response = response_class(content=content)
         await response(scope, receive, send)
@@ -1191,14 +1205,16 @@ def test_deducing_deducing_response_with(
     assert resp.content == content
 
 
-def test_deducing_file_response_file(tmpdir, test_client_factory):
+@pytest.mark.parametrize("method", ["direct", "name"])
+def test_simple_file_response_file(tmpdir, test_client_factory, method):
     path = os.path.join(tmpdir, "example.jpg")
     jpeg_bytes = b"\xff\xd8\xff\xe0\x00\x10JFIF"
-    with open(path, "wb") as file:
-        file.write(jpeg_bytes)
+    file = open(path, "w+b")
+    file.write(jpeg_bytes)
+    file.seek(os.SEEK_SET, 0)
 
     async def app(scope, receive, send):
-        response = DeducingFileResponse(file.name)
+        response = SimpleFileResponse(file if method == "direct" else file.name)
         await response(scope, receive, send)
 
     client = test_client_factory(app)
@@ -1206,11 +1222,21 @@ def test_deducing_file_response_file(tmpdir, test_client_factory):
     assert response.status_code == status.HTTP_200_OK
     assert response.content == b""
     assert response.headers["content-type"] == "image/jpeg"
+    if method == "name":
+        assert not file.closed
+    else:
+        assert file.closed
+        file = open(path)
     response = client.get("/")
     assert response.status_code == status.HTTP_200_OK
     assert response.content == jpeg_bytes
     assert response.headers["content-type"] == "image/jpeg"
     assert "content-length" in response.headers
+    if method == "name":
+        assert not file.closed
+        file.close()
+    else:
+        assert file.closed
 
 
 def test_image_response_with_jpeg_bytes_and_mime():

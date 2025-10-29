@@ -1,12 +1,12 @@
 from lilya.apps import Lilya
 from lilya.routing import Path
-from lilya.responses import DeducingFileResponse, Response
+from lilya.responses import SimpleFileResponse, Response
 
 
 async def image_download() -> Response:
     # this uses the file name to deduce the file type and
     # doesn't! require python-magic
-    return DeducingFileResponse("logo.png")
+    return SimpleFileResponse("logo.png")
 
 
 app = Lilya(

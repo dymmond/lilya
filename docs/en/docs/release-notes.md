@@ -9,7 +9,7 @@ hide:
 
 ### Added
 
-- Add `DeducingFileResponse` and internal `DispositionResponse`.
+- Add `SimpleFileResponse` and internal `DispositionResponse`.
 
 ### Changed
 
@@ -19,9 +19,9 @@ hide:
 - Improved Responses:
     - StreamingResponse eliminates one round-trip.
     - Response has deduction capabilities of the media-type (python-magic required).
-    - ImageResponse is now an alias of `DeducingFileResponse`.
+    - ImageResponse is now an alias of `SimpleFileResponse`.
     - Make `CSVResponse` and `NDJSONResponse` streaming.
-    - `send_file` uses now `DeducingFileResponse`.
+    - `send_file` uses now `SimpleFileResponse`.
 
 ### Fixed
 
