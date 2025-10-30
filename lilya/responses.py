@@ -79,7 +79,7 @@ class Response:
     # uvicorn would allow also body memoryview and bytearray
     passthrough_body_types: tuple[type, ...] = (bytes,)
     headers: Header
-    deduce_media_type_from_body = False
+    deduce_media_type_from_body: bool | Literal["force"] = False
     cleanup_handler: Callable[[], None | Awaitable[None]] | None = None
 
     def __init__(
@@ -115,6 +115,13 @@ class Response:
             if self.deduce_media_type_from_body == "force" or self.media_type is None:
                 self.media_type = self.find_media_type()
         self.make_headers(headers)
+
+    async def execute_cleanup_handler(self) -> None:
+        if self.cleanup_handler is None:
+            return
+        res = self.cleanup_handler()
+        if isawaitable(res):
+            await res
 
     async def resolve_async_content(self) -> None:
         if getattr(self, "async_content", None) is not None:
@@ -336,11 +343,7 @@ class Response:
             await send({"type": f"{prefix}http.response.body", "body": self.body})
 
         finally:
-            cleanup_fn = self.cleanup_handler
-            if cleanup_fn is not None:
-                cleanup_fn = cleanup_fn()
-            if isawaitable(cleanup_fn):
-                await cleanup_fn
+            await self.execute_cleanup_handler()
         if self.background is not None and not mutation_free:
             await self.background()
 
@@ -493,6 +496,7 @@ class RedirectResponse(Response):
 
 class StreamingResponse(Response):
     body_iterator: AsyncContentStream
+    deduce_media_type_from_body: bool = False
 
     def __init__(
         self,
@@ -556,11 +560,7 @@ class StreamingResponse(Response):
                 task_group.start_soon(wrap, functools.partial(self.stream, send))
                 await wrap(functools.partial(self.wait_for_disconnect, receive))
         finally:
-            cleanup_fn = self.cleanup_handler
-            if cleanup_fn is not None:
-                cleanup_fn = cleanup_fn()
-            if isawaitable(cleanup_fn):
-                await cleanup_fn
+            await self.execute_cleanup_handler()
 
         if self.background is not None:
             await self.background()
@@ -605,6 +605,7 @@ class EventStreamResponse(Response):
     DEFAULT_PING_INTERVAL = 15
     DEFAULT_SEPARATOR = "\n"
     media_type = "text/event-stream"
+    deduce_media_type_from_body: bool = False
 
     def __init__(
         self,
@@ -951,6 +952,7 @@ class EventStreamResponse(Response):
 
 class FileResponse(DispositionResponse):
     chunk_size = 64 * 1024
+    deduce_media_type_from_body: bool = False
 
     def __init__(
         self,
@@ -973,10 +975,10 @@ class FileResponse(DispositionResponse):
                 '"method" parameter is obsolete. It is now automatically deduced.', stacklevel=2
             )
         try:
-            self.path = os.fspath(path)
+            self.path = os.fspath(cast(Any, path))
         except TypeError:
-            if getattr(path, "name", None):
-                self.path = path.name
+            if getattr(cast(Any, path), "name", None):
+                self.path = cast(FileIO, path).name
         # use path not self.path which is a string
         if hasattr(path, "aclose"):
             self.cleanup_handler = path.aclose
@@ -1221,11 +1223,7 @@ class FileResponse(DispositionResponse):
                             }
                         )
         finally:
-            cleanup_fn = self.cleanup_handler
-            if cleanup_fn is not None:
-                cleanup_fn = cleanup_fn()
-            if isawaitable(cleanup_fn):
-                await cleanup_fn
+            await self.execute_cleanup_handler()
 
         if self.background is not None:
             await self.background()
@@ -1254,7 +1252,7 @@ class SimpleFileResponse(Response):
             or getattr(content, "name", None)
         ):
             return FileResponse(
-                path=content,
+                path=cast("str | os.PathLike | FileIO", content),
                 filename=filename,
                 status_code=status_code,
                 headers=headers,
