@@ -296,6 +296,7 @@ dependencies = ["ruff==0.12.2"]
 features = ['testing', "cli"]
 template = "test"
 installer = "pip"
+extra-dependencies = ["msgspec@git+https://github.com/jcrist/msgspec.git ; python_version >= '3.14.0'"]
 
 [tool.hatch.envs.hatch-test.env-vars]
 LILYA_SETTINGS_MODULE = "tests.settings.AppTestSettings"
