@@ -50,7 +50,16 @@ from lilya.responses import Response
 
 ##### Parameters
 
-- `deduce_media_type_from_body` - Use the bytes of the file to deduce the media_type. By default `False`, requires `python-magic`.
+- `content` - The content to send. Encoded via `encoders` to `bytes` or other `passthrough_body_types` types-
+- `status_code` - The returned status code - default 200.
+- `headers` - HTTP headers as dictionary.
+- `cookies` - HTTP cookies as dictionary.
+- `media_type` - The type of the content. Part of the `content_type`.
+- `background` - Background tasks, executed after the response finished.
+- `encoders` - Overwrite the default encoders.
+- `passthrough_body_types` - Don't re-encode these types. Just pass them to the ASGI server. (Some ASGI servers can handle memoryviews, string, ... or have special return types for non-standard features).
+- `deduce_media_type_from_body` - Use the bytes of the file to deduce the media_type. By default `False`, `True` or `"force"` requires `python-magic`.
+  `"force"` allows using the set media type as fallback and prefer a deduced `media_type`.
 
 ##### Set cookie
 
