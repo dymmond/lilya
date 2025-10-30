@@ -71,6 +71,15 @@ RESPONSE_TRANSFORM_KWARGS: ContextVar[dict | None] = ContextVar(
 )
 
 
+@functools.lru_cache(1)
+def require_magic() -> None:
+    if magic is None:
+        raise ImportError(
+            "The 'python-magic' library is required to deduce the media_type from the body. "
+            "Please install it."
+        )
+
+
 class Response:
     media_type: str | None = None
     status_code: int | None = None
@@ -140,6 +149,7 @@ class Response:
                     )
 
     def find_media_type(self) -> str:
+        require_magic()
         return magic.from_buffer(self.body[:2048], mime=True) or self.media_type or MediaType.OCTET
 
     @classmethod
@@ -1011,6 +1021,7 @@ class FileResponse(DispositionResponse):
             self.set_stat_headers(stat_result)
 
     def find_media_type(self) -> str:
+        require_magic()
         if self.deduce_media_type_from_body:
             return magic.from_file(self.path, mime=True)
         return guess_type(self.filename or self.path)[0] or MediaType.OCTET
