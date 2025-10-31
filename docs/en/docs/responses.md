@@ -486,7 +486,7 @@ You can also just pass the pathname of the file
 
 **With python-magic**
 
-Requirement: installed `python-magic`
+Requirement: installed `python-magic` (e.g. `pip install python-magic`)
 
 python-magic is used when no file-name is available (bytes) (`deduce_media_type_from_body=None`) but we can also
 control this explicitly:
