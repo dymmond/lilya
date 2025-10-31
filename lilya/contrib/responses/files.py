@@ -3,8 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import IO
 
-from lilya.background import Task
-from lilya.responses import FileResponse, StreamingResponse
+from lilya.responses import Response, SimpleFileResponse
 
 
 def send_file(
@@ -13,7 +12,8 @@ def send_file(
     as_attachment: bool = False,
     attachment_filename: str | None = None,
     max_age: int | None = None,
-) -> FileResponse | StreamingResponse:
+    deduce_media_type_from_body: None | bool = None,
+) -> Response:
     """
     Sends a file or file-like object as a response.
 
@@ -31,25 +31,15 @@ def send_file(
 
     if isinstance(filename_or_fp, (str, Path)):
         path = Path(filename_or_fp)
-
-        if as_attachment:
-            filename = attachment_filename or path.name
-            headers["Content-Disposition"] = f'attachment; filename="{filename}"'
-
-        return FileResponse(
-            path,
-            media_type=mimetype,
-            headers=headers or None,
-            filename=attachment_filename if as_attachment else None,
-        )
-
-    if as_attachment:
+        filename = attachment_filename or path.name
+    else:
         filename = attachment_filename or "download"
-        headers["Content-Disposition"] = f'attachment; filename="{filename}"'
 
-    return StreamingResponse(
+    return SimpleFileResponse(
         filename_or_fp,
-        media_type=mimetype or "application/octet-stream",
-        headers=headers or None,
-        background=Task(filename_or_fp.close),
+        media_type=mimetype,
+        filename=filename,
+        headers=headers,
+        content_disposition_type="attachment" if as_attachment else "inline",
+        deduce_media_type_from_body=deduce_media_type_from_body,
     )

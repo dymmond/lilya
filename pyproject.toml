@@ -160,6 +160,8 @@ all = [
     # For the shell support in the CLI
     "ipython",
     "ptpython",
+    # For deducing Responses
+    "python-magic"
 ]
 
 cli = [
@@ -185,7 +187,6 @@ standard = [
     # The server for runserver command
     "uvicorn[standard]>=0.29.0",
 ]
-
 test = ["httpx>=0.25.0"]
 testing = [
     "asyncz",
@@ -220,6 +221,7 @@ testing = [
     "ipdb",
     "structlog",
     "loguru",
+    "python-magic"
 ]
 
 docs = [
@@ -294,6 +296,7 @@ dependencies = ["ruff==0.12.2"]
 features = ['testing', "cli"]
 template = "test"
 installer = "pip"
+extra-dependencies = ["msgspec@git+https://github.com/jcrist/msgspec.git ; python_version >= '3.14.0'"]
 
 [tool.hatch.envs.hatch-test.env-vars]
 LILYA_SETTINGS_MODULE = "tests.settings.AppTestSettings"

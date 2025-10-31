@@ -48,6 +48,19 @@ from lilya.responses import Response
 {!> ../../../docs_src/responses/response.py !}
 ```
 
+##### Parameters
+
+- `content` - The content to send. Encoded via `encoders` to `bytes` or other `passthrough_body_types` types-
+- `status_code` - The returned status code - default 200.
+- `headers` - HTTP headers as dictionary.
+- `cookies` - HTTP cookies as dictionary.
+- `media_type` - The type of the content. Part of the `content_type`.
+- `background` - Background tasks, executed after the response finished.
+- `encoders` - Overwrite the default encoders.
+- `passthrough_body_types` - Don't re-encode these types. Just pass them to the ASGI server. (Some ASGI servers can handle memoryviews, string, ... or have special return types for non-standard features).
+- `deduce_media_type_from_body` - Use the bytes of the file to deduce the media_type. By default `False`, `True` or `"force"` requires `python-magic`.
+  `"force"` allows using the set media type as fallback and prefer a deduced `media_type`.
+
 ##### Set cookie
 
 Lilya provides the `set_cookie` that allows settings a cookie on a given response. All the responses
@@ -233,6 +246,7 @@ Streams a file asynchronously as the response, employing a distinct set of argum
 - `background` - A [task](./tasks.md) instance.
 - `allow_range_requests` - Should enable support for http ranges? By default `True`. You certainly want this for continuing downloads.
 - `range_multipart_boundary` - Enable multipart http ranges. Either bool or explicit string value used for the boundary. By default `False` (multipart is disabled).
+- `deduce_media_type_from_body` - Use the bytes of file to deduce the media_type. By default `False`, requires `python-magic`.
 
 **Example**
 
@@ -443,10 +457,12 @@ Each JSON object is written on a separate line, making it easy for clients to pa
 application/x-ndjson
 ```
 
-## ImageResponse
+## SimpleFileResponse
 
-`ImageResponse` is a convenient way to send raw image bytes directly to the client.
-It automatically sets the correct `Content-Type` and `Content-Length` headers based on the image data.
+`SimpleFileResponse` (or `ImageResponse`) is a convenient way to send raw image bytes (or image pathes) directly to the client.
+It automatically sets the correct `Content-Type` and `Content-Length` headers based on the data or path.
+It optionally uses `python-magic` to deduce for bytes objects the mime type.
+To force enforce either a deduction via magic use `deduce_media_type_from_body=True`.
 
 ### Example
 
@@ -461,22 +477,30 @@ Content-Type: image/png
 Content-Length: <calculated automatically>
 ```
 
-### Supported Media Types
+### Supported calls
 
-* `image/png`
-* `image/jpeg`
-* `image/webp`
-* `image/gif`
-* `image/svg+xml`
-* or any other valid MIME type string.
+You can also just pass the pathname of the file
+```python
+{!> ../../../docs_src/responses/image2.py !}
+```
 
-You must specify the correct `media_type` when instantiating the response, or it will default to `image/png`.
+**With python-magic**
+
+Requirement: installed `python-magic` (e.g. `pip install python-magic`)
+
+python-magic is used when no file-name is available (bytes) (`deduce_media_type_from_body=None`) but we can also
+control this explicitly:
+
+```python
+{!> ../../../docs_src/responses/image3.py !}
+```
 
 ### Notes
 
+* It has an alternative name: `ImageResponse`.
 * Lilya does **not** perform image validation or conversion, it simply streams the bytes as-is.
 * The response is fully ASGI-compatible and can be sent using `await response(scope, receive, send)` in any Lilya or ASGI-based app.
-* Ideal for serving dynamically generated images, in-memory thumbnails, or image previews stored in memory.
+* Ideal for serving dynamically generated images, in-memory thumbnails, or image previews.
 
 
 ## EventStreamResponse

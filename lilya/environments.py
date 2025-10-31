@@ -282,9 +282,7 @@ class EnvironLoader(MultiDict):
             ImportError: If the 'PyYAML' library is not installed.
         """
         if SafeLoader is None:
-            raise ImportError(
-                "The 'PyYAML' library is required to load YAML files. Please install it."
-            )
+            raise ImportError("The 'PyYAML' library is required to load YAML files.")
 
         try:
             with open(file_path, encoding="utf-8") as f:

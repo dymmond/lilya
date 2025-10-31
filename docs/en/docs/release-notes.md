@@ -7,16 +7,27 @@ hide:
 
 ## 0.22.8
 
+### Added
+
+- Add `SimpleFileResponse` and internal `DispositionResponse`.
+
 ### Changed
 
 - Improved dependency resolution logic to refine request injection rules.
 - Enhanced `Provide` to handle nested dependency injection with stricter argument checks.
 - Updated precedence handling to ensure consistent dependency resolution order across async libraries.
+- Improved Responses:
+    - StreamingResponse eliminates one round-trip.
+    - Response has deduction capabilities of the media-type (python-magic required).
+    - ImageResponse is now an alias of `SimpleFileResponse`.
+    - Make `CSVResponse` and `NDJSONResponse` streaming.
+    - `send_file` uses now `SimpleFileResponse`.
 
 ### Fixed
 
 - Request objects were being injected into zero-argument dependencies.
 - Dependency injection precedence edge cases between global and route-level dependencies.
+- Fix `BaseSettings` for python 3.14 and more complex inheritances.
 
 ## 0.22.7
 

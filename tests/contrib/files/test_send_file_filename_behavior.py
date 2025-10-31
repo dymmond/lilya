@@ -8,16 +8,16 @@ from lilya.routing import Path
 from lilya.testclient import TestClient
 
 
-def create_temp_file(content: bytes, suffix=".txt"):
+def create_temp_file(content: bytes, suffix: str = ".txt") -> str:
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
     tmp.write(content)
     tmp.close()
     return tmp.name
 
 
-def test_no_content_disposition_for_inline_files(test_client_factory):
+def test_content_disposition_for_inline_files(test_client_factory):
     """
-    Ensure that send_file() does not set Content-Disposition
+    Ensure that send_file() does set Content-Disposition inline
     when as_attachment=False.
     """
     tmp_path = create_temp_file(b"inline content", ".txt")
@@ -30,7 +30,7 @@ def test_no_content_disposition_for_inline_files(test_client_factory):
 
     response = client.get("/inline")
     assert response.status_code == 200
-    assert "content-disposition" not in response.headers
+    assert response.headers["content-disposition"] == "inline"
     assert response.text == "inline content"
 
     os.remove(tmp_path)

@@ -23,13 +23,9 @@ from contextvars import ContextVar
 from datetime import datetime
 from email.utils import format_datetime, formatdate
 from inspect import isawaitable, isclass
+from io import FileIO
 from mimetypes import guess_type
-from typing import (
-    Any,
-    Literal,
-    NoReturn,
-    cast,
-)
+from typing import IO, Any, Literal, NoReturn, cast
 from urllib.parse import quote
 
 import anyio
@@ -57,6 +53,11 @@ try:
 except ImportError:  # pragma: no cover
     msgpack = None
 
+try:
+    import magic
+except ImportError:  # pragma: no cover
+    magic = None
+
 Content = str | bytes
 Encoder = EncoderProtocol | MoldingProtocol
 SyncContentStream = Iterable[Content]
@@ -70,6 +71,14 @@ RESPONSE_TRANSFORM_KWARGS: ContextVar[dict | None] = ContextVar(
 )
 
 
+@functools.lru_cache(1)
+def require_magic() -> None:
+    if magic is None:
+        raise ImportError(
+            "The 'python-magic' library is required to deduce the media_type from the body."
+        )
+
+
 class Response:
     media_type: str | None = None
     status_code: int | None = None
@@ -78,6 +87,8 @@ class Response:
     # uvicorn would allow also body memoryview and bytearray
     passthrough_body_types: tuple[type, ...] = (bytes,)
     headers: Header
+    deduce_media_type_from_body: bool | Literal["force"] = False
+    cleanup_handler: Callable[[], None | Awaitable[None]] | None = None
 
     def __init__(
         self,
@@ -89,6 +100,7 @@ class Response:
         background: Task | None = None,
         encoders: Sequence[Encoder | type[Encoder]] | None = None,
         passthrough_body_types: tuple[type, ...] | None = None,
+        deduce_media_type_from_body: bool | Literal["force"] = False,
     ) -> None:
         if passthrough_body_types is not None:
             self.passthrough_body_types = passthrough_body_types
@@ -98,6 +110,7 @@ class Response:
             self.media_type = media_type
         self.background = background
         self.cookies = cookies
+        self.deduce_media_type_from_body = deduce_media_type_from_body
         self.encoders: list[Encoder] = [
             encoder() if isclass(encoder) else encoder for encoder in encoders or _empty
         ]
@@ -105,7 +118,18 @@ class Response:
             self.async_content = content
         else:
             self.body = self.make_response(content)
+        # deduce media type
+        if self.deduce_media_type_from_body and getattr(self, "body", None) is not None:
+            if self.deduce_media_type_from_body == "force" or self.media_type is None:
+                self.media_type = self.find_media_type()
         self.make_headers(headers)
+
+    async def execute_cleanup_handler(self) -> None:
+        if self.cleanup_handler is None:
+            return
+        res = self.cleanup_handler()
+        if isawaitable(res):
+            await res
 
     async def resolve_async_content(self) -> None:
         if getattr(self, "async_content", None) is not None:
@@ -116,6 +140,16 @@ class Response:
                 and "content-length" not in self.headers
             ):
                 self.headers["content-length"] = str(len(self.body))
+            if self.deduce_media_type_from_body:
+                if self.deduce_media_type_from_body == "force" or self.media_type is None:
+                    self.media_type = self.find_media_type()
+                    self.headers["content-type"] = HeaderHelper.get_content_type(
+                        charset=self.charset, media_type=self.media_type
+                    )
+
+    def find_media_type(self) -> str:
+        require_magic()
+        return magic.from_buffer(self.body[:2048], mime=True) or self.media_type or MediaType.OCTET
 
     @classmethod
     @contextlib.contextmanager
@@ -185,15 +219,19 @@ class Response:
         if HeaderHelper.has_entity_header_status(self.status_code):
             headers = HeaderHelper.remove_entity_headers(headers)
         if HeaderHelper.has_body_message(self.status_code):
-            content_type = HeaderHelper.get_content_type(
-                charset=self.charset, media_type=self.media_type
-            )
             if getattr(self, "body", None) is not None:
                 headers.setdefault("content-length", str(len(self.body)))
 
-            # Populates the content type if exists
-            if content_type is not None:
-                headers.setdefault("content-type", content_type)
+            # Populates the content type if exists and either a body was found or deduce_media_type_from_body was not force
+            if (
+                self.deduce_media_type_from_body != "force"
+                or getattr(self, "body", None) is not None
+            ):
+                content_type = HeaderHelper.get_content_type(
+                    charset=self.charset, media_type=self.media_type
+                )
+                if content_type is not None:
+                    headers.setdefault("content-type", content_type)
         self.headers = Header(headers)
 
     def set_cookie(
@@ -300,18 +338,21 @@ class Response:
         }
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        prefix = "websocket." if scope["type"] == "websocket" else ""
-        await self.resolve_async_content()
-        await send(self.message(prefix=prefix))
         # should be mutation free for both methods
         mutation_free = "method" in scope and scope["method"].upper() in {
             HTTPMethod.HEAD,
             HTTPMethod.OPTIONS,
         }
+        try:
+            prefix = "websocket." if scope["type"] == "websocket" else ""
+            await self.resolve_async_content()
+            await send(self.message(prefix=prefix))
 
-        # don't interfere, in case of bodyless requests like head the message is ignored.
-        await send({"type": f"{prefix}http.response.body", "body": self.body})
+            # don't interfere, in case of bodyless requests like head the message is ignored.
+            await send({"type": f"{prefix}http.response.body", "body": self.body})
 
+        finally:
+            await self.execute_cleanup_handler()
         if self.background is not None and not mutation_free:
             await self.background()
 
@@ -323,10 +364,8 @@ class HTMLResponse(Response):
     media_type = MediaType.HTML
 
 
-class HTML(HTMLResponse):
-    """
-    A simple alias for HTMLResponse for better readability.
-    """
+# alias
+HTML = HTMLResponse
 
 
 class Error(HTMLResponse):
@@ -337,7 +376,59 @@ class PlainText(Response):
     media_type = MediaType.TEXT
 
 
-class TextResponse(PlainText): ...
+TextResponse = PlainText
+
+
+class DispositionResponse(Response):
+    def __init__(
+        self,
+        *,
+        filename: str | None = None,
+        content_disposition_type: str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        self.filename = filename
+        self.content_disposition_type = content_disposition_type
+        super().__init__(**kwargs)
+
+    @staticmethod
+    def make_content_disposition_header(
+        *, content_disposition_type: str | None, filename: str | None
+    ) -> str | None:
+        if content_disposition_type == "inline":
+            return "inline"
+        elif content_disposition_type == "attachment":
+            if filename is not None:
+                content_disposition_filename = quote(filename)
+                if content_disposition_filename != filename:
+                    content_disposition = f"{content_disposition_type}; filename*=utf-8''{content_disposition_filename}"
+                else:
+                    content_disposition = f'{content_disposition_type}; filename="{filename}"'
+            else:
+                content_disposition = content_disposition_type
+            return content_disposition
+        elif content_disposition_type is None:
+            if filename is not None:
+                content_disposition_filename = quote(filename)
+                if content_disposition_filename != filename:
+                    content_disposition = (
+                        f"attachment; filename*=utf-8''{content_disposition_filename}"
+                    )
+                else:
+                    content_disposition = f'attachment; filename="{filename}"'
+                return content_disposition
+        return None
+
+    def make_headers(
+        self, content_headers: Mapping[str, str] | dict[str, str] | None = None
+    ) -> None:
+        super().make_headers(content_headers)
+        content_disposition = self.make_content_disposition_header(
+            content_disposition_type=self.content_disposition_type,
+            filename=self.filename,
+        )
+        if content_disposition is not None:
+            self.headers.setdefault("content-disposition", content_disposition)
 
 
 class JSONResponse(Response):
@@ -414,6 +505,7 @@ class RedirectResponse(Response):
 
 class StreamingResponse(Response):
     body_iterator: AsyncContentStream
+    deduce_media_type_from_body: bool = False
 
     def __init__(
         self,
@@ -433,7 +525,8 @@ class StreamingResponse(Response):
         else:
             self.body_iterator = iterate_in_threadpool(content)
         self.status_code = status_code
-        self.media_type = self.media_type if media_type is None else media_type
+        if media_type is not None:
+            self.media_type = media_type
         self.background = background
         self.make_headers(headers)
 
@@ -444,12 +537,16 @@ class StreamingResponse(Response):
                 break
 
     async def stream(self, send: Send) -> None:
+        last_chunk: bytes | None = None
+        # save one round-trip by delaying sending of chunk
         async for chunk in self.body_iterator:
+            if last_chunk is not None:
+                await send({"type": "http.response.body", "body": last_chunk, "more_body": True})
             if not isinstance(chunk, bytes):
                 chunk = chunk.encode(self.charset)
-            await send({"type": "http.response.body", "body": chunk, "more_body": True})
+            last_chunk = chunk
 
-        await send({"type": "http.response.body", "body": b"", "more_body": False})
+        await send({"type": "http.response.body", "body": last_chunk or b"", "more_body": False})
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         prefix = "websocket." if scope["type"] == "websocket" else ""
@@ -459,21 +556,31 @@ class StreamingResponse(Response):
             HTTPMethod.HEAD,
             HTTPMethod.OPTIONS,
         }
+        try:
+            if send_header_only:
+                # no background execution
+                return
+            async with anyio.create_task_group() as task_group:
 
-        if send_header_only:
-            # no background execution
-            return
-        async with anyio.create_task_group() as task_group:
+                async def wrap(func: Callable[[], Awaitable[None]]) -> None:
+                    await func()
+                    task_group.cancel_scope.cancel()
 
-            async def wrap(func: Callable[[], Awaitable[None]]) -> None:
-                await func()
-                task_group.cancel_scope.cancel()
-
-            task_group.start_soon(wrap, functools.partial(self.stream, send))
-            await wrap(functools.partial(self.wait_for_disconnect, receive))
+                task_group.start_soon(wrap, functools.partial(self.stream, send))
+                await wrap(functools.partial(self.wait_for_disconnect, receive))
+        finally:
+            await self.execute_cleanup_handler()
 
         if self.background is not None:
             await self.background()
+
+    def make_response(self, content: Any) -> bytes:
+        """
+        This function is not implemented here
+        """
+        raise NotImplementedError(
+            "`StreamingResponse` doesn't implement `make_response` use stream instead"
+        )
 
 
 class EventStreamResponse(Response):
@@ -507,6 +614,7 @@ class EventStreamResponse(Response):
     DEFAULT_PING_INTERVAL = 15
     DEFAULT_SEPARATOR = "\n"
     media_type = "text/event-stream"
+    deduce_media_type_from_body: bool = False
 
     def __init__(
         self,
@@ -851,12 +959,13 @@ class EventStreamResponse(Response):
         return (self.sep.join(lines) + self.sep * 2).encode("utf-8")
 
 
-class FileResponse(Response):
+class FileResponse(DispositionResponse):
     chunk_size = 64 * 1024
+    deduce_media_type_from_body: bool = False
 
     def __init__(
         self,
-        path: str | os.PathLike[str],
+        path: str | os.PathLike[str] | FileIO,
         status_code: int = status.HTTP_200_OK,
         headers: typing.Mapping[str, str] | None = None,
         media_type: str | None = None,
@@ -864,8 +973,9 @@ class FileResponse(Response):
         filename: str | None = None,
         stat_result: os.stat_result | None = None,
         method: str | None = None,
-        content_disposition_type: str = "attachment",
+        content_disposition_type: str | None = None,
         encoders: Sequence[Encoder | type[Encoder]] | None = None,
+        deduce_media_type_from_body: bool = False,
         allow_range_requests: bool = True,
         range_multipart_boundary: bool | str = False,
     ) -> None:
@@ -873,16 +983,27 @@ class FileResponse(Response):
             warnings.warn(
                 '"method" parameter is obsolete. It is now automatically deduced.', stacklevel=2
             )
-        self.path = path
+        try:
+            self.path = os.fspath(cast(Any, path))
+        except TypeError:
+            if getattr(cast(Any, path), "name", None):
+                self.path = cast(FileIO, path).name
+        # use path not self.path which is a string
+        if hasattr(path, "aclose"):
+            self.cleanup_handler = path.aclose
+        elif hasattr(path, "close"):
+            self.cleanup_handler = path.close
+        self.deduce_media_type_from_body = deduce_media_type_from_body
         self.status_code = status_code
         self.allow_range_requests = allow_range_requests
         if not allow_range_requests:
             range_multipart_boundary = False
         self.range_multipart_boundary = range_multipart_boundary
+        self.content_disposition_type = content_disposition_type
         self.filename = filename
         if media_type is None:
             # by default it must be octet
-            media_type = guess_type(filename or path)[0] or MediaType.OCTET
+            media_type = self.find_media_type()
         self.media_type = media_type
         self.background = background
 
@@ -894,18 +1015,15 @@ class FileResponse(Response):
         if self.allow_range_requests:
             self.headers["accept-ranges"] = "bytes"
 
-        if self.filename is not None:
-            content_disposition_filename = quote(self.filename)
-            if content_disposition_filename != self.filename:
-                content_disposition = (
-                    f"{content_disposition_type}; filename*=utf-8''{content_disposition_filename}"
-                )
-            else:
-                content_disposition = f'{content_disposition_type}; filename="{self.filename}"'
-            self.headers.setdefault("content-disposition", content_disposition)
         self.stat_result = stat_result
         if stat_result is not None:
             self.set_stat_headers(stat_result)
+
+    def find_media_type(self) -> str:
+        require_magic()
+        if self.deduce_media_type_from_body:
+            return magic.from_file(self.path, mime=True)
+        return guess_type(self.filename or self.path)[0] or MediaType.OCTET
 
     def make_boundary(self) -> str:
         return f"{time.time()}-{self.headers['etag']}"
@@ -1005,105 +1123,63 @@ class FileResponse(Response):
             content_ranges = self.set_range_headers(scope)
         await send(self.message(prefix=prefix))
 
-        if send_header_only:
-            # no background execution
-            return
+        try:
+            if send_header_only:
+                # no background execution
+                return
 
-        ranges = (
-            [Range(start=0, stop=int(self.headers["content-length"]) - 1)]
-            if content_ranges is None
-            else content_ranges.ranges
-        )
-        subheader: str = ""
-        if content_ranges and "content-range" not in self.headers:
-            # TODO: check if there is a better way to escape media_type
-            media_type = self.media_type.replace(" ", "").replace("\n", "")
-            subheader = (
-                f"--{self.range_multipart_boundary}\ncontent-type: {media_type}\n"
-                "content-range: bytes {start}-{stop}/{fullsize}\n\n"
+            ranges = (
+                [Range(start=0, stop=int(self.headers["content-length"]) - 1)]
+                if content_ranges is None
+                else content_ranges.ranges
             )
-
-        extensions = scope.get("extensions", {})
-        if content_ranges is None and "http.response.pathsend" in extensions:
-            await send({"type": "http.response.pathsend", "path": self.path})
-        elif "http.response.zerocopysend" in extensions:
-            async with await anyio.open_file(self.path, mode="rb") as file:
-                last_stop = 0
-                for rangedef in ranges:
-                    if last_stop != rangedef.start:
-                        await file.seek(rangedef.start, os.SEEK_SET)
-                    size = rangedef.stop - rangedef.start + 1
-                    if subheader:
-                        await send(
-                            {
-                                "type": "http.response.body",
-                                "body": subheader.format(
-                                    start=rangedef.start,
-                                    stop=rangedef.stop,
-                                    fullsize=content_ranges.max_value + 1,
-                                ).encode(),
-                                "more_body": True,
-                            }
-                        )
-                    more_chunks = True
-                    while more_chunks:
-                        more_chunks = size > self.chunk_size
-                        count = self.chunk_size
-                        if not more_chunks:
-                            count = size
-                        await send(
-                            {
-                                "type": "http.response.zerocopysend",
-                                "file": file.fileno(),  # type: ignore
-                                "count": count,
-                                "more_body": bool(more_chunks or subheader),
-                            }
-                        )
-                        size -= count
-                    last_stop = rangedef.stop
-            # subheader = more than 1 range
-            if subheader:
-                await send(
-                    {
-                        "type": "http.response.body",
-                        "body": b"",
-                        "more_body": False,
-                    }
+            subheader: str = ""
+            if content_ranges and "content-range" not in self.headers:
+                # TODO: check if there is a better way to escape media_type
+                media_type = self.media_type.replace(" ", "").replace("\n", "")
+                subheader = (
+                    f"--{self.range_multipart_boundary}\ncontent-type: {media_type}\n"
+                    "content-range: bytes {start}-{stop}/{fullsize}\n\n"
                 )
-        else:
-            async with await anyio.open_file(self.path, mode="rb") as file:
-                last_stop = 0
-                for rangedef in ranges:
-                    if last_stop != rangedef.start:
-                        await file.seek(rangedef.start, os.SEEK_SET)
-                    size = rangedef.stop - rangedef.start + 1
-                    if subheader:
-                        await send(
-                            {
-                                "type": "http.response.body",
-                                "body": subheader.format(
-                                    start=rangedef.start,
-                                    stop=rangedef.stop,
-                                    fullsize=content_ranges.max_value + 1,
-                                ).encode(),
-                                "more_body": True,
-                            }
-                        )
-                    more_chunks = True
-                    while more_chunks:
-                        more_chunks = size > self.chunk_size
-                        count = self.chunk_size
-                        if not more_chunks:
-                            count = size
-                        await send(
-                            {
-                                "type": "http.response.body",
-                                "body": await file.read(count),
-                                "more_body": bool(more_chunks or subheader),
-                            }
-                        )
-                        size -= count
-                    last_stop = rangedef.stop
+
+            extensions = scope.get("extensions", {})
+            if content_ranges is None and "http.response.pathsend" in extensions:
+                await send({"type": "http.response.pathsend", "path": self.path})
+            elif "http.response.zerocopysend" in extensions:
+                async with await anyio.open_file(self.path, mode="rb") as file:
+                    last_stop = 0
+                    for rangedef in ranges:
+                        if last_stop != rangedef.start:
+                            await file.seek(rangedef.start, os.SEEK_SET)
+                        size = rangedef.stop - rangedef.start + 1
+                        if subheader:
+                            await send(
+                                {
+                                    "type": "http.response.body",
+                                    "body": subheader.format(
+                                        start=rangedef.start,
+                                        stop=rangedef.stop,
+                                        fullsize=content_ranges.max_value + 1,
+                                    ).encode(),
+                                    "more_body": True,
+                                }
+                            )
+                        more_chunks = True
+                        while more_chunks:
+                            more_chunks = size > self.chunk_size
+                            count = self.chunk_size
+                            if not more_chunks:
+                                count = size
+                            await send(
+                                {
+                                    "type": "http.response.zerocopysend",
+                                    "file": file.fileno(),  # type: ignore
+                                    "count": count,
+                                    "more_body": bool(more_chunks or subheader),
+                                }
+                            )
+                            size -= count
+                        last_stop = rangedef.stop
                 # subheader = more than 1 range
                 if subheader:
                     await send(
@@ -1113,8 +1189,132 @@ class FileResponse(Response):
                             "more_body": False,
                         }
                     )
+            else:
+                async with await anyio.open_file(self.path, mode="rb") as file:
+                    last_stop = 0
+                    for rangedef in ranges:
+                        if last_stop != rangedef.start:
+                            await file.seek(rangedef.start, os.SEEK_SET)
+                        size = rangedef.stop - rangedef.start + 1
+                        if subheader:
+                            await send(
+                                {
+                                    "type": "http.response.body",
+                                    "body": subheader.format(
+                                        start=rangedef.start,
+                                        stop=rangedef.stop,
+                                        fullsize=content_ranges.max_value + 1,
+                                    ).encode(),
+                                    "more_body": True,
+                                }
+                            )
+                        more_chunks = True
+                        while more_chunks:
+                            more_chunks = size > self.chunk_size
+                            count = self.chunk_size
+                            if not more_chunks:
+                                count = size
+                            await send(
+                                {
+                                    "type": "http.response.body",
+                                    "body": await file.read(count),
+                                    "more_body": bool(more_chunks or subheader),
+                                }
+                            )
+                            size -= count
+                        last_stop = rangedef.stop
+                    # subheader = more than 1 range
+                    if subheader:
+                        await send(
+                            {
+                                "type": "http.response.body",
+                                "body": b"",
+                                "more_body": False,
+                            }
+                        )
+        finally:
+            await self.execute_cleanup_handler()
+
         if self.background is not None:
             await self.background()
+
+
+class SimpleFileResponse(Response):
+    """A simplified FileResponse which allows sending arbitary data formats as file."""
+
+    def __new__(
+        cls,
+        content: bytes | memoryview | os.PathLike | str | IO[bytes] | FileIO,
+        *,
+        filename: str | None = None,
+        status_code: int = status.HTTP_200_OK,
+        headers: Mapping[str, str] | None = None,
+        media_type: str | None = None,
+        background: Task | None = None,
+        content_disposition_type: str = "inline",
+        deduce_media_type_from_body: bool | None = None,
+        allow_range_requests: bool = True,
+        range_multipart_boundary: bool | str = False,
+    ) -> Response:
+        if (
+            isinstance(content, str)
+            or hasattr(content, "__fspath__")
+            or getattr(content, "name", None)
+        ):
+            return FileResponse(
+                path=cast("str | os.PathLike | FileIO", content),
+                filename=filename,
+                status_code=status_code,
+                headers=headers,
+                media_type=media_type,
+                background=background,
+                content_disposition_type=content_disposition_type,
+                deduce_media_type_from_body=deduce_media_type_from_body
+                if deduce_media_type_from_body is not None
+                else False,
+                allow_range_requests=allow_range_requests,
+                range_multipart_boundary=range_multipart_boundary,
+            )
+        elif isinstance(content, bytes | memoryview):
+            return DispositionResponse(
+                content=content,
+                filename=filename,
+                status_code=status_code,
+                headers=headers,
+                media_type=media_type,
+                background=background,
+                content_disposition_type=content_disposition_type,
+                deduce_media_type_from_body=deduce_media_type_from_body
+                if deduce_media_type_from_body is not None
+                else True,
+            )
+        else:
+            # close filedescriptors in case of anonymous, nameless files
+            cleanup_handler = None
+            if hasattr(content, "aclose"):
+                cleanup_handler = content.aclose
+            elif hasattr(content, "close"):
+                cleanup_handler = content.close
+            content_disposition = DispositionResponse.make_content_disposition_header(
+                content_disposition_type=content_disposition_type,
+                filename=filename,
+            )
+            if content_disposition is not None:
+                headers = {} if headers is None else headers.copy()
+                headers.setdefault("content-disposition", content_disposition)
+
+            response = StreamingResponse(
+                content=content,
+                status_code=status_code,
+                headers=headers,
+                media_type=media_type,
+                background=background,
+            )
+            response.cleanup_handler = cleanup_handler
+            return response
+
+
+ImageResponse = SimpleFileResponse
 
 
 class TemplateResponse(HTMLResponse):
@@ -1160,28 +1360,68 @@ class TemplateResponse(HTMLResponse):
         await super().__call__(scope, receive, send)
 
 
-class CSVResponse(Response):
+class CSVResponse(StreamingResponse):
     media_type = "text/csv"
+    body_iterator: AsyncIterable[Mapping[str, Any]]  # type: ignore
 
-    def make_response(self, content: Iterable[dict[str, Any]] | None) -> bytes:
-        """
-        Converts a list of dictionaries to a CSV formatted byte string.
+    def __init__(
+        self,
+        content: AsyncIterable[Mapping[str, Any]] | Iterable[Mapping[str, Any]] | None = None,
+        status_code: int = status.HTTP_200_OK,
+        headers: Mapping[str, str] | None = None,
+        media_type: str | None = None,
+        background: Task | None = None,
+        encoders: Sequence[Encoder | type[Encoder]] | None = None,
+    ) -> None:
+        if content is None:
+            content = _empty
+        super().__init__(
+            content=cast(Any, content),
+            status_code=status_code,
+            headers=headers,
+            media_type=media_type,
+            background=background,
+            encoders=encoders,
+        )
 
-        Args:
-            content (Iterable[dict[str, Any]] | None): Iterable of dicts representing the CSV rows
-        """
-        if not content:
-            return b""
-
-        rows = list(content)
-        if not rows:
-            return b""
-
-        headers = list(rows[0].keys())
-        lines = [",".join(headers)]
-        for row in rows:
-            lines.append(",".join(str(row.get(h, "")) for h in headers))
-        return "\n".join(lines).encode()
+    async def stream(self, send: Send) -> None:
+        try:
+            row1 = await self.body_iterator.__anext__()
+        except StopAsyncIteration:
+            await send({"type": "http.response.body", "body": b"", "more_body": False})
+            return
+        headers = row1.keys()
+        await send(
+            {
+                "type": "http.response.body",
+                "body": f"{','.join(headers)}\n".encode(self.charset),
+                "more_body": True,
+            }
+        )
+        # send content
+        last_row = row1
+        async for row in self.body_iterator:
+            # send last_row with \n
+            await send(
+                {
+                    "type": "http.response.body",
+                    "body": f"{','.join(str(last_row.get(h, '')) for h in headers)}\n".encode(
+                        self.charset
+                    ),
+                    "more_body": True,
+                }
+            )
+            last_row = row
+        # send really last row without newline
+        await send(
+            {
+                "type": "http.response.body",
+                "body": f"{','.join(str(last_row.get(h, '')) for h in headers)}".encode(
+                    self.charset
+                ),
+                "more_body": False,
+            }
+        )
 
 
 class XMLResponse(Response):
@@ -1256,31 +1496,69 @@ class MessagePackResponse(Response):
         return cast(bytes, msgpack.packb(content, use_bin_type=True))
 
 
-class NDJSONResponse(Response):
+class NDJSONResponse(StreamingResponse):
     media_type = "application/x-ndjson"
+    body_iterator: AsyncIterable[Any]
 
-    def make_response(self, content: Iterable[dict[str, Any]] | None) -> bytes:
+    def __init__(
+        self,
+        content: AsyncIterable[Any] | Iterable[Any] | None = None,
+        status_code: int = status.HTTP_200_OK,
+        headers: Mapping[str, str] | None = None,
+        media_type: str | None = None,
+        background: Task | None = None,
+        encoders: Sequence[Encoder | type[Encoder]] | None = None,
+    ) -> None:
+        if content is None:
+            content = _empty
+        super().__init__(
+            content=cast(Any, content),
+            status_code=status_code,
+            headers=headers,
+            media_type=media_type,
+            background=background,
+            encoders=encoders,
+        )
+
+    async def stream(self, send: Send) -> None:
         """
         Converts an iterable of dictionaries to a NDJSON formatted byte string.
         """
-        if not content:
-            return b""
+        last_row: bytes | None = None
 
-        lines = [serializer.dumps(item, separators=(",", ": ")) for item in content]
-        return ("\n".join(lines)).encode(self.charset)
-
-
-class ImageResponse(Response):
-    def __init__(
-        self,
-        content: bytes,
-        media_type: str = "image/png",
-        status_code: int = 200,
-        headers: dict[str, str] | None = None,
-    ):
-        super().__init__(
-            content=content, status_code=status_code, headers=headers, media_type=media_type
-        )
+        new_params = RESPONSE_TRANSFORM_KWARGS.get()
+        if new_params:
+            new_params = new_params.copy()
+        else:
+            new_params = {}
+        new_params["post_transform_fn"] = None
+        if self.encoders:
+            new_params["with_encoders"] = (*self.encoders, *ENCODER_TYPES.get())
+        async for row in self.body_iterator:
+            if last_row is not None:
+                await send(
+                    {
+                        "type": "http.response.body",
+                        "body": b"%b\n" % last_row,
+                        "more_body": True,
+                    }
+                )
+            content = json_encode(row, **new_params)
+            if isinstance(content, (bytearray, memoryview)):
+                content = bytes(content)
+            elif isinstance(content, str):
+                content = content.encode(self.charset)
+            last_row = content
+        if last_row is not None:
+            await send(
+                {
+                    "type": "http.response.body",
+                    "body": last_row,
+                    "more_body": False,
+                }
+            )
+        else:
+            await send({"type": "http.response.body", "body": b"", "more_body": False})
 
 
 def make_response(

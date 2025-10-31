@@ -645,7 +645,8 @@ class Relay:
         """
 
         async def downstream_to_upstream() -> None:
-            while True:
+            active: bool = True
+            while active:
                 event = await receive()
                 t = event["type"]
                 if t == "websocket.receive":
@@ -657,7 +658,7 @@ class Relay:
                     try:
                         await upstream.close()
                     finally:
-                        break  # noqa
+                        active = False
 
         async def upstream_to_downstream() -> None:
             try:
