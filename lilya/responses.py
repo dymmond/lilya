@@ -75,8 +75,7 @@ RESPONSE_TRANSFORM_KWARGS: ContextVar[dict | None] = ContextVar(
 def require_magic() -> None:
     if magic is None:
         raise ImportError(
-            "The 'python-magic' library is required to deduce the media_type from the body. "
-            "Please install it."
+            "The 'python-magic' library is required to deduce the media_type from the body."
         )
 
 
@@ -580,7 +579,7 @@ class StreamingResponse(Response):
         This function is not implemented here
         """
         raise NotImplementedError(
-            "`StreamingResponse` implements no `make_response` use stream instead"
+            "`StreamingResponse` doesn't implement `make_response` use stream instead"
         )
 
 
