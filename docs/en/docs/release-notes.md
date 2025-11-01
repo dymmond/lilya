@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.22.9
+
+### Fixes
+
+- Hard dependency of `python-magic`.
+
 ## 0.22.8
 
 ### Added
