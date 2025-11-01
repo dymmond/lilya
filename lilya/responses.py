@@ -83,8 +83,6 @@ class Response:
     media_type: str | None = None
     status_code: int | None = None
     charset: str = "utf-8"
-    # should be at least bytes. Ensures that no unsupported types are passed to the application server
-    # uvicorn would allow also body memoryview and bytearray
     passthrough_body_types: tuple[type, ...] = (bytes,)
     headers: Header
     deduce_media_type_from_body: bool | Literal["force"] = False
@@ -1020,8 +1018,8 @@ class FileResponse(DispositionResponse):
             self.set_stat_headers(stat_result)
 
     def find_media_type(self) -> str:
-        require_magic()
         if self.deduce_media_type_from_body:
+            require_magic()
             return magic.from_file(self.path, mime=True)
         return guess_type(self.filename or self.path)[0] or MediaType.OCTET
 
