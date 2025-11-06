@@ -4,6 +4,7 @@ from typing import Annotated, Any
 from pydantic import AnyUrl, BaseModel
 
 from lilya import __version__
+from lilya.contrib.documentation import Doc
 from lilya.contrib.openapi.docs import (
     get_rapidoc_ui_html,
     get_redoc_html,
@@ -14,7 +15,6 @@ from lilya.contrib.openapi.docs import (
 from lilya.contrib.openapi.utils import get_openapi
 from lilya.requests import Request
 from lilya.responses import HTMLResponse, JSONResponse
-from lilya.types import Doc
 
 
 class OpenAPIConfig(BaseModel):

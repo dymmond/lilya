@@ -19,10 +19,11 @@ from typing import (
 from lilya import __version__
 from lilya.caches.memory import InMemoryCache
 from lilya.conf.enums import EnvironmentType
+from lilya.contrib.documentation import Doc
 from lilya.logging import LoggingConfig, StandardLoggingConfig
 from lilya.protocols.cache import CacheBackend
 from lilya.serializers import SerializerConfig, StandardSerializerConfig
-from lilya.types import ApplicationType, Dependencies, Doc, ExceptionHandler
+from lilya.types import ApplicationType, Dependencies, ExceptionHandler
 
 if TYPE_CHECKING:
     from lilya.middleware.base import DefineMiddleware

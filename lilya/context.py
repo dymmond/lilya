@@ -5,9 +5,10 @@ import copy
 import warnings
 from typing import TYPE_CHECKING, Annotated, Any, cast
 
+from lilya.contrib.documentation import Doc
 from lilya.datastructures import URL
 from lilya.exceptions import ImproperlyConfigured
-from lilya.types import Doc, Scope
+from lilya.types import Scope
 
 if TYPE_CHECKING:
     from lilya.requests import Request

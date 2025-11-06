@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.22.10
+
+### Changed
+
+- Removed dependency of `Doc` from `lilya.types` and use the new `lilya.contrib.documentation` reference.
+
 ## 0.22.9
 
 ### Fixes

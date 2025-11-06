@@ -5,11 +5,11 @@ from typing import Annotated, Any, cast, get_args, get_origin
 
 from lilya._internal._responses import BaseHandler
 from lilya._utils import is_function
+from lilya.contrib.documentation import Doc
 from lilya.contrib.openapi.datastructures import OpenAPIResponse
 from lilya.contrib.openapi.helpers import convert_annotation_to_pydantic_model
 from lilya.contrib.openapi.params import Query, ResponseParam
 from lilya.contrib.security.base import SecurityBase, SecurityScheme
-from lilya.types import Doc
 
 SUCCESSFUL_RESPONSE = "Successful response"
 

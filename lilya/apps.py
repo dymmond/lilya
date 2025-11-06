@@ -11,6 +11,7 @@ from lilya._utils import is_class_and_subclass
 from lilya.conf import _monkay, settings as lilya_settings  # noqa
 from lilya.conf.exceptions import FieldException
 from lilya.conf.global_settings import Settings
+from lilya.contrib.documentation import Doc
 from lilya.datastructures import State, URLPath
 from lilya.dependencies import wrap_dependency
 from lilya.lifecycle import get_hooks as _lifecycle_get_hooks
@@ -36,7 +37,6 @@ from lilya.types import (
     ASGIApp,
     CallableDecorator,
     Dependencies,
-    Doc,
     ExceptionHandler,
     Lifespan,
     Receive,

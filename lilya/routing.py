@@ -26,6 +26,7 @@ from lilya.compat import is_async_callable
 from lilya.concurrency import run_in_threadpool
 from lilya.conf import _monkay
 from lilya.conf.global_settings import Settings
+from lilya.contrib.documentation import Doc
 from lilya.datastructures import URL, Header, ScopeHandler, SendReceiveSniffer, URLPath
 from lilya.dependencies import wrap_dependency
 from lilya.enums import EventType, HTTPMethod, Match, ScopeType
@@ -38,7 +39,6 @@ from lilya.responses import PlainText, RedirectResponse, Response
 from lilya.types import (
     ASGIApp,
     Dependencies,
-    Doc,
     ExceptionHandler,
     Lifespan,
     Receive,
