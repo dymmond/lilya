@@ -214,3 +214,17 @@ def test_serializer_config():
 
     settings = CustomSettings()
     assert isinstance(settings.serializer_config, ORJSONSerializerConfig)
+
+
+class MySetts(AppTestSettings):
+    @property
+    def test_prop(sell) -> list[str]:
+        return ["test_prop"]
+
+
+class InheritedSettings(MySetts): ...
+
+
+def test_inherited_settings():
+    settings = InheritedSettings()
+    assert settings.test_prop == ["test_prop"]
