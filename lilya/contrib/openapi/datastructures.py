@@ -2,8 +2,8 @@ from typing import Annotated, Any
 
 from pydantic import BaseModel, field_validator
 
+from lilya.contrib.documentation import Doc
 from lilya.enums import MediaType
-from lilya.types import Doc
 
 
 class OpenAPIResponse(BaseModel):

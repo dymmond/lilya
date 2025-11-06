@@ -1,8 +1,8 @@
 from typing import Annotated, cast
 
 from pydantic import BaseModel
-from typing_extensions import Doc
 
+from lilya.contrib.documentation import Doc
 from lilya.contrib.openapi.enums import APIKeyIn
 from lilya.contrib.openapi.models import APIKey
 from lilya.contrib.security.base import SecurityBase

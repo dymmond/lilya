@@ -1,7 +1,6 @@
 from typing import Annotated, Any
 
-from typing_extensions import Doc
-
+from lilya.contrib.documentation import Doc
 from lilya.contrib.openapi.models import OpenIdConnect as OpenIdConnectModel
 from lilya.contrib.security.base import SecurityBase as SecurityBase
 from lilya.exceptions import HTTPException

@@ -3,8 +3,8 @@ from base64 import b64decode
 from typing import Annotated, Any
 
 from pydantic import BaseModel
-from typing_extensions import Doc
 
+from lilya.contrib.documentation import Doc
 from lilya.contrib.openapi.models import HTTPBase as HTTPBaseModel, HTTPBearer as HTTPBearerModel
 from lilya.contrib.security.base import HttpSecurityBase
 from lilya.contrib.security.utils import get_authorization_scheme_param

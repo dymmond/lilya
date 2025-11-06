@@ -3,10 +3,9 @@ from __future__ import annotations
 import http
 from typing import Annotated, Any, cast
 
-from typing_extensions import Doc
-
 from lilya import status
 from lilya._internal._encoding import force_str  # noqa
+from lilya.contrib.documentation import Doc
 
 
 def _get_error_details(data: Any) -> Any:

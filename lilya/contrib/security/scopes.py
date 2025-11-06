@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from typing_extensions import Doc
+from lilya.contrib.documentation import Doc
 
 
 class Scopes:

@@ -1,8 +1,8 @@
 from typing import Annotated, Any, cast
 
 from pydantic import BaseModel, field_validator
-from typing_extensions import Doc
 
+from lilya.contrib.documentation import Doc
 from lilya.contrib.openapi.models import (
     OAuth2 as OAuth2Model,
     OAuthFlows as OAuthFlowsModel,
