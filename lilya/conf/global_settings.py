@@ -720,7 +720,7 @@ class Settings(Internal):
         return {}
 
     @property
-    def on_startup(self) -> Sequence[Callable[[], Any]]:
+    def on_startup(self) -> Sequence[Callable[[], Any]] | None:
         """
         A `list` of events that are trigger upon the application
         starts.
@@ -758,7 +758,7 @@ class Settings(Internal):
         return None
 
     @property
-    def on_shutdown(self) -> Sequence[Callable[[], Any]]:
+    def on_shutdown(self) -> Sequence[Callable[[], Any]] | None:
         """
         A `list` of events that are trigger upon the application
         shuts down.

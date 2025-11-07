@@ -119,7 +119,7 @@ class Connection(Mapping[str, Any]):
 
     @property
     def path_params(self) -> dict[str, Any]:
-        return self.scope.get("path_params", {})
+        return cast(dict[str, Any], self.scope.get("path_params", {}))
 
     @property
     def cookies(self) -> dict[str, str]:
@@ -172,11 +172,11 @@ class Connection(Mapping[str, Any]):
 
     @property
     def is_server_push(self) -> bool:
-        return self.scope.get("server_push", False)
+        return cast(bool, self.scope.get("server_push", False))
 
     @property
     def is_server_pull(self) -> bool:
-        return self.scope.get("server_pull", False)
+        return cast(bool, self.scope.get("server_pull", False))
 
     def set_session(self, value: Any) -> None:
         """

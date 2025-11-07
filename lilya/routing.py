@@ -1396,6 +1396,13 @@ class BaseRouter:
         try:
             app: Any = scope.get("app")
             await receive()
+
+            # If it's a bound method (needs invoking to get the actual callable, example? From settings)
+            if inspect.ismethod(self.lifespan_context):
+                self.lifespan_context = (
+                    self.lifespan_context()
+                )  # should return a (app)->AsyncContextManager callable
+
             async with self.lifespan_context(app) as state:
                 if state is not None:
                     if "state" not in scope:

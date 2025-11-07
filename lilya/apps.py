@@ -1058,27 +1058,34 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
             "include_in_schema", include_in_schema, is_boolean=True
         )
 
-        if lifespan is None:
-            # Merge global lifecycle hooks into app-level hooks
-            hooks = _lifecycle_get_hooks()
-            if on_startup:
-                on_startup = [*hooks["startup"], *on_startup]
-            else:
-                on_startup = hooks["startup"]
+        _lifespan = self.load_settings_value("lifespan", lifespan)
+        _on_startup = None
+        _on_shutdown = None
 
-            if on_shutdown:
-                on_shutdown = [*on_shutdown, *hooks["shutdown"]]
-            else:
-                on_shutdown = hooks["shutdown"]
+        if _lifespan is None:
+            # Always initialize from settings/explicit args and normalize
+            _raw_startup = self.load_settings_value("on_startup", on_startup)
+            _raw_shutdown = self.load_settings_value("on_shutdown", on_shutdown)
+
+            _on_startup = self._normalize_hooks(_raw_startup)
+            _on_shutdown = self._normalize_hooks(_raw_shutdown)
+
+            hooks = _lifecycle_get_hooks() or {}
+            hooks_startup = self._normalize_hooks(hooks.get("startup", []))
+            hooks_shutdown = self._normalize_hooks(hooks.get("shutdown", []))
+
+            # Merge order: global -> settings/explicit (adjust if you want a different precedence)
+            _on_startup = [*hooks_startup, *_on_startup]
+            _on_shutdown = [*_on_shutdown, *hooks_shutdown]
 
         if self.router_class is not None:
             self.router = self.router_class(
                 routes=routes,
                 redirect_slashes=self.redirect_slashes,
                 permissions=self.custom_permissions,
-                on_startup=on_startup,
-                on_shutdown=on_shutdown,
-                lifespan=lifespan,
+                on_startup=_on_startup,
+                on_shutdown=_on_shutdown,
+                lifespan=_lifespan,
                 include_in_schema=include_in_schema,
                 settings_module=self.settings,
                 before_request=self.before_request_callbacks,
@@ -1096,6 +1103,30 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
 
         if self.register_as_global_instance:
             _monkay.set_instance(self)
+
+    def _normalize_hooks(self, value: Any) -> list[Any]:
+        """
+        Ensures that a given hook value is always returned as a list.
+
+        This method normalizes different possible representations of lifecycle
+        hooks into a consistent list form. Accepts `None`, a single callable,
+        or an iterable of callables, and guarantees that the result is a list
+        of callables suitable for iteration or unpacking.
+
+        Args:
+            value: The raw hook value, which may be None, a callable, or
+                an iterable of callables.
+
+        Returns:
+            A list of callables representing the normalized hooks.
+        """
+        if value is None:
+            return []
+        if isinstance(value, (list, tuple)):
+            return list(value)
+        if callable(value):
+            return [value]
+        return [value]
 
     def override_dependency(self, name: str, override: Callable[..., Any]) -> None:
         """
