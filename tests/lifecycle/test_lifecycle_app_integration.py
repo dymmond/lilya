@@ -1,6 +1,7 @@
 import pytest
 
 from lilya.apps import Lilya
+from lilya.conf.global_settings import Settings
 from lilya.lifecycle import _clear_for_tests_only, on_shutdown, on_startup
 from lilya.responses import PlainText
 from lilya.routing import Path
@@ -46,5 +47,48 @@ async def test_lifecycle_hooks_run_in_lilya_app():
         "global_startup",
         "local_startup",
         "local_shutdown",
+        "global_shutdown",
+    ]
+
+
+async def test_lifecycle_hooks_run_in_lilya_app_via_settings():
+    called = []
+    _clear_for_tests_only()
+
+    class MySettings(Settings):
+        @property
+        def on_startup(self) -> None:
+            called.append("local_startup")
+
+        @property
+        def on_shutdown(self) -> None:
+            called.append("local_shutdown")
+
+    @on_startup
+    def global_startup():
+        called.append("global_startup")
+
+    @on_shutdown
+    def global_shutdown():
+        called.append("global_shutdown")
+
+    async def home():
+        return PlainText("ok")
+
+    app = Lilya(
+        settings_module=MySettings,
+        routes=[Path("/", home)],
+    )
+
+    # When using TestClient, Lilya triggers startup/shutdown automatically
+    with TestClient(app) as client:
+        response = client.get("/")
+        assert response.text == "ok"
+
+    # Verify hook order
+    assert called == [
+        "local_startup",
+        "local_shutdown",
+        "global_startup",
         "global_shutdown",
     ]

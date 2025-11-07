@@ -88,7 +88,7 @@ the application and the framework will know what to do with it.
 
 ### Async context manager
 
-As you can check, the [lifespan](#lifespan) functiom is decorated with an `@asynccontextmanager`.
+As you can check, the [lifespan](#lifespan) function is decorated with an `@asynccontextmanager`.
 
 This is standard python for using a `decorator` and this one in particular converts the `lifespan`
 function into something called **async context manager**.
@@ -111,6 +111,10 @@ the code block, it wille excute the code **after** the `yield`.
 
 The lifespan parameter of Lilya takes an **async context manager** which means we can ass our
 new `lifespan` async context manager directly to it.
+
+!!! Tip
+    When initialising a lifespan via settings, **you need to make sure its an `@asynccontextmanager`**
+    and not only a function itself. Internally Lilya will know what to do.
 
 ## Curiosity about async context managers
 

@@ -11,6 +11,11 @@ hide:
 
 - Removed dependency of `Doc` from `lilya.types` and use the new `lilya.contrib.documentation` reference.
 
+### Fixed
+
+- `on_startup/on_shutdown/lifespan` were not looking at the settings for precedence.
+- Lifespan was not initialising properly if coming from settings without being an async context manager.
+
 ## 0.22.9
 
 ### Fixes
