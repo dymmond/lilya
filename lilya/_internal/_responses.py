@@ -85,6 +85,24 @@ class BaseHandler:
             ASGIApp: The ASGI application.
         """
 
+        # Precompute a static signature and a lightweight plan for this handler.
+        # For function views, the signature is stable. For controllers the other_signature
+        # will be provided by the caller. We default to `inspect.signature(func)` only once.
+        static_signature: inspect.Signature | None = other_signature or inspect.signature(func)
+        sig_params = tuple(static_signature.parameters.items()) if static_signature else ()
+        has_provider_markers = any(
+            isinstance(p.default, (Provides, Resolve, Security)) for _, p in sig_params
+        )
+        has_body_candidates = any(
+            (p.default is inspect._empty)
+            and (n not in (SignatureDefault.REQUEST, "context"))
+            and not isinstance(p.default, (Query, Header, Cookie))
+            for n, p in sig_params
+        )
+        pre_bound_fields = [
+            (n, p.default) for n, p in sig_params if isinstance(p.default, (Query, Header, Cookie))
+        ]
+
         async def app(scope: Scope, receive: Receive, send: Send) -> None:
             """
             ASGI application handling request-response.
@@ -115,28 +133,107 @@ class BaseHandler:
                 Returns:
                     None
                 """
-                signature: inspect.Signature = other_signature or self.signature
+                signature: inspect.Signature = (
+                    other_signature or self.signature or static_signature
+                )
                 self.extract_request_information(request=request, signature=signature)
 
-                # Fast paths to skip extraction when unnecessary
-                param_names = tuple(signature.parameters.keys())
-                if not param_names:
-                    response = await self._execute_function(func)
-                    await self._handle_response_content(response, scope, receive, send)
-                    return
+                # Ultra-fast short-circuits already exist below (no params, request-only, context-only).
+                # Here we add a common-case fast path for handlers that:
+                #  - have no Provides/Resolve/Security markers
+                #  - have no body-bound candidates
+                # In that case we skip `_extract_params_from_request` entirely and only pull
+                # path/query/header/cookie/context.
+                if not has_provider_markers:
+                    # Re-evaluate body candidates only if the signature at call time differs.
+                    _has_body_candidates = has_body_candidates
+                    if signature is not static_signature:
+                        sp = tuple(signature.parameters.items())
+                        _has_body_candidates = any(
+                            (p.default is inspect._empty)
+                            and (n not in (SignatureDefault.REQUEST, "context"))
+                            and not isinstance(p.default, (Query, Header, Cookie))
+                            for n, p in sp
+                        )
+                    if not _has_body_candidates:
+                        # Build params without dependency/body resolution.
+                        # 1) Path params that match the function signature
+                        fast_params = {
+                            name: val
+                            for name, val in request.path_params.items()
+                            if name in signature.parameters
+                        }
+                        # 2) Query/Header/Cookie bound fields
+                        #    Use the pre-bound list if signature matches; otherwise compute once.
+                        bound_fields = (
+                            pre_bound_fields
+                            if signature is static_signature
+                            else [
+                                (n, p.default)
+                                for n, p in signature.parameters.items()
+                                if isinstance(p.default, (Query, Header, Cookie))
+                            ]
+                        )
+                        for n, field in bound_fields:
+                            if isinstance(field, Query):
+                                source = request.query_params
+                                key = field.alias or n
+                            elif isinstance(field, Header):
+                                source = request.headers  # type: ignore
+                                key = field.value
+                            else:  # Cookie
+                                source = request.cookies  # type: ignore
+                                key = field.value
+                            try:
+                                if not isinstance(field, Cookie):
+                                    values = source.getall(key, None)
+                                    if values is None:
+                                        raw_value = None
+                                    elif isinstance(values, list):
+                                        raw_value = values[0] if len(values) == 1 else values
+                                    else:
+                                        raw_value = values  # type: ignore
+                                else:
+                                    raw_value = source.get(key)
+                            except (KeyError, TypeError):
+                                raw_value = None
 
-                if param_names == (SignatureDefault.REQUEST,):
-                    response = await self._execute_function(func, request=request)
-                    await self._handle_response_content(response, scope, receive, send)
-                    return
+                            if field.required and raw_value is None:
+                                raise UnprocessableEntity(
+                                    f"Missing mandatory query parameter '{key}'"
+                                )
+                            if raw_value is None:
+                                fast_params[n] = getattr(field, "default", None)
+                            else:
+                                try:
+                                    if field.cast and isinstance(raw_value, list):
+                                        fast_params[n] = [raw_value]
+                                    elif field.cast:
+                                        fast_params[n] = field.resolve(raw_value, field.cast)
+                                    else:
+                                        fast_params[n] = (
+                                            raw_value[0]
+                                            if isinstance(raw_value, list) and len(raw_value) == 1
+                                            else raw_value
+                                        )
+                                except (TypeError, ValueError):
+                                    raise UnprocessableEntity(
+                                        f"Invalid value for query parameter '{key}': expected {field.cast.__name__}"
+                                    ) from None
 
-                if param_names == ("context",):
-                    ctx_only = {
-                        "context": Context(__handler__=cast("BasePath", self), __request__=request)
-                    }
-                    response = await self._execute_function(func, **ctx_only)
-                    await self._handle_response_content(response, scope, receive, send)
-                    return
+                        # 3) Context (if requested)
+                        if "context" in signature.parameters:
+                            fast_params["context"] = Context(
+                                __handler__=cast("BasePath", self), __request__=request
+                            )
+
+                        # 4) Request (if requested)
+                        if SignatureDefault.REQUEST in signature.parameters:
+                            fast_params["request"] = request
+
+                        response = await self._execute_function(func, **fast_params)
+                        await self._handle_response_content(response, scope, receive, send)
+                        return
 
                 params_from_request = await self._extract_params_from_request(
                     request=request,
@@ -187,7 +284,7 @@ class BaseHandler:
             await app(scope, receive, send)
         else:
             # If response is not an async callable, wrap it in an ASGI application and then await.
-            if app is None:
+            if app is not None:
                 response = Ok(None)
                 await response(scope, receive, send)
                 return
