@@ -65,3 +65,36 @@ The `WebSocketController` is also compatible with the Lilya application class.
 ```python
 {!> ../../../docs_src/controllers/wdispatch.py !}
 ```
+
+## Using `with_init`
+
+Sometimes you may need to pass parameters to your controller's `__init__` method,
+for example dependencies or configuration values.
+Normally Lilya expects controllers to be passed as **classes**, not instances, so `MyController()` would break routing.
+
+To solve this, you can use the `with_init()` factory method available on both `Controller` and `WebSocketController`.
+
+This factory returns a lightweight wrapper class that Lilya can safely instantiate without arguments,
+while internally constructing the real controller per request using your provided `__init__` parameters.
+
+### Example (HTTP)
+
+```python
+{!> ../../../docs_src/controllers/with_init_http.py !}
+```
+
+### Example (WebSocket)
+
+```python
+{!> ../../../docs_src/controllers/with_init_ws.py !}
+```
+
+### How it works internally
+
+`with_init()` creates a small singleton wrapper that Lilya can call without arguments. This wrapper:
+
+1. Captures your constructor arguments when you call `with_init(...)`.
+2. Creates a real controller instance on each request using those arguments.
+3. Delegates the ASGI call or await to that real controller.
+
+This mechanism allows controllers to be fully dynamic while keeping Lilya's routing system clean and consistent.

@@ -42,9 +42,7 @@ class BaseHandler:
     __reserved_data__: dict[str, Any] | None = None
     signature: inspect.Signature | None = None
 
-    async def extract_request_information(
-        self, request: Request, signature: inspect.Signature
-    ) -> None:
+    def extract_request_information(self, request: Request, signature: inspect.Signature) -> None:
         """
         Extracts the information and flattens the request dictionaries in the handler.
         """
@@ -87,6 +85,24 @@ class BaseHandler:
             ASGIApp: The ASGI application.
         """
 
+        # Precompute a static signature and a lightweight plan for this handler.
+        # For function views, the signature is stable. For controllers the other_signature
+        # will be provided by the caller. We default to `inspect.signature(func)` only once.
+        static_signature: inspect.Signature | None = other_signature or inspect.signature(func)
+        sig_params = tuple(static_signature.parameters.items()) if static_signature else ()
+        has_provider_markers = any(
+            isinstance(p.default, (Provides, Resolve, Security)) for _, p in sig_params
+        )
+        has_body_candidates = any(
+            (p.default is inspect._empty)
+            and (n not in (SignatureDefault.REQUEST, "context"))
+            and not isinstance(p.default, (Query, Header, Cookie))
+            for n, p in sig_params
+        )
+        pre_bound_fields = [
+            (n, p.default) for n, p in sig_params if isinstance(p.default, (Query, Header, Cookie))
+        ]
+
         async def app(scope: Scope, receive: Receive, send: Send) -> None:
             """
             ASGI application handling request-response.
@@ -117,15 +133,114 @@ class BaseHandler:
                 Returns:
                     None
                 """
-                signature: inspect.Signature = other_signature or self.signature
-                await self.extract_request_information(request=request, signature=signature)
+                signature: inspect.Signature = (
+                    other_signature or self.signature or static_signature
+                )
+                self.extract_request_information(request=request, signature=signature)
+
+                # Ultra-fast short-circuits already exist below (no params, request-only, context-only).
+                # Here we add a common-case fast path for handlers that:
+                #  - have no Provides/Resolve/Security markers
+                #  - have no body-bound candidates
+                # In that case we skip `_extract_params_from_request` entirely and only pull
+                # path/query/header/cookie/context.
+                if not has_provider_markers:
+                    # Re-evaluate body candidates only if the signature at call time differs.
+                    _has_body_candidates = has_body_candidates
+                    if signature is not static_signature:
+                        sp = tuple(signature.parameters.items())
+                        _has_body_candidates = any(
+                            (p.default is inspect._empty)
+                            and (n not in (SignatureDefault.REQUEST, "context"))
+                            and not isinstance(p.default, (Query, Header, Cookie))
+                            for n, p in sp
+                        )
+                    if not _has_body_candidates:
+                        # Build params without dependency/body resolution.
+                        # 1) Path params that match the function signature
+                        fast_params = {
+                            name: val
+                            for name, val in request.path_params.items()
+                            if name in signature.parameters
+                        }
+                        # 2) Query/Header/Cookie bound fields
+                        #    Use the pre-bound list if signature matches; otherwise compute once.
+                        bound_fields = (
+                            pre_bound_fields
+                            if signature is static_signature
+                            else [
+                                (n, p.default)
+                                for n, p in signature.parameters.items()
+                                if isinstance(p.default, (Query, Header, Cookie))
+                            ]
+                        )
+                        for n, field in bound_fields:
+                            if isinstance(field, Query):
+                                source = request.query_params
+                                key = field.alias or n
+                            elif isinstance(field, Header):
+                                source = request.headers  # type: ignore
+                                key = field.value
+                            else:  # Cookie
+                                source = request.cookies  # type: ignore
+                                key = field.value
+                            try:
+                                if not isinstance(field, Cookie):
+                                    values = source.getall(key, None)
+                                    if values is None:
+                                        raw_value = None
+                                    elif isinstance(values, list):
+                                        raw_value = values[0] if len(values) == 1 else values
+                                    else:
+                                        raw_value = values  # type: ignore
+                                else:
+                                    raw_value = source.get(key)
+                            except (KeyError, TypeError):
+                                raw_value = None
+
+                            if field.required and raw_value is None:
+                                raise UnprocessableEntity(
+                                    f"Missing mandatory query parameter '{key}'"
+                                )
+                            if raw_value is None:
+                                fast_params[n] = getattr(field, "default", None)
+                            else:
+                                try:
+                                    if field.cast and isinstance(raw_value, list):
+                                        fast_params[n] = [raw_value]
+                                    elif field.cast:
+                                        fast_params[n] = field.resolve(raw_value, field.cast)
+                                    else:
+                                        fast_params[n] = (
+                                            raw_value[0]
+                                            if isinstance(raw_value, list) and len(raw_value) == 1
+                                            else raw_value
+                                        )
+                                except (TypeError, ValueError):
+                                    raise UnprocessableEntity(
+                                        f"Invalid value for query parameter '{key}': expected {field.cast.__name__}"
+                                    ) from None
+
+                        # 3) Context (if requested)
+                        if "context" in signature.parameters:
+                            fast_params["context"] = Context(
+                                __handler__=cast("BasePath", self), __request__=request
+                            )
+
+                        # 4) Request (if requested)
+                        if SignatureDefault.REQUEST in signature.parameters:
+                            fast_params["request"] = request
+
+                        response = await self._execute_function(func, **fast_params)
+                        await self._handle_response_content(response, scope, receive, send)
+                        return
 
                 params_from_request = await self._extract_params_from_request(
                     request=request,
                     signature=signature,
                 )
 
-                request_information = await self.extract_request_params_information(
+                request_information = self.extract_request_params_information(
                     request=request, signature=signature
                 )
 
@@ -175,7 +290,7 @@ class BaseHandler:
             response = Ok(app)
             await response(scope, receive, send)
 
-    async def extract_request_params_information(
+    def extract_request_params_information(
         self, request: Request, signature: inspect.Signature
     ) -> dict[str, Any]:
         """
@@ -205,11 +320,13 @@ class BaseHandler:
 
             try:
                 if not isinstance(field, Cookie):
-                    raw_value = (
-                        source.get(key, None)
-                        if len(source.getall(key)) == 1
-                        else source.getall(key, None)
-                    )
+                    values = source.getall(key, None)
+                    if values is None:
+                        raw_value = None
+                    elif isinstance(values, list):
+                        raw_value = values[0] if len(values) == 1 else values
+                    else:
+                        raw_value = values  # type: ignore
                 else:
                     raw_value = source.get(key)
             except (KeyError, TypeError):
@@ -435,6 +552,41 @@ class BaseHandler:
 
         return apply_structure(structure=annotation, value=value)
 
+    def _infer_body_param_names(
+        self, request: Request, signature: inspect.Signature, dependencies: dict[str, Any]
+    ) -> list[str]:
+        """
+        Infers which parameters in a handler's signature should be sourced from the HTTP request body.
+
+        This is determined by excluding parameters already sourced from Path, Query, Headers,
+        Cookies, dependency markers, or framework-reserved names.
+
+        Args:
+            self: The instance of the class containing the dependency resolution logic.
+            request: The current request object, used to check existing parameter sources.
+            signature: The inspection signature of the target handler function.
+            dependencies: The dictionary of explicit dependencies registered for the handler.
+
+        Returns:
+            A list of parameter names that are inferred to represent the request body payload.
+        """
+        # Compile a set of keys already consumed by Path, Query, Header, or Cookie parameters.
+        reserved_keys: set[str] = set(request.path_params.keys())
+        reserved_keys.update(request.query_params.keys())
+        reserved_keys.update(request.headers.keys())
+        reserved_keys.update(request.cookies.keys())
+
+        # Filter parameters based on exclusion criteria
+        return [
+            name
+            for name, value in signature.parameters.items()
+            if name not in reserved_keys
+            and not isinstance(value.default, (Provides, Resolve))
+            and not self.is_explicitly_bound(value)
+            and name not in dependencies
+            and name not in SIGNATURE_TO_LIST
+        ]
+
     async def _parse_inferred_body(
         self,
         request: Request,
@@ -582,8 +734,9 @@ class BaseHandler:
         is_body_inferred: bool = _monkay.settings.infer_body
         json_data: dict[str, Any] = {}
         if is_body_inferred:
-            # If body inference is enabled, attempt to parse the request body.
-            json_data = await self._parse_inferred_body(request, requested, signature)
+            body_param_names = self._infer_body_param_names(request, signature, requested)
+            if body_param_names:  # only parse body if needed
+                json_data = await self._parse_inferred_body(request, requested, signature)
 
         # 3.1) Extract path parameters that are present in the function's signature.
         data = {

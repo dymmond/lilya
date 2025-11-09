@@ -3,7 +3,7 @@ from __future__ import annotations
 import inspect
 from collections.abc import Callable, Coroutine, Generator
 from functools import cached_property
-from typing import Any, cast
+from typing import Any, ClassVar, TypeVar, cast
 
 from lilya import status
 from lilya._internal._responses import BaseHandler
@@ -15,6 +15,9 @@ from lilya.responses import PlainText, Response
 from lilya.serializers import serializer
 from lilya.types import Message, Receive, Scope, Send
 from lilya.websockets import WebSocket
+
+C = TypeVar("C", bound="Controller")
+CW = TypeVar("CW", bound="WebSocketController")
 
 
 class BaseController(BaseHandler):
@@ -53,6 +56,78 @@ class Controller(BaseController):
 
     signature: inspect.Signature | None = None
 
+    @classmethod
+    def with_init(cls: type[C], *init_args: Any, **init_kwargs: Any) -> type[Controller]:
+        """
+        Class method that creates a dynamic, singleton factory wrapper around the current
+        `Controller` class (`cls`).
+
+        This allows the original controller to be instantiated with fixed, **pre-defined arguments**
+        (`init_args`, `init_kwargs`) on every incoming ASGI request.
+
+        The primary instance of the factory wrapper (`_Factory`) is managed as a **singleton**
+        to ensure minimal overhead when the framework router invokes the handler repeatedly.
+
+        Args:
+            cls: The original `Controller` class being wrapped.
+            *init_args: Positional arguments to be passed to the wrapped controller's
+                        `__init__` method upon request execution.
+            **init_kwargs: Keyword arguments to be passed to the wrapped controller's
+                           `__init__` method upon request execution.
+
+        Returns:
+            The dynamically created, callable factory class (`_Factory`).
+        """
+        parent: type[C] = cls
+        name: str = f"{cls.__name__}WithInit"
+
+        class InitFactory(Controller):
+            """
+            The dynamic, singleton factory wrapper class.
+
+            This factory intercepts the ASGI call, instantiates the original controller (`parent`)
+            with the baked-in arguments, and delegates the ASGI lifecycle.
+            """
+
+            __is_controller__: ClassVar[bool] = True
+            __factory_base__: ClassVar[type[Controller]] = parent
+            __init_args__: ClassVar[tuple[Any, ...]] = init_args
+            __init_kwargs__: ClassVar[dict[str, Any]] = init_kwargs
+            _singleton: ClassVar[InitFactory | None] = None
+
+            # Router calls `self.app()` → class() every request.
+            # Make that return the SAME instance (stateless wrapper).
+            def __new__(cls_, *args: Any, **kwargs: Any) -> Any:
+                """
+                Enforces a singleton pattern for the factory wrapper instance itself (`_Factory`).
+                """
+                if cls_._singleton is None:
+                    cls_._singleton = super().__new__(cls_)
+                return cls_._singleton
+
+            def __init__(self, *args: Any, **kwargs: Any) -> None:
+                """The factory instance itself requires no custom initialization logic."""
+                ...
+
+            async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+                """
+                The ASGI entry point. Instantiates the original controller with baked-in arguments
+                and processes the request.
+                """
+                # 1. Instantiate the original controller (C) with fixed arguments
+                instance: Controller = self.__factory_base__(
+                    *self.__init_args__, **self.__init_kwargs__
+                )
+
+                # 2. Delegate the ASGI call to the newly created instance
+                await instance(scope, receive, send)
+
+        # Adjust the metadata of the dynamically created class
+        InitFactory.__name__ = name
+        InitFactory.__qualname__ = name
+        InitFactory.__doc__ = getattr(cls, "__doc__", None)
+        return InitFactory
+
     @cached_property
     def __allowed_methods__(self) -> list[str]:
         return [
@@ -86,7 +161,7 @@ class Controller(BaseController):
         )
 
         # Assign query params automatically.
-        request_information = await self.extract_request_params_information(
+        request_information = self.extract_request_params_information(
             request=request, signature=self.signature
         )
         func_params.update(**request_information)
@@ -131,6 +206,98 @@ class WebSocketController(BaseController):
         return self.handle_dispatch(
             scope=self.scope, receive=self.receive, send=self.send
         ).__await__()
+
+    @classmethod
+    def with_init(cls: type[CW], *init_args: Any, **init_kwargs: Any) -> type[WebSocketController]:
+        """
+        Class method that creates a dynamic, singleton factory wrapper around the current
+        `WebSocketController` class (`cls`).
+
+        This allows the controller to be instantiated with fixed, pre-defined arguments
+        (`init_args`, `init_kwargs`) every time the factory is called by the framework.
+
+        The primary instance of the factory wrapper itself (`_Factory`) is managed as a
+        singleton via `__new__`.
+
+        Args:
+            cls: The original `WebSocketController` class being wrapped.
+            *init_args: Positional arguments to be passed to the wrapped controller's
+                        `__init__` method upon activation.
+            **init_kwargs: Keyword arguments to be passed to the wrapped controller's
+                           `__init__` method upon activation.
+
+        Returns:
+            The dynamically created, callable factory class (`_Factory`).
+        """
+        parent: type[CW] = cls
+        name: str = f"{cls.__name__}WithInit"
+
+        class InitFactory(WebSocketController):
+            """
+            The dynamic, singleton factory wrapper class.
+
+            This class intercepts the ASGI call, instantiates the original controller (`parent`)
+            with the baked-in `init_args/kwargs`, and delegates the ASGI lifecycle to the
+            newly created instance.
+            """
+
+            __is_controller__: ClassVar[bool] = True
+            __factory_base__: ClassVar[type[WebSocketController]] = parent
+            __init_args__: ClassVar[tuple[Any, ...]] = init_args
+            __init_kwargs__: ClassVar[dict[str, Any]] = init_kwargs
+            _singleton: ClassVar[InitFactory | None] = None
+
+            def __new__(cls_, *args: Any, **kwargs: Any) -> Any:
+                """
+                Enforces a singleton pattern for the factory wrapper instance itself.
+                """
+                if cls_._singleton is None:
+                    cls_._singleton = super().__new__(cls_)
+                return cls_._singleton
+
+            def __init__(self, *args: Any, **kwargs: Any) -> None:
+                """
+                The factory instance itself requires no initialization logic.
+                """
+                if len(args) >= 3:
+                    self._w_scope = args[0]
+                    self._w_receive = args[1]
+                    self._w_send = args[2]
+
+            def __await__(self) -> Generator[Any, None, None]:
+                # When awaited directly (common in test client), delegate to real instance
+                scope = getattr(self, "_w_scope", None)
+                receive = getattr(self, "_w_receive", None)
+                send = getattr(self, "_w_send", None)
+                if scope is None or receive is None or send is None:
+                    raise RuntimeError("WebSocket factory awaited without scope/receive/send")
+
+                instance: WebSocketController = self.__factory_base__(
+                    scope, receive, send, *self.__init_args__, **self.__init_kwargs__
+                )
+                return instance.__await__()
+
+            async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+                """
+                The ASGI entry point. Instantiates the original controller and delegates.
+
+                This method passes the ASGI connection components (`scope`, `receive`, `send`)
+                along with the baked-in initialization arguments (`__init_args__`, `__init_kwargs__`)
+                to the original controller class.
+                """
+                # 1. Instantiate the original controller (`parent`) with all arguments
+                instance: WebSocketController = self.__factory_base__(
+                    scope, receive, send, *self.__init_args__, **self.__init_kwargs__
+                )
+                # 2. Delegate the ASGI lifecycle (Controller.__call__ or __await__)
+                await instance
+
+        # Adjust the metadata of the dynamically created class
+        InitFactory.__name__ = name
+        InitFactory.__qualname__ = name
+        InitFactory.__doc__ = getattr(cls, "__doc__", None)
+
+        return InitFactory
 
     async def handle_dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
         """

@@ -449,7 +449,7 @@ class BaseLilya:
         app.add_child_lilya(path"/child", child=child)
         ```
         """
-        if not isinstance(child, ChildLilya):
+        if not isinstance(child, (Lilya, ChildLilya)):
             raise ValueError("The child must be an instance of a ChildLilya.")
 
         self.router.routes.append(

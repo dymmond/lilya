@@ -5,6 +5,16 @@ hide:
 
 # Release Notes
 
+## 0.22.11
+
+### Added
+
+- Controllers now allow you to pass "init" values without instantiating by calling the [`.with_init(...)`](./controllers.md#using-with_init).
+
+### Fixed
+
+- Lilya internals for the response was doing unnecessary awaits on blocking functions.
+
 ## 0.22.10
 
 ### Changed
