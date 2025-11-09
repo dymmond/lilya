@@ -9,7 +9,7 @@ hide:
 
 ### Added
 
-- Controllers now allow you to pass "init" values without instantiating by calling the `.with_init(...)`.
+- Controllers now allow you to pass "init" values without instantiating by calling the [`.with_init(...)`](./controllers.md#using-with_init).
 
 ## 0.22.10
 
