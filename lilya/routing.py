@@ -315,6 +315,7 @@ class Path(BaseHandler, BasePath):
         "__handler_app__",
         "_signature",
         "dependencies",
+        "allow_header",
     )
 
     def __init__(
@@ -382,9 +383,20 @@ class Path(BaseHandler, BasePath):
         self._apply_middleware(self.middleware)
 
         if self.methods is not None:
+            # normalize to uppercase strings
             self.methods = [method.upper() for method in self.methods]
-            if HTTPMethod.GET in self.methods:
-                self.methods.append(HTTPMethod.HEAD.value)
+            # if GET is allowed, ensure HEAD is also allowed
+            if "GET" in self.methods and "HEAD" not in self.methods:
+                self.methods.append("HEAD")
+
+            # de-duplicate while preserving order
+            _seen = set()
+            self.methods = [m for m in self.methods if not (m in _seen or _seen.add(m))]  # type: ignore
+
+            # Precompute Allow header for fast 405s
+            self.allow_header = ", ".join(self.methods)
+        else:
+            self.allow_header = ""
 
         self.path_regex, self.path_format, self.param_convertors, self.path_start = compile_path(
             self.path
@@ -524,6 +536,9 @@ class Path(BaseHandler, BasePath):
         """
         if scope["type"] == ScopeType.HTTP:
             route_path = get_route_path(scope)
+            # Fast prefix check to avoid regex when path obviously doesn't match
+            if self.path_start and not route_path.startswith(self.path_start):
+                return Match.NONE, {}
             match = self.path_regex.match(route_path)
             if match:
                 return self.handle_match(scope, match)
@@ -579,7 +594,7 @@ class Path(BaseHandler, BasePath):
             None
         """
         if self.methods and scope["method"] not in self.methods:
-            headers = {"Allow": ", ".join(self.methods)}
+            headers = {"Allow": self.allow_header}
             if "app" in scope:
                 raise HTTPException(status_code=405, headers=headers)
             else:
@@ -784,6 +799,9 @@ class WebSocketPath(BaseHandler, BasePath):
         """
         if scope["type"] == ScopeType.WEBSOCKET:
             route_path = get_route_path(scope)
+            # Fast prefix check to avoid regex when path obviously doesn't match
+            if self.path_start and not route_path.startswith(self.path_start):
+                return Match.NONE, {}
             match = self.path_regex.match(route_path)
 
             if match:

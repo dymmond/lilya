@@ -285,11 +285,8 @@ class BaseHandler:
         else:
             # If response is not an async callable, wrap it in an ASGI application and then await.
             if app is not None:
-                response = Ok(None)
-                await response(scope, receive, send)
-                return
+                app = json_encode(app)
 
-            app = json_encode(app)
             response = Ok(app)
             await response(scope, receive, send)
 
