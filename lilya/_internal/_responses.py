@@ -42,9 +42,7 @@ class BaseHandler:
     __reserved_data__: dict[str, Any] | None = None
     signature: inspect.Signature | None = None
 
-    async def extract_request_information(
-        self, request: Request, signature: inspect.Signature
-    ) -> None:
+    def extract_request_information(self, request: Request, signature: inspect.Signature) -> None:
         """
         Extracts the information and flattens the request dictionaries in the handler.
         """
@@ -118,14 +116,14 @@ class BaseHandler:
                     None
                 """
                 signature: inspect.Signature = other_signature or self.signature
-                await self.extract_request_information(request=request, signature=signature)
+                self.extract_request_information(request=request, signature=signature)
 
                 params_from_request = await self._extract_params_from_request(
                     request=request,
                     signature=signature,
                 )
 
-                request_information = await self.extract_request_params_information(
+                request_information = self.extract_request_params_information(
                     request=request, signature=signature
                 )
 
@@ -175,7 +173,7 @@ class BaseHandler:
             response = Ok(app)
             await response(scope, receive, send)
 
-    async def extract_request_params_information(
+    def extract_request_params_information(
         self, request: Request, signature: inspect.Signature
     ) -> dict[str, Any]:
         """
@@ -205,11 +203,13 @@ class BaseHandler:
 
             try:
                 if not isinstance(field, Cookie):
-                    raw_value = (
-                        source.get(key, None)
-                        if len(source.getall(key)) == 1
-                        else source.getall(key, None)
-                    )
+                    values = source.getall(key, None)
+                    if values is None:
+                        raw_value = None
+                    elif isinstance(values, list):
+                        raw_value = values[0] if len(values) == 1 else values
+                    else:
+                        raw_value = values  # type: ignore
                 else:
                     raw_value = source.get(key)
             except (KeyError, TypeError):
@@ -435,6 +435,41 @@ class BaseHandler:
 
         return apply_structure(structure=annotation, value=value)
 
+    def _infer_body_param_names(
+        self, request: Request, signature: inspect.Signature, dependencies: dict[str, Any]
+    ) -> list[str]:
+        """
+        Infers which parameters in a handler's signature should be sourced from the HTTP request body.
+
+        This is determined by excluding parameters already sourced from Path, Query, Headers,
+        Cookies, dependency markers, or framework-reserved names.
+
+        Args:
+            self: The instance of the class containing the dependency resolution logic.
+            request: The current request object, used to check existing parameter sources.
+            signature: The inspection signature of the target handler function.
+            dependencies: The dictionary of explicit dependencies registered for the handler.
+
+        Returns:
+            A list of parameter names that are inferred to represent the request body payload.
+        """
+        # Compile a set of keys already consumed by Path, Query, Header, or Cookie parameters.
+        reserved_keys: set[str] = set(request.path_params.keys())
+        reserved_keys.update(request.query_params.keys())
+        reserved_keys.update(request.headers.keys())
+        reserved_keys.update(request.cookies.keys())
+
+        # Filter parameters based on exclusion criteria
+        return [
+            name
+            for name, value in signature.parameters.items()
+            if name not in reserved_keys
+            and not isinstance(value.default, (Provides, Resolve))
+            and not self.is_explicitly_bound(value)
+            and name not in dependencies
+            and name not in SIGNATURE_TO_LIST
+        ]
+
     async def _parse_inferred_body(
         self,
         request: Request,
@@ -582,8 +617,9 @@ class BaseHandler:
         is_body_inferred: bool = _monkay.settings.infer_body
         json_data: dict[str, Any] = {}
         if is_body_inferred:
-            # If body inference is enabled, attempt to parse the request body.
-            json_data = await self._parse_inferred_body(request, requested, signature)
+            body_param_names = self._infer_body_param_names(request, signature, requested)
+            if body_param_names:  # only parse body if needed
+                json_data = await self._parse_inferred_body(request, requested, signature)
 
         # 3.1) Extract path parameters that are present in the function's signature.
         data = {

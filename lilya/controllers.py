@@ -161,7 +161,7 @@ class Controller(BaseController):
         )
 
         # Assign query params automatically.
-        request_information = await self.extract_request_params_information(
+        request_information = self.extract_request_params_information(
             request=request, signature=self.signature
         )
         func_params.update(**request_information)
