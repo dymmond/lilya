@@ -181,3 +181,173 @@ def test_websocket_endpoint_on_disconnect(
     client = test_client_factory(WebSocketApp)
     with client.websocket_connect("/ws") as websocket:
         websocket.close(code=1001)
+
+
+def test_http_with_init_instantiation_and_response(
+    test_client_factory: Callable[..., TestClient],
+) -> None:
+    class Greeter(Controller):
+        def __init__(self, *, greeting: str, punct: str = "!") -> None:
+            self.greeting = greeting
+            self.punct = punct
+
+        async def get(self, request: Request) -> PlainText:
+            name = request.query_params.get("name", "world")
+            return PlainText(f"{self.greeting}, {name}{self.punct}")
+
+    app = Router(
+        routes=[
+            Path("/", handler=Greeter.with_init(greeting="Hello", punct="!!!")),
+        ]
+    )
+    client = test_client_factory(app)
+
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.text == "Hello, world!!!"
+
+    response = client.get("/?name=Lilya")
+    assert response.status_code == 200
+    assert response.text == "Hello, Lilya!!!"
+
+
+def test_http_with_init_allows_router_zero_arg_init() -> None:
+    class NeedArgs(Controller):
+        def __init__(self, value: int) -> None:
+            self.value = value
+
+        async def get(self) -> PlainText:
+            return PlainText(str(self.value))
+
+    # Router must be able to do `self.app()` with no args
+    Wrapped = NeedArgs.with_init(42)
+
+    # Emulate router, calling the returned class with no args should not crash
+    instance = Wrapped()
+
+    assert isinstance(instance, Controller)
+
+
+def test_http_with_init_wrapper_is_singleton() -> None:
+    class C(Controller):
+        def __init__(self, x: int) -> None:
+            self.x = x
+
+        async def get(self) -> PlainText:
+            return PlainText(str(self.x))
+
+    Wrapped = C.with_init(10)
+
+    a = Wrapped()
+    b = Wrapped()
+
+    assert a is b
+
+
+def test_http_with_init_per_request_controller_created(
+    test_client_factory: Callable[..., TestClient],
+) -> None:
+    class Counter(Controller):
+        created = 0  # class-level counter to observe per-request instantiation
+
+        def __init__(self, *, seed: int) -> None:
+            type(self).created += 1
+            self.seed = seed
+
+        async def get(self) -> PlainText:
+            return PlainText(str(self.seed))
+
+    app = Router(routes=[Path("/", handler=Counter.with_init(seed=7))])
+    client = test_client_factory(app)
+
+    assert Counter.created == 0
+
+    r1 = client.get("/")
+    r2 = client.get("/")
+
+    assert r1.text == "7"
+    assert r2.text == "7"
+
+    # Two requests: two real controller instances
+    assert Counter.created == 2
+
+
+def test_http_with_init_method_not_allowed(test_client_factory: Callable[..., TestClient]) -> None:
+    class OnlyGet(Controller):
+        def __init__(self, msg: str) -> None:
+            self.msg = msg
+
+        async def get(self) -> PlainText:
+            return PlainText(self.msg)
+
+    app = Router(routes=[Path("/", handler=OnlyGet.with_init("ok"))])
+    client = test_client_factory(app)
+
+    resp = client.put("/")
+
+    assert resp.status_code == 405
+    assert resp.text == "Method Not Allowed"
+
+    # allow header reflects methods on the *real* controller
+    assert resp.headers["allow"] == "GET"
+
+
+def test_websocket_with_init_basic_echo(test_client_factory: TestClientFactory) -> None:
+    class EchoWS(WebSocketController):
+        def __init__(self, scope, receive, send, *, prefix: str) -> None:
+            super().__init__(scope, receive, send)
+            self.prefix = prefix
+            self.encoding = "text"
+
+        async def on_receive(self, websocket: WebSocket, data: str) -> None:
+            await websocket.send_text(f"{self.prefix}:{data}")
+
+    client = test_client_factory(EchoWS.with_init(prefix="hi"))
+    with client.websocket_connect("/ws") as ws:
+        ws.send_text("ping")
+
+        assert ws.receive_text() == "hi:ping"
+
+
+def test_websocket_with_init_router_zero_arg_init() -> None:
+    class NeedArgsWS(WebSocketController):
+        def __init__(self, scope, receive, send, token: str) -> None:
+            super().__init__(scope, receive, send)
+            self.token = token
+
+        async def on_receive(self, websocket: WebSocket, data: str) -> None: ...
+
+    Wrapped = NeedArgsWS.with_init("secret")
+    instance = Wrapped()
+
+    assert isinstance(instance, WebSocketController)
+
+
+def test_websocket_with_init_wrapper_singleton() -> None:
+    class W(WebSocketController):
+        def __init__(self, scope, receive, send, x: int) -> None:
+            super().__init__(scope, receive, send)
+            self.x = x
+
+    Wrapped = W.with_init(1)
+    a = Wrapped()
+    b = Wrapped()
+
+    assert a is b
+
+
+def test_websocket_with_init_json_roundtrip(test_client_factory: TestClientFactory) -> None:
+    class JsonWS(WebSocketController):
+        def __init__(self, scope, receive, send, *, tag: str) -> None:
+            super().__init__(scope, receive, send)
+            self.tag = tag
+            self.encoding = "json"
+
+        async def on_receive(self, websocket: WebSocket, data) -> None:
+            await websocket.send_json({"tag": self.tag, "data": data})
+
+    client = test_client_factory(JsonWS.with_init(tag="T"))
+    with client.websocket_connect("/ws") as ws:
+        ws.send_json({"hello": "world"})
+
+        assert ws.receive_json() == {"tag": "T", "data": {"hello": "world"}}

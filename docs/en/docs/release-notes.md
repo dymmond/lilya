@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.22.11
+
+### Added
+
+- Controllers now allow you to pass "init" values without instantiating by calling the `.with_init(...)`.
+
 ## 0.22.10
 
 ### Changed
