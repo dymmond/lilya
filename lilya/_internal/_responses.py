@@ -118,6 +118,26 @@ class BaseHandler:
                 signature: inspect.Signature = other_signature or self.signature
                 self.extract_request_information(request=request, signature=signature)
 
+                # Fast paths to skip extraction when unnecessary
+                param_names = tuple(signature.parameters.keys())
+                if not param_names:
+                    response = await self._execute_function(func)
+                    await self._handle_response_content(response, scope, receive, send)
+                    return
+
+                if param_names == (SignatureDefault.REQUEST,):
+                    response = await self._execute_function(func, request=request)
+                    await self._handle_response_content(response, scope, receive, send)
+                    return
+
+                if param_names == ("context",):
+                    ctx_only = {
+                        "context": Context(__handler__=cast("BasePath", self), __request__=request)
+                    }
+                    response = await self._execute_function(func, **ctx_only)
+                    await self._handle_response_content(response, scope, receive, send)
+                    return
+
                 params_from_request = await self._extract_params_from_request(
                     request=request,
                     signature=signature,
@@ -167,9 +187,12 @@ class BaseHandler:
             await app(scope, receive, send)
         else:
             # If response is not an async callable, wrap it in an ASGI application and then await.
-            if app is not None:
-                app = json_encode(app)
+            if app is None:
+                response = Ok(None)
+                await response(scope, receive, send)
+                return
 
+            app = json_encode(app)
             response = Ok(app)
             await response(scope, receive, send)
 
