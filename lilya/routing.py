@@ -481,6 +481,22 @@ class Path(BaseHandler, BasePath):
         Raises:
             NoMatchFound: If there is no match for the given name and parameters.
         """
+        return self.url_for(name, **path_params)
+
+    def url_for(self, name: str, /, **path_params: Any) -> URLPath:
+        """
+        Generates a URL path for the specified route name and parameters.
+
+        Args:
+            name (str): The name of the route.
+            path_params (dict): The path parameters.
+
+        Returns:
+            URLPath: The generated URL path.
+
+        Raises:
+            NoMatchFound: If there is no match for the given name and parameters.
+        """
         self.validate_params(name, path_params)
 
         path, remaining_params = replace_params(
@@ -489,9 +505,6 @@ class Path(BaseHandler, BasePath):
         assert not remaining_params
 
         return URLPath(path=path, protocol=ScopeType.HTTP.value)
-
-    def url_for(self, name: str, /, **path_params: Any) -> URLPath:
-        return self.path_for(name, **path_params)
 
     def validate_params(self, name: str, path_params: dict) -> None:
         """
@@ -866,6 +879,23 @@ class WebSocketPath(BaseHandler, BasePath):
             NoMatchFound: If there is no match for the given name and parameters.
 
         """
+        return self.url_for(name, **path_params)
+
+    def url_for(self, name: str, /, **path_params: Any) -> URLPath:
+        """
+        Generates a URL path for the specified route name and parameters.
+
+        Args:
+            name (str): The name of the route.
+            path_params (dict): The path parameters.
+
+        Returns:
+            URLPath: The generated URL path.
+
+        Raises:
+            NoMatchFound: If there is no match for the given name and parameters.
+
+        """
         self.validate_params(name, path_params)
 
         path, remaining_params = replace_params(
@@ -873,9 +903,6 @@ class WebSocketPath(BaseHandler, BasePath):
         )
         assert not remaining_params
         return URLPath(path=path, protocol=ScopeType.WEBSOCKET.value)
-
-    def url_for(self, name: str, /, **path_params: Any) -> URLPath:
-        return self.path_for(name, **path_params)
 
     def validate_params(self, name: str, path_params: dict) -> None:
         """
@@ -1079,6 +1106,22 @@ class Host(BasePath):
         Raises:
             NoMatchFound: If no matching route is found for the given name and parameters.
         """
+        return self.url_for(name, **path_params)
+
+    def url_for(self, name: str, /, **path_params: Any) -> URLPath:
+        """
+        Generate a URLPath for a given route name and path parameters.
+
+        Args:
+            name (str): The name of the route.
+            path_params: Path parameters for route substitution.
+
+        Returns:
+            URLPath: The generated URLPath.
+
+        Raises:
+            NoMatchFound: If no matching route is found for the given name and parameters.
+        """
         if self.name is not None and name == self.name and "path" in path_params:
             return self.path_for_with_name(path_params)
         elif self.name is None or name.startswith(self.name + ":"):
@@ -1087,6 +1130,21 @@ class Host(BasePath):
             raise NoMatchFound(name, path_params)
 
     def path_for_with_name(self, path_params: dict) -> URLPath:
+        """
+        Generate a URLPath for a route with a specific name and path parameters.
+
+        Args:
+            path_params: Path parameters for route substitution.
+
+        Returns:
+            URLPath: The generated URLPath.
+
+        Raises:
+            NoMatchFound: If no matching route is found for the given parameters.
+        """
+        return self.url_for_with_name(path_params)
+
+    def url_for_with_name(self, path_params: dict) -> URLPath:
         """
         Generate a URLPath for a route with a specific name and path parameters.
 
@@ -1108,10 +1166,23 @@ class Host(BasePath):
 
         raise NoMatchFound(self.name, path_params)
 
-    def url_for_with_name(self, path_params: dict) -> URLPath:
-        return self.path_for_with_name(path_params)
-
     def path_for_without_name(self, name: str, path_params: dict) -> URLPath:
+        """
+        Generate a URLPath for a route without a specific name and with path parameters.
+
+        Args:
+            name (str): The name of the route.
+            path_params: Path parameters for route substitution.
+
+        Returns:
+            URLPath: The generated URLPath.
+
+        Raises:
+            NoMatchFound: If no matching route is found for the given name and parameters.
+        """
+        return self.url_for_without_name(name, path_params)
+
+    def url_for_without_name(self, name: str, /, path_params: Any) -> URLPath:
         """
         Generate a URLPath for a route without a specific name and with path parameters.
 
@@ -1142,9 +1213,6 @@ class Host(BasePath):
                 pass
 
         raise NoMatchFound(name, path_params)
-
-    def url_for_without_name(self, name: str, /, **path_params: Any) -> URLPath:
-        return self.path_for_without_name(name, path_params)
 
     def __repr__(self) -> str:
         name = self.name or ""
@@ -1296,15 +1364,15 @@ class BaseRouter:
                 self.middleware_stack = cls(app=self.middleware_stack, *args, **options)
 
     def path_for(self, name: str, /, **path_params: Any) -> URLPath:
+        return self.url_for(name, **path_params)
+
+    def url_for(self, name: str, /, **path_params: Any) -> URLPath:
         for route in self.routes:
             try:
                 return route.path_for(name, **path_params)
             except NoMatchFound:
                 ...
         raise NoMatchFound(name, path_params)
-
-    def url_for(self, name: str, /, **path_params: Any) -> URLPath:
-        return self.path_for(name, **path_params)
 
     async def startup(self) -> None:
         """
@@ -2503,6 +2571,22 @@ class Include(BasePath):
             NoMatchFound: If no matching route is found for the given name and parameters.
         """
 
+        return self.url_for(name, **path_params)
+
+    def url_for(self, name: str, /, **path_params: Any) -> URLPath:
+        """
+        Generate a URLPath for a given route name and path parameters.
+
+        Args:
+            name (str): The name of the route.
+            path_params: Path parameters for route substitution.
+
+        Returns:
+            URLPath: The generated URLPath.
+
+        Raises:
+            NoMatchFound: If no matching route is found for the given name and parameters.
+        """
         if self.name is not None and name == self.name and "path" in path_params:
             path_params["path"] = path_params["path"].lstrip("/")
             path, remaining_params = replace_params(
@@ -2512,11 +2596,7 @@ class Include(BasePath):
                 return URLPath(path=path)
         elif self.name is None or name.startswith(self.name + ":"):
             return self._path_for_without_name(name, path_params)
-
         raise NoMatchFound(name, path_params)
-
-    def url_for(self, name: str, /, **path_params: Any) -> URLPath:
-        return self.path_for(name, **path_params)
 
     def _path_for_without_name(self, name: str, path_params: dict) -> URLPath:
         """

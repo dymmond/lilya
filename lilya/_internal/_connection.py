@@ -200,9 +200,9 @@ class Connection(Mapping[str, Any]):
         return self.url.is_secure
 
     def path_for(self, name: str, /, **path_params: Any) -> URL:
-        router: Router = self.scope["router"]
-        url_path = router.path_for(name, **path_params)
-        return url_path.make_absolute_url(base_url=self.base_url)
+        return self.url_for(name, **path_params)
 
     def url_for(self, name: str, /, **path_params: Any) -> URL:
-        return self.path_for(name, **path_params)
+        router: Router = self.scope["router"]
+        url_path = router.url_for(name, **path_params)
+        return url_path.make_absolute_url(base_url=self.base_url)

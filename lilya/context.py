@@ -175,7 +175,7 @@ class Context:
             ),
         ],
     ) -> str:
-        url: URL = self.request.path_for(name, **path_params)
+        url: URL = self.request.url_for(name, **path_params)
         return str(url)
 
     def url_for(
@@ -207,7 +207,8 @@ class Context:
             ),
         ],
     ) -> str:
-        return self.path_for(name, **path_params)
+        url: URL = self.request.url_for(name, **path_params)
+        return str(url)
 
 
 class G:
