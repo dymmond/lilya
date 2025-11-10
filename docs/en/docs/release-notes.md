@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.22.13
+
+### Changed
+
+- `Jinja2Template` now supports `url_for` in the Lilya internal lookup.
+
 ## 0.22.12
 
 ### Changed

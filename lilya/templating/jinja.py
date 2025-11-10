@@ -164,7 +164,24 @@ class Jinja2Template:
             request: Request = context["request"]
             return request.path_for(name, **path_params)
 
-        env.globals.setdefault("url_for", path_for)
+        @pass_context
+        def url_for(context: dict, name: str, **path_params: Any) -> Any:
+            """
+            Custom Jinja2 global function to generate URLs using Lilya's Request instance.
+
+            Args:
+                context (dict): Jinja2 context, including 'request'.
+                name (str): Name of the Lilya route.
+                **path_params (Any): Additional path parameters.
+
+            Returns:
+                Any: The generated URL.
+            """
+            request: Request = context["request"]
+            return request.url_for(name, **path_params)
+
+        env.globals.setdefault("path_for", path_for)
+        env.globals.setdefault("url_for", url_for)
         return env
 
     def _create_environment(
