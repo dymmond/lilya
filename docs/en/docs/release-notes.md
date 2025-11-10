@@ -5,16 +5,11 @@ hide:
 
 # Release Notes
 
-## 0.22.13
-
-### Changed
-
-- `Jinja2Template` now supports `url_for` in the Lilya internal lookup.
-
 ## 0.22.12
 
 ### Changed
 
+- `Jinja2Template` now supports `url_for` in the Lilya internal lookup.
 - Parameters for `add_child_lilya` as not validating for Lilya itself.
 
 ## 0.22.11
