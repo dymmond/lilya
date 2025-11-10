@@ -415,7 +415,7 @@ class BaseLilya:
         self,
         path: str,
         child: Annotated[
-            ChildLilya,
+            Lilya | ChildLilya,
             Doc(
                 """
                 The [ChildLilya](https://lilya.dev/routing/#childlilya-application) instance

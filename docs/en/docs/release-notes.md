@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.22.12
+
+### Changed
+
+- Parameters for `add_child_lilya` as not validating for Lilya itself.
+
 ## 0.22.11
 
 ### Added
