@@ -314,11 +314,11 @@ def test_path_for_with_reverse():
     with pytest.raises(
         NoMatchFound, match='No route exists for name "broken" and params "key, key2".'
     ):
-        assert reverse("broken", app=app, path_params={"key": "value", "key2": "value2"})
+        assert reverse("broken", app=app, key="value", key2="value2")
     with pytest.raises(AssertionError):
-        reverse("user", app=app, path_params={"username": "lilya/christie"})
+        reverse("user", app=app, username="lilya/christie")
     with pytest.raises(AssertionError):
-        reverse("user", app=app, path_params={"username": ""})
+        reverse("user", app=app, username="")
 
 
 def test_make_absolute_url_for():

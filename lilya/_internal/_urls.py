@@ -33,7 +33,9 @@ def include(arg: Any, pattern: str | None = None) -> list[BasePath]:
     return patterns
 
 
-def reverse(reverse_name: str, app: ASGIApp | None = None, **path_params: Any) -> URLPath:
+def reverse(
+    reverse_name: str, app: ASGIApp | None = None, path_params: Any | None = None, **kwargs: Any
+) -> URLPath:
     """
     Reverses the URL based on a name and parameters provided
     and returns a URLPath.
@@ -41,5 +43,6 @@ def reverse(reverse_name: str, app: ASGIApp | None = None, **path_params: Any) -
     if path_params is None:
         path_params = {}
 
+    path_params.update(kwargs)
     app_or_settings: ASGIApp = app or _monkay.instance
     return cast(URLPath, app_or_settings.url_path_for(reverse_name, **path_params))

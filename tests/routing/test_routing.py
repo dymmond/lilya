@@ -253,28 +253,23 @@ def test_path_converters_with_reverse(client):
     response = client.get("/int/5")
     assert response.status_code == 200
     assert response.json() == {"int": 5}
-    assert reverse("int-convertor", app=app, path_params={"param": 5}) == "/int/5"
+
+    assert reverse("int-convertor", app=app, **{"param": 5}) == "/int/5"
 
     response = client.get("/path-with-parentheses(7)")
     assert response.status_code == 200
     assert response.json() == {"int": 7}
-    assert (
-        reverse("path-with-parentheses", app=app, path_params={"param": 7})
-        == "/path-with-parentheses(7)"
-    )
+    assert reverse("path-with-parentheses", app=app, **{"param": 7}) == "/path-with-parentheses(7)"
 
     response = client.get("/float/25.5")
     assert response.status_code == 200
     assert response.json() == {"float": 25.5}
-    assert reverse("float-convertor", app=app, path_params={"param": 25.5}) == "/float/25.5"
+    assert reverse("float-convertor", app=app, **{"param": 25.5}) == "/float/25.5"
 
     response = client.get("/path/some/example")
     assert response.status_code == 200
     assert response.json() == {"path": "some/example"}
-    assert (
-        reverse("path-convertor", app=app, path_params={"param": "some/example"})
-        == "/path/some/example"
-    )
+    assert reverse("path-convertor", app=app, **{"param": "some/example"}) == "/path/some/example"
 
     response = client.get("/uuid/ec38df32-ceda-4cfa-9b4a-1aeb94ad551a")
     assert response.status_code == 200
@@ -283,7 +278,7 @@ def test_path_converters_with_reverse(client):
         reverse(
             "uuid-convertor",
             app=app,
-            path_params={"param": uuid.UUID("ec38df32-ceda-4cfa-9b4a-1aeb94ad551a")},
+            **{"param": uuid.UUID("ec38df32-ceda-4cfa-9b4a-1aeb94ad551a")},
         )
         == "/uuid/ec38df32-ceda-4cfa-9b4a-1aeb94ad551a"
     )
@@ -307,18 +302,18 @@ def test_path_for():
 
 def test_path_for_with_reverse():
     assert reverse("homepage", app=app) == "/"
-    assert reverse("user", app=app, path_params={"username": "lilya"}) == "/users/lilya"
+    assert reverse("user", app=app, **{"username": "lilya"}) == "/users/lilya"
     assert reverse("websocket_handler", app=app) == "/ws"
     with pytest.raises(NoMatchFound, match='No route exists for name "broken" and params "".'):
         assert reverse("broken", app=app)
     with pytest.raises(
         NoMatchFound, match='No route exists for name "broken" and params "key, key2".'
     ):
-        assert reverse("broken", app=app, path_params={"key": "value", "key2": "value2"})
+        assert reverse("broken", app=app, **{"key": "value", "key2": "value2"})
     with pytest.raises(AssertionError):
-        reverse("user", app=app, path_params={"username": "lilya/christie"})
+        reverse("user", app=app, username="lilya/christie")
     with pytest.raises(AssertionError):
-        reverse("user", app=app, path_params={"username": ""})
+        reverse("user", app=app, username="")
 
 
 def test_make_absolute_url_for():
