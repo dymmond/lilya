@@ -92,10 +92,10 @@ class BaseLilya:
         return setting_value
 
     def path_for(self, name: str, /, **path_params: Any) -> URLPath:
-        return self.router.path_for(name, **path_params)
+        return self.router.url_for(name, **path_params)
 
     def url_for(self, name: str, /, **path_params: Any) -> str:
-        return self.path_for(name, **path_params)
+        return self.router.url_for(name, **path_params)
 
     def build_middleware_stack(self) -> ASGIApp:
         """
@@ -227,7 +227,7 @@ class BaseLilya:
             str | None,
             Doc(
                 """
-                The name for the PAth. The name can be reversed by `path_for()` or `reverse()`.
+                The name for the PAth. The name can be reversed by `url_for()` or `reverse()`.
                 """
             ),
         ] = None,
@@ -318,7 +318,7 @@ class BaseLilya:
             str | None,
             Doc(
                 """
-                The name for the WebSocketPath. The name can be reversed by `path_for()` or `reverse()`.
+                The name for the WebSocketPath. The name can be reversed by `url_for()` or `reverse()`.
                 """
             ),
         ] = None,

@@ -91,10 +91,8 @@ def requires(
                 # Store the original request URL as a 'next' query parameter
                 orig_request_qparam: str = urlencode({"next": str(conn.url)})
 
-                # Resolve the redirect route URL
-                # NOTE: Assuming conn.path_for(redirect) works with route names
                 try:
-                    next_url: str = f"{conn.path_for(redirect)}?{orig_request_qparam}"
+                    next_url: str = f"{conn.url_for(redirect)}?{orig_request_qparam}"
                 except RuntimeError:
                     # Fallback if path_for fails (e.g., redirect is not a route name)
                     next_url: str = f"{redirect}?{orig_request_qparam}"  # type: ignore
@@ -103,8 +101,6 @@ def requires(
 
             # If no redirect, raise the configured HTTPException
             raise HTTPException(status_code=status_code)
-
-        # --- Wrapper Logic ---
 
         if is_async_callable(func):
             # --- Async Handler Wrapper ---
@@ -150,7 +146,7 @@ def requires(
                                 orig_request_qparam: str = urlencode({"next": str(conn.url)})
                                 try:
                                     next_url: str = (
-                                        f"{conn.path_for(redirect)}?{orig_request_qparam}"
+                                        f"{conn.url_for(redirect)}?{orig_request_qparam}"
                                     )
                                 except RuntimeError:
                                     next_url: str = f"{redirect}?{orig_request_qparam}"  # type: ignore
