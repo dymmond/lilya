@@ -202,6 +202,11 @@ functions on an application top level. Exception handler callables should be of 
 * **include_in_schema** - Boolean if this ChildLilya should be included in the schema.
 * **deprecated** - Boolean if this ChildLilya should be marked as deprecated.
 
+### add_asgi_app()
+
+The same as the [add_child_lilya](#add_child_lilya) but not restrained only to Lilya or ChildLilya. This means
+you can call this helper and add any other ASGI application (FastAPI, Starlette, Litestar...) and it will fit automatically.
+
 ## Path
 
 The object that connects and builds the application urls or paths. It maps the function handler

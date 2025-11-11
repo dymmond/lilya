@@ -197,6 +197,8 @@ testing = [
     "edgy[postgres]>=0.33.0",
     "email-validator>=2.1.0.post1",
     "databasez>=0.9.7",
+    "fastapi>=0.121.1",
+    "litestar>=2.18.0",
     "orjson",
     "freezegun",
     "flask>=3.0.2,<4.0.0",

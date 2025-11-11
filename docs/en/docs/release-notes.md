@@ -5,6 +5,17 @@ hide:
 
 # Release Notes
 
+## 0.22.16
+
+### Added
+
+- [add_asgi_app()](./routing.md#add_asgi_app) is now supported and serves as an utility if you want to add any ASGI
+compatible application into a Lilya/ChildLilya instance.
+
+### Changed
+
+- TestClient now support `routes` access directly as a shortcut to `client.app.routes`.
+
 ## 0.22.15
 
 ### Added
