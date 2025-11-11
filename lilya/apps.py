@@ -465,6 +465,41 @@ class BaseLilya:
             )
         )
 
+    def add_asgi_app(
+        self,
+        path: str,
+        child: Annotated[
+            Lilya | ChildLilya | ASGIApp,
+            Doc(
+                """
+                The [ChildLilya](https://lilya.dev/routing/#childlilya-application) instance
+                to be added.
+                """
+            ),
+        ],
+        name: str | None = None,
+        middleware: Sequence[DefineMiddleware] | None = None,
+        permissions: Sequence[DefinePermission] | None = None,
+        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        include_in_schema: bool | None = True,
+        deprecated: bool | None = None,
+    ) -> None:
+        """
+        Add any ASGI application instance (FastAPI, Starlette, Litestar...) to be added.
+        """
+        self.router.routes.append(
+            Include(
+                path=path,
+                name=name,
+                app=child,
+                middleware=middleware,
+                permissions=permissions,
+                exception_handlers=exception_handlers,
+                include_in_schema=include_in_schema,
+                deprecated=deprecated,
+            )
+        )
+
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         scope["app"] = self
         with _monkay.with_settings(self.settings), _monkay.with_instance(self):

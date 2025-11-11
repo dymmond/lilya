@@ -105,6 +105,10 @@ class TestClient(httpx.Client):
             cookies=cookies,
         )
 
+    @property
+    def routes(self) -> list[Any]:
+        return getattr(self.app, "routes", [])
+
     @contextlib.contextmanager
     def _portal_factory(self) -> Generator[anyio.abc.BlockingPortal, None, None]:
         """
