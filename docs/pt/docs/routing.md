@@ -325,7 +325,7 @@ Se decidir fazer isso:
 Se deseja utilizar rotas distintas para o mesmo caminho, dependendo do cabeçalho Host, o Lilya fornece uma solução.
 
 É importante observar que o porto é ignorado do cabeçalho Host durante a correspondência. Por exemplo,
-`Host(host='example.com:8081', ...)` será processado independentemente de o cabeçalho Host conter um porto diferente de 8081 (por exemplo, `example.com:8083`, `example.org`). Portanto, se o porto for essencial para fins de `path_for`, pode especificá-la explicitamente.
+`Host(host='example.com:8081', ...)` será processado independentemente de o cabeçalho Host conter um porto diferente de 8081 (por exemplo, `example.com:8083`, `example.org`). Portanto, se o porto for essencial para fins de `url_path_for`, pode especificá-la explicitamente.
 
 Existem várias abordagens para estabelecer rotas baseadas em host para o sua aplicação.
 

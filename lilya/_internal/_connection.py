@@ -11,6 +11,7 @@ from lilya.exceptions import ImproperlyConfigured
 from lilya.types import Message, Receive, Scope
 
 if TYPE_CHECKING:
+    from lilya.apps import Lilya
     from lilya.routing import Router
 
 SERVER_PUSH_HEADERS = {
@@ -200,9 +201,15 @@ class Connection(Mapping[str, Any]):
         return self.url.is_secure
 
     def path_for(self, name: str, /, **path_params: Any) -> URL:
-        return self.url_for(name, **path_params)
+        return self.url_path_for(name, **path_params)
 
-    def url_for(self, name: str, /, **path_params: Any) -> URL:
-        router: Router = self.scope["router"]
-        url_path = router.url_for(name, **path_params)
-        return url_path.make_absolute_url(base_url=self.base_url)
+    def url_path_for(self, name: str, /, **path_params: Any) -> URL:
+        router: Router | Lilya | None = self.scope.get("router") or self.scope.get("app")
+
+        if router is None:
+            raise RuntimeError(
+                "The `url_for` method can only be used inside a Lilya application or with a router."
+            )
+
+        url_path = router.url_path_for(name, **path_params)
+        return cast(URL, url_path.make_absolute_url(base_url=self.base_url))

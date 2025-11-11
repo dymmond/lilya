@@ -122,7 +122,7 @@ class BaseTemplateController(Controller, metaclass=TemplateControllerMetaclass):
 
         Override this method in subclasses to add custom context variables.
         The base implementation provides the 'request' object in the context,
-        which is necessary for template features like `url_for`.
+        which is necessary for template features like `url_path_for`.
 
         Args:
             request: The incoming request object.
@@ -131,7 +131,7 @@ class BaseTemplateController(Controller, metaclass=TemplateControllerMetaclass):
         Returns:
             A dictionary representing the context data for the template.
         """
-        # Lilya requires 'request' in the context for url_for and other template features
+        # Lilya requires 'request' in the context for url_path_for and other template features
         # Add existing kwargs to the context, allowing subclasses to pass initial data.
         context = {"request": request}
         if self.csrf_enabled and request.method.upper() in {"GET", "HEAD"}:

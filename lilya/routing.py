@@ -133,7 +133,7 @@ class BasePath:
         """
         raise NotImplementedError()  # pragma: no cover
 
-    def url_for(self, name: str, /, **path_params: Any) -> URLPath:
+    def url_path_for(self, name: str, /, **path_params: Any) -> URLPath:
         """
         Returns a URL of a matching route.
         """
@@ -481,9 +481,9 @@ class Path(BaseHandler, BasePath):
         Raises:
             NoMatchFound: If there is no match for the given name and parameters.
         """
-        return self.url_for(name, **path_params)
+        return self.url_path_for(name, **path_params)
 
-    def url_for(self, name: str, /, **path_params: Any) -> URLPath:
+    def url_path_for(self, name: str, /, **path_params: Any) -> URLPath:
         """
         Generates a URL path for the specified route name and parameters.
 
@@ -879,9 +879,9 @@ class WebSocketPath(BaseHandler, BasePath):
             NoMatchFound: If there is no match for the given name and parameters.
 
         """
-        return self.url_for(name, **path_params)
+        return self.url_path_for(name, **path_params)
 
-    def url_for(self, name: str, /, **path_params: Any) -> URLPath:
+    def url_path_for(self, name: str, /, **path_params: Any) -> URLPath:
         """
         Generates a URL path for the specified route name and parameters.
 
@@ -1106,9 +1106,9 @@ class Host(BasePath):
         Raises:
             NoMatchFound: If no matching route is found for the given name and parameters.
         """
-        return self.url_for(name, **path_params)
+        return self.url_path_for(name, **path_params)
 
-    def url_for(self, name: str, /, **path_params: Any) -> URLPath:
+    def url_path_for(self, name: str, /, **path_params: Any) -> URLPath:
         """
         Generate a URLPath for a given route name and path parameters.
 
@@ -1142,9 +1142,9 @@ class Host(BasePath):
         Raises:
             NoMatchFound: If no matching route is found for the given parameters.
         """
-        return self.url_for_with_name(path_params)
+        return self.url_path_for_with_name(path_params)
 
-    def url_for_with_name(self, path_params: dict) -> URLPath:
+    def url_path_for_with_name(self, path_params: dict) -> URLPath:
         """
         Generate a URLPath for a route with a specific name and path parameters.
 
@@ -1180,9 +1180,9 @@ class Host(BasePath):
         Raises:
             NoMatchFound: If no matching route is found for the given name and parameters.
         """
-        return self.url_for_without_name(name, path_params)
+        return self.url_path_for_without_name(name, path_params)
 
-    def url_for_without_name(self, name: str, /, path_params: Any) -> URLPath:
+    def url_path_for_without_name(self, name: str, /, path_params: Any) -> URLPath:
         """
         Generate a URLPath for a route without a specific name and with path parameters.
 
@@ -1364,9 +1364,9 @@ class BaseRouter:
                 self.middleware_stack = cls(app=self.middleware_stack, *args, **options)
 
     def path_for(self, name: str, /, **path_params: Any) -> URLPath:
-        return self.url_for(name, **path_params)
+        return self.url_path_for(name, **path_params)
 
-    def url_for(self, name: str, /, **path_params: Any) -> URLPath:
+    def url_path_for(self, name: str, /, **path_params: Any) -> URLPath:
         for route in self.routes:
             try:
                 return route.path_for(name, **path_params)
@@ -2571,9 +2571,9 @@ class Include(BasePath):
             NoMatchFound: If no matching route is found for the given name and parameters.
         """
 
-        return self.url_for(name, **path_params)
+        return self.url_path_for(name, **path_params)
 
-    def url_for(self, name: str, /, **path_params: Any) -> URLPath:
+    def url_path_for(self, name: str, /, **path_params: Any) -> URLPath:
         """
         Generate a URLPath for a given route name and path parameters.
 

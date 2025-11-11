@@ -5,23 +5,29 @@ hide:
 
 # Release Notes
 
+## 0.22.14
+
+## Changed
+
+- Missing internals of `url_path_for`. This marks the end of the first migration and support.
+
 ## 0.22.13
 
-This was supposed to go on the release 0.22.12 and its related with `request.url_for`.
+This was supposed to go on the release 0.22.12 and its related with `request.url_path_for`.
 
 ### Changed
 
-- Started full support for `url_for` instead of `path_for`.
+- Started full support for `url_path_for` instead of `path_for`.
 
 !!! Warning
-    `path_for` will be deprecated in future versions in favor of `url_for`. If you want to avoid any break, please
-    start updating from `path_for` to `url_for` as soon as possible. Same interface
+    `path_for` will be deprecated in future versions in favor of `url_path_for`. If you want to avoid any break, please
+    start updating from `path_for` to `url_path_for` as soon as possible. Same interface
 
 ## 0.22.12
 
 ### Changed
 
-- `Jinja2Template` now supports `url_for` in the Lilya internal lookup.
+- `Jinja2Template` now supports `url_path_for` in the Lilya internal lookup.
 - Parameters for `add_child_lilya` as not validating for Lilya itself.
 
 ## 0.22.11
