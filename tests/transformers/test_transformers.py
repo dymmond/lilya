@@ -80,7 +80,7 @@ def test_datetime_transformer(test_client_factory: TestClientFactory, app: Route
     assert response.json() == {"datetime": "2020-01-01T00:00:00"}
 
     assert (
-        app.path_for("datetime-transformer", param=datetime(1996, 1, 22, 23, 0, 0))
+        app.url_path_for("datetime-transformer", param=datetime(1996, 1, 22, 23, 0, 0))
         == "/datetime/1996-01-22T23:00:00"
     )
 
@@ -91,7 +91,7 @@ def test_ip_transformer(test_client_factory: TestClientFactory, app: Router) -> 
     assert response.json() == {"ip": "192.168.0.1"}
 
     assert (
-        app.path_for("ip-transformer", param=ipaddress.ip_address("192.168.0.1"))
+        app.url_path_for("ip-transformer", param=ipaddress.ip_address("192.168.0.1"))
         == "/ip/192.168.0.1"
     )
 

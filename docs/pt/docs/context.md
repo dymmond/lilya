@@ -202,7 +202,7 @@ def home(context: Context):
     return Response("Ok")
 ```
 
-### path_for
+### url_path_for
 
 Obtém o caminho de um *handler* específico.
 
@@ -212,7 +212,7 @@ from lilya.responses import Response
 
 
 def home(context: Context):
-    url = context.path_for("/home")
+    url = context.url_path_for("/home")
 
     return Response(url)
 ```

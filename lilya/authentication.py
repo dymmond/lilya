@@ -92,7 +92,7 @@ def requires(
                 orig_request_qparam: str = urlencode({"next": str(conn.url)})
 
                 try:
-                    next_url: str = f"{conn.url_for(redirect)}?{orig_request_qparam}"
+                    next_url: str = f"{conn.url_path_for(redirect)}?{orig_request_qparam}"
                 except RuntimeError:
                     # Fallback if path_for fails (e.g., redirect is not a route name)
                     next_url: str = f"{redirect}?{orig_request_qparam}"  # type: ignore
@@ -146,7 +146,7 @@ def requires(
                                 orig_request_qparam: str = urlencode({"next": str(conn.url)})
                                 try:
                                     next_url: str = (
-                                        f"{conn.url_for(redirect)}?{orig_request_qparam}"
+                                        f"{conn.url_path_for(redirect)}?{orig_request_qparam}"
                                     )
                                 except RuntimeError:
                                     next_url: str = f"{redirect}?{orig_request_qparam}"  # type: ignore

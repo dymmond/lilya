@@ -175,10 +175,10 @@ class Context:
             ),
         ],
     ) -> str:
-        url: URL = self.request.url_for(name, **path_params)
+        url: URL = self.request.url_path_for(name, **path_params)
         return str(url)
 
-    def url_for(
+    def url_path_for(
         self,
         name: Annotated[
             str,
@@ -207,7 +207,7 @@ class Context:
             ),
         ],
     ) -> str:
-        url: URL = self.request.url_for(name, **path_params)
+        url: URL = self.request.url_path_for(name, **path_params)
         return str(url)
 
 

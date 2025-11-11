@@ -389,7 +389,7 @@ If you aim to utilize distinct routes for the same path contingent on the Host h
 
 It's important to note that the port is disregarded from the Host header during matching. For instance,
 `Host(host='example.com:8081', ...)` will be processed regardless of whether the Host header contains a port
-different from 8081 (e.g., `example.com:8083`, `example.org`). Therefore, if the port is essential for `path_for`
+different from 8081 (e.g., `example.com:8083`, `example.org`). Therefore, if the port is essential for `url_path_for`
 purposes, you can explicitly specify it.
 
 There are multiple approaches to establish host-based routes for your application.
