@@ -9,11 +9,15 @@ hide:
 
 ### Added
 
-- `get_return_url()` into TemplateController by default.
+- `get_return_url(request, reverse_name, **path_params)` into TemplateController by default.
 
 ### Changed
 
 - Remaining `path_for` references.
+
+## Fixed
+
+- `reverse()` was causing problems with the parameter discovery with kwargs.
 
 ## 0.22.14
 
