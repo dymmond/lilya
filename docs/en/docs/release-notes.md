@@ -5,6 +5,16 @@ hide:
 
 # Release Notes
 
+## 0.22.15
+
+### Added
+
+- `get_return_url()` into TemplateController by default.
+
+### Changed
+
+- Remaining `path_for` references.
+
 ## 0.22.14
 
 ## Changed

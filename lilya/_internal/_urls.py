@@ -42,4 +42,4 @@ def reverse(name: str, app: ASGIApp | None = None, path_params: Any | None = Non
         path_params = {}
 
     app_or_settings: ASGIApp = app or _monkay.instance
-    return cast(URLPath, app_or_settings.path_for(name, **path_params))
+    return cast(URLPath, app_or_settings.url_path_for(name, **path_params))
