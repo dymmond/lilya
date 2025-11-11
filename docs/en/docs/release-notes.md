@@ -14,6 +14,9 @@ hide:
 ### Changed
 
 - Remaining `path_for` references.
+- Internal controller logic refactored for better performance and maintainability
+(faster signature handling and reduced overhead in request processing).
+- Improved template rendering behavior to always include the `request` object and merged contexts safely.
 
 ## Fixed
 
