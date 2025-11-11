@@ -9,6 +9,7 @@ import pytest
 from lilya.apps import Lilya
 from lilya.background import Task
 from lilya.requests import Request
+from lilya.responses import PlainText
 from lilya.routing import Path
 from lilya.templating.controllers import TemplateController
 from lilya.templating.jinja import Jinja2Template
@@ -297,3 +298,92 @@ def test_templates_using_template_view_inheritance(tmpdir, test_client_factory, 
     )
     assert response.template.name == "index.html"
     assert set(response.context.keys()) == {"request", "name", "child"}
+
+
+def test_template_controller_get_return_url(tmpdir, test_client_factory):
+    class ReturnURLView(TemplateController):
+        templates = Jinja2Template(directory=str(tmpdir))  # type: ignore[assignment]
+        template_name = "index.html"
+
+        async def get(self, request: Request):
+            url = self.get_return_url(request, "target", name="lilya")
+            return PlainText(str(url))
+
+    async def target(request: Request):
+        return PlainText("ok")
+
+    app = Lilya(
+        debug=True,
+        routes=[
+            Path("/", handler=ReturnURLView, name="home"),
+            Path("/target/{name}", handler=target, name="target"),
+        ],
+    )
+
+    client = test_client_factory(app)
+    resp = client.get("/")
+
+    assert resp.text in ("/target/lilya", "http://testserver/target/lilya")
+
+
+def test_template_controller_csrf_in_context_on_get(tmpdir, test_client_factory):
+    path = os.path.join(tmpdir, "index.html")
+    with open(path, "w") as f:
+        f.write("<html>{{ csrf_token }}</html>")
+
+    class CSRFView(TemplateController):
+        templates = Jinja2Template(directory=str(tmpdir))
+        template_name = "index.html"
+        csrf_enabled = True
+
+        async def get(self, request: Request):
+            return await self.render_template(request)
+
+    app = Lilya(routes=[Path("/", handler=CSRFView)])
+    client = test_client_factory(app)
+    resp = client.get("/")
+
+    assert resp.text.startswith("<html>") and resp.text.endswith("</html>")
+    assert "csrf_token" in resp.context and bool(resp.context["csrf_token"]) is True
+
+
+def test_template_controller_csrf_not_in_context_on_post(tmpdir, test_client_factory):
+    path = os.path.join(tmpdir, "index.html")
+    with open(path, "w") as f:
+        f.write("{{ csrf_token|default('') }}")
+
+    class CSRFView(TemplateController):
+        templates = Jinja2Template(directory=str(tmpdir))
+        template_name = "index.html"
+        csrf_enabled = True
+
+        async def post(self, request: Request):
+            return await self.render_template(request)
+
+    app = Lilya(routes=[Path("/", handler=CSRFView)])
+    client = test_client_factory(app)
+    resp = client.post("/")
+
+    assert resp.text == ""
+
+
+def test_template_controller_render_template_merges_context(tmpdir, test_client_factory):
+    path = os.path.join(tmpdir, "index.html")
+
+    with open(path, "w") as f:
+        f.write("<p>{{ foo }}</p>")
+
+    class MergeView(TemplateController):
+        templates = Jinja2Template(directory=str(tmpdir))
+        template_name = "index.html"
+
+        async def get(self, request: Request):
+            return await self.render_template(request, {"foo": "bar"})
+
+    app = Lilya(routes=[Path("/", handler=MergeView)])
+    client = test_client_factory(app)
+    resp = client.get("/")
+
+    assert resp.text == "<p>bar</p>"
+    assert resp.template.name == "index.html"
+    assert set(resp.context.keys()) == {"request", "foo"}

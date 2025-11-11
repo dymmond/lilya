@@ -3,9 +3,11 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable
 from typing import Any
 
+from lilya.compat import reverse
 from lilya.conf import _monkay
 from lilya.contrib.security.csrf import get_or_set_csrf_token
 from lilya.controllers import Controller
+from lilya.datastructures import URLPath
 from lilya.exceptions import ImproperlyConfigured  # noqa
 from lilya.requests import Request
 from lilya.responses import HTMLResponse, RedirectResponse, Response
@@ -105,6 +107,24 @@ class BaseTemplateController(Controller, metaclass=TemplateControllerMetaclass):
     csrf_enabled: bool = False
     csrf_token_form_name: str = "csrf_token"
     templates: Jinja2Template = templates
+
+    def get_return_url(self, request: Request, reverse_name: str, **params: Any) -> URLPath:
+        """
+        Returns the absolute URL for a given named route, similar to Django's `reverse()`.
+
+        This method is a convenience helper for controllers that need to redirect
+        or construct return URLs dynamically based on route names. It uses the
+        Lilya internal `reverse()` function to resolve a route name into a URL path.
+
+        Args:
+            request (Request): The current HTTP request object, used to access the application router.
+            reverse_name (str): The name of the route to reverse.
+            **params (Any): Additional keyword arguments corresponding to the route’s path parameters.
+
+        Returns:
+            URLPath: The resolved URL path for the given route name and parameters.
+        """
+        return reverse(reverse_name=reverse_name, app=request.app, **params)
 
     async def get_csrf_token(self, request: Request) -> Any:
         """

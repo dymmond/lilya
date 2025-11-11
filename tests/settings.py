@@ -23,6 +23,7 @@ class ORJSONSerializerConfig(SerializerConfig):
 class AppTestSettings(Settings):
     debug: bool = True
     environment: str = EnvironmentType.TESTING.value
+    secret_key: str = "testing_key"
 
     @cached_property
     def registry(self) -> Registry:

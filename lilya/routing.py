@@ -75,7 +75,7 @@ class PathHandler(ScopeHandler):
 
 class NoMatchFound(Exception):
     """
-    Raised by `.path_for(name, **path_params)` and `.path_for(name, **path_params)`
+    Raised by `.url_path_for(name, **path_params)` and `.url_path_for(name, **path_params)`
     if no matching route exists.
     """
 
@@ -1207,7 +1207,7 @@ class Host(BasePath):
 
         for route in self.routes or []:
             try:
-                url = route.path_for(remaining_name, **remaining_params)
+                url = route.url_path_for(remaining_name, **remaining_params)
                 return URLPath(path=str(url), protocol=url.protocol, host=host)
             except NoMatchFound:
                 pass
@@ -1369,7 +1369,7 @@ class BaseRouter:
     def url_path_for(self, name: str, /, **path_params: Any) -> URLPath:
         for route in self.routes:
             try:
-                return route.path_for(name, **path_params)
+                return route.url_path_for(name, **path_params)
             except NoMatchFound:
                 ...
         raise NoMatchFound(name, path_params)
@@ -2628,7 +2628,7 @@ class Include(BasePath):
 
         for route in self.routes or []:
             try:
-                url = route.path_for(remaining_name, **remaining_params)
+                url = route.url_path_for(remaining_name, **remaining_params)
                 return URLPath(path=path_prefix.rstrip("/") + str(url), protocol=url.protocol)
             except NoMatchFound:
                 pass

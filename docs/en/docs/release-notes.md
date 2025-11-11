@@ -5,6 +5,23 @@ hide:
 
 # Release Notes
 
+## 0.22.15
+
+### Added
+
+- `get_return_url(request, reverse_name, **path_params)` into TemplateController by default.
+
+### Changed
+
+- Remaining `path_for` references.
+- Internal controller logic refactored for better performance and maintainability
+(faster signature handling and reduced overhead in request processing).
+- Improved template rendering behavior to always include the `request` object and merged contexts safely.
+
+## Fixed
+
+- `reverse()` was causing problems with the parameter discovery with kwargs.
+
 ## 0.22.14
 
 ## Changed
