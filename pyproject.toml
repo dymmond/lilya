@@ -203,7 +203,7 @@ testing = [
     "freezegun",
     "flask>=3.0.2,<4.0.0",
     "jinja2>=3.1.3,<4.0.0",
-    "msgspec>=0.18.6,<0.20.0",
+    "msgspec>=0.20.0,<0.21.0",
     "opentelemetry-sdk",
     "opentelemetry-exporter-otlp",
     "pydantic>=2.6.0,<3",
@@ -297,7 +297,7 @@ dependencies = ["ruff==0.12.2"]
 features = ['testing', "cli"]
 template = "test"
 installer = "pip"
-extra-dependencies = ["msgspec@git+https://github.com/jcrist/msgspec.git ; python_version >= '3.14.0'"]
+# extra-dependencies = ["msgspec@git+https://github.com/jcrist/msgspec.git ; python_version >= '3.14.0'"]
 
 [tool.hatch.envs.hatch-test.env-vars]
 LILYA_SETTINGS_MODULE = "tests.settings.AppTestSettings"
