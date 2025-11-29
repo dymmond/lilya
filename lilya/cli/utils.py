@@ -10,7 +10,7 @@ from importlib import import_module
 from pathlib import Path
 from typing import Any
 
-from sayer import error, warning
+from sayer import error
 
 from lilya.cli.base import BaseDirective
 from lilya.cli.exceptions import DirectiveError
@@ -234,7 +234,6 @@ def fetch_custom_directive_by_location(location: str) -> Any:
         raise
     except Exception as exc:  # be specific if you have custom exceptions
         message = f"Failed to load directive from {location}: {exc}"
-        warning(message)
         raise DirectiveError(message) from exc
 
     # Only accept classes explicitly marked as custom directives.
