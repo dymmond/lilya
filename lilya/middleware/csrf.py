@@ -183,7 +183,7 @@ class CSRFMiddleware(MiddlewareProtocol):
             match = re.search(r"boundary=([^;]+)", ctype)
 
             if not match:
-                return None  # type: ignore
+                return None
 
             boundary = match.group(1).strip().strip('"')
             if not boundary:
