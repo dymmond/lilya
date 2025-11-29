@@ -463,7 +463,7 @@ class BaseHandler:
                         d = d[key][idx]
 
                 else:
-                    if is_last:  # type: ignore
+                    if is_last:
                         d[part] = value
                     else:
                         if part not in d or not isinstance(d[part], dict):

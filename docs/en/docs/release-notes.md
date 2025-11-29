@@ -15,6 +15,11 @@ compatible application into a Lilya/ChildLilya instance.
 ### Changed
 
 - TestClient now support `routes` access directly as a shortcut to `client.app.routes`.
+- Remove noisy warning from the directive load package.
+
+### Fixed
+
+- `runserver` lifespan default flag.
 
 ## 0.22.15
 
