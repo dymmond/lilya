@@ -6,12 +6,12 @@ from lilya.contrib.documentation import Doc
 from lilya.contrib.openapi.enums import APIKeyIn
 from lilya.contrib.openapi.models import APIKey
 from lilya.contrib.security.base import SecurityBase
+from lilya.contrib.security.errors import AuthenticationErrorMixin
 from lilya.exceptions import HTTPException
 from lilya.requests import Request
-from lilya.status import HTTP_403_FORBIDDEN
 
 
-class APIKeyBase(SecurityBase):
+class APIKeyBase(SecurityBase, AuthenticationErrorMixin):
     __model__: BaseModel | None = None
 
 
@@ -46,12 +46,18 @@ class APIKeyInQuery(APIKeyBase):
         self.scheme_name = scheme_name or self.__class__.__name__
         self.__auto_error__ = auto_error
 
+    def raise_for_authentication_error(self) -> HTTPException:
+        """
+        Raise an authentication error if the query parameter is missing.
+        """
+        return self.build_authentication_exception(headers={"WWW-Authenticate": "APIKey"})
+
     async def __call__(self, request: Request) -> str | None:
         api_key = request.query_params.get(self.__model__.name)
         if api_key:
             return cast(str, api_key)
         if self.__auto_error__:
-            raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Not authenticated")
+            raise self.raise_for_authentication_error()
         return None
 
 
@@ -86,12 +92,18 @@ class APIKeyInHeader(APIKeyBase):
         self.scheme_name = scheme_name or self.__class__.__name__
         self.__auto_error__ = auto_error
 
+    def raise_for_authentication_error(self) -> HTTPException:
+        """
+        Raise an authentication error if the query parameter is missing.
+        """
+        return self.build_authentication_exception(headers={"WWW-Authenticate": "APIKey"})
+
     async def __call__(self, request: Request) -> str | None:
         api_key = request.headers.get(self.__model__.name)
         if api_key:
             return cast(str, api_key)
         if self.__auto_error__:
-            raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Not authenticated")
+            raise self.raise_for_authentication_error()
         return None
 
 
@@ -126,10 +138,16 @@ class APIKeyInCookie(APIKeyBase):
         self.scheme_name = scheme_name or self.__class__.__name__
         self.__auto_error__ = auto_error
 
+    def raise_for_authentication_error(self) -> HTTPException:
+        """
+        Raise an authentication error if the query parameter is missing.
+        """
+        return self.build_authentication_exception(headers={"WWW-Authenticate": "APIKey"})
+
     async def __call__(self, request: Request) -> str | None:
         api_key = request.cookies.get(self.__model__.name)
         if api_key:
             return api_key
         if self.__auto_error__:
-            raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Not authenticated")
+            raise self.raise_for_authentication_error()
         return None

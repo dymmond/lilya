@@ -49,7 +49,7 @@ def test_security_http_digest_incorrect_scheme_credentials():
         ]
     ) as client:
         response = client.get("/users/me", headers={"Authorization": "Other invalidauthorization"})
-        assert response.status_code == 403, response.text
+        assert response.status_code == 401, response.text
         assert response.text == "Invalid authentication credentials"
 
 

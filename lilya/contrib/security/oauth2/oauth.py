@@ -8,11 +8,11 @@ from lilya.contrib.openapi.models import (
     OAuthFlows as OAuthFlowsModel,
 )
 from lilya.contrib.security.base import SecurityBase as SecurityBase
+from lilya.contrib.security.errors import AuthenticationErrorMixin
 from lilya.contrib.security.param_functions import Form
 from lilya.contrib.security.utils import get_authorization_scheme_param
 from lilya.exceptions import HTTPException
 from lilya.requests import Request
-from lilya.status import HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
 
 
 class OAuth2PasswordRequestForm(BaseModel):
@@ -284,7 +284,7 @@ class OAuth2PasswordRequestFormStrict(OAuth2PasswordRequestForm):
         )
 
 
-class OAuth2(SecurityBase):
+class OAuth2(SecurityBase, AuthenticationErrorMixin):
     """
     This is the base class for OAuth2 authentication, an instance of it would be used
     as a dependency. All other OAuth2 classes inherit from it and customize it for
@@ -353,6 +353,12 @@ class OAuth2(SecurityBase):
         self.scheme_name = scheme_name or self.__class__.__name__
         self.__auto_error__ = auto_error
 
+    def raise_for_authentication_error(self) -> HTTPException:
+        """
+        Raise an authentication error if the query parameter is missing.
+        """
+        return self.build_authentication_exception(headers={"WWW-Authenticate": "Bearer"})
+
     async def __call__(self, request: Request) -> Any:
         authorization = request.headers.get("Authorization")
 
@@ -360,7 +366,7 @@ class OAuth2(SecurityBase):
             return authorization
 
         if self.__auto_error__:
-            raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Not authenticated")
+            raise self.raise_for_authentication_error()
 
         return None
 
@@ -491,11 +497,7 @@ class OAuth2PasswordBearer(OAuth2):
             return param
 
         if self.__auto_error__:
-            raise HTTPException(
-                status_code=HTTP_401_UNAUTHORIZED,
-                detail="Not authenticated",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+            raise self.raise_for_authentication_error()
 
         return None
 
@@ -617,10 +619,5 @@ class OAuth2AuthorizationCodeBearer(OAuth2):
             return param
 
         if self.__auto_error__:
-            raise HTTPException(
-                status_code=HTTP_401_UNAUTHORIZED,
-                detail="Not authenticated",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
+            raise self.raise_for_authentication_error()
         return None

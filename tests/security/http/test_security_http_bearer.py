@@ -34,7 +34,7 @@ def test_security_http_bearer_no_credentials():
         ]
     ) as client:
         response = client.get("/users/me")
-        assert response.status_code == 403, response.text
+        assert response.status_code == 401, response.text
         assert response.text == "Not authenticated"
 
 
@@ -45,7 +45,7 @@ def test_security_http_bearer_incorrect_scheme_credentials():
         ]
     ) as client:
         response = client.get("/users/me", headers={"Authorization": "Basic notreally"})
-        assert response.status_code == 403, response.text
+        assert response.status_code == 401, response.text
         assert response.text == "Invalid authentication credentials"
 
 

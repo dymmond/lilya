@@ -3,12 +3,12 @@ from typing import Annotated, Any
 from lilya.contrib.documentation import Doc
 from lilya.contrib.openapi.models import OpenIdConnect as OpenIdConnectModel
 from lilya.contrib.security.base import SecurityBase as SecurityBase
+from lilya.contrib.security.errors import AuthenticationErrorMixin
 from lilya.exceptions import HTTPException
 from lilya.requests import Request
-from lilya.status import HTTP_403_FORBIDDEN
 
 
-class OpenIdConnect(SecurityBase):
+class OpenIdConnect(SecurityBase, AuthenticationErrorMixin):
     def __init__(
         self,
         *,
@@ -57,6 +57,12 @@ class OpenIdConnect(SecurityBase):
         self.scheme_name = scheme_name or self.__class__.__name__
         self.__auto_error__ = auto_error
 
+    def raise_for_authentication_error(self) -> HTTPException:
+        """
+        Raise an authentication error if the query parameter is missing.
+        """
+        return self.build_authentication_exception(headers={"WWW-Authenticate": "APIKey"})
+
     async def __call__(self, request: Request) -> Any:
         authorization = request.headers.get("Authorization")
 
@@ -64,6 +70,6 @@ class OpenIdConnect(SecurityBase):
             return authorization
 
         if self.__auto_error__:
-            raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Not authenticated")
+            raise self.raise_for_authentication_error()
 
         return None
