@@ -5,6 +5,13 @@ hide:
 
 # Release Notes
 
+## 0.23.0
+
+### Changed
+
+- Updated internal security to start raising 401 instead of 403 to be consistent with `Not authenticated` errors and
+when credentials are missing.
+
 ## 0.22.16
 
 ### Added

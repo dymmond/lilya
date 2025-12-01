@@ -7,10 +7,11 @@ from pydantic import BaseModel
 from lilya.contrib.documentation import Doc
 from lilya.contrib.openapi.models import HTTPBase as HTTPBaseModel, HTTPBearer as HTTPBearerModel
 from lilya.contrib.security.base import HttpSecurityBase
+from lilya.contrib.security.errors import AuthenticationErrorMixin
 from lilya.contrib.security.utils import get_authorization_scheme_param
 from lilya.exceptions import HTTPException
 from lilya.requests import Request
-from lilya.status import HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
+from lilya.status import HTTP_401_UNAUTHORIZED
 
 
 class HTTPBasicCredentials(BaseModel):
@@ -39,7 +40,7 @@ class HTTPAuthorizationCredentials(BaseModel):
     credentials: Annotated[str, Doc("The authorization credentials extracted from the header.")]
 
 
-class HTTPBase(HttpSecurityBase):
+class HTTPBase(HttpSecurityBase, AuthenticationErrorMixin):
     def __init__(
         self,
         *,
@@ -64,18 +65,28 @@ class HTTPBase(HttpSecurityBase):
         self.scheme_name = scheme_name or self.__class__.__name__
         self.__auto_error__ = auto_error
 
+    def raise_for_authentication_error(self, detail: str) -> HTTPException:
+        """
+        Raise an authentication error if the query parameter is missing.
+        """
+
+        return self.build_authentication_exception(
+            headers={"WWW-Authenticate": f"{self.scheme.title()}"},
+            detail=detail,
+        )
+
     async def __call__(self, request: Request) -> HTTPAuthorizationCredentials | None:
         authorization = request.headers.get("Authorization")
         if not authorization:
             if self.__auto_error__:
-                raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Not authenticated")
+                raise self.raise_for_authentication_error(detail="Not authenticated")
             return None
 
         scheme, credentials = get_authorization_scheme_param(authorization)
         if not (scheme and credentials):
             if self.__auto_error__:
-                raise HTTPException(
-                    status_code=HTTP_403_FORBIDDEN, detail="Invalid authentication credentials"
+                raise self.raise_for_authentication_error(
+                    detail="Invalid authentication credentials"
                 )
             return None
 
@@ -103,21 +114,26 @@ class HTTPBasic(HTTPBase):
         self.realm = realm
         self.__auto_error__ = auto_error
 
+    def raise_for_authentication_error(
+        self, status_code: int = HTTP_401_UNAUTHORIZED, detail: str = "Not authenticated"
+    ) -> HTTPException:
+        """
+        Raise an authentication error if the query parameter is missing.
+        """
+        unauthorized_headers = {
+            "WWW-Authenticate": f'Basic realm="{self.realm}"' if self.realm else "Basic"
+        }
+        return self.build_authentication_exception(
+            status_code=status_code, headers=unauthorized_headers, detail=detail
+        )
+
     async def __call__(self, request: Request) -> HTTPBasicCredentials | None:
         authorization = request.headers.get("Authorization")
         scheme, param = get_authorization_scheme_param(authorization)
 
-        unauthorized_headers = {
-            "WWW-Authenticate": f'Basic realm="{self.realm}"' if self.realm else "Basic"
-        }
-
         if not authorization or scheme.lower() != "basic":
             if self.__auto_error__:
-                raise HTTPException(
-                    status_code=HTTP_401_UNAUTHORIZED,
-                    detail="Not authenticated",
-                    headers=unauthorized_headers,
-                )
+                raise self.raise_for_authentication_error()
             return None
 
         try:
@@ -126,10 +142,8 @@ class HTTPBasic(HTTPBase):
             if not separator:
                 raise ValueError("Invalid credentials format")
         except (ValueError, UnicodeDecodeError, binascii.Error):
-            raise HTTPException(
-                status_code=HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication credentials",
-                headers=unauthorized_headers,
+            raise self.raise_for_authentication_error(
+                status_code=HTTP_401_UNAUTHORIZED, detail="Invalid authentication credentials"
             ) from None
 
         return HTTPBasicCredentials(username=username, password=password)
@@ -155,19 +169,26 @@ class HTTPBearer(HTTPBase):
         self.scheme_name = scheme_name or self.__class__.__name__
         self.__auto_error__ = auto_error
 
+    def raise_for_authentication_error(self, detail: str = "Not authenticated") -> HTTPException:
+        """
+        Raise an authentication error if the query parameter is missing.
+        """
+        return self.build_authentication_exception(
+            detail=detail, headers={"WWW-Authenticate": f"{self.scheme.title()}"}
+        )
+
     async def __call__(self, request: Request) -> HTTPAuthorizationCredentials | None:
         authorization = request.headers.get("Authorization")
         if not authorization:
             if self.__auto_error__:
-                raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Not authenticated")
+                raise self.raise_for_authentication_error()
             return None
 
         scheme, credentials = get_authorization_scheme_param(authorization)
         if not (scheme and credentials) or scheme.lower() != "bearer":
             if self.__auto_error__:
-                raise HTTPException(
-                    status_code=HTTP_403_FORBIDDEN,
-                    detail="Invalid authentication credentials",
+                raise self.raise_for_authentication_error(
+                    detail="Invalid authentication credentials"
                 )
             return None
 
@@ -193,17 +214,22 @@ class HTTPDigest(HTTPBase):
         self.scheme_name = scheme_name or self.__class__.__name__
         self.__auto_error__ = auto_error
 
+    def raise_for_authentication_error(self, detail: str = "Not authenticated") -> HTTPException:
+        """
+        Raise an authentication error if the query parameter is missing.
+        """
+        return self.build_authentication_exception(
+            detail=detail, headers={"WWW-Authenticate": f"{self.scheme.title()}"}
+        )
+
     async def __call__(self, request: Request) -> HTTPAuthorizationCredentials | None:
         authorization = request.headers.get("Authorization")
         scheme, credentials = get_authorization_scheme_param(authorization)
         if not (authorization and scheme and credentials):
             if self.__auto_error__:
-                raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Not authenticated")
+                raise self.raise_for_authentication_error()
             else:
                 return None
         if scheme.lower() != "digest":
-            raise HTTPException(
-                status_code=HTTP_403_FORBIDDEN,
-                detail="Invalid authentication credentials",
-            )
+            raise self.raise_for_authentication_error(detail="Invalid authentication credentials")
         return HTTPAuthorizationCredentials(scheme=scheme, credentials=credentials)

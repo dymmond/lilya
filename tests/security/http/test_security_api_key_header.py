@@ -58,7 +58,7 @@ def test_security_api_key_no_key():
         enable_intercept_global_exceptions=True,
     ) as client:
         response = client.get("/users/me")
-        assert response.status_code == 403, response.text
+        assert response.status_code == 401, response.text
         assert response.text == "Not authenticated"
 
 
