@@ -110,6 +110,222 @@ To register context processors, pass them to the `context_processors` argument o
 {!> ../../../docs_src/templates/ctx_register.py !}
 ```
 
+You can also attach processors directly on each controller.
+
+```python
+class Dashboard(TemplateController):
+    template_name = "dashboard.html"
+    context_processors = [current_user, nav_menu]
+```
+
+Or use dotted imports:
+
+```python
+context_processors = [
+    "myapp.processors.current_user",
+    "myapp.processors.nav_menu",
+]
+```
+
+Or define shared ones on a base class.
+
+```python
+class BaseLayout(TemplateController):
+    context_processors = [current_user, nav_menu]
+
+class Dashboard(BaseLayout):
+    ...
+```
+
+Inheritance works automatically.
+
+### With Arbitrary Params
+
+```python
+async def current_user(request):
+    return {"user": await request.auth()}
+
+def tenant(request):
+    return {"tenant": request.headers.get("X-Tenant", "default")}
+
+def theme(request, user, tenant):
+    return {"theme": user.theme if user else "light", "tenant": tenant}
+
+class HomePage(TemplateController):
+    template_name = "home.html"
+    context_processors = [current_user, tenant, theme]
+
+    async def get(self, request):
+        return await self.render_template(request)
+```
+
+Template:
+
+```html
+<h1>Welcome to {{ tenant }}</h1>
+
+{% if user %}
+  <p>Hello, {{ user.username }}!</p>
+{% endif %}
+
+<p>Theme: {{ theme }}</p>
+```
+
+### Why Use Context Processors?
+
+Context processors let you inject shared data into every template automatically.
+
+* Think:
+    * Logged-in user
+    * Current tenant
+    * Shopping cart count
+    * Site-wide settings
+    * Navbar links
+    * Feature flags
+    * Theming (light/dark)
+    * Locale or timezone
+
+These values appear in every template without repeating the logic in each view.
+
+Context processors help keep templates clean and controllers focused.
+
+### How They Work
+
+A context processor is a function that receives data from Lilya such as the request, controller,
+or custom context and returns a dictionary that gets merged into the template context.
+
+```python
+def processor_name(...):
+    return {"key": "value"}
+```
+
+The returned key-value pairs become accessible inside Jinja templates.
+
+### Real-World Context Processor Examples
+
+#### Inject Logged-In User Into All Templates
+
+```python
+ # Or however your app resolves the user
+async def current_user(request):
+    user = await request.user
+    return {"user": user}
+```
+
+Usage in templates:
+
+```html
+{% if user %}
+    <p>Welcome, {{ user.username }}!</p>
+{% endif %}
+```
+
+#### Show a Dynamic Shopping Cart Count
+
+```python
+async def cart_count(request):
+    cart = await get_cart_for(request)
+    return {"cart_count": len(cart.items)}
+```
+
+Template:
+
+```
+<a href="/cart">Cart ({{ cart_count }})</a>
+```
+
+#### Per-Tenant or Per-Domain Branding
+
+```python
+def tenant_info(request):
+    host = request.headers["host"]
+    logo, color = lookup_theme(host)
+    return {"tenant_logo": logo, "tenant_color": color}
+```
+
+Template:
+
+```html
+<img src="{{ tenant_logo }}">
+<style>
+  body { background: {{ tenant_color }}; }
+</style>
+```
+
+#### Global Navigation Menu
+
+```python
+def nav_menu(request):
+    return {
+        "nav": [
+            {"name": "Home", "url": "/"},
+            {"name": "Dashboard", "url": "/dashboard"},
+            {"name": "Settings", "url": "/settings"},
+        ]
+    }
+```
+
+Template:
+
+```html
+<ul>
+  {% for item in nav %}
+    <li><a href="{{ item.url }}">{{ item.name }}</a></li>
+  {% endfor %}
+</ul>
+```
+
+### Advanced Processors (Using Arbitrary Parameters)
+
+Processors can accept any named parameter—automatically supplied by Lilya.
+
+#### Context Processor Using Controller & Custom Data
+
+```python
+def metadata(request, controller, theme):
+    return {
+        "controller_name": controller.__class__.__name__,
+        "theme": theme,
+    }
+```
+
+Controller:
+
+```python
+class SettingsPage(TemplateController):
+    template_name = "settings.html"
+    context_processors = [metadata]
+
+    async def get(self, request):
+        return await self.render_template(request, {"theme": "dark"})
+```
+
+Template:
+
+```html
+<p>View: {{ controller_name }}</p>
+<p>Theme: {{ theme }}</p>
+```
+
+#### Feature Flags Based on User + Controller Logic
+
+```python
+def feature_flags(request, controller):
+    flags = {
+        "can_edit": hasattr(controller, "edit_permission"),
+        "beta_enabled": request.headers.get("X-Beta") == "1",
+    }
+    return {"flags": flags}
+```
+
+Template:
+
+```html
+{% if flags.can_edit %}
+  <button>Edit</button>
+{% endif %}
+```
+
 ## Custom Jinja2 Environment
 
 `Jinja2Template` accepts all options supported by the Jinja2 `Environment`.
