@@ -7,6 +7,10 @@ hide:
 
 ## 0.23.0
 
+### Added
+
+- Support for `context_processors` on a `TemplateController` level.
+
 ### Changed
 
 - Updated internal security to start raising 401 instead of 403 to be consistent with `Not authenticated` errors and
