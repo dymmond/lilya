@@ -11,6 +11,7 @@ hide:
 
 - Updated internal security to start raising 401 instead of 403 to be consistent with `Not authenticated` errors and
 when credentials are missing.
+- Expose `original` property from the `@scheduler` wrapper.
 
 ## 0.22.16
 
