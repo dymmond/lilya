@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable
 from typing import Any
 
-from lilya.compat import reverse
+from lilya.compat import is_async_callable, reverse
 from lilya.conf import _monkay
 from lilya.contrib.security.csrf import get_or_set_csrf_token
 from lilya.controllers import Controller
@@ -106,6 +106,7 @@ class BaseTemplateController(Controller, metaclass=TemplateControllerMetaclass):
     template_name: str = None
     csrf_enabled: bool = False
     csrf_token_form_name: str = "csrf_token"
+    context_processors: list[str | Callable] | None = None
     templates: Jinja2Template = templates
 
     def get_return_url(self, request: Request, reverse_name: str, **params: Any) -> URLPath:
@@ -125,6 +126,18 @@ class BaseTemplateController(Controller, metaclass=TemplateControllerMetaclass):
             URLPath: The resolved URL path for the given route name and parameters.
         """
         return reverse(reverse_name=reverse_name, app=request.app, **params)
+
+    def get_context_processors(self) -> list[Callable]:
+        """
+        Resolve dotted paths and return a list of callables.
+        """
+        processors = []
+
+        for proc in self.context_processors or []:
+            if isinstance(proc, str):
+                proc = _monkay.load(proc)
+            processors.append(proc)
+        return processors
 
     async def get_csrf_token(self, request: Request) -> Any:
         """
@@ -157,6 +170,17 @@ class BaseTemplateController(Controller, metaclass=TemplateControllerMetaclass):
         if self.csrf_enabled and request.method.upper() in {"GET", "HEAD"}:
             context[self.csrf_token_form_name] = await self.get_csrf_token(request)
         context.update(kwargs)
+
+        # Load the context processors
+        processors = self.get_context_processors()
+        for proc in processors:
+            if is_async_callable(proc):
+                data = await proc(request)
+            else:
+                data = proc(request)
+            if not isinstance(data, dict):
+                raise ImproperlyConfigured(f"Context processor '{proc}' must return a dict.")
+            context.update(data)
         return context
 
     async def render_template(
