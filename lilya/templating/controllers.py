@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import inspect
 from collections.abc import Callable, Iterable
 from typing import Any
 
+from lilya._internal._module_loading import import_string
 from lilya.compat import is_async_callable, reverse
 from lilya.conf import _monkay
 from lilya.contrib.security.csrf import get_or_set_csrf_token
@@ -133,10 +135,10 @@ class BaseTemplateController(Controller, metaclass=TemplateControllerMetaclass):
         """
         processors = []
 
-        for proc in self.context_processors or []:
-            if isinstance(proc, str):
-                proc = _monkay.load(proc)
-            processors.append(proc)
+        for func in self.context_processors or []:
+            if isinstance(func, str):
+                func = import_string(func)
+            processors.append(func)
         return processors
 
     async def get_csrf_token(self, request: Request) -> Any:
@@ -173,13 +175,40 @@ class BaseTemplateController(Controller, metaclass=TemplateControllerMetaclass):
 
         # Load the context processors
         processors = self.get_context_processors()
-        for proc in processors:
-            if is_async_callable(proc):
-                data = await proc(request)
+
+        # Available arguments to pass into processors
+        available_args = {
+            "request": request,
+            "controller": self,
+            **kwargs,
+        }
+
+        for func in processors:
+            sig = inspect.signature(func)
+            call_kwargs = {}
+
+            for name, param in sig.parameters.items():
+                if name in available_args:
+                    call_kwargs[name] = available_args[name]
+                else:
+                    if param.default is param.empty and param.kind not in (
+                        inspect.Parameter.VAR_POSITIONAL,
+                        inspect.Parameter.VAR_KEYWORD,
+                    ):
+                        raise ImproperlyConfigured(
+                            f"Context processor '{func.__name__}' requires unknown parameter '{name}'."
+                        )
+
+            if is_async_callable(func):
+                data = await func(**call_kwargs)
             else:
-                data = proc(request)
+                data = func(**call_kwargs)
+
             if not isinstance(data, dict):
-                raise ImproperlyConfigured(f"Context processor '{proc}' must return a dict.")
+                raise ImproperlyConfigured(
+                    f"Context processor '{func.__name__}' must return a dict, got {type(data)}."
+                )
+
             context.update(data)
         return context
 
@@ -216,7 +245,7 @@ class BaseTemplateController(Controller, metaclass=TemplateControllerMetaclass):
         if "request" in data:
             del data["request"]
 
-        merged_context = await self.get_context_data(request=request)
+        merged_context = await self.get_context_data(request=request, **data)
         merged_context.update(data)
         return self.templates.get_template_response(
             request,
