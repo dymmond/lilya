@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from datetime import datetime, timezone as dtimezone
-from typing import Any
+from typing import Any, cast
 
 from asyncz.schedulers import AsyncIOScheduler
 from asyncz.schedulers.types import SchedulerType
@@ -206,3 +206,10 @@ class Task:
             )
         except Exception as e:
             raise ImproperlyConfigured(str(e)) from e
+
+    @property
+    def original(self) -> SchedulerCallable:
+        """
+        Returns the original function from the scheduler wrapper.
+        """
+        return cast(SchedulerCallable, getattr(self.fn, "__wrapped__", self.fn))
