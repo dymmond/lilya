@@ -78,8 +78,8 @@ class DummyStore(BaseStore):  # pragma: no cover
 
 def scheduler_tasks() -> dict[str, str]:
     return {
-        "task_one": "tests.schedulers.asyncz.test_scheduler",
-        "task_two": "tests.schedulers.asyncz.test_scheduler",
+        "task_one": "tests.contrib.schedulers.asyncz.test_scheduler",
+        "task_two": "tests.contrib.schedulers.asyncz.test_scheduler",
     }
 
 
@@ -98,6 +98,11 @@ def task_two():  # pragma: no cover
 
 
 scheduler_config = AsynczConfig(tasks=scheduler_tasks())
+
+
+def test_access_original_function() -> None:
+    assert task_one.original.__name__ == "task_one"
+    assert task_two.original.__name__ == "task_two"
 
 
 def test_lilya_starts_scheduler():
@@ -193,8 +198,8 @@ def test_raise_exception_on_tasks_key(scheduler_class):
     Raises Esmerald ImproperlyConfigured if task passed has not a format dict[str, str]
     """
     tasks = {
-        1: "tests.schedulers.asyncz.test_scheduler",
-        2: "tests.schedulers.asyncz.test_scheduler",
+        1: "tests.contrib.schedulers.asyncz.test_scheduler",
+        2: "tests.contrib.schedulers.asyncz.test_scheduler",
     }
 
     with pytest.raises(ImproperlyConfigured):
