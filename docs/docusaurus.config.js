@@ -1,7 +1,8 @@
 // @ts-check
 const { themes } = require('prism-react-renderer');
-const lightCodeTheme = themes.github;
-const darkCodeTheme = themes.dracula;
+// const lightCodeTheme = themes.github;
+// const darkCodeTheme = themes.dracula;
+const { lilyaLight, lilyaDark } = require("./src/theme/prism-themes/lilya");
 const remarkIncludeFiles = require("./plugins/remark-include-files");
 
 /** @type {import('@docusaurus/types').Config} */
@@ -36,7 +37,7 @@ const config = {
         blog: false,
         theme: {
           customCss: require.resolve("./src/css/custom.css"),
-        },
+        }
       },
     ],
   ],
@@ -75,9 +76,17 @@ const config = {
       copyright: `Copyright © ${new Date().getFullYear()} Dymmond.`,
     },
 
+  scripts: [
+      {
+        src: "/js/dropdowns.js",
+        async: true,
+      },
+    ],
+
     prism: {
-      theme: lightCodeTheme,
-      darkTheme: darkCodeTheme,
+      theme: lilyaLight,
+      darkTheme: lilyaDark,
+      additionalLanguages: ["python", "bash"],
     },
   },
 
