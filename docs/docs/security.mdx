@@ -73,7 +73,7 @@ Especially for sessions with high privileges this is a problem.
 
 This technique works by using the clientip and the session middleware. We limit a session to an ip.
 We have even two options: `ClientIPMiddleware` or `ClientIPScopeOnlyMiddleware`, depending if we need
-headers. The usage is documented in [SessionFixingMiddleware](./middleware.md#sessionfixingmiddleware).
+headers. The usage is documented in [SessionFixingMiddleware](./middleware.mdx#sessionfixingmiddleware).
 
 :::note
     If the client has an unstable connection, the session can reset from time to time. It is recommended to use the session fixing

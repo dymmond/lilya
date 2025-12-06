@@ -208,7 +208,7 @@ $ lilya directives
 #### runserver
 
 Agora isto é uma jóia! Esta directiva é especial e **deve ser usada apenas para desenvolvimento**.
-Pode ver [mais detalhes](./directives.md#runserver) de como usá-la e os parâmetros correspondentes.
+Pode ver [mais detalhes](./directives.mdx#runserver) de como usá-la e os parâmetros correspondentes.
 
 É hora de executar esta directiva.
 

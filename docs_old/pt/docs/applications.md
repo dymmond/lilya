@@ -37,11 +37,11 @@ muito útil para desenvolvimento.
 * **settings_module** - Uma instância ou definição de classe de [configurações](./settings.md) de onde os valores das configurações
 serão lidos.
 * **routes** - Uma lista de rotas que escutam pedidos HTTP e WebSocket recebidos.
-Uma lista de [Path](./routing.md#path), [WebSocketPath](./routing.md#websocketpath), [Include](./routing.md#include) e
-[Host](./routing.md#host).
+Uma lista de [Path](./routing.mdx#path), [WebSocketPath](./routing.mdx#websocketpath), [Include](./routing.mdx#include) e
+[Host](./routing.mdx#host).
 * **permissions** - Uma lista de [permissões](./permissions.md) para atender aos pedidos de escutra da aplicação
 (HTTP e WebSockets).
-* **middleware** - Uma lista de [middlewares](./middleware.md) para serem executados para cada solicitação. Os middlewares podem ser subclasses do [MiddlewareProtocol](./middleware.md#middlewareprotocol).
+* **middleware** - Uma lista de [middlewares](./middleware.md) para serem executados para cada solicitação. Os middlewares podem ser subclasses do [MiddlewareProtocol](./middleware.mdx#middlewareprotocol).
 * **exception_handlers** - Um dicionário de [tipos de exceção](./exceptions.md) (ou exceções personalizadas) e as
 funções num nível superior da aplicação. As funções de exceção devem estar no formato
 `handler(request, exc) -> response` e podem ser funções padrão ou funções assíncronas.
@@ -52,7 +52,7 @@ argumento e podem ser funções padrão ou funções assíncronas.
 * **lifepan** - A função de contexto de vida útil é um estilo mais recente que substitui os *handlers* on_startup / on_shutdown.
 Use um ou outro, não ambos.
 * **include_in_schema** - Boolean para indicar se deve ser incluído no *schema** ou não. Isso pode ser útil
-se estiver a descontinuar uma aplicação Lilya [Incluída](./routing.md#include) inteira em favor de uma nova. O *boolean*
+se estiver a descontinuar uma aplicação Lilya [Incluída](./routing.mdx#include) inteira em favor de uma nova. O *boolean*
 deve indicar que todos os caminhos devem ser considerados obsoletos.
 * **redirect_slashes** - Boolean para habilitar/desabilitar redirecionamento de barras para os *handlers*. Está activo por defeito.
 

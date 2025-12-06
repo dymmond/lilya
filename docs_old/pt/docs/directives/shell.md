@@ -8,7 +8,7 @@ O Lilya oferece essa possibilidade pronta para usar com a aplicação.
 
 Antes de ler esta secção, deve familiarizar-se com as formas como o Lilya lida com a descoberta das aplicações.
 
-Os seguintes exemplos e explicações irão utilizar a abordagem [--app e variáveis de ambiente](./discovery.md#environment-variables), mas a [descoberta automática](./discovery.md#auto-discovery) é igualmente válida e funciona da mesma forma.
+Os seguintes exemplos e explicações irão utilizar a abordagem [--app e variáveis de ambiente](./discovery.mdx#environment-variables), mas a [descoberta automática](./discovery.mdx#auto-discovery) é igualmente válida e funciona da mesma forma.
 
 ## Como funciona
 
@@ -32,7 +32,7 @@ $ pip install ptpython
 
 ### Como chamá-lo
 
-#### Com [descoberta automática](./discovery.md#auto-discovery)
+#### Com [descoberta automática](./discovery.mdx#auto-discovery)
 
 **Shell padrão**
 
@@ -46,7 +46,7 @@ $ lilya shell
 $ lilya shell --kernel ptpython
 ```
 
-#### Com [--app e variáveis de ambiente](./discovery.md#environment-variables)
+#### Com [--app e variáveis de ambiente](./discovery.mdx#environment-variables)
 
 **--app**
 

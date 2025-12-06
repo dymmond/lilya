@@ -7,7 +7,7 @@ trechos de código especiais para o **Lilya**.
 
 Antes de ler esta secção, deve familiarizar-se com as formas como o Lilya lida com a descoberta das aplicações.
 
-Os seguintes exemplos e explicações irão utilizar a abordagem [--app e variáveis de ambiente](./discovery.md#environment-variables), mas a [descoberta automática](./discovery.md#auto-discovery) é igualmente válida e funciona da mesma forma.
+Os seguintes exemplos e explicações irão utilizar a abordagem [--app e variáveis de ambiente](./discovery.mdx#environment-variables), mas a [descoberta automática](./discovery.mdx#auto-discovery) é igualmente válida e funciona da mesma forma.
 
 ## Directivas incorporadas do Lilya
 
@@ -277,7 +277,7 @@ O que esse comando está a fazer na verdade é:
 LILYA_SETTINGS_MODULE=my_project.configs.development.settings.DevelopmentAppSettings python -m my_project.serve
 ```
 
-Se quiser usar outras [configurações](../settings.md#configurações-personalizadas), basta atualizar o comando para
+Se quiser usar outras [configurações](../settings.mdx#configurações-personalizadas), basta atualizar o comando para
 executar com suas configurações personalizadas.
 
 Assim que a aplicação iniciar, deve ter um *output* na consola semelhante a esta:
@@ -459,8 +459,8 @@ O Runserver possui algumas configurações padrão que são tipicamente usadas p
 algumas das opções para ver como ficaria.
 
 !!! Warning
-    Os exemplos e explicações a seguir usarão a abordagem de [descoberta automática](./discovery.md#auto-discovery),
-    mas o uso de [--app e variáveis de ambiente](./discovery.md#environment-variables)
+    Os exemplos e explicações a seguir usarão a abordagem de [descoberta automática](./discovery.mdx#auto-discovery),
+    mas o uso de [--app e variáveis de ambiente](./discovery.mdx#environment-variables)
     é igualmente válido e funciona da mesma maneira.
 
 ###### Executar em uma porta diferente
@@ -555,4 +555,4 @@ Executar com [LILYA_SETTINGS_MODULE][settings_module] seria:
 $ LILYA_SETTINGS_MODULE=src.configs.settings.AppSettings lilya runserver
 ```
 
-[settings_module]: ../settings.md#settings-config-and-lilya-settings-module
+[settings_module]: ../settings.mdx#settings-config-and-lilya-settings-module

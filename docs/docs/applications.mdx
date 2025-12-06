@@ -38,12 +38,12 @@ very useful for development.
 * **settings_module** - A [settings](./settings.mdx) instance or class definition from where the settings
 values will be read.
 * **routes** - A list of routes to serve incoming HTTP and WebSocket requests.
-A list of [Path](./routing.md#path), [WebSocketPath](./routing.md#websocketpath), [Include](./routing.md#include) and
-[Host](./routing.md#host).
+A list of [Path](./routing.mdx#path), [WebSocketPath](./routing.mdx#websocketpath), [Include](./routing.mdx#include) and
+[Host](./routing.mdx#host).
 requests (HTTP and Websockets).
 * **permissions** - A list of [permissions](./permissions.mdx) to serve the application incoming
 requests (HTTP and Websockets).
-* **middleware** - A list of [middleware](./middleware.mdx) to run for every request. The middlewares can be subclasses of the [MiddlewareProtocol](./middleware.md#middlewareprotocol).
+* **middleware** - A list of [middleware](./middleware.mdx) to run for every request. The middlewares can be subclasses of the [MiddlewareProtocol](./middleware.mdx#middlewareprotocol).
 * **exception_handlers** - A dictionary of [exception types](./exceptions.mdx) (or custom exceptions) and the handler
 functions on an application top level. Exception handler callables should be of the form of
 `handler(request, exc) -> response` and may be be either standard functions, or async functions.
@@ -54,7 +54,7 @@ arguments, and may be be either standard functions, or async functions.
 * **lifepan** - The lifespan context function is a newer style that replaces on_startup / on_shutdown handlers.
 Use one or the other, not both.
 * **include_in_schema** - Boolean flag to indicate if should be schema included or not. This can be useful
-if you are depracating a whole [Included](./routing.md#include) Lilya application in favour of a new one. The flag
+if you are depracating a whole [Included](./routing.mdx#include) Lilya application in favour of a new one. The flag
 should indicate that all the paths should be considered deprecated.
 * **redirect_slashes** - Flag to enable/disable redirect slashes for the handlers. It is enabled by default.
 

@@ -316,7 +316,7 @@ This is a very useful object that acts a lazy loader of the request object witho
 explicitly declaring it inside an handler.
 
 :::danger
-    When using the `request_context` object, you **must** install the [RequestContextMiddleware](./middleware.md#requestcontextmiddleware)
+    When using the `request_context` object, you **must** install the [RequestContextMiddleware](./middleware.mdx#requestcontextmiddleware)
     or an `ImproperlyConfigured` exception is raised.
 :::
 
@@ -345,8 +345,8 @@ This is also a very useful object that can be used in a lazy load mode across th
 with the flask `session`, this one acts in the same fashion.
 
 :::danger
-    When using the `session` object, you **must** install the [SessionMiddleware](./middleware.md#sessioncontextmiddleware)
-    and the [SessionContextMiddleware](./middleware.md#sessioncontextmiddleware) in this specific order as the order matters or an `ImproperlyConfigured` exception is raised.
+    When using the `session` object, you **must** install the [SessionMiddleware](./middleware.mdx#sessioncontextmiddleware)
+    and the [SessionContextMiddleware](./middleware.mdx#sessioncontextmiddleware) in this specific order as the order matters or an `ImproperlyConfigured` exception is raised.
 :::
 
 ```python

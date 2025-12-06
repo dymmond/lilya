@@ -6,7 +6,7 @@ Ter [directivas embutidas](./directives.md) do Lilya é ótimo, pois oferece mui
 
 Antes de ler esta secção, deve familiarizar-se com as formas como o Lilya lida com a descoberta das aplicações.
 
-Os seguintes exemplos e explicações irão utilizar a abordagem [--app e variáveis de ambiente](./discovery.md#environment-variables), mas a [descoberta automática](./discovery.md#auto-discovery) é igualmente válida e funciona da mesma forma.
+Os seguintes exemplos e explicações irão utilizar a abordagem [--app e variáveis de ambiente](./discovery.mdx#environment-variables), mas a [descoberta automática](./discovery.mdx#auto-discovery) é igualmente válida e funciona da mesma forma.
 
 ## O que é uma directiva personalizada?
 
@@ -42,7 +42,7 @@ Esta é a classe principal para **cada directiva personalizada** que deseja impl
 ### Parâmetros
 
 * **--directive** - O nome da directiva (o ficheiro onde a Directiva foi criada).
-Verifique [listar todas as directivas](./directives.md#listar-directivas-disponíveis) para obter mais detalhes sobre como obter os nomes.
+Verifique [listar todas as directivas](./directives.mdx#listar-directivas-disponíveis) para obter mais detalhes sobre como obter os nomes.
 
 ### Como executar
 

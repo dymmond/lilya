@@ -45,7 +45,7 @@ scheduler_config = AsynczConfig()
 app = Lilya(on_startup=[scheduler_config.start], on_shutdown=[scheduler_config.shutdown])
 ```
 
-You can have your own scheduler config class as well, check the [SchedulerConfig](./config.md#how-to-use-it).
+You can have your own scheduler config class as well, check the [SchedulerConfig](./config.mdx#how-to-use-it).
 for more information.
 
 :::warning
@@ -61,7 +61,7 @@ from lilya.contrib.schedulers.asyncz.config import AsynczConfig
 ```
 
 Because this is an Lilya offer, you can always implement your own version if you don't like the way Lilya handles
-the Asyncz default integration and adapt to your own needs. This is thanks to the [SchedulerConfig](./config.md#how-to-use-it)
+the Asyncz default integration and adapt to your own needs. This is thanks to the [SchedulerConfig](./config.mdx#how-to-use-it)
 from where AsynczConfig is derived.
 
 ## Tasks

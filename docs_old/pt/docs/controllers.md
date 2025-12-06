@@ -6,8 +6,8 @@ o paradigma OOP é chamado de *controller*, uma nomenclatura inspirada noutras t
 O `Controller` actua como o orquestrador para lidar com pedidos HTTP padrão e gerir sessões WebSocket.
 
 Internamente, o `Controller` e o `WebSocketController` implementam os mesmos *wrappers* de resposta que o
-[Path](./routing.md#path) e [WebSocketPath](./routing.md#websocketpath), garantindo que permanece
-como uma única fonte de verdade e isso também significa que a [descoberta automática](./routing.md#auto-discovering-the-parameters) dos
+[Path](./routing.mdx#path) e [WebSocketPath](./routing.mdx#websocketpath), garantindo que permanece
+como uma única fonte de verdade e isso também significa que a [descoberta automática](./routing.mdx#auto-discovering-the-parameters) dos
 parâmetros também funciona.
 
 ## A classe `Controller`

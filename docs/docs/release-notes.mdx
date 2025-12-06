@@ -21,7 +21,7 @@ when credentials are missing.
 
 ### Added
 
-- [add_asgi_app()](./routing.md#add_asgi_app) is now supported and serves as an utility if you want to add any ASGI
+- [add_asgi_app()](./routing.mdx#add_asgi_app) is now supported and serves as an utility if you want to add any ASGI
 compatible application into a Lilya/ChildLilya instance.
 
 ### Changed
@@ -80,7 +80,7 @@ This was supposed to go on the release 0.22.12 and its related with `request.url
 
 ### Added
 
-- Controllers now allow you to pass "init" values without instantiating by calling the [`.with_init(...)`](./controllers.md#using-with_init).
+- Controllers now allow you to pass "init" values without instantiating by calling the [`.with_init(...)`](./controllers.mdx#using-with_init).
 
 ### Fixed
 
@@ -147,7 +147,7 @@ This was supposed to go on the release 0.22.12 and its related with `request.url
 
 ### Added
 
-- Support for [dependency overrides](./dependencies.md#dependency-overrides). This allows you to override dependencies globally in the application
+- Support for [dependency overrides](./dependencies.mdx#dependency-overrides). This allows you to override dependencies globally in the application
 or in specific includes. This is particularly useful for testing and mocking dependencies.
 
 ### Changed
@@ -215,14 +215,14 @@ documentation.
 
 ### New Responses
 
-- [CSVResponse](./responses.md#csvresponse) as a new available response for CSV files directly in the `lilya.responses`.
-- [YAMLResponse](./responses.md#yamlresponse) as a new available response for YAML files directly in the `lilya.responses`.
-- [XMLResponse](./responses.md#xmlresponse) as a new available response for XML files directly in the `lilya.responses`.
-- [MessagePackResponse](./responses.md#messagepackresponse) as a new available response for MessagePack files directly in the `lilya.responses`.
-- [NDJSONResponse](./responses.md#ndjsonresponse) as a new available response for Newline Delimited JSON files directly in the `lilya.responses`.
-- [ImageResponse](./responses.md#imageresponse) as a new available response for images directly in the `lilya.responses`.
+- [CSVResponse](./responses.mdx#csvresponse) as a new available response for CSV files directly in the `lilya.responses`.
+- [YAMLResponse](./responses.mdx#yamlresponse) as a new available response for YAML files directly in the `lilya.responses`.
+- [XMLResponse](./responses.mdx#xmlresponse) as a new available response for XML files directly in the `lilya.responses`.
+- [MessagePackResponse](./responses.mdx#messagepackresponse) as a new available response for MessagePack files directly in the `lilya.responses`.
+- [NDJSONResponse](./responses.mdx#ndjsonresponse) as a new available response for Newline Delimited JSON files directly in the `lilya.responses`.
+- [ImageResponse](./responses.mdx#imageresponse) as a new available response for images directly in the `lilya.responses`.
 - `TextResponse` as a new available response for plain text files directly in the `lilya.responses`.
-- [EventStreamResponse](./responses.md#eventstreamresponse) as a new available response for Server-Sent Events directly in the `lilya.responses`.
+- [EventStreamResponse](./responses.mdx#eventstreamresponse) as a new available response for Server-Sent Events directly in the `lilya.responses`.
 
 ### Fixed
 
@@ -251,7 +251,7 @@ documentation.
       - `sampler`: `"parentbased_always_on"`, `"always_on"`, or `"always_off"`.
   - Added `get_tracer_provider()` utility to retrieve the active `TracerProvider`.
 - **Async testing utilities**:
-    - Introduced [AsyncTestClient](./test-client.md#the-async-test-client) and [create_async_client()](./test-client.md#context-manager-create_async_client) to allow fully asynchronous testing of Lilya apps.
+    - Introduced [AsyncTestClient](./test-client.mdx#the-async-test-client) and [create_async_client()](./test-client.mdx#context-manager-create_async_client) to allow fully asynchronous testing of Lilya apps.
     - Both support full middleware stacks, including `OpenTelemetryMiddleware`.
     - Enables concurrent request tests and real async span creation with in-memory exporters.
 - Contrib Shortcuts:
@@ -326,7 +326,7 @@ an exception.
 - `csrf_token_form_name` to `TemplateController`. This defaults to `csrf_token` and corresponds to the name of the variable
 that is injected in the context of the template for the CSRF token when `csrf_enabled`.
 - Support for `@directive` to be display when calling `lilya` client.
-- [display_in_cli](./directives/directive-decorator.md#the-display_in_cli-option) to `@directive`.
+- [display_in_cli](./directives/directive-decorator.mdx#the-display_in_cli-option) to `@directive`.
 
 ### Changed
 
@@ -346,8 +346,8 @@ that is injected in the context of the template for the CSRF token when `csrf_en
 - **Timeout mapping**: Upstream timeouts now map to `504 Gateway Timeout`.
 - **Header policies**: Added support for allow-list mode (`allow_request_headers`, `allow_response_headers`) in addition to drop-lists.
 - **Structured logging**: Proxy events (`upstream_error`, `upstream_timeout`, `upstream_retryable_error`) now emit consistent log messages for observability.
-- Support for [CSRFMiddleware](./middleware.md#csrfmiddleware) to understand the HTML forms allowing also custom fields.
-- New [HTML](./responses.md#html) response as an alternative to `HTMLResponse`.
+- Support for [CSRFMiddleware](./middleware.mdx#csrfmiddleware) to understand the HTML forms allowing also custom fields.
+- New [HTML](./responses.mdx#html) response as an alternative to `HTMLResponse`.
 - New documentation section for [security with CSRF](./contrib/security/csrf.mdx).
 
 ### Changed
@@ -416,7 +416,7 @@ was internal refactored for the `@callback`.
 - Complex types with collections, lists, sets, dicts supported by `infer_body` as True.
 - File uploads (UploadFile and list[UploadFile]) are now seamlessly supported in body inference.
 - Introduced dotted key expansion `(user.name=lilya)` and bracket list notation `(items[0].sku=test)` to express nested objects and lists in form submissions.
-- New [FormController](./templates.md#formcontroller) class based view template that is agnostic to any validation library.
+- New [FormController](./templates.mdx#formcontroller) class based view template that is agnostic to any validation library.
 
 ### Changed
 
@@ -802,7 +802,7 @@ The `Provide` is **always required**.
 
 ### Added
 
-- [Resolve](./dependencies.md#the-resolve-dependency-object) dependency injection functionality. This resolve acts with the `Provider` and
+- [Resolve](./dependencies.mdx#the-resolve-dependency-object) dependency injection functionality. This resolve acts with the `Provider` and
 `Provides` as well as a standalone operator. This aims to only to provide an alternative to the already powerful native
 dependency injection system of Lilya.
 
@@ -866,7 +866,7 @@ is disabled by default.
 ### Added
 
 - Support for multiplexing a session into multiple session contexts.
-- Added support for `redirect_exception` when using [WSGIMiddleware](./middleware.md#wsgimiddleware). This
+- Added support for `redirect_exception` when using [WSGIMiddleware](./middleware.mdx#wsgimiddleware). This
 flag when passed, you can add a `HTTPException` exception handler that will make Lilya capture the WSGI exceptions.
 - Exception handlers on a global level can now be passed via [settings](./settings.mdx)
 
@@ -1043,8 +1043,8 @@ consistent with the rest of the directives.
 
 ### Added
 
-- Support for [TemplateController](./templates.md#templatecontroller).
-- Support for [ListController](./templates.md#listcontroller).
+- Support for [TemplateController](./templates.mdx#templatecontroller).
+- Support for [ListController](./templates.mdx#listcontroller).
 
 ## 0.13.4
 
@@ -1188,12 +1188,12 @@ a request is performed. E.g.: Telemetry.
 
 ### Added
 
-- New [SessionContextMiddleware](./middleware.md#sessioncontextmiddleware) allowing to use the new `session` object
+- New [SessionContextMiddleware](./middleware.mdx#sessioncontextmiddleware) allowing to use the new `session` object
 in a request context.
 
 ### Changed
 
-- Updated the Context section by adding the [session context](./context.md#the-session-object) examples and explanation
+- Updated the Context section by adding the [session context](./context.mdx#the-session-object) examples and explanation
 how to use it.
 
 ## 0.12.0
@@ -1318,7 +1318,7 @@ without explicitly declaring it inside handlers.
 
 - `GlobalContextMiddleware` the new middleware that allows you to have `g` object across the
 request lifecycle and set global variables to be accessed through that same lifecycle.
-- The [g](./context.md#the-g-object) definition and declaration.
+- The [g](./context.mdx#the-g-object) definition and declaration.
 
 ### Changed
 
