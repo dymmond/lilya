@@ -1,0 +1,57 @@
+.footer {
+  background: #0f172a;
+  color: #cbd5e1;
+  padding: 3rem 0 2rem;
+  margin-top: 4rem;
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Horizontal layout for sections */
+.sections {
+  display: flex;
+  justify-content: center;
+  gap: 4rem;
+  margin-bottom: 2rem;
+}
+
+.section {
+  text-align: left;
+}
+
+.title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.8rem;
+  color: #e2e8f0;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.listItem {
+  margin: 0.35rem 0;
+}
+
+.listItem a {
+  color: #38bdf8;
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.listItem a:hover {
+  text-decoration: underline;
+}
+
+.copy {
+  text-align: center;
+  opacity: 0.5;
+  font-size: 0.9rem;
+}

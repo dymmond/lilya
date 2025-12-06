@@ -7,63 +7,43 @@
   --lilya-fg-dark: #e2e8f0;
   --lilya-fg-light: #1e293b;
 
-  --lilya-purple: #c084fc;
-  --lilya-purple-strong: #9333ea;
+  --lilya-purple: #9333ea;
+  --lilya-purple-soft: #c084fc;
   --lilya-cyan: #38bdf8;
-  --lilya-teal: #2dd4bf;
-  --lilya-red: #f87171;
-  --lilya-slate: #64748b;
-
   --lilya-radius: 14px;
-  --lilya-shadow: 0 4px 32px rgba(0, 0, 0, 0.35);
 }
 
 /* -------------------------------------
-   TYPOGRAPHY
-------------------------------------- */
-:root {
-  --ifm-font-family-base: Inter, system-ui, sans-serif;
-  --ifm-font-family-monospace: 'JetBrains Mono', monospace;
-}
-
-h1, h2, h3 {
-  font-weight: 700;
-}
-
-/* -------------------------------------
-   CODE BLOCKS
+   CODE BLOCK STYLE
 ------------------------------------- */
 .theme-code-block {
   border-radius: var(--lilya-radius);
-  box-shadow: var(--lilya-shadow);
   overflow: hidden;
-  border: 1px solid rgba(255,255,255,0.05);
-}
-
-/* Copy button */
-.clean-btn {
-  color: var(--lilya-purple) !important;
+  box-shadow: 0 16px 45px rgba(0,0,0,0.4);
 }
 
 /* -------------------------------------
    BUTTONS
 ------------------------------------- */
 .button--lilya {
-  background: var(--lilya-purple-strong);
+  background: var(--lilya-purple);
   color: white !important;
-  padding: 0.6rem 1.4rem;
   border-radius: var(--lilya-radius);
+  padding: 0.6rem 1.3rem;
   font-weight: 600;
 }
 
 .button--lilya:hover {
-  background: var(--lilya-purple);
+  background: var(--lilya-purple-soft);
 }
 
 /* -------------------------------------
-   DARK MODE FIXES
+   HOMEPAGE BACKGROUND FIX
 ------------------------------------- */
-html[data-theme="dark"] body {
-  background: var(--lilya-bg-dark);
-  color: var(--lilya-fg-dark);
+body.homepage {
+  background: var(--lilya-bg-dark) !important;
+}
+
+body:not(.homepage) {
+  background: var(--ifm-background-color) !important;
 }
