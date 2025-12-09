@@ -52,30 +52,30 @@ const config = {
       },
       items: [
         { label: "Docs", to: "/docs", position: "left" },
-        {
-          label: "Community",
-          position: "left",
-          items: [
-            { label: "Discord", href: "https://discord.gg/hS5pv3S4" },
-            { label: "GitHub", href: "https://github.com/dymmond/lilya" },
-          ],
-        },
-        {
-          label: "About",
-          position: "left",
-          items: [
-            { label: "Mission", to: "/about/mission" },
-            { label: "Team", to: "/about/team" },
-          ],
-        },
-        {
-          label: "Help",
-          position: "left",
-          items: [
-            { label: "FAQ", to: "/help/faq" },
-            { label: "Support", to: "/help/support" },
-          ],
-        },
+        // {
+        //   label: "Community",
+        //   position: "left",
+        //   items: [
+        //     { label: "Discord", href: "https://discord.gg/hS5pv3S4" },
+        //     { label: "GitHub", href: "https://github.com/dymmond/lilya" },
+        //   ],
+        // },
+        // {
+        //   label: "About",
+        //   position: "left",
+        //   items: [
+        //     { label: "Mission", to: "/about/mission" },
+        //     { label: "Team", to: "/about/team" },
+        //   ],
+        // },
+        // {
+        //   label: "Help",
+        //   position: "left",
+        //   items: [
+        //     { label: "FAQ", to: "/help/faq" },
+        //     { label: "Support", to: "/help/support" },
+        //   ],
+        // },
 
         // right side: Discord, GitHub, color-mode toggle
         {
