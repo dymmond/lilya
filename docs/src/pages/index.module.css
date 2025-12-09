@@ -1,23 +1,144 @@
-/**
- * CSS files with the .module.css suffix will be treated as CSS modules
- * and scoped locally.
- */
-
-.heroBanner {
-  padding: 4rem 0;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
+.hero {
+  background:
+    radial-gradient(circle at 10% 0%, rgba(124, 58, 237, 0.35), transparent 60%),
+    radial-gradient(circle at 90% 0%, rgba(56, 189, 248, 0.22), transparent 55%),
+    linear-gradient(180deg, #020617 0%, #020617 40%, #020617 40%, #020617 100%);
+  padding: 5rem 1.5rem 9rem;
+  color: #fff;
 }
 
-@media screen and (max-width: 996px) {
-  .heroBanner {
-    padding: 2rem;
-  }
-}
-
-.buttons {
-  display: flex;
+.heroInner {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 3rem;
   align-items: center;
-  justify-content: center;
+}
+
+.heroText h1 {
+  font-size: clamp(2.7rem, 4vw, 3.6rem);
+  line-height: 1.05;
+  margin: 0 0 1.5rem;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 0.9rem;
+  color: #e5e7eb;
+}
+
+.tagline {
+  max-width: 620px;
+  font-size: 1.15rem;
+  line-height: 1.6;
+  color: #cbd5e1;
+  margin-bottom: 2.1rem;
+}
+
+.heroActions {
+  display: flex;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.heroLogoWrapper {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.heroLogo {
+  height: 150px;
+  width: 150px;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 45px rgba(0, 0, 0, 0.55));
+}
+
+/* Code card pulled into hero */
+.showcase {
+  margin-top: -5rem;
+  padding: 0 1.5rem 4rem;
+}
+
+.showcaseInner {
+  max-width: 900px;
+  margin: 0 auto;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 26px 80px rgba(0, 0, 0, 0.7);
+}
+
+/* Features area */
+.featuresSection {
+  padding: 5rem 1.5rem 6rem;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.featuresSection h2 {
+  text-align: center;
+  font-size: 2.2rem;
+  margin-bottom: 0.75rem;
+}
+
+.featuresIntro {
+  text-align: center;
+  max-width: 640px;
+  margin: 0 auto 3rem;
+  color: #64748b;
+}
+
+.featuresGrid {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 2rem;
+}
+
+.featureCard {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 1.8rem;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+  border: 1px solid #e2e8f0;
+}
+
+.featureCard h3 {
+  margin: 0 0 0.6rem;
+  font-size: 1.2rem;
+}
+
+.featureCard p {
+  margin: 0;
+  color: #475569;
+  line-height: 1.6;
+}
+
+@media (max-width: 900px) {
+  .heroInner {
+    grid-template-columns: 1fr;
+    text-align: left;
+  }
+
+  .heroLogoWrapper {
+    justify-content: flex-start;
+  }
+
+  .hero {
+    padding-top: 4rem;
+    padding-bottom: 7rem;
+  }
+
+  .showcase {
+    margin-top: -4rem;
+  }
 }

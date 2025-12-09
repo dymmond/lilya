@@ -1,25 +1,47 @@
+@import "./navbar.css";
+
 /* -------------------------------------
-   LILYA BRAND TOKENS
+   BRAND TOKENS
 ------------------------------------- */
 :root {
-  --lilya-bg-dark: #0f172a;
+  --lilya-bg-dark: #020617;
   --lilya-bg-light: #f8fafc;
   --lilya-fg-dark: #e2e8f0;
-  --lilya-fg-light: #1e293b;
+  --lilya-fg-light: #0f172a;
 
   --lilya-purple: #9333ea;
   --lilya-purple-soft: #c084fc;
   --lilya-cyan: #38bdf8;
+
   --lilya-radius: 14px;
+  --lilya-shadow-strong: 0 26px 80px rgba(0, 0, 0, 0.7);
+}
+
+/* Typography tweaks */
+:root {
+  --ifm-font-family-base: system-ui, -apple-system, BlinkMacSystemFont, "Inter",
+    sans-serif;
+  --ifm-font-family-monospace: "JetBrains Mono", ui-monospace, SFMono-Regular,
+    Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 700;
 }
 
 /* -------------------------------------
-   CODE BLOCK STYLE
+   CODE BLOCKS
 ------------------------------------- */
 .theme-code-block {
-  border-radius: var(--lilya-radius);
+  border-radius: 18px;
   overflow: hidden;
-  box-shadow: 0 16px 45px rgba(0,0,0,0.4);
+}
+
+/* Copy button tint */
+.theme-code-block .clean-btn {
+  color: var(--lilya-purple-soft) !important;
 }
 
 /* -------------------------------------
@@ -27,10 +49,11 @@
 ------------------------------------- */
 .button--lilya {
   background: var(--lilya-purple);
-  color: white !important;
-  border-radius: var(--lilya-radius);
-  padding: 0.6rem 1.3rem;
+  color: #fff !important;
+  border-radius: 999px;
+  padding: 0.6rem 1.4rem;
   font-weight: 600;
+  border: none;
 }
 
 .button--lilya:hover {
@@ -38,12 +61,137 @@
 }
 
 /* -------------------------------------
-   HOMEPAGE BACKGROUND FIX
+   HOMEPAGE BACKGROUND
 ------------------------------------- */
+
 body.homepage {
   background: var(--lilya-bg-dark) !important;
 }
 
 body:not(.homepage) {
   background: var(--ifm-background-color) !important;
+}
+
+/* -------------------------------------
+   NAVBAR (see also navbar.css)
+------------------------------------- */
+.navbar {
+  background: rgba(2, 6, 23, 0.96) !important;
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+  height: 64px;
+}
+
+.navbar__inner {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+/* Ensure logo vertically centered */
+.navbar__logo {
+  display: flex;
+  align-items: center;
+}
+
+.navbar__logo img {
+  height: 40px;
+  width: 40px;
+  object-fit: contain;
+}
+
+/* Left menu spacing */
+.navbar__items {
+  gap: 1.6rem;
+  font-size: 1.02rem;
+  font-weight: 500;
+}
+
+/* Dropdown arrow */
+.navbar__link .navbar__arrow {
+  margin-left: 4px;
+  opacity: 0.7;
+}
+
+/* RIGHT ICONS */
+.navbar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  margin-left: 0.2rem;
+  opacity: 0.7;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.navbar-icon:hover {
+  opacity: 1;
+  background: rgba(15, 23, 42, 0.8);
+}
+
+/* Icon masks */
+.navbar-icon--discord::before,
+.navbar-icon--github::before {
+  content: "";
+  display: block;
+  width: 18px;
+  height: 18px;
+  background-color: #e5e7eb;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+}
+
+/* Static assets in static/img/icons/... */
+.navbar-icon--discord::before {
+  mask-image: url("/img/discord.svg");
+}
+
+.navbar-icon--github::before {
+  mask-image: url("/img/github-mark-white.svg");
+}
+
+/* -------------------------------------
+   SIDEBAR / DOCS MENU
+------------------------------------- */
+
+.theme-doc-sidebar-container {
+  border-right: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.menu {
+  padding-top: 0.75rem;
+}
+
+.menu__list-item {
+  margin-bottom: 0.15rem;
+}
+
+/* Section title (first level category) */
+.menu__list-item-collapsible > .menu__link--sublist {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9ca3af;
+  font-weight: 600;
+}
+
+/* Actual leaf links */
+.menu__link {
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+}
+
+.menu__link--active,
+.menu__link:hover {
+  background: rgba(148, 163, 184, 0.2);
+}
+
+/* Slightly tighter content container */
+@media (min-width: 997px) {
+  .theme-doc-main {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
 }

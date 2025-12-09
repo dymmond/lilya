@@ -1,0 +1,79 @@
+/* ---------------------------------------------------
+   Mojo-Style Sidebar for Lilya
+--------------------------------------------------- */
+
+.theme-doc-sidebar-container {
+  width: 300px !important;
+  background: #111418 !important;
+  border-right: 1px solid rgba(255,255,255,0.06);
+  padding: 1.25rem 0.75rem;
+  font-size: 0.92rem;
+}
+
+/* Section headers (TUTORIALS, LANGUAGE BASICS, etc.) */
+.menu__list-item:not(.menu__list-item--collapsed)
+  > .menu__link.menu__link--sublist {
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: #7d8892 !important;
+  margin-top: 1.4rem;
+  margin-bottom: 0.4rem;
+  cursor: default;
+}
+
+/* Remove clickability from section headers */
+.menu__link--sublist::after {
+  display: none;
+}
+
+/* Items under categories */
+.menu__link {
+  display: flex;
+  align-items: center;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  color: #c8d0d8 !important;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+/* Hover behavior */
+.menu__link:hover {
+  background: rgba(255,255,255,0.07);
+  color: #ffffff !important;
+}
+
+/* Active item */
+.menu__link--active:not(.menu__link--sublist) {
+  background: rgba(80,130,255,0.12);
+  color: #82a3ff !important;
+  border-left: 3px solid #4c76ff;
+  padding-left: calc(0.75rem - 3px);
+}
+
+/* Collapsible sublists (Mojo style indentation) */
+.menu__list .menu__list {
+  margin-left: 0.6rem;
+  padding-left: 0.8rem;
+  border-left: 1px solid rgba(255,255,255,0.05);
+}
+
+/* Caret (dropdown arrow) */
+.menu__caret {
+  opacity: 0.6;
+}
+
+.menu__list-item-collapsible:hover .menu__caret {
+  opacity: 1;
+}
+
+/* Scrollbar */
+.theme-doc-sidebar-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.theme-doc-sidebar-container::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.12);
+  border-radius: 6px;
+}

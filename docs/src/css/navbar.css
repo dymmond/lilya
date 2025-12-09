@@ -1,0 +1,102 @@
+.navbar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 0 1.2rem !important;
+  height: 70px !important;
+  background: rgba(15, 15, 20, 0.95) !important;
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+/* Make items spaced like Litestar */
+.navbar__items {
+  display: flex !important;
+  align-items: center;
+  gap: 1.8rem;
+}
+
+/* Dropdown arrow styling */
+.navbar__link--active .navbar__arrow,
+.navbar__link .navbar__arrow {
+  opacity: 0.6;
+  margin-left: 6px;
+}
+
+/* Hover effect */
+.navbar__item:hover > .navbar__link {
+  color: #ffffff;
+  opacity: 1;
+}
+
+/* RIGHT SIDE ICONS */
+.navbar-icon {
+  display: flex;
+  align-items: center;
+  padding: 0 0.4rem;
+  opacity: 0.6;
+  transition: 0.15s ease;
+}
+
+.navbar-icon:hover {
+  opacity: 1;
+}
+
+.discord-icon::before {
+  content: "";
+  display: block;
+  width: 22px;
+  height: 22px;
+  background-image: url("/img/discord.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+/* GitHub icon */
+.github-icon::before {
+  content: "";
+  display: block;
+  width: 22px;
+  height: 22px;
+  background-image: url("/img/github-mark-white.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+/* Remove default Docusaurus spacing */
+.navbar__item {
+  margin: 0 !important;
+}
+
+/* Mobile menu spacing fix */
+.menu__list-item > .menu__link {
+  font-size: 1.2rem;
+  padding: 0.9rem 0;
+}
+
+.navbar__items--right {
+  display: flex !important;
+  align-items: center;
+  gap: 1.2rem;
+}
+
+.navbar__items--right .navbar-icon {
+  margin-right: 0.5rem;
+}
+
+.navbar__inner {
+  display: flex !important;
+  align-items: center !important;
+  height: 70px !important;
+}
+
+.navbar__logo {
+  display: flex !important;
+  align-items: center !important;
+  margin-right: 0.75rem;
+}

@@ -1,7 +1,4 @@
 // @ts-check
-const { themes } = require('prism-react-renderer');
-// const lightCodeTheme = themes.github;
-// const darkCodeTheme = themes.dracula;
 const { lilyaLight, lilyaDark } = require("./src/theme/prism-themes/lilya");
 const remarkIncludeFiles = require("./plugins/remark-include-files");
 
@@ -17,6 +14,7 @@ const config = {
   projectName: "lilya",
 
   onBrokenLinks: "throw",
+  onBrokenMarkdownLinks: "warn",
 
   i18n: {
     defaultLocale: "en",
@@ -37,23 +35,67 @@ const config = {
         blog: false,
         theme: {
           customCss: require.resolve("./src/css/custom.css"),
-        }
+        },
       },
     ],
   ],
 
   themeConfig: {
     navbar: {
-      title: "Lilya",
+      style: "dark",
+      hideOnScroll: false,
       logo: {
-        alt: "Lilya Logo",
+        alt: "Lilya logo",
         src: "img/logo.png",
+        href: "/",
+        height: 40,
       },
       items: [
-        { type: "doc", docId: "index", position: "left", label: "Docs" },
+        { label: "Docs", to: "/docs", position: "left" },
+        {
+          label: "Community",
+          position: "left",
+          items: [
+            { label: "Discord", href: "https://discord.gg/hS5pv3S4" },
+            { label: "GitHub", href: "https://github.com/dymmond/lilya" },
+          ],
+        },
+        {
+          label: "About",
+          position: "left",
+          items: [
+            { label: "Mission", to: "/about/mission" },
+            { label: "Team", to: "/about/team" },
+          ],
+        },
+        {
+          label: "Help",
+          position: "left",
+          items: [
+            { label: "FAQ", to: "/help/faq" },
+            { label: "Support", to: "/help/support" },
+          ],
+        },
+
+        // right side: Discord, GitHub, color-mode toggle
+        {
+          href: "https://discord.gg/hS5pv3S4",
+          position: "right",
+          "aria-label": "Lilya Discord",
+          className: "navbar-icon navbar-icon--discord",
+        },
         {
           href: "https://github.com/dymmond/lilya",
-          label: "GitHub",
+          position: "right",
+          "aria-label": "Lilya GitHub",
+          className: "navbar-icon navbar-icon--github",
+        },
+        {
+          type: "localeDropdown",
+          position: "right",
+        },
+        {
+          type: "search",
           position: "right",
         },
       ],
@@ -68,20 +110,17 @@ const config = {
         },
         {
           title: "Community",
-          items: [
-            { label: "GitHub", href: "https://github.com/dymmond/lilya" },
-          ],
+          items: [{ label: "GitHub", href: "https://github.com/dymmond/lilya" }],
         },
       ],
       copyright: `Copyright © ${new Date().getFullYear()} Dymmond.`,
     },
 
-  scripts: [
-      {
-        src: "/js/dropdowns.js",
-        async: true,
-      },
-    ],
+    colorMode: {
+      defaultMode: "dark",
+      respectPrefersColorScheme: true,
+      disableSwitch: false,
+    },
 
     prism: {
       theme: lilyaLight,
@@ -91,10 +130,7 @@ const config = {
   },
 
   themes: ["@docusaurus/theme-live-codeblock"],
-
-  plugins: [
-    "docusaurus-plugin-sass",
-  ],
+  plugins: ["docusaurus-plugin-sass"],
 };
 
 module.exports = config;
