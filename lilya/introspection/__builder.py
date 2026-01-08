@@ -1,15 +1,48 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
-from lilya.apps import Lilya
 from lilya.introspection._graph import ApplicationGraph
 from lilya.introspection._types import EdgeKind, GraphEdge, GraphNode, NodeKind
+from lilya.middleware import DefineMiddleware
+from lilya.permissions import DefinePermission
+
+if TYPE_CHECKING:
+    from lilya.apps import Lilya
 
 
 def _node_id(prefix: str) -> str:
     return f"{prefix}:{uuid4().hex}"
+
+
+def _extract_middleware_class(mw: Any) -> Any:
+    """
+    mw is expected to be a DefineMiddleware; it iterates to (cls, args, kwargs).
+    Fall back gracefully if a raw class is passed.
+    """
+    if isinstance(mw, DefineMiddleware):
+        try:
+            middleware_class, _args, _kwargs = mw
+            return middleware_class
+        except Exception:
+            # Some implementations might store it under an attribute
+            return getattr(mw, "middleware", mw)
+    # Raw class (user passed class instead of DefineMiddleware)
+    return mw
+
+
+def _extract_permission_class(p: Any) -> Any:
+    """
+    p is expected to be a DefinePermission (tuple-like) or a class.
+    """
+    if isinstance(p, DefinePermission):
+        try:
+            permission_class, _args, _kwargs = p
+            return permission_class
+        except Exception:
+            return getattr(p, "permission", p)
+    return p
 
 
 class GraphBuilder:
@@ -18,7 +51,7 @@ class GraphBuilder:
     from a Lilya application instance. Read-only, no execution changes.
     """
 
-    __slots__ = ("_nodes", "_edges")
+    __slots__ = ("_nodes", "_edges", "_by_kind", "_out", "_in")
 
     def __init__(self) -> None:
         self._nodes: list[GraphNode] = []
@@ -28,8 +61,9 @@ class GraphBuilder:
         app_node = self._add_application(app)
 
         last = app_node
-        for mw in self._iter_middleware_stack(app):
-            mw_node = self._add_middleware(mw)
+        for mw in getattr(app, "custom_middleware", ()):
+            cls = _extract_middleware_class(mw)
+            mw_node = self._add_middleware(cls)
             self._edge(last, mw_node, EdgeKind.WRAPS)
             last = mw_node
 
@@ -40,24 +74,6 @@ class GraphBuilder:
             self._walk_router(router, router_node)
 
         return ApplicationGraph(nodes=self._nodes, edges=self._edges)
-
-    def _iter_middleware_stack(self, app: Lilya) -> tuple[Any, ...]:
-        """
-        Returns the middleware instances from app.middleware_stack.
-        Assumes stack is iterable in the order they wrap the app.
-        """
-        stack = getattr(app, "middleware_stack", None)
-        if stack is None:
-            return ()
-
-        try:
-            return tuple(stack)
-        except TypeError:
-            for name in ("stack", "middlewares", "_stack"):
-                seq = getattr(stack, name, None)
-                if isinstance(seq, (list, tuple)):
-                    return tuple(seq)
-        return ()
 
     def _discover_router(self, app: Lilya) -> Any | None:
         """
@@ -82,11 +98,12 @@ class GraphBuilder:
         return node
 
     def _add_middleware(self, middleware: Any) -> GraphNode:
+        name = getattr(middleware, "__name__", str(middleware))
         node = GraphNode(
             id=_node_id("middleware"),
             kind=NodeKind.MIDDLEWARE,
             ref=middleware,
-            metadata={"class": type(middleware).__qualname__},
+            metadata={"class": name},
         )
         self._nodes.append(node)
         return node
@@ -119,11 +136,12 @@ class GraphBuilder:
         return node
 
     def _add_permission(self, permission: Any) -> GraphNode:
+        name = getattr(permission, "__name__", str(permission))
         node = GraphNode(
             id=_node_id("permission"),
             kind=NodeKind.PERMISSION,
             ref=permission,
-            metadata={"class": type(permission).__qualname__},
+            metadata={"class": name},
         )
         self._nodes.append(node)
         return node
@@ -141,7 +159,8 @@ class GraphBuilder:
             if permissions:
                 last = route_node
                 for perm in permissions:
-                    perm_node = self._add_permission(perm)
+                    perm_cls = _extract_permission_class(perm)
+                    perm_node = self._add_permission(perm_cls)
                     self._edge(last, perm_node, EdgeKind.WRAPS)
                     last = perm_node
 
