@@ -10,6 +10,7 @@ class NodeKind(Enum):
     APPLICATION = "application"
     MIDDLEWARE = "middleware"
     ROUTER = "router"
+    ROUTE = "route"
     PERMISSION = "permission"
     HANDLER = "handler"
 

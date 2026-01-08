@@ -14,6 +14,8 @@ from lilya.conf.global_settings import Settings
 from lilya.contrib.documentation import Doc
 from lilya.datastructures import State, URLPath
 from lilya.dependencies import wrap_dependency
+from lilya.introspection import ApplicationGraph
+from lilya.introspection.__builder import GraphBuilder
 from lilya.lifecycle import get_hooks as _lifecycle_get_hooks
 from lilya.logging import LoggingConfig, setup_logging
 from lilya.middleware.asyncexit import AsyncExitStackMiddleware
@@ -1217,6 +1219,25 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
         """
         general_settings = self.settings_module if self.settings_module else _monkay.settings
         return general_settings
+
+    @property
+    def graph(self) -> ApplicationGraph:
+        """
+        Returns an introspection graph of the application.
+
+        **Example**
+
+        ```python
+        from lilya.apps import Lilya
+
+        app = Lilya()
+        print(app.graph)
+        ```
+        """
+        if not hasattr(self, "_graph"):
+            builder = GraphBuilder()
+            self._graph = builder.build(self)
+        return self._graph
 
     def forward_single_method_route(
         self,
