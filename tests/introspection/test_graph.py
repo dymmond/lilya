@@ -174,6 +174,7 @@ class IncAllow(PermissionProtocol):
         return await super().__call__(scope, receive, send)
 
 
+@pytest.mark.skipif(sys.version_info < (3, 11), reason="requires python 3.11 or higher")
 def test_include_layers_middleware_and_permissions(test_client_factory):
     child = ChildLilya(routes=[Path("/i", handler)])
     from lilya.middleware.base import DefineMiddleware
