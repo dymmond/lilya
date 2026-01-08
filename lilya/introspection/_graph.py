@@ -152,3 +152,52 @@ class ApplicationGraph:
             },
             "permissions": tuple(perms),
         }
+
+    def includes(self) -> tuple[GraphNode, ...]:
+        return self.by_kind(NodeKind.INCLUDE)
+
+    def route_middlewares(self, route: GraphNode) -> tuple[GraphNode, ...]:
+        if route.kind != NodeKind.ROUTE:
+            raise TypeError("route_middlewares expects a ROUTE node.")
+        result: list[GraphNode] = []
+        current = route
+        while True:
+            outs = self._out.get(current.id, ())
+            wraps = [dst for (e, dst) in outs if e.kind == EdgeKind.WRAPS]
+            if not wraps:
+                break
+            next_node = wraps[0]
+            if next_node.kind != NodeKind.MIDDLEWARE:
+                break
+            result.append(next_node)
+            current = next_node
+        return tuple(result)
+
+    def include_layers(self, include: GraphNode) -> dict[str, tuple[GraphNode, ...]]:
+        """
+        Return the ordered middleware and permissions attached directly to an Include node.
+        """
+        if include.kind != NodeKind.INCLUDE:
+            raise TypeError("include_layers expects an INCLUDE node.")
+
+        mws: list[GraphNode] = []
+        perms: list[GraphNode] = []
+
+        current = include
+        while True:
+            outs = self._out.get(current.id, ())
+            wraps = [dst for (e, dst) in outs if e.kind == EdgeKind.WRAPS]
+            if not wraps:
+                break
+            next_node = wraps[0]
+            if next_node.kind == NodeKind.MIDDLEWARE:
+                mws.append(next_node)
+                current = next_node
+                continue
+            if next_node.kind == NodeKind.PERMISSION:
+                perms.append(next_node)
+                current = next_node
+                continue
+            break
+
+        return {"middlewares": tuple(mws), "permissions": tuple(perms)}

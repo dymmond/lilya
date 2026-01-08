@@ -13,6 +13,9 @@ class NodeKind(Enum):
     ROUTE = "route"
     PERMISSION = "permission"
     HANDLER = "handler"
+    INCLUDE = "include"
+    HOST = "host"
+    WEBSOCKET = "websocket"
 
 
 class EdgeKind(str, Enum):

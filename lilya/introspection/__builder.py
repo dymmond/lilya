@@ -7,6 +7,7 @@ from lilya.introspection._graph import ApplicationGraph
 from lilya.introspection._types import EdgeKind, GraphEdge, GraphNode, NodeKind
 from lilya.middleware import DefineMiddleware
 from lilya.permissions import DefinePermission
+from lilya.routing import Include, Path
 
 if TYPE_CHECKING:
     from lilya.apps import Lilya
@@ -51,11 +52,12 @@ class GraphBuilder:
     from a Lilya application instance. Read-only, no execution changes.
     """
 
-    __slots__ = ("_nodes", "_edges", "_by_kind", "_out", "_in")
+    __slots__ = ("_nodes", "_edges", "_visited_apps")
 
     def __init__(self) -> None:
         self._nodes: list[GraphNode] = []
         self._edges: list[GraphEdge] = []
+        self._visited_apps: set[int] = set()
 
     def build(self, app: Lilya) -> ApplicationGraph:
         app_node = self._add_application(app)
@@ -118,7 +120,7 @@ class GraphBuilder:
         self._nodes.append(node)
         return node
 
-    def _add_route(self, path: Any) -> GraphNode:
+    def _add_route(self, path: Path) -> GraphNode:
         path_str = getattr(path, "path", None) or getattr(path, "pattern", None)
         methods = getattr(path, "methods", None)
         if methods is None and hasattr(path, "http_methods"):
@@ -146,23 +148,94 @@ class GraphBuilder:
         self._nodes.append(node)
         return node
 
+    def _add_include(self, include: Include) -> GraphNode:
+        node = GraphNode(
+            id=_node_id("include"),
+            kind=NodeKind.INCLUDE,
+            ref=include,
+            metadata={
+                "path": getattr(include, "path", None),
+                "name": getattr(include, "name", None),
+            },
+        )
+        self._nodes.append(node)
+        return node
+
     def _walk_router(self, router: Any, router_node: GraphNode) -> None:
+        from lilya.apps import ChildLilya, Lilya
+
         routes = getattr(router, "routes", None)
         if not routes:
             return
 
-        for route in routes:
-            route_node = self._add_route(route)
-            self._edge(router_node, route_node, EdgeKind.DISPATCHES_TO)
+        for entry in routes:
+            # Include?
+            if isinstance(entry, Include):
+                inc_node = self._add_include(entry)
+                self._edge(router_node, inc_node, EdgeKind.DISPATCHES_TO)
 
-            permissions = getattr(route, "permissions", None)
-            if permissions:
-                last = route_node
-                for perm in permissions:
-                    perm_cls = _extract_permission_class(perm)
-                    perm_node = self._add_permission(perm_cls)
+                # include-level middleware (declared order)
+                last = inc_node
+                inc_mw = getattr(entry, "middleware", None) or ()
+                for mw in inc_mw:
+                    cls = _extract_middleware_class(mw)
+                    mw_node = self._add_middleware(cls)
+                    self._edge(last, mw_node, EdgeKind.WRAPS)
+                    last = mw_node
+
+                # include-level permissions (declared order)
+                inc_perms = getattr(entry, "permissions", None) or ()
+                for perm in inc_perms:
+                    pcls = _extract_permission_class(perm)
+                    perm_node = self._add_permission(pcls)
                     self._edge(last, perm_node, EdgeKind.WRAPS)
                     last = perm_node
+
+                # Dive into child app, if present
+                child = getattr(entry, "app", None)
+                if isinstance(child, (Lilya, ChildLilya)) and id(child) not in self._visited_apps:
+                    self._visited_apps.add(id(child))
+                    child_router = getattr(child, "router", None)
+                    if child_router is not None:
+                        child_router_node = self._add_router(child_router)
+                        self._edge(last, child_router_node, EdgeKind.DISPATCHES_TO)
+                        self._walk_router(child_router, child_router_node)
+
+                # If entry has its own `routes` list (raw), walk those too.
+                if child is None:
+                    raw_routes = getattr(entry, "routes", None)
+                    if raw_routes:
+                        # Treat them like normal paths hanging from the include
+                        base = inc_node
+                        for r in raw_routes:
+                            path_node = self._add_route(r)
+                            self._edge(base, path_node, EdgeKind.DISPATCHES_TO)
+                            self._attach_route_local_layers(r, path_node)
+
+                continue  # handled include
+
+            # Path/WebSocketPath, etc. → normal route
+            route_node = self._add_route(entry)
+            self._edge(router_node, route_node, EdgeKind.DISPATCHES_TO)
+            self._attach_route_local_layers(entry, route_node)
+
+    def _attach_route_local_layers(self, route: Any, route_node: GraphNode) -> None:
+        # Route-level middleware (declared order)
+        last = route_node
+        r_mw = getattr(route, "middleware", None) or ()
+        for mw in r_mw:
+            cls = _extract_middleware_class(mw)
+            mw_node = self._add_middleware(cls)
+            self._edge(last, mw_node, EdgeKind.WRAPS)
+            last = mw_node
+
+        # Route-level permissions (declared order)
+        r_perms = getattr(route, "permissions", None) or ()
+        for perm in r_perms:
+            pcls = _extract_permission_class(perm)
+            perm_node = self._add_permission(pcls)
+            self._edge(last, perm_node, EdgeKind.WRAPS)
+            last = perm_node
 
     def _edge(self, src: GraphNode, dst: GraphNode, kind: EdgeKind) -> None:
         self._edges.append(GraphEdge(source=src.id, target=dst.id, kind=kind))
