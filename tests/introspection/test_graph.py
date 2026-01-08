@@ -1,3 +1,7 @@
+import sys
+
+import pytest
+
 from lilya.apps import ChildLilya, Lilya
 from lilya.introspection import NodeKind
 from lilya.middleware.base import DefineMiddleware
@@ -42,6 +46,7 @@ async def handler():
     return "Hello"
 
 
+@pytest.mark.skipif(sys.version_info < (3, 11), reason="requires python 3.11 or higher")
 def test_route_permissions_chain(test_client_factory):
     app = Lilya(
         routes=[
@@ -170,7 +175,6 @@ class IncAllow(PermissionProtocol):
 
 def test_include_layers_middleware_and_permissions(test_client_factory):
     child = ChildLilya(routes=[Path("/i", handler)])
-    # Include with local middleware + permission
     from lilya.middleware.base import DefineMiddleware
     from lilya.permissions.base import DefinePermission
 
@@ -194,6 +198,15 @@ def test_include_layers_middleware_and_permissions(test_client_factory):
 
     assert inc_mw_names == ["IncMW"]
     assert inc_perm_names == ["IncAllow"]
+
+
+def test_include_with_child_does_not_duplicate_routes(test_client_factory):
+    child = ChildLilya(routes=[Path("/inner", inner)])
+    app = Lilya(routes=[Include("/child", app=child)])
+    g = app.graph
+    paths = [r.metadata["path"] for r in g.routes()]
+
+    assert paths.count("/inner") == 1
 
 
 async def ws_handler(ws):
