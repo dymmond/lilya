@@ -2,9 +2,35 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Iterable, Mapping
-from typing import Any
+from enum import Enum
+from typing import Any, cast
+
+from lilya.serializers import serializer
 
 from ._types import EdgeKind, GraphEdge, GraphNode, NodeKind
+
+
+def _json_safe(obj: Any) -> Any:
+    """
+    Recursively convert objects to JSON-friendly, deterministic types.
+
+    Rules:
+      - tuple -> list
+      - set -> sorted list
+      - Enum -> .value
+      - Mapping -> dict with json-safe values
+      - Sequence -> list with json-safe values
+      - Everything else returned as-is
+    """
+    if isinstance(obj, Enum):
+        return obj.value
+    if isinstance(obj, Mapping):
+        return {k: _json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_json_safe(v) for v in obj]
+    if isinstance(obj, set):
+        return sorted(_json_safe(v) for v in obj)
+    return obj
 
 
 class ApplicationGraph:
@@ -201,3 +227,52 @@ class ApplicationGraph:
             break
 
         return {"middlewares": tuple(mws), "permissions": tuple(perms)}
+
+    def to_dict(self) -> dict[str, Any]:
+        """
+        Return a JSON-serializable dictionary representation of the graph.
+
+        Notes:
+        - `ref` is intentionally excluded.
+        - Output is read-only and tooling-friendly.
+        """
+        return {
+            "nodes": [
+                {
+                    "id": node.id,
+                    "kind": node.kind.value,
+                    "metadata": _json_safe(node.metadata),
+                }
+                for node in self._nodes.values()
+            ],
+            "edges": [
+                {
+                    "source": edge.source,
+                    "target": edge.target,
+                    "kind": edge.kind.value,
+                }
+                for edge in self._edges
+            ],
+        }
+
+    def to_json(
+        self,
+        *,
+        indent: int | None = 2,
+        sort_keys: bool = False,
+    ) -> dict[str, Any]:
+        """
+        Return a JSON string representation of the graph.
+
+        Parameters:
+            indent: JSON indentation (None for compact).
+            sort_keys: Whether to sort keys for deterministic output.
+        """
+        return cast(
+            dict[str, Any],
+            serializer.dumps(
+                self.to_dict(),
+                indent=indent,
+                sort_keys=sort_keys,
+            ),
+        )

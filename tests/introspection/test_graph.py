@@ -7,6 +7,7 @@ from lilya.introspection import NodeKind
 from lilya.middleware.base import DefineMiddleware
 from lilya.protocols.permissions import PermissionProtocol
 from lilya.routing import Include, Path, WebSocketPath
+from lilya.serializers import serializer
 
 
 def test_graph_contains_application_node(test_client_factory):
@@ -220,3 +221,51 @@ def test_websocket_route_presence(test_client_factory):
     ws_route = g.route_by_path("/ws")
 
     assert ws_route is not None
+
+
+def test_graph_to_dict_shape(test_client_factory):
+    app = Lilya(routes=[Path("/ping", handler)])
+    graph = app.graph
+
+    data = graph.to_dict()
+
+    assert "nodes" in data
+    assert "edges" in data
+
+    assert isinstance(data["nodes"], list)
+    assert isinstance(data["edges"], list)
+
+
+def test_graph_to_dict_route_metadata(test_client_factory):
+    app = Lilya(routes=[Path("/users/{id}", handler)])
+    graph = app.graph
+
+    data = graph.to_dict()
+
+    routes = [n for n in data["nodes"] if n["kind"] == "route"]
+
+    assert len(routes) == 1
+    assert routes[0]["metadata"]["path"] == "/users/{id}"
+
+
+def test_graph_to_dict_edges_reference_nodes(test_client_factory):
+    app = Lilya(routes=[Path("/ping", handler)])
+    graph = app.graph
+
+    data = graph.to_dict()
+
+    node_ids = {n["id"] for n in data["nodes"]}
+
+    for edge in data["edges"]:
+        assert edge["source"] in node_ids
+        assert edge["target"] in node_ids
+
+
+def test_graph_to_json_round_trip(test_client_factory):
+    app = Lilya(routes=[Path("/ping", handler)])
+    graph = app.graph
+
+    json_data = graph.to_json()
+    loaded = serializer.loads(json_data)
+
+    assert loaded == graph.to_dict()
