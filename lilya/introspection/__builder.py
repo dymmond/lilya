@@ -76,7 +76,7 @@ class GraphBuilder:
     """Extract a structural graph representation from a Lilya application.
 
     This utility inspects a Lilya application instance and builds a read-only
-    `ApplicationGraph` depicting the app’s composition:
+    `ApplicationGraph` depicting the app's composition:
 
     * Global middleware wrapping the application
     * Router dispatch relationships
