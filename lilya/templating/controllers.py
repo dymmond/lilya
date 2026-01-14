@@ -122,7 +122,7 @@ class BaseTemplateController(Controller, metaclass=TemplateControllerMetaclass):
         Args:
             request (Request): The current HTTP request object, used to access the application router.
             reverse_name (str): The name of the route to reverse.
-            **params (Any): Additional keyword arguments corresponding to the route’s path parameters.
+            **params (Any): Additional keyword arguments corresponding to the route's path parameters.
 
         Returns:
             URLPath: The resolved URL path for the given route name and parameters.

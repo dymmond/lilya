@@ -1,4 +1,4 @@
-## Server-Sent Events (SSE) Channels
+# Server-Sent Events (SSE) Channels
 
 Real-time applications often need to push updates from the server to connected clients, for example,
 live dashboards, notification systems, or background job progress.

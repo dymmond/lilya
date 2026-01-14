@@ -5,169 +5,170 @@ theme:
   name: material
   language: en
   palette:
-    - scheme: default
-      primary: light blue
-      accent: amber
-      media: "(prefers-color-scheme: light)"
-      toggle:
-        icon: material/lightbulb
-        name: Switch to dark mode
-    - scheme: slate
-      media: "(prefers-color-scheme: dark)"
-      primary: light blue
-      accent: amber
-      toggle:
-        icon: material/lightbulb-outline
-        name: Switch to light mode
+  - scheme: default
+    primary: light blue
+    accent: amber
+    media: '(prefers-color-scheme: light)'
+    toggle:
+      icon: material/lightbulb
+      name: Switch to dark mode
+  - scheme: slate
+    media: '(prefers-color-scheme: dark)'
+    primary: light blue
+    accent: amber
+    toggle:
+      icon: material/lightbulb-outline
+      name: Switch to light mode
   favicon: statics/images/favicon.ico
   logo: statics/images/white.png
   features:
-    - search.suggest
-    - search.highlight
-    - content.tabs.link
-    - content.code.copy
-    - content.code.annotate
-    - content.tooltips
-    - content.code.select
-    - navigation.indexes
-    - navigation.path
-    - navigation.tabs
+  - search.suggest
+  - search.highlight
+  - content.tabs.link
+  - content.code.copy
+  - content.code.annotate
+  - content.tooltips
+  - content.code.select
+  - navigation.indexes
+  - navigation.path
+  - navigation.tabs
 repo_name: dymmond/lilya
 repo_url: https://github.com/dymmond/lilya
-edit_uri: ""
+edit_uri: ''
 plugins:
-  - search
-  - meta-descriptions:
-      export_csv: false
-      quiet: false
-      enable_checks: false
-      min_length: 50
-      max_length: 160
-      trim: false
-  - mkdocstrings:
-      handlers:
-        python:
-          options:
-            extensions:
-              - griffe_typingdoc
-            show_root_heading: true
-            show_if_no_docstring: true
-            preload_modules:
-              - httpx
-              - a2wsgi
-            inherited_members: true
-            members_order: source
-            separate_signature: true
-            unwrap_annotated: true
-            filters:
-              - "!^_"
-            merge_init_into_class: true
-            docstring_section_style: spacy
-            signature_crossrefs: true
-            show_symbol_type_heading: true
-            show_symbol_type_toc: true
+- search
+- meta-descriptions:
+    export_csv: false
+    quiet: false
+    enable_checks: false
+    min_length: 50
+    max_length: 160
+    trim: false
+- mkdocstrings:
+    handlers:
+      python:
+        options:
+          extensions:
+          - griffe_typingdoc
+          show_root_heading: true
+          show_if_no_docstring: true
+          preload_modules:
+          - httpx
+          - a2wsgi
+          inherited_members: true
+          members_order: source
+          separate_signature: true
+          unwrap_annotated: true
+          filters:
+          - '!^_'
+          merge_init_into_class: true
+          docstring_section_style: spacy
+          signature_crossrefs: true
+          show_symbol_type_heading: true
+          show_symbol_type_toc: true
 nav:
-  - index.md
-  - Resources:
-      - resources/index.md
-      - applications.md
-      - settings.md
-      - routing.md
-      - controllers.md
-      - requests.md
-      - responses.md
-      - caching.md
-      - websockets.md
-      - encoders.md
-      - context.md
-      - authentication.md
-      - logging.md
-      - serializers.md
-      - security.md
-      - threadpool.md
-      - introspection.md
-  - Features:
-      - features/index.md
-      - tasks.md
-      - lifespan.md
-      - middleware.md
-      - permissions.md
-      - dependencies.md
-      - observables.md
-      - static-files.md
-      - templates.md
-      - server-push.md
-      - exceptions.md
-      - parameters.md
-      - wsgi.md
-      - environments.md
-  - Clients:
-      - clients/index.md
-      - Lilya Client:
-          - lilya-cli.md
-          - directives/discovery.md
-          - directives/directives.md
-          - directives/custom-directives.md
-          - directives/directive-decorator.md
-          - directives/shell.md
-      - test-client.md
-  - Deployment:
-      - deployment/index.md
-      - intro.md
-      - docker.md
-  - Contrib:
-      - contrib/index.md
-      - contrib/openapi.md
-      - contrib/forms-and-body-inference.md
-      - contrib/sse.md
-      - Schedulers:
-          - contrib/schedulers/index.md
-          - contrib/schedulers/config.md
-          - contrib/schedulers/handler.md
-          - contrib/schedulers/scheduler.md
-      - Security:
-          - contrib/security/index.md
-          - contrib/security/introduction.md
-          - contrib/security/interaction.md
-          - contrib/security/simple-oauth2.md
-          - contrib/security/oauth-jwt.md
-          - contrib/security/advanced/oauth2-scopes.md
-          - contrib/security/advanced/basic-auth.md
-          - contrib/security/available-security.md
-          - contrib/security/signed-urls.md
-          - CSRF:
-              - contrib/security/csrf.md
-      - Files:
-          - contrib/files/send-file.md
-          - contrib/files/jsonify.md
-      - Proxy:
-          - contrib/proxy/relay.md
-      - Shortcuts:
-          - contrib/shortcuts/abort.md
-          - contrib/shortcuts/responses.md
-      - contrib/mail.md
-      - contrib/opentelemetry.md
-  - contributing.md
-  - sponsorship.md
-  - release-notes.md
+- index.md
+- Resources:
+  - resources/index.md
+  - applications.md
+  - settings.md
+  - routing.md
+  - controllers.md
+  - requests.md
+  - responses.md
+  - caching.md
+  - websockets.md
+  - encoders.md
+  - context.md
+  - authentication.md
+  - logging.md
+  - serializers.md
+  - security.md
+  - threadpool.md
+  - introspection.md
+- Features:
+  - features/index.md
+  - tasks.md
+  - lifespan.md
+  - middleware.md
+  - permissions.md
+  - dependencies.md
+  - observables.md
+  - static-files.md
+  - templates.md
+  - server-push.md
+  - exceptions.md
+  - parameters.md
+  - wsgi.md
+  - environments.md
+- Clients:
+  - clients/index.md
+  - Lilya Client:
+    - lilya-cli.md
+    - directives/discovery.md
+    - directives/directives.md
+    - directives/custom-directives.md
+    - directives/directive-decorator.md
+    - directives/shell.md
+  - test-client.md
+- Deployment:
+  - deployment/index.md
+  - intro.md
+  - docker.md
+- Contrib:
+  - contrib/index.md
+  - contrib/openapi.md
+  - contrib/forms-and-body-inference.md
+  - contrib/sse.md
+  - contrib/cqrs.md
+  - Schedulers:
+    - contrib/schedulers/index.md
+    - contrib/schedulers/config.md
+    - contrib/schedulers/handler.md
+    - contrib/schedulers/scheduler.md
+  - Security:
+    - contrib/security/index.md
+    - contrib/security/introduction.md
+    - contrib/security/interaction.md
+    - contrib/security/simple-oauth2.md
+    - contrib/security/oauth-jwt.md
+    - contrib/security/advanced/oauth2-scopes.md
+    - contrib/security/advanced/basic-auth.md
+    - contrib/security/available-security.md
+    - contrib/security/signed-urls.md
+    - CSRF:
+      - contrib/security/csrf.md
+  - Files:
+    - contrib/files/send-file.md
+    - contrib/files/jsonify.md
+  - Proxy:
+    - contrib/proxy/relay.md
+  - Shortcuts:
+    - contrib/shortcuts/abort.md
+    - contrib/shortcuts/responses.md
+  - contrib/mail.md
+  - contrib/opentelemetry.md
+- contributing.md
+- sponsorship.md
+- release-notes.md
 markdown_extensions:
-  - attr_list
-  - toc:
-      permalink: true
-  - mdx_include:
-      base_path: docs/
-  - admonition
-  - extra
-  - pymdownx.superfences
-  - pymdownx.tabbed:
-      alternate_style: true
-  - pymdownx.highlight
-  - md_in_html
+- attr_list
+- toc:
+    permalink: true
+- mdx_include:
+    base_path: docs/
+- admonition
+- extra
+- pymdownx.superfences
+- pymdownx.tabbed:
+    alternate_style: true
+- pymdownx.highlight
+- md_in_html
 extra:
   alternate:
-    - link: /
-      name: en - English
-    - link: /pt/
-      name: pt - português
+  - link: /
+    name: en - English
+  - link: /pt/
+    name: pt - português
 hooks:
-  - ../../scripts/hooks.py
+- ../../scripts/hooks.py

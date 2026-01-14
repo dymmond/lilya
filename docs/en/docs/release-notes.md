@@ -12,6 +12,14 @@ hide:
 - [Introspection](./introspection.md) graph accessible via `app.graph`. This is particularly useful if you want to create any
 visuals from your Lilya application or even for framework creators and developers that want to understand in a graph manner, the
 state and internals of the current application.
+- [CQRS (Command Query Responsibility Segregation) support](./contrib/cqrs.md) under `lilya.contrib.cqrs`.
+- New `CommandBus` for dispatching command messages that mutate application state.
+- New `QueryBus` for executing query messages that return data without side effects.
+- Explicit command and query handler registration with one-handler-per-message enforcement.
+- Optional decorator-based handler registration for quick prototyping.
+- CQRS-scoped middleware pipeline supporting logging, validation, mutation, auditing, and short-circuiting.
+- Message envelopes with metadata support, fully compatible with Lilya encoders (`apply_structure`, `json_encode`).
+- Seamless integration with Lilya endpoints, requests, responses, routing, and `TestClient`.
 
 ## 0.23.0
 
@@ -24,6 +32,7 @@ state and internals of the current application.
 - Updated internal security to start raising 401 instead of 403 to be consistent with `Not authenticated` errors and
 when credentials are missing.
 - Expose `original` property from the `@scheduler` wrapper.
+- Business logic can now be cleanly separated from HTTP endpoints using CQRS patterns.
 
 ## 0.22.16
 
