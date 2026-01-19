@@ -50,7 +50,6 @@ class HTTPException(LilyaException):
 
     def __init__(
         self,
-        *args: Any,
         status_code: int | None = None,
         detail: str | None = None,
         headers: dict[str, str] | None = None,
