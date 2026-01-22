@@ -5,7 +5,7 @@ from lilya.contrib.cqrs import CommandBus
 from lilya.requests import Request
 from lilya.responses import JSONResponse
 from lilya.routing import RoutePath
-from lilya.testclient import TestClient  
+from lilya.testclient import TestClient
 
 
 class Increment:
