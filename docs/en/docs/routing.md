@@ -212,6 +212,9 @@ you can call this helper and add any other ASGI application (FastAPI, Starlette,
 The object that connects and builds the application urls or paths. It maps the function handler
 with the application routing system
 
+!!! Tip
+    You can use also `RoutePath` and `Route` as alternative to `Path` from the version 0.23.2.
+
 #### Parameters
 
 * **path** - The path for the child lilya.
@@ -236,6 +239,9 @@ functions on an application top level. Exception handler callables should be of 
 ## WebSocketPath
 
 Same principle as [Path](#path) with one particularity. The websockets are `async`.
+
+!!! Tip
+    You can use also `WebSocketRoute` as alternative to `WebSocketPath` from the version 0.23.2.
 
 #### Parameters
 
