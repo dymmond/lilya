@@ -10,7 +10,7 @@ hide:
 ### Added
 
 - `createproject` allows to pass multiple names instead of only one if you want to create multiple projects in one go.
-- `createapp` allows to pass multiple names instead of only one if you want to create multiple apps in one go.
+  - `createapp` allows to pass multiple names instead of only one if you want to create multiple apps in one go.
 
 ## 0.23.1
 
