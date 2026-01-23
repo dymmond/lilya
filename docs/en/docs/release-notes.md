@@ -14,6 +14,10 @@ hide:
 - Make `Route` available as alternative to `Path`.
 - Make `WebSocketRoute` available as alternative to `WebSocketPath`.
 
+### Fixed
+
+- The `createproject` directive tests was not placing the right contents in conftest.py.
+
 ## 0.23.1
 
 ### Added

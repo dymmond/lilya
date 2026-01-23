@@ -1,6 +1,26 @@
 import pytest
+from lilya.testclient import TestClient
+
+from ..main import get_application
 
 
 @pytest.fixture(scope="module")
 def anyio_backend():
     return ("asyncio", {"debug": False})
+
+
+pytestmark = pytest.mark.anyio
+
+
+def create_app():
+    app = get_application()
+    return app
+
+
+def get_client():
+    return TestClient(create_app())
+
+
+@pytest.fixture
+def client():
+    return get_client()
