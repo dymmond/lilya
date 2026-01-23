@@ -2300,6 +2300,8 @@ class Router(RoutingMethodsMixin, BaseRouter):
 
 # Declare an alias for the Path
 RoutePath = Path
+Route = Path
+WebSocketRoute = WebSocketPath
 
 
 class Include(BasePath):
