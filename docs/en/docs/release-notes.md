@@ -17,6 +17,8 @@ hide:
 ### Fixed
 
 - The `createproject` directive tests was not placing the right contents in conftest.py.
+- When using `EnvironLoader()` it was causing a conflict with the types and not casting properly to the right type due
+to the `from future import __annotations__`.
 
 ## 0.23.1
 
