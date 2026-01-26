@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.23.3
+
+### Fixed
+
+- `lilya createdeployment` directive files (nginx and docker) updated to the latest stable versions.
+
 ## 0.23.2
 
 ### Added
