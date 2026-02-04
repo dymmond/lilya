@@ -7,6 +7,10 @@ hide:
 
 ## 0.23.3
 
+### Added
+
+- `lilya.datastructures` now supports UploadFile as an alias to DataUpload.
+
 ### Fixed
 
 - `lilya createdeployment` directive files (nginx and docker) updated to the latest stable versions.
