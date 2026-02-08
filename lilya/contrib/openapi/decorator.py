@@ -148,6 +148,14 @@ def openapi(
             """,
         ),
     ] = None,
+    request_body: Annotated[
+        Any | None,
+        Doc(
+            """
+            Overridable request body for the payload to be sent.
+            """
+        ),
+    ] = None,
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     Decorator to attach OpenAPI metadata to a handler. Handles both sync and async functions.
@@ -203,22 +211,36 @@ def openapi(
                 "Query must be a dict or set or a dict of key-pair value of str and Query"
             )
 
-        def request_body(
-            responses_dict: dict[int, OpenAPIResponse] | None = None,
-        ) -> dict[str, Any]:
-            body = {} if responses_dict is None else responses_dict.copy()
+        def get_request_body(
+            request_body: Any | None = None,
+        ) -> Any:
+            if request_body is None:
+                return {}
 
-            for status, response in body.items():
-                origin_sources = [list, tuple, Sequence]
-                origin = get_origin(response.annotation)
+            if isinstance(request_body, (list, tuple)):
+                model: Any = request_body[0]
+                annotation = list[model]
+            elif get_origin(request_body) is list:
+                annotation = request_body
+            else:
+                annotation = request_body
 
-                if origin in origin_sources:
-                    arguments = get_args(response.annotation)
-                    body[status] = [arguments[0].model_json_schema()]  # type: ignore
-                else:
-                    body[status] = response.annotation.model_json_schema()
+            # 2. Convert to Pydantic model (handles encodings/nested types)
+            converted_annotation = convert_annotation_to_pydantic_model(annotation)
 
-            return body  # type: ignore
+            # 3. Generate Schema
+            # We must check if it's a list/sequence again on the converted annotation
+            origin = get_origin(converted_annotation)
+
+            if origin in (list, tuple, Sequence):
+                # It is a list: Extract args and get schema of the inner model
+                args = get_args(converted_annotation)
+                # Return as a list containing the schema, matching Lilya's expectation
+                body_fields = [args[0].model_json_schema()]
+            else:
+                # It is a single model: Get schema directly
+                body_fields = converted_annotation.model_json_schema()
+            return body_fields
 
         def handle_security_requirement(
             security_requirements: Sequence[Any] | None,
@@ -269,8 +291,7 @@ def openapi(
             "query": query_strings(query) or {},
         }
 
-        body_fields = request_body(wrapper.openapi_meta["responses"])
-
+        body_fields = get_request_body(request_body)
         wrapper.openapi_meta["request_body"] = body_fields
 
         if is_function(func) and not inspect.ismethod(func):

@@ -10,6 +10,7 @@ hide:
 ### Added
 
 - `lilya.datastructures` now supports UploadFile as an alias to DataUpload.
+- `@openapi` decorator now accepts the `request_body` as parameter and fixes an issue of getting from responses.
 
 ### Fixed
 

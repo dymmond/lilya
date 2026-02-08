@@ -24,6 +24,7 @@ class User(BaseModel):
         400: OpenAPIResponse(model=ErrorResponse, description="Bad Request"),
         201: OpenAPIResponse(model=User, description="Ok"),
     },
+    request_body=User,
 )
 async def create(user: User):
     return user
