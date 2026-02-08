@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.24.1
+
+### Changed
+
+- Generated pyproject.toml when using directives.
+
 ## 0.24.0
 
 ### Added
