@@ -46,6 +46,45 @@ if TYPE_CHECKING:
 SIGNATURE_TO_LIST = SignatureDefault.to_list()
 INDEX_REGEX = re.compile(r"^(.+)\[(\d+)\]$")
 _SIG_CACHE_ATTR = "__lilya_resolved_signature__"
+_PLAN_CACHE_ATTR = "__lilya_handler_plan__"
+
+
+def _build_handler_plan(sig: inspect.Signature) -> dict[str, Any]:
+    params = tuple(sig.parameters.items())
+
+    has_provider_markers = any(
+        isinstance(p.default, (Provides, Resolve, Security)) for _, p in params
+    )
+
+    bound_fields = tuple(
+        (n, p.default) for n, p in params if isinstance(p.default, (Query, Header, Cookie))
+    )
+
+    # This mirrors your "body candidates" meaning: params that might come from body inference
+    has_body_candidates = any(
+        (p.default is inspect._empty)
+        and (n not in (SignatureDefault.REQUEST, "context"))
+        and not isinstance(p.default, (Query, Header, Cookie))
+        for n, p in params
+    )
+
+    # For faster body parsing: which names are *potentially* inferred from body (no request-specific reserved keys here)
+    # We can precompute "body eligible" and subtract reserved keys later.
+    body_eligible_names = tuple(
+        n
+        for n, p in params
+        if (p.default is inspect._empty)
+        and (n not in SIGNATURE_TO_LIST)
+        and not isinstance(p.default, (Query, Header, Cookie))
+    )
+
+    return {
+        "has_provider_markers": has_provider_markers,
+        "bound_fields": bound_fields,
+        "has_body_candidates": has_body_candidates,
+        "body_eligible_names": body_eligible_names,
+        "param_names": frozenset(sig.parameters.keys()),
+    }
 
 
 def _get_callable_namespaces(func: Any) -> tuple[dict[str, Any], dict[str, Any], Any]:
@@ -106,6 +145,24 @@ def resolve_signature_annotations(func: Any, sig: inspect.Signature) -> inspect.
 
     setattr(cache_target, _SIG_CACHE_ATTR, resolved)
     return resolved
+
+
+def resolve_signature_and_plan(
+    func: Any, sig: inspect.Signature
+) -> tuple[inspect.Signature, dict[str, Any]]:
+    _, _, cache_target = _get_callable_namespaces(func)
+
+    cached_sig = getattr(cache_target, _SIG_CACHE_ATTR, None)
+    cached_plan = getattr(cache_target, _PLAN_CACHE_ATTR, None)
+
+    if isinstance(cached_sig, inspect.Signature) and isinstance(cached_plan, dict):
+        return cached_sig, cached_plan
+
+    resolved = resolve_signature_annotations(func, sig)
+    plan = _build_handler_plan(resolved)
+
+    setattr(cache_target, _PLAN_CACHE_ATTR, plan)
+    return resolved, plan
 
 
 class BaseHandler:
@@ -170,19 +227,6 @@ class BaseHandler:
         # For function views, the signature is stable. For controllers the other_signature
         # will be provided by the caller. We default to `inspect.signature(func)` only once.
         static_signature: inspect.Signature | None = other_signature or inspect.signature(func)
-        sig_params = tuple(static_signature.parameters.items()) if static_signature else ()
-        has_provider_markers = any(
-            isinstance(p.default, (Provides, Resolve, Security)) for _, p in sig_params
-        )
-        has_body_candidates = any(
-            (p.default is inspect._empty)
-            and (n not in (SignatureDefault.REQUEST, "context"))
-            and not isinstance(p.default, (Query, Header, Cookie))
-            for n, p in sig_params
-        )
-        pre_bound_fields = [
-            (n, p.default) for n, p in sig_params if isinstance(p.default, (Query, Header, Cookie))
-        ]
 
         async def app(scope: Scope, receive: Receive, send: Send) -> None:
             """
@@ -214,10 +258,8 @@ class BaseHandler:
                 Returns:
                     None
                 """
-                signature: inspect.Signature = (
-                    other_signature or self.signature or static_signature
-                )
-                signature = resolve_signature_annotations(func, signature)
+                signature = other_signature or self.signature or static_signature
+                signature, plan = resolve_signature_and_plan(func, signature)
 
                 self.extract_request_information(request=request, signature=signature)
 
@@ -227,104 +269,88 @@ class BaseHandler:
                 #  - have no body-bound candidates
                 # In that case we skip `_extract_params_from_request` entirely and only pull
                 # path/query/header/cookie/context.
-                if not has_provider_markers:
-                    # Re-evaluate body candidates only if the signature at call time differs.
-                    _has_body_candidates = has_body_candidates
-                    if signature is not static_signature:
-                        sp = tuple(signature.parameters.items())
-                        _has_body_candidates = any(
-                            (p.default is inspect._empty)
-                            and (n not in (SignatureDefault.REQUEST, "context"))
-                            and not isinstance(p.default, (Query, Header, Cookie))
-                            for n, p in sp
-                        )
-                    if not _has_body_candidates:
-                        # Build params without dependency/body resolution.
-                        # 1) Path params that match the function signature
-                        fast_params = {
-                            name: val
-                            for name, val in request.path_params.items()
-                            if name in signature.parameters
-                        }
-                        # 2) Query/Header/Cookie bound fields
-                        #    Use the pre-bound list if signature matches; otherwise compute once.
-                        bound_fields = (
-                            pre_bound_fields
-                            if signature is static_signature
-                            else [
-                                (n, p.default)
-                                for n, p in signature.parameters.items()
-                                if isinstance(p.default, (Query, Header, Cookie))
-                            ]
-                        )
-                        for n, field in bound_fields:
-                            if isinstance(field, Query):
-                                source = request.query_params
-                                key = field.alias or n
-                            elif isinstance(field, Header):
-                                source = request.headers  # type: ignore
-                                key = field.value
-                            else:  # Cookie
-                                source = request.cookies  # type: ignore
-                                key = field.value
-                            try:
-                                if not isinstance(field, Cookie):
-                                    values = source.getall(key, None)
-                                    if values is None:
-                                        raw_value = None
-                                    elif isinstance(values, list):
-                                        raw_value = values[0] if len(values) == 1 else values
-                                    else:
-                                        raw_value = values  # type: ignore
+                if not plan["has_provider_markers"] and not plan["has_body_candidates"]:
+                    param_names = plan["param_names"]
+
+                    # 1) Path params that match the function signature
+                    fast_params = {
+                        name: val
+                        for name, val in request.path_params.items()
+                        if name in param_names
+                    }
+
+                    # 2) Query/Header/Cookie bound fields (precomputed)
+                    for n, field in plan["bound_fields"]:
+                        if isinstance(field, Query):
+                            source = request.query_params
+                            key = field.alias or n
+                        elif isinstance(field, Header):
+                            source = request.headers  # type: ignore
+                            key = field.value
+                        else:  # Cookie
+                            source = request.cookies  # type: ignore
+                            key = field.value
+
+                        try:
+                            if not isinstance(field, Cookie):
+                                values = source.getall(key, None)
+                                if values is None:
+                                    raw_value = None
+                                elif isinstance(values, list):
+                                    raw_value = values[0] if len(values) == 1 else values
                                 else:
-                                    raw_value = source.get(key)
-                            except (KeyError, TypeError):
-                                raw_value = None
-
-                            if field.required and raw_value is None:
-                                raise UnprocessableEntity(
-                                    f"Missing mandatory query parameter '{key}'"
-                                )
-                            if raw_value is None:
-                                fast_params[n] = getattr(field, "default", None)
+                                    raw_value = values  # type: ignore
                             else:
-                                try:
-                                    if field.cast and isinstance(raw_value, list):
-                                        fast_params[n] = [raw_value]
-                                    elif field.cast:
-                                        fast_params[n] = field.resolve(raw_value, field.cast)
-                                    else:
-                                        fast_params[n] = (
-                                            raw_value[0]
-                                            if isinstance(raw_value, list) and len(raw_value) == 1
-                                            else raw_value
-                                        )
-                                except (TypeError, ValueError):
-                                    raise UnprocessableEntity(
-                                        f"Invalid value for query parameter '{key}': expected {field.cast.__name__}"
-                                    ) from None
+                                raw_value = source.get(key)
+                        except (KeyError, TypeError):
+                            raw_value = None
 
-                        # 3) Context (if requested)
-                        if "context" in signature.parameters:
-                            fast_params["context"] = Context(
-                                __handler__=cast("BasePath", self), __request__=request
-                            )
+                        if field.required and raw_value is None:
+                            raise UnprocessableEntity(f"Missing mandatory query parameter '{key}'")
 
-                        # 4) Request (if requested)
-                        if SignatureDefault.REQUEST in signature.parameters:
-                            fast_params["request"] = request
+                        if raw_value is None:
+                            fast_params[n] = getattr(field, "default", None)
+                        else:
+                            try:
+                                if field.cast and isinstance(raw_value, list):
+                                    fast_params[n] = [raw_value]
+                                elif field.cast:
+                                    fast_params[n] = field.resolve(raw_value, field.cast)
+                                else:
+                                    fast_params[n] = (
+                                        raw_value[0]
+                                        if isinstance(raw_value, list) and len(raw_value) == 1
+                                        else raw_value
+                                    )
+                            except (TypeError, ValueError):
+                                raise UnprocessableEntity(
+                                    f"Invalid value for query parameter '{key}': expected {field.cast.__name__}"
+                                ) from None
 
-                        response = await self._execute_function(func, **fast_params)
-                        await self._handle_response_content(response, scope, receive, send)
-                        return
+                    # 3) Context (if requested)
+                    if "context" in param_names:
+                        fast_params["context"] = Context(
+                            __handler__=cast("BasePath", self),
+                            __request__=request,
+                        )
 
+                    # 4) Request (if requested)
+                    if SignatureDefault.REQUEST in param_names:
+                        fast_params["request"] = request
+
+                    response = await self._execute_function(func, **fast_params)
+                    await self._handle_response_content(response, scope, receive, send)
+                    return
+
+                # Fallback (full resolution path)
                 params_from_request = await self._extract_params_from_request(
                     request=request,
                     signature=signature,
                 )
 
                 request_information = self.extract_request_params_information(
-                    request=request, signature=signature
+                    request=request,
+                    signature=signature,
                 )
 
                 func_params: dict[str, Any] = {
@@ -333,15 +359,10 @@ class BaseHandler:
                     **request_information,
                 }
 
-                if signature.parameters:
-                    if SignatureDefault.REQUEST in signature.parameters:
-                        func_params.update({"request": request})
-                        response = await self._execute_function(func, **func_params)
-                    else:
-                        response = await self._execute_function(func, **func_params)
-                else:
-                    response = await self._execute_function(func, **func_params)
+                if signature.parameters and SignatureDefault.REQUEST in signature.parameters:
+                    func_params["request"] = request
 
+                response = await self._execute_function(func, **func_params)
                 await self._handle_response_content(response, scope, receive, send)
 
             await wrap_app_handling_exceptions(inner_app, request)(scope, receive, send)
