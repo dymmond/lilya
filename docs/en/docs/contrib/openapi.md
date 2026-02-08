@@ -422,9 +422,7 @@ The `OpenAPIConfig` model encapsulates all settings that control how Lilya gener
 * **Description**: A longer, more detailed description for `info.description`. This field supports Markdown formatting and can cover architecture, usage notes, or any high‐level explanation.
 * **Type**: `str` (nullable)
 * **Default**: `"Yet another framework/toolkit that delivers."`
-* **Usage**:
-
-  * Renders in the expanded “Info” panel of Swagger UI or as introductory text in ReDoc.
+* **Usage**:  Renders in the expanded “Info” panel of Swagger UI or as introductory text in ReDoc.
 
 ---
 

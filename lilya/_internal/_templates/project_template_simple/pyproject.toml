@@ -1,0 +1,27 @@
+[project]
+name = "{{ project_name }}"
+version = "0.1.0"
+description = "Project generated via Lilya version: {{ lilya_version }}"
+requires-python = ">=3.14"
+dependencies = [
+  "lilya[standard]>={{ lilya_version }}",
+  "gunicorn",
+  "uvicorn"
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.15.0",
+]
+test = [
+  "pytest",
+  "pytest-cov",
+  "pytest-asyncio",
+  "anyio",
+  "coverage",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+asyncio_mode = "auto"
