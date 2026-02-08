@@ -45,7 +45,8 @@ def create_folders():
 
 def test_create_project(create_folders):
     (o, e, ss) = run_cmd(
-        "tests.cli.main:app", "lilya createproject myproject --with-structure --with-deployment"
+        "tests.cli.main:app",
+        "lilya createproject myproject --with-structure --with-deployment",
     )
     assert ss == 0
 
@@ -81,14 +82,13 @@ def _run_asserts():
     assert os.path.isfile("myproject/myproject/configs/testing/__init__.py") is True
     assert os.path.isfile("myproject/myproject/configs/testing/settings.py") is True
     assert os.path.isfile("myproject/myproject/apps/__init__.py") is True
-    assert os.path.isfile("myproject/requirements/base.txt") is True
-    assert os.path.isfile("myproject/requirements/testing.txt") is True
-    assert os.path.isfile("myproject/requirements/development.txt") is True
+    assert os.path.isfile("myproject/pyproject.toml") is True
 
 
 def test_create_project_files_with_env_var(create_folders):
     (o, e, ss) = run_cmd(
-        "tests.cli.main:app", "lilya createproject myproject --with-structure --with-deployment"
+        "tests.cli.main:app",
+        "lilya createproject myproject --with-structure --with-deployment",
     )
     assert ss == 0
 
