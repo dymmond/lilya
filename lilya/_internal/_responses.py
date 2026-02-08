@@ -15,7 +15,10 @@ from typing import (
 )
 
 from lilya._internal._encoders import apply_structure, json_encode
-from lilya._internal._exception_handlers import wrap_app_handling_exceptions
+from lilya._internal._exception_handlers import (
+    handle_exception,
+    wrap_app_handling_exceptions,
+)
 from lilya.compat import is_async_callable
 from lilya.concurrency import run_in_threadpool
 from lilya.conf import _monkay
@@ -29,6 +32,7 @@ from lilya.dependencies import (
 )
 from lilya.enums import SignatureDefault
 from lilya.exceptions import (
+    HTTPException,
     ImproperlyConfigured,
     UnprocessableEntity,
     WebSocketException,
@@ -37,7 +41,14 @@ from lilya.params import Cookie, Header, Query
 from lilya.requests import Request
 from lilya.responses import Ok, Response
 from lilya.serializers import serializer
-from lilya.types import ASGIApp, Receive, Scope, Send
+from lilya.types import (
+    ASGIApp,
+    ExceptionHandler,
+    Message,
+    Receive,
+    Scope,
+    Send,
+)
 from lilya.websockets import WebSocket
 
 if TYPE_CHECKING:
@@ -156,6 +167,39 @@ def _get_cache_target(func: Any) -> Any:
     return target
 
 
+def _lookup_exception_handler(
+    exc_handlers: dict[type[Exception], ExceptionHandler], exc: Exception
+) -> ExceptionHandler | None:
+    """
+    Looks up an exception handler for a given exception type in a handler map.
+
+    This mirrors Lilya's exception-handler lookup order by walking the MRO for
+    the concrete exception type and returning the first matching handler.
+    """
+    for cls in type(exc).__mro__:
+        if cls in exc_handlers:
+            return exc_handlers[cls]
+    return None
+
+
+def _get_exception_handlers_from_scope(
+    scope: Scope,
+) -> tuple[dict[type[Exception], ExceptionHandler], dict[int, ExceptionHandler]]:
+    """
+    Fetches (exception_handlers, status_handlers) from the ASGI scope.
+
+    This keeps exception lookup fast and avoids depending on a Request/WebSocket
+    instance when we can use the already-available scope mapping.
+    """
+    try:
+        return cast(
+            tuple[dict[type[Exception], ExceptionHandler], dict[int, ExceptionHandler]],
+            scope["lilya.exception_handlers"],
+        )
+    except KeyError:
+        return {}, {}
+
+
 def resolve_signature_annotations(func: Any, sig: inspect.Signature) -> inspect.Signature:
     """
     Resolve annotations once and cache the resolved signature on the underlying function.
@@ -258,17 +302,33 @@ class BaseHandler:
         # Pre-bind execution strategy so we don't call `is_async_callable(func)` per request.
         if is_async_callable(func):
 
-            async def _execute(**kwargs: Any) -> Any:
+            async def _execute0() -> Any:
+                """
+                Executes a zero-argument handler as an async callable.
+
+                This wrapper is created once per handler to avoid per-request branching.
+                """
+                return await func()  # type: ignore[call-arg]
+
+            async def _executekw(**kwargs: Any) -> Any:
                 """
                 Executes the handler as an async callable.
 
                 This wrapper is created once per handler to avoid per-request branching.
                 """
-                return await func(**kwargs)  # type: ignore
+                return await func(**kwargs)  # type: ignore[call-arg]
 
         else:
 
-            async def _execute(**kwargs: Any) -> Any:
+            async def _execute0() -> Any:
+                """
+                Executes a zero-argument handler as a sync callable using the threadpool.
+
+                This wrapper is created once per handler to avoid per-request branching.
+                """
+                return await run_in_threadpool(func)
+
+            async def _executekw(**kwargs: Any) -> Any:
                 """
                 Executes the handler as a sync callable using the threadpool.
 
@@ -292,6 +352,12 @@ class BaseHandler:
         # Pre-normalized getters for Query/Header/Cookie extraction.
         bound_getters: tuple[tuple[str, Any, str, str], ...] = plan["bound_getters"]
 
+        # If we are sure a handler can be executed without even building a Request,
+        # we can avoid per-request object allocations entirely.
+        can_skip_request_construction = (
+            is_fast_path_eligible and param_count == 0 and not needs_context and not needs_request
+        )
+
         async def app(scope: Scope, receive: Receive, send: Send) -> None:
             """
             ASGI application handling request-response.
@@ -304,33 +370,47 @@ class BaseHandler:
             Returns:
                 None
             """
-            request = Request(scope=scope, receive=receive, send=send)
+            response_started = False
 
-            async def inner_app(scope: Scope, receive: Receive, send: Send) -> None:
+            async def sender(message: Message) -> None:
+                nonlocal response_started
+                if message["type"] == "http.response.start":
+                    response_started = True
+                await send(message)
+
+            exception_handlers, status_handlers = _get_exception_handlers_from_scope(scope)
+
+            request: Request | None = None
+
+            def get_request() -> Request:
                 """
-                Inner ASGI application handling request-response.
+                Lazily constructs the Request object.
 
-                Sometimes the handler does not need the request to be passed
-                in the handler and we can avoid it by ignoring the request
-                object in the arguments.
-
-                Args:
-                    scope (Scope): The request scope.
-                    receive (Receive): The receive channel.
-                    send (Send): The send channel.
-
-                Returns:
-                    None
+                The micro-benchmark and common fast paths do not require a Request,
+                so we delay allocating it until we actually need it.
                 """
+                nonlocal request
+                if request is None:
+                    request = Request(scope=scope, receive=receive, send=sender)
+                return request
+
+            try:
+                # Absolute fastest path: zero-parameter handler with no context/request needed.
+                if can_skip_request_construction:
+                    response = await _execute0()
+                    await self._handle_response_content(response, scope, receive, sender)
+                    return
+
+                # Otherwise we need a Request for routing params / query / headers / cookies / DI.
+                req = get_request()
+
                 # The effective signature can still be overridden by the handler,
                 # but we avoid expensive resolution when it matches the static signature.
                 signature = other_signature or self.signature or static_signature
-
                 if signature is static_signature:
                     signature = resolved_signature
                     effective_plan = plan
                 else:
-                    # Fallback to the existing resolver for dynamic signatures
                     signature, effective_plan = resolve_signature_and_plan(func, signature)
 
                 # Ultra-fast short-circuits already exist below (no params, request-only, context-only).
@@ -340,25 +420,24 @@ class BaseHandler:
                 # In that case we skip `_extract_params_from_request` entirely and only pull
                 # path/query/header/cookie/context.
                 if is_fast_path_eligible and effective_plan is plan:
-                    # Special-case: zero-parameter handlers (your benchmark endpoint).
-                    # This avoids dict allocations and parameter extraction work entirely.
+                    # Special-case: zero-parameter handlers (still builds Request, but avoids any dict work)
                     if param_count == 0:
-                        response = await _execute()
-                        await self._handle_response_content(response, scope, receive, send)
+                        response = await _execute0()
+                        await self._handle_response_content(response, scope, receive, sender)
                         return
 
                     fast_params: dict[str, Any] = {}
 
                     # 1) Path params that match the function signature
-                    if request.path_params:
-                        for name, val in request.path_params.items():
+                    if req.path_params:
+                        for name, val in req.path_params.items():
                             if name in param_names:
                                 fast_params[name] = val
 
                     # 2) Query/Header/Cookie bound fields (precomputed, no isinstance chains)
                     for n, field, kind, key in bound_getters:
                         if kind == "query":
-                            source = request.query_params
+                            source = req.query_params
                             try:
                                 values = source.getall(key, None)
                             except (KeyError, TypeError):
@@ -372,7 +451,7 @@ class BaseHandler:
                                 raw_value = values  # type: ignore
 
                         elif kind == "header":
-                            source = request.headers  # type: ignore
+                            source = req.headers  # type: ignore
                             try:
                                 values = source.getall(key, None)
                             except (KeyError, TypeError):
@@ -386,7 +465,7 @@ class BaseHandler:
                                 raw_value = values  # type: ignore
 
                         else:  # cookie
-                            source = request.cookies  # type: ignore
+                            source = req.cookies  # type: ignore
                             try:
                                 raw_value = source.get(key)
                             except (KeyError, TypeError):
@@ -418,41 +497,59 @@ class BaseHandler:
                     if needs_context:
                         fast_params["context"] = Context(
                             __handler__=cast("BasePath", self),
-                            __request__=request,
+                            __request__=req,
                         )
 
                     # 4) Request (if requested)
                     if needs_request:
-                        fast_params["request"] = request
+                        fast_params["request"] = req
 
-                    response = await _execute(**fast_params)
-                    await self._handle_response_content(response, scope, receive, send)
+                    response = await _executekw(**fast_params)
+                    await self._handle_response_content(response, scope, receive, sender)
                     return
 
                 # Fallback (full resolution path)
                 params_from_request = await self._extract_params_from_request(
-                    request=request,
+                    request=req,
                     signature=signature,
                 )
 
                 request_information = self.extract_request_params_information(
-                    request=request,
+                    request=req,
                     signature=signature,
                 )
 
                 func_params: dict[str, Any] = {
                     **params_from_request,
-                    **self._extract_context(request=request, signature=signature),
+                    **self._extract_context(request=req, signature=signature),
                     **request_information,
                 }
 
                 if signature.parameters and SignatureDefault.REQUEST in signature.parameters:
-                    func_params["request"] = request
+                    func_params["request"] = req
 
                 response = await self._execute_function(func, **func_params)
-                await self._handle_response_content(response, scope, receive, send)
+                await self._handle_response_content(response, scope, receive, sender)
 
-            await wrap_app_handling_exceptions(inner_app, request)(scope, receive, send)
+            except Exception as exc:
+                handler: ExceptionHandler | None = None
+
+                if isinstance(exc, HTTPException):
+                    handler = status_handlers.get(exc.status_code)
+
+                if handler is None:
+                    handler = _lookup_exception_handler(exception_handlers, exc)
+
+                if handler is None:
+                    raise
+
+                if response_started:
+                    msg = "Caught handled exception, but response already started."
+                    raise RuntimeError(msg) from exc
+
+                # Exception handlers require a Request/WebSocket conn to emit a response.
+                req = get_request()
+                await handle_exception(scope, req, exc, handler)
 
         return app
 
@@ -470,7 +567,10 @@ class BaseHandler:
             receive (Receive): The receive channel.
             send (Send): The send channel.
         """
-        if is_async_callable(app) or isinstance(app, Response):
+        # Cheaper check first: most responses are Response instances.
+        if isinstance(app, Response):
+            await app(scope, receive, send)
+        elif is_async_callable(app):
             # If response is an ASGI application or an async callable, directly await it.
             await app(scope, receive, send)
         else:
