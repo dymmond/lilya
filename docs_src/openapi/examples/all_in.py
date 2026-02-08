@@ -5,6 +5,7 @@ from lilya.contrib.openapi.params import Query
 from lilya.contrib.openapi.datastructures import OpenAPIResponse
 from pydantic import BaseModel
 
+
 # Pydantic models
 class Item(BaseModel):
     id: int
@@ -24,41 +25,46 @@ class Person(BaseModel):
         "limit": Query(default=5, schema={"type": "integer"}, description="Max items"),
         "tags": Query(
             default=[],
-            schema={"type":"array","items":{"type":"string"}},
+            schema={"type": "array", "items": {"type": "string"}},
             style="form",
             explode=True,
-            description="Tags filter"
-        )
+            description="Tags filter",
+        ),
     },
     responses={
         200: OpenAPIResponse(model=[Item], description="Array of Item"),
-        404: OpenAPIResponse(model=Person, description="User not found")
+        404: OpenAPIResponse(model=Person, description="User not found"),
     },
     tags=["items", "users"],
-    security=[{"BearerAuth": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}}],
+    security=[
+        {"BearerAuth": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}}
+    ],
 )
-async def list_user_items(request, user_id: str):
-    ...
+async def list_user_items(request, user_id: str): ...
 
 
-@openapi(summary="Create a new item")
-async def create_item(request, user_id: str):
-    ...
+@openapi(
+    summary="Create a new item",
+    request_body=Item,
+)
+async def create_item(request, user_id: str, item: Item): ...
 
 
 # Build app with nested includes and a child app
-child = ChildLilya(routes=[
-    Path("/profile", list_user_items)
-], enable_openapi=True)
+child = ChildLilya(routes=[Path("/profile", list_user_items)], enable_openapi=True)
 
 
-app = Lilya(routes=[
-    Include("/users", routes=[
-        Path("/{user_id}/items", list_user_items),
-        Path("/{user_id}/items/create", create_item),
-        Include("/extra", routes=[
-            Path("/{user_id}/extra-info", create_item)
-        ])
-    ]),
-    Include("/account", app=child)
-], enable_openapi=True)
+app = Lilya(
+    routes=[
+        Include(
+            "/users",
+            routes=[
+                Path("/{user_id}/items", list_user_items),
+                Path("/{user_id}/items/create", create_item),
+                Include("/extra", routes=[Path("/{user_id}/extra-info", create_item)]),
+            ],
+        ),
+        Include("/account", app=child),
+    ],
+    enable_openapi=True,
+)

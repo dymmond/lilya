@@ -24,6 +24,7 @@ class User(BaseModel):
         400: OpenAPIResponse(model=(ErrorResponse,), description="Bad Request"),
         201: OpenAPIResponse(model=(User,), description="Ok"),
     },
+    request_body=User,
 )
 async def create(user: User):
     return user
@@ -87,17 +88,15 @@ def test_responses_decorator(test_client_factory):
                         "requestBody": {
                             "content": {
                                 "application/json": {
-                                    "schema": [
-                                        {
-                                            "properties": {
-                                                "name": {"title": "Name", "type": "string"},
-                                                "age": {"title": "Age", "type": "integer"},
-                                            },
-                                            "required": ["name", "age"],
-                                            "title": "User",
-                                            "type": "object",
-                                        }
-                                    ]
+                                    "schema": {
+                                        "properties": {
+                                            "name": {"title": "Name", "type": "string"},
+                                            "age": {"title": "Age", "type": "integer"},
+                                        },
+                                        "required": ["name", "age"],
+                                        "title": "User",
+                                        "type": "object",
+                                    }
                                 }
                             }
                         },

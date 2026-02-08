@@ -1,6 +1,5 @@
 from pydantic import BaseModel
 
-from lilya import __version__
 from lilya.contrib.openapi.datastructures import OpenAPIResponse
 from lilya.contrib.openapi.decorator import openapi
 from lilya.controllers import Controller
@@ -26,6 +25,7 @@ class TupleResponseController(Controller):
             400: OpenAPIResponse(model=(ErrorResponse,), description="Bad Request"),
             201: OpenAPIResponse(model=(User,), description="Ok"),
         },
+        request_body=User,
     )
     async def post(self, user: User):
         return user
@@ -45,7 +45,7 @@ def test_responses_decorator(test_client_factory):
             "openapi": "3.1.0",
             "info": {
                 "title": "Lilya",
-                "version": __version__,
+                "version": client.app.version,
                 "summary": "Lilya application",
                 "description": "Yet another framework/toolkit that delivers.",
                 "contact": {
@@ -89,17 +89,15 @@ def test_responses_decorator(test_client_factory):
                         "requestBody": {
                             "content": {
                                 "application/json": {
-                                    "schema": [
-                                        {
-                                            "properties": {
-                                                "name": {"title": "Name", "type": "string"},
-                                                "age": {"title": "Age", "type": "integer"},
-                                            },
-                                            "required": ["name", "age"],
-                                            "title": "User",
-                                            "type": "object",
-                                        }
-                                    ]
+                                    "schema": {
+                                        "properties": {
+                                            "name": {"title": "Name", "type": "string"},
+                                            "age": {"title": "Age", "type": "integer"},
+                                        },
+                                        "required": ["name", "age"],
+                                        "title": "User",
+                                        "type": "object",
+                                    }
                                 }
                             }
                         },

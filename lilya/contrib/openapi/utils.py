@@ -192,7 +192,18 @@ def get_openapi(
                 for name, schema_def in definitions.items():
                     spec["components"]["schemas"][name] = schema_def  # type: ignore
 
+                # For the request body
                 request_body = meta.get("request_body", {})
+                if m_lower in WRITING_METHODS and request_body:
+                    if isinstance(request_body, list):
+                        schema_payload = {"type": "array", "items": request_body[0]}
+                    else:
+                        schema_payload = request_body
+
+                    operation["requestBody"] = {
+                        "content": {"application/json": {"schema": schema_payload}}
+                    }
+
                 for status_code_int, response in seen_responses.items():
                     status_code = str(status_code_int)
                     desc = getattr(response, "description", "") or ""
@@ -218,15 +229,6 @@ def get_openapi(
                     responses_obj[status_code] = {"description": desc or "Successful response"}
                     if content_obj:
                         responses_obj[status_code]["content"] = content_obj
-
-                    if m_lower in WRITING_METHODS and status_code_int in request_body:
-                        operation["requestBody"] = {
-                            "content": {
-                                getattr(response, "media_type", "application/json"): {
-                                    "schema": request_body[status_code_int]
-                                }
-                            }
-                        }
 
             else:
                 # If no responses are defined, we assume a 200 OK response with an empty schema

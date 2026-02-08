@@ -8,7 +8,12 @@ from typing import Any, Final, Generic, Literal, TypeVar, cast
 from urllib.parse import SplitResult, parse_qsl, urlencode, urlsplit, urlunsplit
 
 import anyio
-from multidict import CIMultiDict, MultiDict as BaseMultiDict, MultiDictProxy, MultiMapping
+from multidict import (
+    CIMultiDict,
+    MultiDict as BaseMultiDict,
+    MultiDictProxy,
+    MultiMapping,
+)
 
 from lilya.enums import DefaultPort, HTTPType, ScopeType, WebsocketType
 from lilya.types import Message, Receive, Scope, Send
@@ -96,7 +101,7 @@ class MultiDict(BaseMultiDict, MultiMixin[T], Generic[T]):
 class ImmutableMultiDict(MultiDictProxy[T], MultiMixin[T], Generic[T]):
     def __init__(
         self,
-        args: MultiMapping | Mapping[str, Any] | Iterable[tuple[str, Any]] | Any | None = None,
+        args: (MultiMapping | Mapping[str, Any] | Iterable[tuple[str, Any]] | Any | None) = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(BaseMultiDict(args or {}))
@@ -141,10 +146,9 @@ class Header(MultiDict, CIMultiDict):
 
     def __init__(
         self,
-        value: MultiMapping
-        | Mapping[str, Any]
-        | Iterable[tuple[bytes | str, bytes | str]]
-        | None = None,
+        value: (
+            MultiMapping | Mapping[str, Any] | Iterable[tuple[bytes | str, bytes | str]] | None
+        ) = None,
     ) -> None:
         # this way we can handle None, like specified
         if not value:
@@ -649,7 +653,10 @@ class URLPath(str):
             base_url = URL(base_url)
         if self.protocol:
             scheme = {
-                ScopeType.HTTP.value: {True: HTTPType.HTTPS.value, False: HTTPType.HTTP.value},
+                ScopeType.HTTP.value: {
+                    True: HTTPType.HTTPS.value,
+                    False: HTTPType.HTTP.value,
+                },
                 ScopeType.WEBSOCKET.value: {
                     True: WebsocketType.WSS.value,
                     False: WebsocketType.WS.value,
@@ -750,6 +757,9 @@ class DataUpload:
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(filename={self.filename!r}, size={self.size!r}, headers={self.headers!r})"
+
+
+UploadFile = DataUpload
 
 
 class Cookie:

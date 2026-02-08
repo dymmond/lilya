@@ -7,6 +7,16 @@ hide:
 
 ## 0.23.3
 
+### Added
+
+- `lilya.datastructures` now supports UploadFile as an alias to DataUpload.
+- `@openapi` decorator now accepts the `request_body` as parameter and fixes an issue of getting from responses.
+
+### Changed
+
+- Lilya now using the `createproject` directive instead of generating a requirements folder, generates a `pyproject.toml`
+instead. This follows the new Python requirements conventions.
+
 ### Fixed
 
 - `lilya createdeployment` directive files (nginx and docker) updated to the latest stable versions.
