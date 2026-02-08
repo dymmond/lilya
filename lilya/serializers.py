@@ -22,11 +22,13 @@ class SerializerProxy:
             self._serializer = serializer
 
     def __getattr__(self, item: str) -> Any:
-        with self._lock:
-            if not self._serializer:
-                setup_serializer()
-                return getattr(self._serializer, item)
-            return getattr(self._serializer, item)
+        serializer = self._serializer
+        if serializer is None:
+            with self._lock:
+                if self._serializer is None:
+                    setup_serializer()
+                serializer = self._serializer
+        return getattr(serializer, item)
 
 
 serializer: SerializerProtocol = cast(SerializerProtocol, SerializerProxy())

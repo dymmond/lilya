@@ -21,10 +21,7 @@ from lilya.logging import LoggingConfig, setup_logging
 from lilya.middleware.asyncexit import AsyncExitStackMiddleware
 from lilya.middleware.base import DefineMiddleware
 from lilya.middleware.exceptions import ExceptionMiddleware
-from lilya.middleware.global_context import (
-    GlobalContextMiddleware,
-    LifespanGlobalContextMiddleware,
-)
+from lilya.middleware.global_context import GlobalContextMiddleware
 from lilya.middleware.lilya_exception import LilyaExceptionMiddleware
 from lilya.middleware.server_error import ServerErrorMiddleware
 from lilya.permissions.base import DefinePermission
@@ -114,7 +111,6 @@ class BaseLilya:
             DefineMiddleware(
                 GlobalContextMiddleware, populate_context=self.populate_global_context
             ),
-            DefineMiddleware(LifespanGlobalContextMiddleware),
             *self.custom_middleware,
             DefineMiddleware(ExceptionMiddleware, handlers=exception_handlers, debug=self.debug),
             DefineMiddleware(AsyncExitStackMiddleware, debug=self.debug),

@@ -51,7 +51,10 @@ class GlobalContextMiddleware(ABC, MiddlewareProtocol):
         super().__init__(app)
         self.app = app
         self.populate_context = populate_context
-        self.scopes: set[str] = {ScopeType.HTTP, ScopeType.WEBSOCKET}
+        # Handle HTTP/WS by default; include lifespan to avoid an extra middleware layer.
+        self.scopes: set[str] = {ScopeType.HTTP, ScopeType.WEBSOCKET, ScopeType.LIFESPAN}
+        # Only populate context for request scopes (not lifespan).
+        self.populate_scopes: set[str] = {ScopeType.HTTP, ScopeType.WEBSOCKET}
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -70,7 +73,7 @@ class GlobalContextMiddleware(ABC, MiddlewareProtocol):
             await self.app(scope, receive, send)
             return
         initial_context: Any = None
-        if self.populate_context is not None:
+        if self.populate_context is not None and scope["type"] in self.populate_scopes:
             initial_context = self.populate_context(Connection(scope))
             if isawaitable(initial_context):
                 initial_context = await initial_context
@@ -92,3 +95,4 @@ class LifespanGlobalContextMiddleware(GlobalContextMiddleware):
     ) -> None:
         super().__init__(app)
         self.scopes = {ScopeType.LIFESPAN}
+        self.populate_scopes = set()
