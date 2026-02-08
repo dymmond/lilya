@@ -13,7 +13,7 @@ from lilya._utils import is_class_and_subclass
 from lilya.conf import _monkay, settings as lilya_settings  # noqa
 from lilya.conf.exceptions import FieldException
 from lilya.conf.global_settings import Settings
-from lilya.context import _G_UNSET, G, _reset_g_active, _set_g_active, g_context
+from lilya.context import _G_ACTIVE, G, g_context
 from lilya.contrib.documentation import Doc
 from lilya.datastructures import State, URLPath
 from lilya.dependencies import wrap_dependency
@@ -31,7 +31,7 @@ from lilya.protocols.middleware import MiddlewareProtocol
 from lilya.protocols.permissions import PermissionProtocol
 from lilya.requests import Request
 from lilya.responses import PlainText, Response
-from lilya.routing import BasePath, Include, Router, RoutingMethodsMixin
+from lilya.routing import BasePath, Include, Path, Router, RoutingMethodsMixin
 from lilya.serializers import SerializerConfig, setup_serializer
 from lilya.types import (
     ApplicationType,
@@ -116,7 +116,8 @@ class BaseLilya:
 
         if self.enable_intercept_global_exceptions:
             middleware.insert(
-                1, DefineMiddleware(LilyaExceptionMiddleware, handlers=exception_handlers)
+                1,
+                DefineMiddleware(LilyaExceptionMiddleware, handlers=exception_handlers),
             )
 
         app = self.router
@@ -386,6 +387,7 @@ class BaseLilya:
         if self.middleware_stack is not None:
             raise RuntimeError("Middlewares cannot be added once the application has started.")
         self._fast_http = False
+        self._fast_route = None
         self.custom_middleware.insert(0, DefineMiddleware(middleware, *args, **kwargs))
 
     def add_permission(
@@ -404,6 +406,7 @@ class BaseLilya:
         handler: ExceptionHandler,
     ) -> None:
         self._fast_http = False
+        self._fast_route = None
         self.exception_handlers[exception_cls_or_status_code] = handler
 
     def add_event_handler(self, event_type: str, func: Callable[[], Any]) -> None:
@@ -502,15 +505,15 @@ class BaseLilya:
         scope["app"] = self
         if self.root_path:
             scope["root_path"] = self.root_path
+        if scope["type"] == "http" and (
+            self.exception_handlers.get(500) or self.exception_handlers.get(Exception)
+        ):
+            scope["lilya.error_handler"] = self._get_error_handler()
 
         g_token = None
-        g_active_token = None
         try:
-            if scope["type"] in {"http", "websocket", "lifespan"}:
-                g_active_token = _set_g_active()
-                current_g = g_context.get(_G_UNSET)
-                if current_g is not _G_UNSET:
-                    g_token = g_context.set(_G_UNSET)
+            if scope["type"] in {"http", "websocket"}:
+                g_token = g_context.set(_G_ACTIVE)
 
                 if self.populate_global_context is not None and scope["type"] in {
                     "http",
@@ -520,37 +523,34 @@ class BaseLilya:
                     if isawaitable(initial_context):
                         initial_context = await initial_context
                     if initial_context is not None:
-                        current = g_context.get(_G_UNSET)
-                        if isinstance(current, G):
-                            current.store.update(initial_context)
-                        else:
-                            g_context.set(G(initial_context))
+                        g_context.set(G(initial_context))
 
-            use_monkay_context = self.settings_module is not None
-            if not use_monkay_context:
-                try:
-                    current_instance = _monkay.instance
-                except Exception:
-                    current_instance = None
-                use_monkay_context = current_instance is not self
-
-            if use_monkay_context:
-                with _monkay.with_settings(self.settings), _monkay.with_instance(self):
-                    await self._dispatch(scope, receive, send)
-            else:
+            if self._fast_http and self.register_as_global_instance:
                 await self._dispatch(scope, receive, send)
+            else:
+                use_monkay_context = self.settings_module is not None
+                if not use_monkay_context:
+                    try:
+                        current_instance = _monkay.instance
+                    except Exception:
+                        current_instance = None
+                    use_monkay_context = current_instance is not self
+
+                if use_monkay_context:
+                    with (
+                        _monkay.with_settings(self.settings),
+                        _monkay.with_instance(self),
+                    ):
+                        await self._dispatch(scope, receive, send)
+                else:
+                    await self._dispatch(scope, receive, send)
         finally:
             if g_token is not None:
                 g_context.reset(g_token)
-            else:
-                if g_context.get(_G_UNSET) is not _G_UNSET:
-                    g_context.set(_G_UNSET)
-            if g_active_token is not None:
-                _reset_g_active(g_active_token)
 
     async def _dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if self._fast_http and scope["type"] == "http":
-            response_started = False
+        if self._fast_http and scope["type"] == "http" and self._fast_route is not None:
+            response_started = False  # type: ignore
 
             async def sender(message: dict[str, Any]) -> None:
                 nonlocal response_started
@@ -569,24 +569,49 @@ class BaseLilya:
                 router_app = self.router
 
             try:
+                route = self._fast_route
+                root_path = scope.get("root_path", "")
+                full_path = scope.get("path", "")
+                if root_path and full_path.startswith(root_path):
+                    route_path = full_path[len(root_path) :]
+                else:
+                    route_path = full_path
+
+                if route_path == route.path:
+                    scope["route"] = route
+                    scope["route_path_template"] = route.path
+                    scope["handler"] = route.handler
+                    if route.dependencies:
+                        existing = scope.get("dependencies")
+                        if existing:
+                            scope["dependencies"] = [*existing, route.dependencies]
+                        else:
+                            scope["dependencies"] = [route.dependencies]
+                    await route.handle_dispatch(scope, receive, sender)
+                    return
+
                 await router_app(scope, receive, sender)
             except HTTPException as exc:
                 if response_started:
                     raise
                 if getattr(exc, "response", None) is not None:
-                    response = exc.response  # type: ignore[assignment]
-                elif exc.status_code in {status.HTTP_204_NO_CONTENT, status.HTTP_304_NOT_MODIFIED}:
+                    response = exc.response
+                elif exc.status_code in {
+                    status.HTTP_204_NO_CONTENT,
+                    status.HTTP_304_NOT_MODIFIED,
+                }:
                     response = Response(status_code=exc.status_code, headers=exc.headers)
                 else:
                     response = PlainText(
                         exc.detail, status_code=exc.status_code, headers=exc.headers
                     )
-                await response(scope, receive, sender)  # type: ignore[arg-type]
+                await response(scope, receive, sender)
             except Exception:
                 if response_started:
                     raise
                 response = PlainText(
-                    "Internal Server Error", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    "Internal Server Error",
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
                 await response(scope, receive, sender)
                 raise
@@ -1166,6 +1191,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
         self.state = State()
         self.middleware_stack: ASGIApp | None = None
         self._fast_http: bool = False
+        self._fast_route: Path | None = None
         self.enable_openapi = self.load_settings_value(
             "enable_openapi", enable_openapi, is_boolean=True
         )
@@ -1228,6 +1254,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
             _monkay.set_instance(self)
 
         self._fast_http = self._compute_fast_http()
+        self._fast_route = self._compute_fast_route()
 
     def _compute_fast_http(self) -> bool:
         if self.debug:
@@ -1238,7 +1265,22 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
             return False
         if self.enable_intercept_global_exceptions:
             return False
+        if self.settings_module is not None:
+            return False
         return True
+
+    def _compute_fast_route(self) -> Path | None:
+        if not self._fast_http:
+            return None
+        routes = getattr(self.router, "routes", None)
+        if not routes or len(routes) != 1:
+            return None
+        route = routes[0]
+        if not isinstance(route, Path):
+            return None
+        if not getattr(route, "_static_path", False):
+            return None
+        return route
 
     def _normalize_hooks(self, value: Any) -> list[Any]:
         """

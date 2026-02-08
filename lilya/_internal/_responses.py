@@ -540,6 +540,14 @@ class BaseHandler:
                     handler = _lookup_exception_handler(exception_handlers, exc)
 
                 if handler is None:
+                    if response_started:
+                        error_handler = scope.get("lilya.error_handler")
+                        if error_handler is not None:
+                            req = get_request()
+                            if is_async_callable(error_handler):
+                                await error_handler(req, exc)
+                            else:
+                                await run_in_threadpool(error_handler, req, exc)
                     raise
 
                 # Exception handlers require a Request/WebSocket conn to emit a response.

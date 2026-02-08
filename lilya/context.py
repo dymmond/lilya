@@ -266,38 +266,30 @@ class G:
 
 
 _G_UNSET = object()
-_G_ACTIVE: contextvars.ContextVar[bool] = contextvars.ContextVar("g_active", default=False)
-g_context: contextvars.ContextVar[object] = contextvars.ContextVar("g_context")
+_G_ACTIVE = object()
+g_context: contextvars.ContextVar[object] = contextvars.ContextVar("g_context", default=_G_UNSET)
 
 
 def get_g() -> G:
-    value = g_context.get(_G_UNSET)
+    value = g_context.get()
+    if value is _G_ACTIVE:
+        g = G()
+        g_context.set(g)
+        return g
     if value is _G_UNSET:
-        if _G_ACTIVE.get(False):
-            g = G()
-            g_context.set(g)
-            return g
         raise LookupError("g_context is not set")
     return cast(G, value)
 
 
 def _get_or_create_g() -> G:
-    value = g_context.get(_G_UNSET)
+    value = g_context.get()
     if value is _G_UNSET:
-        if not _G_ACTIVE.get(False):
-            raise LookupError("g_context is not set")
+        raise LookupError("g_context is not set")
+    if value is _G_ACTIVE:
         g = G()
         g_context.set(g)
         return g
     return cast(G, value)
-
-
-def _set_g_active() -> contextvars.Token[bool]:
-    return _G_ACTIVE.set(True)
-
-
-def _reset_g_active(token: contextvars.Token[bool]) -> None:
-    _G_ACTIVE.reset(token)
 
 
 class LazyGProxy:
