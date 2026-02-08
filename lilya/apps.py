@@ -4,6 +4,7 @@ from collections.abc import Awaitable, Callable, Mapping, Sequence
 from inspect import isawaitable
 from typing import Annotated, Any, ClassVar, ParamSpec, cast
 
+from lilya import status
 from lilya._internal._connection import Connection  # noqa
 from lilya._internal._middleware import wrap_middleware  # noqa
 from lilya._internal._module_loading import import_string  # noqa
@@ -16,6 +17,7 @@ from lilya.context import _G_UNSET, G, _reset_g_active, _set_g_active, g_context
 from lilya.contrib.documentation import Doc
 from lilya.datastructures import State, URLPath
 from lilya.dependencies import wrap_dependency
+from lilya.exceptions import HTTPException
 from lilya.introspection import ApplicationGraph
 from lilya.introspection.__builder import GraphBuilder
 from lilya.lifecycle import get_hooks as _lifecycle_get_hooks
@@ -28,7 +30,7 @@ from lilya.permissions.base import DefinePermission
 from lilya.protocols.middleware import MiddlewareProtocol
 from lilya.protocols.permissions import PermissionProtocol
 from lilya.requests import Request
-from lilya.responses import Response
+from lilya.responses import PlainText, Response
 from lilya.routing import BasePath, Include, Router, RoutingMethodsMixin
 from lilya.serializers import SerializerConfig, setup_serializer
 from lilya.types import (
@@ -383,6 +385,7 @@ class BaseLilya:
         """
         if self.middleware_stack is not None:
             raise RuntimeError("Middlewares cannot be added once the application has started.")
+        self._fast_http = False
         self.custom_middleware.insert(0, DefineMiddleware(middleware, *args, **kwargs))
 
     def add_permission(
@@ -400,6 +403,7 @@ class BaseLilya:
         exception_cls_or_status_code: int | type[Exception],
         handler: ExceptionHandler,
     ) -> None:
+        self._fast_http = False
         self.exception_handlers[exception_cls_or_status_code] = handler
 
     def add_event_handler(self, event_type: str, func: Callable[[], Any]) -> None:
@@ -499,15 +503,14 @@ class BaseLilya:
         if self.root_path:
             scope["root_path"] = self.root_path
 
-        if self.middleware_stack is None:
-            self.middleware_stack = self.build_middleware_stack()
-
         g_token = None
         g_active_token = None
         try:
             if scope["type"] in {"http", "websocket", "lifespan"}:
                 g_active_token = _set_g_active()
-                g_token = g_context.set(_G_UNSET)
+                current_g = g_context.get(_G_UNSET)
+                if current_g is not _G_UNSET:
+                    g_token = g_context.set(_G_UNSET)
 
                 if self.populate_global_context is not None and scope["type"] in {
                     "http",
@@ -533,14 +536,66 @@ class BaseLilya:
 
             if use_monkay_context:
                 with _monkay.with_settings(self.settings), _monkay.with_instance(self):
-                    await self.middleware_stack(scope, receive, send)
+                    await self._dispatch(scope, receive, send)
             else:
-                await self.middleware_stack(scope, receive, send)
+                await self._dispatch(scope, receive, send)
         finally:
             if g_token is not None:
                 g_context.reset(g_token)
+            else:
+                if g_context.get(_G_UNSET) is not _G_UNSET:
+                    g_context.set(_G_UNSET)
             if g_active_token is not None:
                 _reset_g_active(g_active_token)
+
+    async def _dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if self._fast_http and scope["type"] == "http":
+            response_started = False
+
+            async def sender(message: dict[str, Any]) -> None:
+                nonlocal response_started
+                if message.get("type") == "http.response.start":
+                    response_started = True
+                await send(message)
+
+            router_app: ASGIApp
+            if (
+                not self.router.before_request
+                and not self.router.after_request
+                and self.router.settings_module is None
+            ):
+                router_app = self.router.middleware_stack
+            else:
+                router_app = self.router
+
+            try:
+                await router_app(scope, receive, sender)
+            except HTTPException as exc:
+                if response_started:
+                    raise
+                if getattr(exc, "response", None) is not None:
+                    response = exc.response  # type: ignore[assignment]
+                elif exc.status_code in {status.HTTP_204_NO_CONTENT, status.HTTP_304_NOT_MODIFIED}:
+                    response = Response(status_code=exc.status_code, headers=exc.headers)
+                else:
+                    response = PlainText(
+                        exc.detail, status_code=exc.status_code, headers=exc.headers
+                    )
+                await response(scope, receive, sender)  # type: ignore[arg-type]
+            except Exception:
+                if response_started:
+                    raise
+                response = PlainText(
+                    "Internal Server Error", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+                await response(scope, receive, sender)
+                raise
+            return
+
+        if self.middleware_stack is None:
+            self.middleware_stack = self.build_middleware_stack()
+
+        await self.middleware_stack(scope, receive, send)
 
 
 class Lilya(RoutingMethodsMixin, BaseLilya):
@@ -1110,6 +1165,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
         self.serializer_config = self.load_settings_value("serializer_config", serializer_config)
         self.state = State()
         self.middleware_stack: ASGIApp | None = None
+        self._fast_http: bool = False
         self.enable_openapi = self.load_settings_value(
             "enable_openapi", enable_openapi, is_boolean=True
         )
@@ -1170,6 +1226,19 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
 
         if self.register_as_global_instance:
             _monkay.set_instance(self)
+
+        self._fast_http = self._compute_fast_http()
+
+    def _compute_fast_http(self) -> bool:
+        if self.debug:
+            return False
+        if self.exception_handlers:
+            return False
+        if self.custom_middleware:
+            return False
+        if self.enable_intercept_global_exceptions:
+            return False
+        return True
 
     def _normalize_hooks(self, value: Any) -> list[Any]:
         """

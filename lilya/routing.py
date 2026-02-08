@@ -551,18 +551,15 @@ class Path(BaseHandler, BasePath):
             route_path = get_route_path(scope)
             if self._static_path and self.path_regex.pattern == self._path_regex_str:
                 if route_path == self.path:
+                    child_scope: dict[str, Any] = {"handler": self.handler}
+
                     path_params = scope.get("path_params", {})
                     if path_params:
-                        path_params = dict(path_params)
-                    else:
-                        path_params = {}
+                        child_scope["path_params"] = dict(path_params)
 
                     upstream = list(scope.get("dependencies", []))
-                    child_scope = {
-                        "handler": self.handler,
-                        "path_params": path_params,
-                        "dependencies": upstream + [self.dependencies],
-                    }
+                    if upstream or self.dependencies:
+                        child_scope["dependencies"] = upstream + [self.dependencies]
 
                     if self.methods and scope["method"] not in self.methods:
                         return Match.PARTIAL, child_scope
@@ -1603,18 +1600,31 @@ class BaseRouter:
                     try:
                         if match == Match.FULL:
                             base_scope = scope
-                            if "path_params" in child_scope:
-                                base_scope.setdefault("path_params", {}).update(
-                                    child_scope["path_params"]
+                            if child_scope:
+                                if "path_params" in child_scope:
+                                    base_scope.setdefault("path_params", {}).update(
+                                        child_scope["path_params"]
+                                    )
+                                base_scope["route"] = fast_route
+                                base_scope["route_path_template"] = getattr(
+                                    fast_route, "path", None
                                 )
-                            base_scope["route"] = fast_route
-                            base_scope["route_path_template"] = getattr(fast_route, "path", None)
 
-                            if self.dependency_overrides:
-                                base_scope["dependency_overrides"] = self.dependency_overrides
+                                if self.dependency_overrides:
+                                    base_scope["dependency_overrides"] = self.dependency_overrides
 
-                            new_scope = dict(base_scope)
-                            new_scope.update(child_scope)
+                                new_scope = dict(base_scope)
+                                new_scope.update(child_scope)
+                            else:
+                                base_scope["route"] = fast_route
+                                base_scope["route_path_template"] = getattr(
+                                    fast_route, "path", None
+                                )
+
+                                if self.dependency_overrides:
+                                    base_scope["dependency_overrides"] = self.dependency_overrides
+
+                                new_scope = base_scope
                         else:
                             new_scope = dict(scope)
                             new_scope.update(child_scope)
