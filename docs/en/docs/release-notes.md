@@ -11,10 +11,23 @@ hide:
 
 - Performance improvements to the way the system behaves in a fast-path discovery.
 
+### Changed
+
+- `LifespanGlobalContextMiddleware` is no longer activated by default. The reason for this is to avoid overhead in applications
+where people do not require the use of the `g`. **You will need to import it into your application now**.
+
+```python
+from lilya.middleware import DefineMiddleware
+from lilya.middleware.global_context import LifespanGlobalContextMiddleware
+
+DefineMiddleware(LifespanGlobalContextMiddleware),
+```
+
 ### Fixed
 
 - `from future import __annotations__` was not being taken into account for the Encoders.
 - Remove overhead functions that are not used internally. This affected slightly the performance.
+- Settings discovery with `settings_module` was not respecting the hierarchy properly on ChildLilya.
 
 ## 0.23.3
 

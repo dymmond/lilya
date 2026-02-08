@@ -62,7 +62,9 @@ def test_app_settings_middleware_nested_with_child_esmerald(test_client_factory)
         assert response.json() == {"title": "Nested app title", "debug": True}
 
 
-def test_app_settings_middleware_nested_with_child_esmerald_and_global(test_client_factory):
+def test_app_settings_middleware_nested_with_child_esmerald_and_global(
+    test_client_factory,
+):
     with create_client(
         settings_module=NewSettings,
         routes=[
@@ -99,4 +101,7 @@ def test_app_settings_middleware_nested_with_child_esmerald_and_global(test_clie
 
         response = client.get("/another-child/home")
 
-        assert response.json() == {"title": "Lilya", "debug": True}
+        assert response.json() == {
+            "title": "Settings being parsed by the middleware and make it app global",
+            "debug": False,
+        }
