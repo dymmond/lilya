@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from json import loads
 from typing import cast
 
@@ -45,7 +46,9 @@ def _lookup_exception_handler(
     return None
 
 
-def wrap_app_handling_exceptions(app: ASGIApp, conn: Request | WebSocket) -> ASGIApp:
+def wrap_app_handling_exceptions(
+    app: ASGIApp, conn: Request | WebSocket | Callable[[], Request | WebSocket]
+) -> ASGIApp:
     """
     Wraps an ASGI application, handling exceptions and applying exception handlers.
 
@@ -56,10 +59,11 @@ def wrap_app_handling_exceptions(app: ASGIApp, conn: Request | WebSocket) -> ASG
     Returns:
         ASGIApp: The wrapped ASGI application.
     """
-    try:
-        exception_handlers, status_handlers = conn.scope["lilya.exception_handlers"]
-    except KeyError:
-        exception_handlers, status_handlers = {}, {}
+
+    def get_conn() -> Request | WebSocket:
+        if callable(conn):
+            return conn()
+        return conn
 
     async def wrapped_app(scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -85,6 +89,11 @@ def wrap_app_handling_exceptions(app: ASGIApp, conn: Request | WebSocket) -> ASG
         try:
             await app(scope, receive, sender)
         except Exception as exc:
+            try:
+                exception_handlers, status_handlers = scope["lilya.exception_handlers"]
+            except KeyError:
+                exception_handlers, status_handlers = {}, {}
+
             handler = None
 
             if isinstance(exc, HTTPException):
@@ -100,7 +109,7 @@ def wrap_app_handling_exceptions(app: ASGIApp, conn: Request | WebSocket) -> ASG
                 msg = "Caught handled exception, but response already started."
                 raise RuntimeError(msg) from exc
 
-            await handle_exception(scope, conn, exc, handler)
+            await handle_exception(scope, get_conn(), exc, handler)
 
     return wrapped_app
 

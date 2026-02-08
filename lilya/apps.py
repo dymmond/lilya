@@ -500,12 +500,24 @@ class BaseLilya:
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         scope["app"] = self
-        with _monkay.with_settings(self.settings), _monkay.with_instance(self):
-            if self.root_path:
-                scope["root_path"] = self.root_path
+        if self.root_path:
+            scope["root_path"] = self.root_path
 
-            if self.middleware_stack is None:
-                self.middleware_stack = self.build_middleware_stack()
+        if self.middleware_stack is None:
+            self.middleware_stack = self.build_middleware_stack()
+
+        use_monkay_context = self.settings_module is not None
+        if not use_monkay_context:
+            try:
+                current_instance = _monkay.instance
+            except Exception:
+                current_instance = None
+            use_monkay_context = current_instance is not self
+
+        if use_monkay_context:
+            with _monkay.with_settings(self.settings), _monkay.with_instance(self):
+                await self.middleware_stack(scope, receive, send)
+        else:
             await self.middleware_stack(scope, receive, send)
 
 
@@ -1120,7 +1132,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
                 on_shutdown=_on_shutdown,
                 lifespan=_lifespan,
                 include_in_schema=include_in_schema,
-                settings_module=self.settings,
+                settings_module=self.settings_module,
                 before_request=self.before_request_callbacks,
                 after_request=self.after_request_callbacks,
             )

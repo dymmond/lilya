@@ -348,6 +348,7 @@ ignore = [
     "B026",  # too complex
     "UP006",
     "UP038",
+    "E731"
 ]
 
 
