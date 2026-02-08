@@ -10,6 +10,7 @@ from lilya import status
 from lilya.apps import Lilya
 from lilya.controllers import Controller
 from lilya.exceptions import HTTPException, ImproperlyConfigured, WebSocketException
+from lilya.middleware.asyncexit import AsyncExitStackMiddleware
 from lilya.middleware.base import Middleware
 from lilya.middleware.trustedhost import TrustedHostMiddleware
 from lilya.responses import JSONResponse, PlainText
@@ -262,6 +263,7 @@ def test_app_debug(test_client_factory):
         routes=[
             Path("/", homepage),
         ],
+        middleware=[AsyncExitStackMiddleware],
     )
     app.debug = True
 
