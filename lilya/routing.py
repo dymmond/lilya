@@ -1242,6 +1242,8 @@ class BaseRouter:
         "before_request",
         "after_request",
         "dependencies",
+        "_fast_path_len",
+        "_fast_path_route",
     )
 
     def __init__(
@@ -1335,6 +1337,9 @@ class BaseRouter:
         self._apply_permissions(self.wrapped_permissions)
         self._apply_middleware(self.middleware)
 
+        self._fast_path_len = -1
+        self._fast_path_route: BasePath | None = None
+
     def _apply_middleware(self, middleware: Sequence[DefineMiddleware] | None) -> None:
         """
         Apply middleware to the app.
@@ -1393,6 +1398,16 @@ class BaseRouter:
                 await handler()
             else:
                 handler()
+
+    def _compute_fast_path(self, routes: Sequence[BasePath]) -> BasePath | None:
+        if self.is_sub_router or len(routes) != 1:
+            return None
+
+        route = routes[0]
+        if not isinstance(route, Path):
+            return None
+
+        return route
 
     async def handle_route(self, route: BasePath, path_handler: PathHandler) -> None:
         """
@@ -1511,6 +1526,63 @@ class BaseRouter:
 
         if "router" not in scope:
             scope["router"] = self
+
+        if scope["type"] == ScopeType.HTTP:
+            routes = self.routes
+            if self._fast_path_len != len(routes) or (
+                len(routes) == 1 and routes[0] is not self._fast_path_route
+            ):
+                self._fast_path_route = self._compute_fast_path(routes)
+                self._fast_path_len = len(routes)
+
+            fast_route = self._fast_path_route
+            if fast_route is not None:
+                match, child_scope = fast_route.search(scope)
+                had_match = match != Match.NONE
+
+                if had_match:
+                    try:
+                        if match == Match.FULL:
+                            base_scope = scope
+                            if "path_params" in child_scope:
+                                base_scope.setdefault("path_params", {}).update(
+                                    child_scope["path_params"]
+                                )
+                            base_scope["route"] = fast_route
+                            base_scope["route_path_template"] = getattr(fast_route, "path", None)
+
+                            if self.dependency_overrides:
+                                base_scope["dependency_overrides"] = self.dependency_overrides
+
+                            new_scope = dict(base_scope)
+                            new_scope.update(child_scope)
+                        else:
+                            new_scope = dict(scope)
+                            new_scope.update(child_scope)
+
+                        await fast_route.handle_dispatch(new_scope, receive, send)  # type: ignore
+                        return
+                    except ContinueRouting:
+                        pass
+
+                if not had_match and self.redirect_slashes:
+                    route_path = get_route_path(scope)
+                    if route_path != "/":
+                        redirect_scope = dict(scope)
+                        if route_path.endswith("/"):
+                            redirect_scope["path"] = redirect_scope["path"].rstrip("/")
+                        else:
+                            redirect_scope["path"] = redirect_scope["path"] + "/"
+
+                        match, _child = fast_route.search(redirect_scope)
+                        if match != Match.NONE:
+                            redirect_url = URL.build_from_scope(scope=redirect_scope)
+                            response = RedirectResponse(url=str(redirect_url))
+                            await response(scope, receive, send)
+                            return
+
+                await self.handle_default(scope, receive, send)
+                return
 
         sniffer = SendReceiveSniffer(receive, send)
 
