@@ -128,7 +128,10 @@ class ExceptionMiddleware(MiddlewareProtocol):
         if getattr(exc, "response", None) is not None:
             return cast(Response, exc.response)
 
-        if exc.status_code in {status.HTTP_204_NO_CONTENT, status.HTTP_304_NOT_MODIFIED}:
+        if exc.status_code in {
+            status.HTTP_204_NO_CONTENT,
+            status.HTTP_304_NOT_MODIFIED,
+        }:
             return Response(status_code=exc.status_code, headers=exc.headers)
 
         return PlainText(exc.detail, status_code=exc.status_code, headers=exc.headers)

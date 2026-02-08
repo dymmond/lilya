@@ -5,7 +5,11 @@ hide:
 
 # Release Notes
 
-## 0.23.4
+## 0.24.0
+
+### Added
+
+- Performance improvements to the way the system behaves in a fast-path discovery.
 
 ### Fixed
 
