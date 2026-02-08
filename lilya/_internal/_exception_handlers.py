@@ -106,8 +106,7 @@ def wrap_app_handling_exceptions(
                 raise exc
 
             if response_started:
-                msg = "Caught handled exception, but response already started."
-                raise RuntimeError(msg) from exc
+                raise exc
 
             await handle_exception(scope, get_conn(), exc, handler)
 
