@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import io
 from typing import Any
 
@@ -52,7 +54,12 @@ def test_infer_body_with_dependency(test_client_factory):
         response = client.post("/infer", json=data)
 
         assert response.status_code == 200
-        assert response.json() == {"name": "lilya", "age": 10, "sku": "test", "x": "app_value"}
+        assert response.json() == {
+            "name": "lilya",
+            "age": 10,
+            "sku": "test",
+            "x": "app_value",
+        }
 
 
 async def process_body_with_dependency_not_passed(user: User, item: Item):
@@ -63,7 +70,13 @@ def test_infer_body_with_dependency_not_passed(test_client_factory):
     data = {"user": {"name": "lilya", "age": 10}, "item": {"sku": "test"}}
 
     with create_client(
-        routes=[Path("/infer", handler=process_body_with_dependency_not_passed, methods=["POST"])],
+        routes=[
+            Path(
+                "/infer",
+                handler=process_body_with_dependency_not_passed,
+                methods=["POST"],
+            )
+        ],
         dependencies={"x": Provide(lambda: "app_value")},
         settings_module=EncoderSettings,
     ) as client:
@@ -82,7 +95,11 @@ def test_infer_body_with_dependency_without_provides(test_client_factory):
 
     with create_client(
         routes=[
-            Path("/infer", handler=process_body_with_dependency_without_provides, methods=["POST"])
+            Path(
+                "/infer",
+                handler=process_body_with_dependency_without_provides,
+                methods=["POST"],
+            )
         ],
         dependencies={"x": Provide(lambda: "app_value")},
         settings_module=EncoderSettings,
@@ -90,7 +107,12 @@ def test_infer_body_with_dependency_without_provides(test_client_factory):
         response = client.post("/infer", json=data)
 
         assert response.status_code == 200
-        assert response.json() == {"name": "lilya", "age": 10, "sku": "test", "x": "app_value"}
+        assert response.json() == {
+            "name": "lilya",
+            "age": 10,
+            "sku": "test",
+            "x": "app_value",
+        }
 
 
 async def process_form(user: User, item: Item):
