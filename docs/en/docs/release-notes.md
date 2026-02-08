@@ -5,6 +5,13 @@ hide:
 
 # Release Notes
 
+## 0.23.4
+
+### Fixed
+
+- `from future import __annotations__` was not being taken into account for the Encoders.
+- Remove overhead functions that are not used internally. This affected slightly the performance.
+
 ## 0.23.3
 
 ### Added

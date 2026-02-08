@@ -178,32 +178,6 @@ class BaseHandler:
     __reserved_data__: dict[str, Any] | None = None
     signature: inspect.Signature | None = None
 
-    def extract_request_information(self, request: Request, signature: inspect.Signature) -> None:
-        """
-        Extracts the information and flattens the request dictionaries in the handler.
-        """
-        self.__query_params__ = dict(request.query_params.items())
-        self.__path_params__ = dict(request.path_params.items())
-        self.__header_params__ = dict(request.headers.items())
-        self.__cookie_params__ = dict(request.cookies.items())
-
-        reserved_keys = set(self.__path_params__.keys())
-        reserved_keys.update(self.__query_params__.keys())
-        reserved_keys.update(self.__header_params__.keys())
-        reserved_keys.update(self.__cookie_params__.keys())
-
-        self.__reserved_data__ = {
-            "path_params": self.__path_params__,
-            "header_params": self.__header_params__,
-            "cookie_params": self.__cookie_params__,
-            "query_params": self.__query_params__,
-        }
-
-        # Store the body params in the handler variable
-        self.__body_params__ = {
-            k: v.annotation for k, v in signature.parameters.items() if k not in reserved_keys
-        }
-
     def handle_response(
         self,
         func: (
@@ -260,8 +234,6 @@ class BaseHandler:
                 """
                 signature = other_signature or self.signature or static_signature
                 signature, plan = resolve_signature_and_plan(func, signature)
-
-                self.extract_request_information(request=request, signature=signature)
 
                 # Ultra-fast short-circuits already exist below (no params, request-only, context-only).
                 # Here we add a common-case fast path for handlers that:
