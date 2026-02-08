@@ -265,11 +265,39 @@ class G:
         return f"{self.__class__.__name__}()"
 
 
-g_context: contextvars.ContextVar[G] = contextvars.ContextVar("g_context")
+_G_UNSET = object()
+_G_ACTIVE: contextvars.ContextVar[bool] = contextvars.ContextVar("g_active", default=False)
+g_context: contextvars.ContextVar[object] = contextvars.ContextVar("g_context")
 
 
 def get_g() -> G:
-    return g_context.get()
+    value = g_context.get(_G_UNSET)
+    if value is _G_UNSET:
+        if _G_ACTIVE.get(False):
+            g = G()
+            g_context.set(g)
+            return g
+        raise LookupError("g_context is not set")
+    return cast(G, value)
+
+
+def _get_or_create_g() -> G:
+    value = g_context.get(_G_UNSET)
+    if value is _G_UNSET:
+        if not _G_ACTIVE.get(False):
+            raise LookupError("g_context is not set")
+        g = G()
+        g_context.set(g)
+        return g
+    return cast(G, value)
+
+
+def _set_g_active() -> contextvars.Token[bool]:
+    return _G_ACTIVE.set(True)
+
+
+def _reset_g_active(token: contextvars.Token[bool]) -> None:
+    _G_ACTIVE.reset(token)
 
 
 class LazyGProxy:
@@ -279,16 +307,16 @@ class LazyGProxy:
 
     @property
     def store(self) -> Any:
-        return get_g().store
+        return _get_or_create_g().store
 
     def __getattr__(self, item: str) -> Any:
-        return getattr(get_g(), item)
+        return getattr(_get_or_create_g(), item)
 
     def __setattr__(self, key: Any, value: Any) -> None:
-        get_g().__setattr__(key, value)
+        _get_or_create_g().__setattr__(key, value)
 
     def __delattr__(self, key: Any) -> None:
-        delattr(get_g(), key)
+        delattr(_get_or_create_g(), key)
 
     def __copy__(self) -> G:
         try:
@@ -297,13 +325,15 @@ class LazyGProxy:
             return G()
 
     def __len__(self) -> int:
-        return len(get_g())
+        return len(_get_or_create_g())
 
     def __getitem__(self, key: str) -> Any:
-        return get_g()[key]
+        return _get_or_create_g()[key]
 
     def __repr__(self: LazyRequestProxy) -> str:
-        if get_g() is None:
+        try:
+            get_g()
+        except LookupError:
             return "<LazyGProxy [Unevaluated]>"
         return '<LazyGProxy "G()">'
 

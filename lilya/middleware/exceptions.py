@@ -7,7 +7,7 @@ from lilya import status
 from lilya._internal._exception_handlers import (
     ExceptionHandlers,
     StatusHandlers,
-    wrap_app_handling_exceptions,
+    handle_exception,
 )
 from lilya.enums import ScopeType
 from lilya.exceptions import HTTPException, WebSocketException
@@ -104,12 +104,43 @@ class ExceptionMiddleware(MiddlewareProtocol):
             self._exception_handlers,
             self._status_handlers,
         )
+        response_started = False
+
         if scope["type"] == ScopeType.HTTP:
-            get_conn = lambda: Request(scope, receive, send)
+
+            async def sender(message: dict[str, Any]) -> None:
+                nonlocal response_started
+                if message.get("type") == "http.response.start":
+                    response_started = True
+                await send(message)
+
+            get_conn = lambda: Request(scope, receive, sender)  # type: ignore
+            send_wrapper = sender
         else:
             get_conn = lambda: WebSocket(scope, receive, send)  # type: ignore
+            send_wrapper = send  # type: ignore
 
-        await wrap_app_handling_exceptions(self.app, get_conn)(scope, receive, send)
+        try:
+            await self.app(scope, receive, send_wrapper)  # type: ignore
+        except Exception as exc:
+            handler = None
+
+            if isinstance(exc, HTTPException):
+                handler = self._status_handlers.get(exc.status_code)
+
+            if handler is None:
+                for cls in type(exc).__mro__:
+                    if cls in self._exception_handlers:
+                        handler = self._exception_handlers[cls]
+                        break
+
+            if handler is None:
+                raise exc
+
+            if response_started:
+                raise exc
+
+            await handle_exception(scope, get_conn(), exc, handler)  # type: ignore
 
     async def http_exception(self, request: Request, exc: Exception) -> Response:
         """

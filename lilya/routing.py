@@ -315,6 +315,12 @@ class Path(BaseHandler, BasePath):
         "__handler_app__",
         "_signature",
         "dependencies",
+        "_path_regex_str",
+        "_static_path",
+        "_has_before",
+        "_has_after",
+        "_has_exception_handlers",
+        "_is_controller",
     )
 
     def __init__(
@@ -389,6 +395,12 @@ class Path(BaseHandler, BasePath):
         self.path_regex, self.path_format, self.param_convertors, self.path_start = compile_path(
             self.path
         )
+        self._path_regex_str = self.path_regex.pattern
+        self._static_path = not self.param_convertors
+        self._has_before = bool(self.before_request)
+        self._has_after = bool(self.after_request)
+        self._has_exception_handlers = bool(self.exception_handlers)
+        self._is_controller = hasattr(self.app, "__is_controller__")
 
     @property
     def signature(self) -> inspect.Signature:
@@ -537,6 +549,26 @@ class Path(BaseHandler, BasePath):
         """
         if scope["type"] == ScopeType.HTTP:
             route_path = get_route_path(scope)
+            if self._static_path and self.path_regex.pattern == self._path_regex_str:
+                if route_path == self.path:
+                    path_params = scope.get("path_params", {})
+                    if path_params:
+                        path_params = dict(path_params)
+                    else:
+                        path_params = {}
+
+                    upstream = list(scope.get("dependencies", []))
+                    child_scope = {
+                        "handler": self.handler,
+                        "path_params": path_params,
+                        "dependencies": upstream + [self.dependencies],
+                    }
+
+                    if self.methods and scope["method"] not in self.methods:
+                        return Match.PARTIAL, child_scope
+                    return Match.FULL, child_scope
+                return Match.NONE, {}
+
             match = self.path_regex.match(route_path)
             if match:
                 return self.handle_match(scope, match)
@@ -599,6 +631,33 @@ class Path(BaseHandler, BasePath):
                 response = PlainText("Method Not Allowed", status_code=405, headers=headers)
             await response(scope, receive, send)
         else:
+            if not self._has_exception_handlers:
+                if self._has_before:
+                    for before_request in self.before_request:
+                        if inspect.isclass(before_request):
+                            before_request = before_request()
+
+                        if is_async_callable(before_request):
+                            await before_request(scope, receive, send)
+                        else:
+                            await run_in_threadpool(before_request, scope, receive, send)
+
+                if not self._is_controller:
+                    await self.app(scope, receive, send)
+                else:
+                    await self.handle_controller(scope, receive, send)
+
+                if self._has_after:
+                    for after_request in self.after_request:
+                        if inspect.isclass(after_request):
+                            after_request = after_request()
+
+                        if is_async_callable(after_request):
+                            await after_request(scope, receive, send)
+                        else:
+                            await run_in_threadpool(after_request, scope, receive, send)
+                return
+
             try:
                 for before_request in self.before_request:
                     if inspect.isclass(before_request):
@@ -609,7 +668,7 @@ class Path(BaseHandler, BasePath):
                     else:
                         await run_in_threadpool(before_request, scope, receive, send)
 
-                if not hasattr(self.app, "__is_controller__"):
+                if not self._is_controller:
                     await self.app(scope, receive, send)
                 else:
                     await self.handle_controller(scope, receive, send)

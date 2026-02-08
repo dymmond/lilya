@@ -378,8 +378,6 @@ class BaseHandler:
                     response_started = True
                 await send(message)
 
-            exception_handlers, status_handlers = _get_exception_handlers_from_scope(scope)
-
             request: Request | None = None
 
             def get_request() -> Request:
@@ -532,6 +530,7 @@ class BaseHandler:
                 await self._handle_response_content(response, scope, receive, sender)
 
             except Exception as exc:
+                exception_handlers, status_handlers = _get_exception_handlers_from_scope(scope)
                 handler: ExceptionHandler | None = None
 
                 if isinstance(exc, HTTPException):
@@ -543,12 +542,17 @@ class BaseHandler:
                 if handler is None:
                     raise
 
-                if response_started:
-                    msg = "Caught handled exception, but response already started."
-                    raise RuntimeError(msg) from exc
-
                 # Exception handlers require a Request/WebSocket conn to emit a response.
                 req = get_request()
+
+                if response_started:
+                    # Response already started: invoke handler for side effects only, then re-raise.
+                    if is_async_callable(handler):
+                        await handler(req, exc)
+                    else:
+                        await run_in_threadpool(handler, req, exc)
+                    raise exc
+
                 await handle_exception(scope, req, exc, handler)
 
         return app

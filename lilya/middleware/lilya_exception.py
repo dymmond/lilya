@@ -83,16 +83,26 @@ class LilyaExceptionMiddleware(MiddlewareProtocol):
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
 
+        response_started = False
+
+        async def send_wrapper(message: dict[str, Any]) -> None:
+            nonlocal response_started
+            if message.get("type") == "http.response.start":
+                response_started = True
+            await send(message)
+
         request = Request(scope, receive)
         try:
-            await self.app(scope, receive, send)
+            await self.app(scope, receive, send_wrapper)  # type: ignore
         except Exception as exc:
+            if response_started:
+                raise
             handler = self._lookup_handler(exc)
             if handler:
                 response = await handler(request, exc)
             else:
                 response = self.create_exception_response(exc)
-            await response(scope, receive, send)
+            await response(scope, receive, send_wrapper)
 
     def create_exception_response(self, exc: Exception) -> Response:
         """

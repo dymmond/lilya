@@ -201,6 +201,7 @@ how to use it is available.
 * `RequestContextMiddleware` - Adds a `request_context` object context without the need to use handlers.
 * `AuthenticationMiddleware` & `BaseAuthMiddleware` - See [above](#baseauthmiddleware--authenticationmiddleware).
 * `SessionContextMiddleware`- Adds a `session` object context to be accessed in the handlers or request context in general.
+* `AsyncExitStackMiddleware` - Exit stack middleware.
 
 ### CSRFMiddleware
 
@@ -516,6 +517,15 @@ You can multiplex a single session by providing `sub_path`:
 
 !!! Note
     This doesn't affect `request.session` or `scope["session"]`. Here you have still the original session object.
+
+### AsyncExitStackMiddleware
+
+Add this middleware if you require for instance all the debug details to be sent to your terminal. This was native prior
+to version 0.24.0 but now its optional.
+
+```python
+{!> ../../../docs_src/middleware/available/async_exit.py !}
+```
 
 ### Other middlewares
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable, Mapping, Sequence
+from inspect import isawaitable
 from typing import Annotated, Any, ClassVar, ParamSpec, cast
 
 from lilya._internal._connection import Connection  # noqa
@@ -11,6 +12,7 @@ from lilya._utils import is_class_and_subclass
 from lilya.conf import _monkay, settings as lilya_settings  # noqa
 from lilya.conf.exceptions import FieldException
 from lilya.conf.global_settings import Settings
+from lilya.context import _G_UNSET, G, _reset_g_active, _set_g_active, g_context
 from lilya.contrib.documentation import Doc
 from lilya.datastructures import State, URLPath
 from lilya.dependencies import wrap_dependency
@@ -18,10 +20,8 @@ from lilya.introspection import ApplicationGraph
 from lilya.introspection.__builder import GraphBuilder
 from lilya.lifecycle import get_hooks as _lifecycle_get_hooks
 from lilya.logging import LoggingConfig, setup_logging
-from lilya.middleware.asyncexit import AsyncExitStackMiddleware
 from lilya.middleware.base import DefineMiddleware
 from lilya.middleware.exceptions import ExceptionMiddleware
-from lilya.middleware.global_context import GlobalContextMiddleware
 from lilya.middleware.lilya_exception import LilyaExceptionMiddleware
 from lilya.middleware.server_error import ServerErrorMiddleware
 from lilya.permissions.base import DefinePermission
@@ -108,12 +108,8 @@ class BaseLilya:
 
         middleware = [
             DefineMiddleware(ServerErrorMiddleware, handler=error_handler, debug=self.debug),
-            DefineMiddleware(
-                GlobalContextMiddleware, populate_context=self.populate_global_context
-            ),
             *self.custom_middleware,
             DefineMiddleware(ExceptionMiddleware, handlers=exception_handlers, debug=self.debug),
-            DefineMiddleware(AsyncExitStackMiddleware, debug=self.debug),
         ]
 
         if self.enable_intercept_global_exceptions:
@@ -506,19 +502,45 @@ class BaseLilya:
         if self.middleware_stack is None:
             self.middleware_stack = self.build_middleware_stack()
 
-        use_monkay_context = self.settings_module is not None
-        if not use_monkay_context:
-            try:
-                current_instance = _monkay.instance
-            except Exception:
-                current_instance = None
-            use_monkay_context = current_instance is not self
+        g_token = None
+        g_active_token = None
+        try:
+            if scope["type"] in {"http", "websocket", "lifespan"}:
+                g_active_token = _set_g_active()
+                g_token = g_context.set(_G_UNSET)
 
-        if use_monkay_context:
-            with _monkay.with_settings(self.settings), _monkay.with_instance(self):
+                if self.populate_global_context is not None and scope["type"] in {
+                    "http",
+                    "websocket",
+                }:
+                    initial_context = self.populate_global_context(Connection(scope))
+                    if isawaitable(initial_context):
+                        initial_context = await initial_context
+                    if initial_context is not None:
+                        current = g_context.get(_G_UNSET)
+                        if isinstance(current, G):
+                            current.store.update(initial_context)
+                        else:
+                            g_context.set(G(initial_context))
+
+            use_monkay_context = self.settings_module is not None
+            if not use_monkay_context:
+                try:
+                    current_instance = _monkay.instance
+                except Exception:
+                    current_instance = None
+                use_monkay_context = current_instance is not self
+
+            if use_monkay_context:
+                with _monkay.with_settings(self.settings), _monkay.with_instance(self):
+                    await self.middleware_stack(scope, receive, send)
+            else:
                 await self.middleware_stack(scope, receive, send)
-        else:
-            await self.middleware_stack(scope, receive, send)
+        finally:
+            if g_token is not None:
+                g_context.reset(g_token)
+            if g_active_token is not None:
+                _reset_g_active(g_active_token)
 
 
 class Lilya(RoutingMethodsMixin, BaseLilya):
