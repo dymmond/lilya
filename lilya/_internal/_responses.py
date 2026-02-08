@@ -50,6 +50,12 @@ _PLAN_CACHE_ATTR = "__lilya_handler_plan__"
 
 
 def _build_handler_plan(sig: inspect.Signature) -> dict[str, Any]:
+    """
+    Builds a lightweight, immutable execution plan for a handler signature.
+
+    This plan is designed to be computed once per handler function and reused
+    across requests to avoid per-request introspection and branching.
+    """
     params = tuple(sig.parameters.items())
 
     has_provider_markers = any(
@@ -58,6 +64,24 @@ def _build_handler_plan(sig: inspect.Signature) -> dict[str, Any]:
 
     bound_fields = tuple(
         (n, p.default) for n, p in params if isinstance(p.default, (Query, Header, Cookie))
+    )
+
+    # Precompute a normalized representation of bound fields so the fast-path does
+    # not need to re-run isinstance chains or recompute lookup keys.
+    bound_getters: tuple[tuple[str, Any, str, str], ...] = tuple(
+        (
+            n,
+            field,
+            (
+                "query"
+                if isinstance(field, Query)
+                else "header"
+                if isinstance(field, Header)
+                else "cookie"
+            ),
+            (field.alias or n) if isinstance(field, Query) else field.value,
+        )
+        for n, field in bound_fields
     )
 
     # This mirrors your "body candidates" meaning: params that might come from body inference
@@ -81,9 +105,14 @@ def _build_handler_plan(sig: inspect.Signature) -> dict[str, Any]:
     return {
         "has_provider_markers": has_provider_markers,
         "bound_fields": bound_fields,
+        "bound_getters": bound_getters,
         "has_body_candidates": has_body_candidates,
         "body_eligible_names": body_eligible_names,
         "param_names": frozenset(sig.parameters.keys()),
+        "param_count": len(sig.parameters),
+        "needs_context": "context" in sig.parameters,
+        "needs_request": (SignatureDefault.REQUEST in sig.parameters)
+        or ("request" in sig.parameters),
     }
 
 
@@ -113,6 +142,18 @@ def _get_callable_namespaces(func: Any) -> tuple[dict[str, Any], dict[str, Any],
     localns.update(globalns)
 
     return globalns, localns, cache_target
+
+
+def _get_cache_target(func: Any) -> Any:
+    """
+    Returns the underlying function object that is safe to attach cache attributes to.
+
+    This avoids calling `inspect.unwrap()` and method introspection on the hot path.
+    """
+    target = inspect.unwrap(func)
+    if inspect.ismethod(target):
+        return target.__func__
+    return target
 
 
 def resolve_signature_annotations(func: Any, sig: inspect.Signature) -> inspect.Signature:
@@ -202,6 +243,55 @@ class BaseHandler:
         # will be provided by the caller. We default to `inspect.signature(func)` only once.
         static_signature: inspect.Signature | None = other_signature or inspect.signature(func)
 
+        # ---------------------------------------------------------------------
+        # Performance notes:
+        # - We resolve and cache the signature/plan once at decoration time, not per request.
+        # - We also pre-bind the execution strategy (async vs sync) once.
+        # - This reduces per-request overhead in micro-benchmarks and improves real throughput.
+        # ---------------------------------------------------------------------
+        cache_target = _get_cache_target(func)
+        resolved_signature = resolve_signature_annotations(func, static_signature)
+        plan = _build_handler_plan(resolved_signature)
+        setattr(cache_target, _SIG_CACHE_ATTR, resolved_signature)
+        setattr(cache_target, _PLAN_CACHE_ATTR, plan)
+
+        # Pre-bind execution strategy so we don't call `is_async_callable(func)` per request.
+        if is_async_callable(func):
+
+            async def _execute(**kwargs: Any) -> Any:
+                """
+                Executes the handler as an async callable.
+
+                This wrapper is created once per handler to avoid per-request branching.
+                """
+                return await func(**kwargs)  # type: ignore
+
+        else:
+
+            async def _execute(**kwargs: Any) -> Any:
+                """
+                Executes the handler as a sync callable using the threadpool.
+
+                This wrapper is created once per handler to avoid per-request branching.
+                """
+                return await run_in_threadpool(func, **kwargs)
+
+        # Precompute common toggles from the plan.
+        param_names = plan["param_names"]
+        param_count = plan["param_count"]
+        needs_context = plan["needs_context"]
+        needs_request = plan["needs_request"]
+
+        # Fast-path eligibility:
+        # - no providers (Provides/Resolve/Security)
+        # - no body inference candidates
+        is_fast_path_eligible = (not plan["has_provider_markers"]) and (
+            not plan["has_body_candidates"]
+        )
+
+        # Pre-normalized getters for Query/Header/Cookie extraction.
+        bound_getters: tuple[tuple[str, Any, str, str], ...] = plan["bound_getters"]
+
         async def app(scope: Scope, receive: Receive, send: Send) -> None:
             """
             ASGI application handling request-response.
@@ -232,8 +322,16 @@ class BaseHandler:
                 Returns:
                     None
                 """
+                # The effective signature can still be overridden by the handler,
+                # but we avoid expensive resolution when it matches the static signature.
                 signature = other_signature or self.signature or static_signature
-                signature, plan = resolve_signature_and_plan(func, signature)
+
+                if signature is static_signature:
+                    signature = resolved_signature
+                    effective_plan = plan
+                else:
+                    # Fallback to the existing resolver for dynamic signatures
+                    signature, effective_plan = resolve_signature_and_plan(func, signature)
 
                 # Ultra-fast short-circuits already exist below (no params, request-only, context-only).
                 # Here we add a common-case fast path for handlers that:
@@ -241,41 +339,58 @@ class BaseHandler:
                 #  - have no body-bound candidates
                 # In that case we skip `_extract_params_from_request` entirely and only pull
                 # path/query/header/cookie/context.
-                if not plan["has_provider_markers"] and not plan["has_body_candidates"]:
-                    param_names = plan["param_names"]
+                if is_fast_path_eligible and effective_plan is plan:
+                    # Special-case: zero-parameter handlers (your benchmark endpoint).
+                    # This avoids dict allocations and parameter extraction work entirely.
+                    if param_count == 0:
+                        response = await _execute()
+                        await self._handle_response_content(response, scope, receive, send)
+                        return
+
+                    fast_params: dict[str, Any] = {}
 
                     # 1) Path params that match the function signature
-                    fast_params = {
-                        name: val
-                        for name, val in request.path_params.items()
-                        if name in param_names
-                    }
+                    if request.path_params:
+                        for name, val in request.path_params.items():
+                            if name in param_names:
+                                fast_params[name] = val
 
-                    # 2) Query/Header/Cookie bound fields (precomputed)
-                    for n, field in plan["bound_fields"]:
-                        if isinstance(field, Query):
+                    # 2) Query/Header/Cookie bound fields (precomputed, no isinstance chains)
+                    for n, field, kind, key in bound_getters:
+                        if kind == "query":
                             source = request.query_params
-                            key = field.alias or n
-                        elif isinstance(field, Header):
-                            source = request.headers  # type: ignore
-                            key = field.value
-                        else:  # Cookie
-                            source = request.cookies  # type: ignore
-                            key = field.value
-
-                        try:
-                            if not isinstance(field, Cookie):
+                            try:
                                 values = source.getall(key, None)
-                                if values is None:
-                                    raw_value = None
-                                elif isinstance(values, list):
-                                    raw_value = values[0] if len(values) == 1 else values
-                                else:
-                                    raw_value = values  # type: ignore
+                            except (KeyError, TypeError):
+                                values = None
+
+                            if values is None:
+                                raw_value = None
+                            elif isinstance(values, list):
+                                raw_value = values[0] if len(values) == 1 else values
                             else:
+                                raw_value = values  # type: ignore
+
+                        elif kind == "header":
+                            source = request.headers  # type: ignore
+                            try:
+                                values = source.getall(key, None)
+                            except (KeyError, TypeError):
+                                values = None
+
+                            if values is None:
+                                raw_value = None
+                            elif isinstance(values, list):
+                                raw_value = values[0] if len(values) == 1 else values
+                            else:
+                                raw_value = values  # type: ignore
+
+                        else:  # cookie
+                            source = request.cookies  # type: ignore
+                            try:
                                 raw_value = source.get(key)
-                        except (KeyError, TypeError):
-                            raw_value = None
+                            except (KeyError, TypeError):
+                                raw_value = None
 
                         if field.required and raw_value is None:
                             raise UnprocessableEntity(f"Missing mandatory query parameter '{key}'")
@@ -300,17 +415,17 @@ class BaseHandler:
                                 ) from None
 
                     # 3) Context (if requested)
-                    if "context" in param_names:
+                    if needs_context:
                         fast_params["context"] = Context(
                             __handler__=cast("BasePath", self),
                             __request__=request,
                         )
 
                     # 4) Request (if requested)
-                    if SignatureDefault.REQUEST in param_names:
+                    if needs_request:
                         fast_params["request"] = request
 
-                    response = await self._execute_function(func, **fast_params)
+                    response = await _execute(**fast_params)
                     await self._handle_response_content(response, scope, receive, send)
                     return
 
@@ -613,7 +728,7 @@ class BaseHandler:
 
         # dict[K, V]  (keys are usually strings from JSON/form; keep keys as-is, structure values)
         if origin is dict:
-            key_t, val_t = args or (Any, Any)
+            _, val_t = args or (Any, Any)
             if value is None:
                 return {}
             return {k: self._structure_to_annotation(val_t, v) for k, v in value.items()}
