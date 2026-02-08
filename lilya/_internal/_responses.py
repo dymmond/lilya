@@ -3,7 +3,16 @@ from __future__ import annotations
 import inspect
 import re
 from collections.abc import Awaitable, Callable, Coroutine
-from typing import TYPE_CHECKING, Annotated, Any, Union, cast, get_args, get_origin
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    Union,
+    cast,
+    get_args,
+    get_origin,
+    get_type_hints,
+)
 
 from lilya._internal._encoders import apply_structure, json_encode
 from lilya._internal._exception_handlers import wrap_app_handling_exceptions
@@ -11,9 +20,19 @@ from lilya.compat import is_async_callable
 from lilya.concurrency import run_in_threadpool
 from lilya.conf import _monkay
 from lilya.context import Context
-from lilya.dependencies import Provide, Provides, Resolve, Security, async_resolve_dependencies
+from lilya.dependencies import (
+    Provide,
+    Provides,
+    Resolve,
+    Security,
+    async_resolve_dependencies,
+)
 from lilya.enums import SignatureDefault
-from lilya.exceptions import ImproperlyConfigured, UnprocessableEntity, WebSocketException
+from lilya.exceptions import (
+    ImproperlyConfigured,
+    UnprocessableEntity,
+    WebSocketException,
+)
 from lilya.params import Cookie, Header, Query
 from lilya.requests import Request
 from lilya.responses import Ok, Response
@@ -25,8 +44,68 @@ if TYPE_CHECKING:
     from lilya.routing import BasePath as BasePath  # noqa
 
 SIGNATURE_TO_LIST = SignatureDefault.to_list()
-
 INDEX_REGEX = re.compile(r"^(.+)\[(\d+)\]$")
+_SIG_CACHE_ATTR = "__lilya_resolved_signature__"
+
+
+def _get_callable_namespaces(func: Any) -> tuple[dict[str, Any], dict[str, Any], Any]:
+    """
+    Return (globalns, localns, cache_target_fn) suitable for resolving forward refs.
+    cache_target_fn is the underlying function object we can safely store attributes on.
+    """
+    target = inspect.unwrap(func)
+
+    owner = None
+    cache_target = None
+
+    if inspect.ismethod(target):
+        owner = target.__self__.__class__
+        cache_target = target.__func__
+        target = target.__func__
+    else:
+        cache_target = target
+
+    mod = inspect.getmodule(target)
+    globalns = mod.__dict__ if mod else getattr(target, "__globals__", {})
+
+    localns: dict[str, Any] = {}
+    if owner is not None:
+        localns.update(vars(owner))
+    localns.update(globalns)
+
+    return globalns, localns, cache_target
+
+
+def resolve_signature_annotations(func: Any, sig: inspect.Signature) -> inspect.Signature:
+    """
+    Resolve annotations once and cache the resolved signature on the underlying function.
+    """
+    # Determine cache target (underlying function)
+    _, _, cache_target = _get_callable_namespaces(func)
+
+    cached = getattr(cache_target, _SIG_CACHE_ATTR, None)
+    if isinstance(cached, inspect.Signature):
+        return cached
+
+    globalns, localns, _ = _get_callable_namespaces(func)
+
+    try:
+        hints = get_type_hints(func, globalns=globalns, localns=localns, include_extras=True)
+    except Exception:
+        # cache original sig to avoid repeated failures
+        setattr(cache_target, _SIG_CACHE_ATTR, sig)
+        return sig
+
+    params = []
+    for name, p in sig.parameters.items():
+        ann = hints.get(name, p.annotation)
+        params.append(p.replace(annotation=ann))
+
+    ret = hints.get("return", sig.return_annotation)
+    resolved = sig.replace(parameters=params, return_annotation=ret)
+
+    setattr(cache_target, _SIG_CACHE_ATTR, resolved)
+    return resolved
 
 
 class BaseHandler:
@@ -70,8 +149,10 @@ class BaseHandler:
 
     def handle_response(
         self,
-        func: Callable[[Request], Awaitable[Response] | Response]
-        | Callable[[], Coroutine[Any, Any, Response]],
+        func: (
+            Callable[[Request], Awaitable[Response] | Response]
+            | Callable[[], Coroutine[Any, Any, Response]]
+        ),
         other_signature: inspect.Signature | None = None,
     ) -> ASGIApp:
         """
@@ -136,6 +217,8 @@ class BaseHandler:
                 signature: inspect.Signature = (
                     other_signature or self.signature or static_signature
                 )
+                signature = resolve_signature_annotations(func, signature)
+
                 self.extract_request_information(request=request, signature=signature)
 
                 # Ultra-fast short-circuits already exist below (no params, request-only, context-only).
@@ -553,7 +636,10 @@ class BaseHandler:
         return apply_structure(structure=annotation, value=value)
 
     def _infer_body_param_names(
-        self, request: Request, signature: inspect.Signature, dependencies: dict[str, Any]
+        self,
+        request: Request,
+        signature: inspect.Signature,
+        dependencies: dict[str, Any],
     ) -> list[str]:
         """
         Infers which parameters in a handler's signature should be sourced from the HTTP request body.
