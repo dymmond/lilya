@@ -42,7 +42,8 @@ def test_defaults():
 
 
 @patch.dict(
-    os.environ, {"DEBUG": "true", "PORT": "1234", "HOST": "example.com", "TIMEOUT": "10.1"}
+    os.environ,
+    {"DEBUG": "true", "PORT": "1234", "HOST": "example.com", "TIMEOUT": "10.1"},
 )
 def test_env_override():
     settings = MySettings()
@@ -69,7 +70,26 @@ def test_dict_default():
     d = settings.dict(exclude={"cache_backend"})
 
     assert d == {
+        "cache_default_ttl": 300,
+        "timezone": "UTC",
+        "ptpython_config_file": "~/.config/ptpython/config.py",
         "debug": False,
+        "environment": "production",
+        "version": "0.24.2",
+        "include_in_schema": True,
+        "default_route_pattern": "route_patterns",
+        "enforce_return_annotation": False,
+        "x_frame_options": None,
+        "before_request": None,
+        "after_request": None,
+        "logging_level": "INFO",
+        "enable_openapi": False,
+        "infer_body": False,
+        "enable_intercept_global_exceptions": False,
+        "root_path_in_servers": True,
+        "root_path": "",
+        "redirect_slashes": True,
+        "csrf_token_name": "csrf_token",
         "port": 8000,
         "host": "localhost",
         "timeout": 5.5,
