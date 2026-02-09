@@ -34,18 +34,44 @@ if TYPE_CHECKING:
 
 def safe_get_type_hints(cls: type) -> dict[str, Any]:
     """
-    Safely get type hints for a class, handling potential errors.
-    This function attempts to retrieve type hints for the given class,
-    and if it fails, it prints a warning and returns the class annotations.
+    Safely collect type hints for a settings class.
+
+    `get_type_hints()` may fail for subclasses depending on import-time
+    availability of referenced symbols. When that happens we still need to
+    preserve inherited settings fields, so we merge annotations through the
+    full MRO using per-class fallbacks.
+
     Args:
         cls (type): The class to get type hints for.
     Returns:
         dict[str, Any]: A dictionary of type hints for the class.
     """
-    try:
-        return get_type_hints(cls, include_extras=True)
-    except Exception:  # noqa
-        return cls.__annotations__
+
+    def is_classvar_annotation(annotation: Any) -> bool:
+        origin = get_origin(annotation)
+        if origin is ClassVar:
+            return True
+        if isinstance(annotation, str):
+            return annotation.startswith("ClassVar[") or annotation.startswith("typing.ClassVar[")
+        return False
+
+    type_hints: dict[str, Any] = {}
+
+    for base in reversed(cls.__mro__):
+        if base is object:
+            continue
+
+        try:
+            base_hints = get_type_hints(base, include_extras=True)
+        except Exception:  # noqa
+            base_hints = getattr(base, "__annotations__", {})
+
+        for name, annotation in base_hints.items():
+            if name.startswith("_") or is_classvar_annotation(annotation):
+                continue
+            type_hints[name] = annotation
+
+    return type_hints
 
 
 class BaseSettings:

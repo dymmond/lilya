@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.24.2
+
+### Fixed
+
+- Settings inheritance now preserves typed fields from parent classes when type hint resolution falls back, allowing child settings classes to override inherited values without re-annotating fields.
+
 ## 0.24.1
 
 ### Fixed
