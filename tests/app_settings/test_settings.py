@@ -228,3 +228,40 @@ class InheritedSettings(MySetts): ...
 def test_inherited_settings():
     settings = InheritedSettings()
     assert settings.test_prop == ["test_prop"]
+
+
+def test_inherited_setting_override_without_reannotation():
+    class ParentSettings(Settings):
+        custom_name: str = "test"
+
+    class ChildSettings(ParentSettings):
+        custom_name = "yes"
+
+    settings = ChildSettings()
+
+    assert settings.custom_name == "yes"
+    assert settings.dict()["custom_name"] == "yes"
+
+
+def test_inherited_type_hints_include_parent_fields():
+    class ParentSettings(Settings):
+        custom_name: str = "test"
+
+    class ChildSettings(ParentSettings):
+        custom_name = "yes"
+
+    assert "custom_name" in ChildSettings.__type_hints__
+    assert "debug" in ChildSettings.__type_hints__
+
+
+@patch.dict(os.environ, {"CUSTOM_NAME": "from_env"})
+def test_env_override_for_inherited_field_without_reannotation():
+    class ParentSettings(Settings):
+        custom_name: str = "test"
+
+    class ChildSettings(ParentSettings):
+        custom_name = "yes"
+
+    settings = ChildSettings()
+
+    assert settings.custom_name == "from_env"
