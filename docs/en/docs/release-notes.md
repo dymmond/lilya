@@ -7,9 +7,13 @@ hide:
 
 ## 0.24.1
 
+### Fixed
+
+- Generation of deployment files with the new structure
+
 ### Changed
 
-- Generated pyproject.toml when using directives.
+- Generated pyproject.toml when using directives
 
 ## 0.24.0
 
