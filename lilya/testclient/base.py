@@ -65,6 +65,12 @@ class TestClient(httpx.Client):
     task: Future[None]
     portal: anyio.abc.BlockingPortal | None = None
 
+    # NOTE:
+    # This key is used by the TestClient to store an "authenticated user" that will be
+    # injected into the ASGI scope by the TestClientTransport. This provides a Django-like
+    # test experience, allowing tests to bypass auth plumbing without monkeypatching.
+    _AUTH_USER_KEY = "__lilya_testclient_authenticated_user__"
+
     def __init__(
         self,
         app: ASGIApp,
@@ -104,6 +110,43 @@ class TestClient(httpx.Client):
             follow_redirects=follow_redirects,
             cookies=cookies,
         )
+
+    def authenticate(self, user: Any) -> "TestClient":
+        """
+        Mark this client as authenticated for subsequent requests.
+
+        The TestClientTransport can then inject this user into the ASGI scope (e.g. scope["user"])
+        for HTTP and WebSocket requests. This avoids monkeypatching auth in tests and provides
+        a Django-like testing experience.
+        """
+        self.app_state[self._AUTH_USER_KEY] = user
+        return self
+
+    def logout(self) -> "TestClient":
+        """
+        Clear any authenticated user previously set via `authenticate()`.
+        """
+        self.app_state.pop(self._AUTH_USER_KEY, None)
+        return self
+
+    @contextlib.contextmanager
+    def authenticated(self, user: Any) -> Generator["TestClient", None, None]:
+        """
+        Context manager that authenticates for the duration of the block.
+
+        Example:
+            with TestClient(app).authenticated(user) as client:
+                response = client.get("/protected")
+        """
+        previous = self.app_state.get(self._AUTH_USER_KEY)
+        self.app_state[self._AUTH_USER_KEY] = user
+        try:
+            yield self
+        finally:
+            if previous is None:
+                self.app_state.pop(self._AUTH_USER_KEY, None)
+            else:
+                self.app_state[self._AUTH_USER_KEY] = previous
 
     @property
     def routes(self) -> list[Any]:
@@ -217,9 +260,7 @@ class TestClient(httpx.Client):
         if not kwargs:
             kwargs = RequestInputsDefaultValues  # type: ignore
         else:
-            remaining_kwargs = {
-                k: v for k, v in RequestInputsDefaultValues.items() if k not in kwargs
-            }
+            remaining_kwargs = {k: v for k, v in RequestInputsDefaultValues.items() if k not in kwargs}
             kwargs.update(remaining_kwargs)  # type: ignore
 
         return self.request(method=method, url=url, **kwargs)  # type: ignore
