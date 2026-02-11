@@ -111,7 +111,7 @@ class TestClient(httpx.Client):
             cookies=cookies,
         )
 
-    def authenticate(self, user: Any) -> "TestClient":
+    def authenticate(self, user: Any) -> TestClient:
         """
         Mark this client as authenticated for subsequent requests.
 
@@ -122,7 +122,7 @@ class TestClient(httpx.Client):
         self.app_state[self._AUTH_USER_KEY] = user
         return self
 
-    def logout(self) -> "TestClient":
+    def logout(self) -> TestClient:
         """
         Clear any authenticated user previously set via `authenticate()`.
         """
@@ -130,7 +130,7 @@ class TestClient(httpx.Client):
         return self
 
     @contextlib.contextmanager
-    def authenticated(self, user: Any) -> Generator["TestClient", None, None]:
+    def authenticated(self, user: Any) -> Generator[TestClient, None, None]:
         """
         Context manager that authenticates for the duration of the block.
 
@@ -260,7 +260,9 @@ class TestClient(httpx.Client):
         if not kwargs:
             kwargs = RequestInputsDefaultValues  # type: ignore
         else:
-            remaining_kwargs = {k: v for k, v in RequestInputsDefaultValues.items() if k not in kwargs}
+            remaining_kwargs = {
+                k: v for k, v in RequestInputsDefaultValues.items() if k not in kwargs
+            }
             kwargs.update(remaining_kwargs)  # type: ignore
 
         return self.request(method=method, url=url, **kwargs)  # type: ignore

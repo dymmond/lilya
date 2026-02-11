@@ -234,7 +234,9 @@ class TestClientTransport(httpx.BaseTransport):
 
         return scope
 
-    def _process_http_request(self, scope: dict[str, Any], request: httpx.Request) -> httpx.Response:
+    def _process_http_request(
+        self, scope: dict[str, Any], request: httpx.Request
+    ) -> httpx.Response:
         """
         Process an HTTP request and return an HTTP response.
         """
@@ -469,8 +471,7 @@ class AsyncTestClientTransport(httpx.AsyncBaseTransport):
 
         self._inject_authenticated_user(scope)
 
-        session = WebSocketTestSession(self.app, scope, portal_factory=None)  # type: ignore[arg-type]
-        # NOTE: If your Async WebSocketTestSession signature differs, keep it aligned with existing code.
+        session = WebSocketTestSession(self.app, scope, portal_factory=None)
         return session
 
     def _build_http_scope(
@@ -503,5 +504,7 @@ class AsyncTestClientTransport(httpx.AsyncBaseTransport):
         self._inject_authenticated_user(scope)
         return scope
 
-    async def _process_http_request(self, scope: dict[str, Any], request: httpx.Request) -> httpx.Response:
+    async def _process_http_request(
+        self, scope: dict[str, Any], request: httpx.Request
+    ) -> httpx.Response:
         raise NotImplementedError

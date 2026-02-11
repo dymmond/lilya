@@ -5,6 +5,7 @@ from lilya.testclient.async_client import AsyncTestClient
 
 pytestmark = pytest.mark.anyio
 
+
 def make_app():
     async def app(scope, receive, send):
         if scope["type"] == "http":

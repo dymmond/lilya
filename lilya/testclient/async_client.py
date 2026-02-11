@@ -97,7 +97,7 @@ class AsyncTestClient(httpx.AsyncClient):
             cookies=cookies,
         )
 
-    def authenticate(self, user: Any) -> "AsyncTestClient":
+    def authenticate(self, user: Any) -> AsyncTestClient:
         """
         Mark this client as authenticated for subsequent requests.
 
@@ -107,7 +107,7 @@ class AsyncTestClient(httpx.AsyncClient):
         self.app_state[self._AUTH_USER_KEY] = user
         return self
 
-    def logout(self) -> "AsyncTestClient":
+    def logout(self) -> AsyncTestClient:
         """
         Clear any authenticated user previously set via `authenticate()`.
         """
@@ -115,7 +115,7 @@ class AsyncTestClient(httpx.AsyncClient):
         return self
 
     @contextlib.contextmanager
-    def authenticated(self, user: Any) -> Generator["AsyncTestClient", None, None]:
+    def authenticated(self, user: Any) -> Generator[AsyncTestClient, None, None]:
         """
         Context manager that authenticates for the duration of the block.
 
@@ -246,7 +246,7 @@ class AsyncTestClient(httpx.AsyncClient):
         kwargs["headers"] = headers
         return headers
 
-    async def __aenter__(self) -> "AsyncTestClient":
+    async def __aenter__(self) -> AsyncTestClient:
         self._tg = await anyio.create_task_group().__aenter__()
         send1: ObjectSendStream[Any]
         receive1: ObjectReceiveStream[Any]
