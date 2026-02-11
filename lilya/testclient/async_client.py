@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import math
-from collections.abc import Sequence
+from collections.abc import Generator, Sequence
 from typing import Any, Literal, cast
 from urllib.parse import urljoin
 
@@ -40,6 +40,11 @@ class AsyncTestClient(httpx.AsyncClient):
     """
 
     __test__ = False
+
+    # NOTE:
+    # This key is used to store an "authenticated user" that will be injected into the ASGI scope
+    # by AsyncTestClientTransport. Keep this in sync with TestClientTransport._AUTH_USER_KEY.
+    _AUTH_USER_KEY = "__lilya_testclient_authenticated_user__"
 
     def __init__(
         self,
@@ -91,6 +96,43 @@ class AsyncTestClient(httpx.AsyncClient):
             follow_redirects=follow_redirects,
             cookies=cookies,
         )
+
+    def authenticate(self, user: Any) -> "AsyncTestClient":
+        """
+        Mark this client as authenticated for subsequent requests.
+
+        The AsyncTestClientTransport will inject this user into the ASGI scope (e.g. scope["user"])
+        for HTTP and WebSocket requests.
+        """
+        self.app_state[self._AUTH_USER_KEY] = user
+        return self
+
+    def logout(self) -> "AsyncTestClient":
+        """
+        Clear any authenticated user previously set via `authenticate()`.
+        """
+        self.app_state.pop(self._AUTH_USER_KEY, None)
+        return self
+
+    @contextlib.contextmanager
+    def authenticated(self, user: Any) -> Generator["AsyncTestClient", None, None]:
+        """
+        Context manager that authenticates for the duration of the block.
+
+        Example:
+            async with AsyncTestClient(app) as client:
+                with client.authenticated(user):
+                    response = await client.get("/protected")
+        """
+        previous = self.app_state.get(self._AUTH_USER_KEY)
+        self.app_state[self._AUTH_USER_KEY] = user
+        try:
+            yield self
+        finally:
+            if previous is None:
+                self.app_state.pop(self._AUTH_USER_KEY, None)
+            else:
+                self.app_state[self._AUTH_USER_KEY] = previous
 
     async def request(
         self,
@@ -204,7 +246,7 @@ class AsyncTestClient(httpx.AsyncClient):
         kwargs["headers"] = headers
         return headers
 
-    async def __aenter__(self) -> AsyncTestClient:
+    async def __aenter__(self) -> "AsyncTestClient":
         self._tg = await anyio.create_task_group().__aenter__()
         send1: ObjectSendStream[Any]
         receive1: ObjectReceiveStream[Any]
