@@ -40,10 +40,6 @@ class AsyncTestClient(httpx.AsyncClient):
     """
 
     __test__ = False
-
-    # NOTE:
-    # This key is used to store an "authenticated user" that will be injected into the ASGI scope
-    # by AsyncTestClientTransport. Keep this in sync with TestClientTransport._AUTH_USER_KEY.
     _AUTH_USER_KEY = "__lilya_testclient_authenticated_user__"
 
     def __init__(
@@ -146,9 +142,11 @@ class AsyncTestClient(httpx.AsyncClient):
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
         cookies: CookieTypes | None = None,
-        auth: AuthTypes | httpx._client.UseClientDefault = httpx._client.USE_CLIENT_DEFAULT,
+        auth: (AuthTypes | httpx._client.UseClientDefault) = httpx._client.USE_CLIENT_DEFAULT,
         follow_redirects: bool | None = None,
-        timeout: TimeoutTypes | httpx._client.UseClientDefault = httpx._client.USE_CLIENT_DEFAULT,
+        timeout: (
+            TimeoutTypes | httpx._client.UseClientDefault
+        ) = httpx._client.USE_CLIENT_DEFAULT,
         extensions: dict[str, Any] | None = None,
         stream: bool = False,
     ) -> httpx.Response:
