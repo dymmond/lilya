@@ -43,22 +43,19 @@ except ModuleNotFoundError:  # pragma: no cover
         "    $ pip install httpx\n"
     ) from None
 
+_AUTH_USER_KEY = "__lilya_testclient_authenticated_user__"
+
 
 class TestClient(httpx.Client):
     """
-    A test client for making HTTP requests to an ASGI application.
+    A robust and flexible test client designed for making HTTP requests to an ASGI application.
 
-    Args:
-        app (ASGIApp): The ASGI application to test.
-        base_url (str, optional): The base URL for the requests. Defaults to "http://testserver".
-        raise_server_exceptions (bool, optional): Whether to raise exceptions for server errors. Defaults to True.
-        root_path (str, optional): The root path for the requests. Defaults to "".
-        backend (Literal["asyncio", "trio"], optional): The async backend to use. Defaults to "asyncio".
-        backend_options (dict[str, Any] | None, optional): Options for the async backend. Defaults to None.
-        cookies (httpx._types.CookieTypes | None, optional): Cookies to include in the requests. Defaults to None.
-        headers (dict[str, str] | None, optional): Headers to include in the requests. Defaults to None.
-        follow_redirects (bool, optional): Whether to follow redirects. Defaults to True.
-        check_asgi_conformance (bool, optional): Whether to check the asgi conformance. Defaults to True.
+    This client extends `httpx.Client` to provide a seamless testing experience for ASGI
+    applications, handling the complexities of ASGI lifespan events, authentication state
+    management, and asynchronous backend integration (supporting both asyncio and trio).
+
+    It includes built-in support for WebSocket testing, allowing for comprehensive integration
+    testing of modern web applications.
     """
 
     __test__ = False
@@ -78,6 +75,32 @@ class TestClient(httpx.Client):
         follow_redirects: bool = True,
         check_asgi_conformance: bool = True,
     ) -> None:
+        """
+        Initialize the TestClient with the application and configuration settings.
+
+        Args:
+            app (ASGIApp): The ASGI application instance to be tested. This can be an
+                ASGI3 application or an ASGI2 application (which will be automatically wrapped).
+            base_url (str, optional): The base URL to use for all requests made by the client.
+                Defaults to "http://testserver".
+            raise_server_exceptions (bool, optional): A flag indicating whether exceptions
+                occurring within the ASGI application should be raised by the client.
+                Defaults to True.
+            root_path (str, optional): The root path to be used for the requests, helpful
+                when testing applications mounted under a sub-path. Defaults to "".
+            backend (Literal["asyncio", "trio"], optional): The asynchronous backend to
+                utilize for running the application. Defaults to "asyncio".
+            backend_options (dict[str, Any] | None, optional): A dictionary of options to
+                configure the specific asynchronous backend. Defaults to None.
+            cookies (CookieTypes | None, optional): Initial cookies to be included in all
+                requests made by the client. Defaults to None.
+            headers (HeaderTypes | None, optional): Initial headers to be included in all
+                requests made by the client. Defaults to None.
+            follow_redirects (bool, optional): A flag indicating whether the client should
+                automatically follow HTTP redirects. Defaults to True.
+            check_asgi_conformance (bool, optional): Whether to enforce checks for strict
+                adherence to the ASGI specification. Defaults to True.
+        """
         self.async_backend = AsyncBackend(backend=backend, backend_options=backend_options or {})
         if is_asgi3(app):
             asgi_app = app
@@ -105,17 +128,86 @@ class TestClient(httpx.Client):
             cookies=cookies,
         )
 
+    def authenticate(self, user: Any) -> TestClient:
+        """
+        Sets an authenticated user in the application state.
+
+        This helper method injects a user object into the application's state, simulating
+        a logged-in user session for subsequent requests.
+
+        Args:
+            user (Any): The user object to be set as authenticated.
+
+        Returns:
+            TestClient: The instance of the client, allowing for method chaining.
+        """
+        self.app_state[_AUTH_USER_KEY] = user
+        return self
+
+    def logout(self) -> TestClient:
+        """
+        Removes the authenticated user from the application state.
+
+        This helper method clears any user object currently stored in the application's
+        state, simulating a logout action.
+
+        Returns:
+            TestClient: The instance of the client, allowing for method chaining.
+        """
+        self.app_state.pop(_AUTH_USER_KEY, None)
+        return self
+
+    @contextlib.contextmanager
+    def authenticated(self, user: Any) -> Generator[TestClient, None, None]:
+        """
+        A context manager that temporarily authenticates a user for the duration of the block.
+
+        This is useful for testing protected endpoints without permanently altering the
+        client's authentication state. The previous authentication state is restored
+        when the context exits.
+
+        Args:
+            user (Any): The user object to be temporarily set as authenticated.
+
+        Yields:
+            TestClient: The authenticated client instance.
+
+        Example:
+            async with AsyncTestClient(app) as client:
+                with client.authenticated(user):
+                    response = await client.get("/protected")
+        """
+        previous = self.app_state.get(_AUTH_USER_KEY)
+        self.app_state[_AUTH_USER_KEY] = user
+        try:
+            yield self
+        finally:
+            if previous is None:
+                self.app_state.pop(_AUTH_USER_KEY, None)
+            else:
+                self.app_state[_AUTH_USER_KEY] = previous
+
     @property
     def routes(self) -> list[Any]:
+        """
+        Retrieves the list of routes defined in the underlying ASGI application.
+
+        Returns:
+            list[Any]: A list of route objects if available, otherwise an empty list.
+        """
         return getattr(self.app, "routes", [])
 
     @contextlib.contextmanager
     def _portal_factory(self) -> Generator[anyio.abc.BlockingPortal, None, None]:
         """
-        Context manager that creates a blocking portal for handling async tasks.
+        A context manager that provides a blocking portal for cross-thread async execution.
+
+        If a portal is already active (e.g., within a `with TestClient(...)` block), it yields
+        that portal. Otherwise, it creates and yields a new blocking portal using the configured
+        async backend.
 
         Yields:
-            anyio.abc.BlockingPortal: The blocking portal.
+            anyio.abc.BlockingPortal: The blocking portal instance.
         """
         if self.portal is not None:
             yield self.portal
@@ -135,32 +227,47 @@ class TestClient(httpx.Client):
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
         cookies: CookieTypes | None = None,
-        auth: AuthTypes | httpx._client.UseClientDefault = httpx._client.USE_CLIENT_DEFAULT,
+        auth: (AuthTypes | httpx._client.UseClientDefault) = httpx._client.USE_CLIENT_DEFAULT,
         follow_redirects: bool | None = None,
-        timeout: TimeoutTypes | httpx._client.UseClientDefault = httpx._client.USE_CLIENT_DEFAULT,
+        timeout: (
+            TimeoutTypes | httpx._client.UseClientDefault
+        ) = httpx._client.USE_CLIENT_DEFAULT,
         extensions: dict[str, Any] | None = None,
         stream: bool = False,
     ) -> httpx.Response:
         """
-        Sends an HTTP request.
+        Builds and sends a network request to the ASGI application.
+
+        This method overrides the standard `httpx.Client.request` to provide specific
+        handling for the TestClient, including URL merging and stream handling.
 
         Args:
-            method (str): The HTTP method.
+            method (str): The HTTP method to use (e.g., 'GET', 'POST').
             url (URLTypes): The URL to send the request to.
-            content (RequestContent | None, optional): The request content. Defaults to None.
-            data (RequestData | None, optional): The request data. Defaults to None.
-            files (RequestFiles | None, optional): The request files. Defaults to None.
-            json (Any, optional): The request JSON. Defaults to None.
-            params (QueryParamTypes | None, optional): The request query parameters. Defaults to None.
-            headers (HeaderTypes | None, optional): The request headers. Defaults to None.
-            cookies (CookieTypes | None, optional): The request cookies. Defaults to None.
-            auth (AuthTypes | httpx._client.UseClientDefault, optional): The request authentication. Defaults to httpx._client.USE_CLIENT_DEFAULT.
-            follow_redirects (bool | None, optional): Whether to follow redirects. Defaults to None.
-            timeout (TimeoutTypes | httpx._client.UseClientDefault, optional): The request timeout. Defaults to httpx._client.USE_CLIENT_DEFAULT.
-            extensions (dict[str, Any] | None, optional): The request extensions. Defaults to None.
+            content (RequestContent | None, optional): Binary content to send in the body.
+                Defaults to None.
+            data (RequestData | None, optional): Form data to send in the body.
+                Defaults to None.
+            files (RequestFiles | None, optional): Files to upload. Defaults to None.
+            json (Any, optional): JSON data to send in the body. Defaults to None.
+            params (QueryParamTypes | None, optional): Query parameters to include in the URL.
+                Defaults to None.
+            headers (HeaderTypes | None, optional): Headers to include in the request.
+                Defaults to None.
+            cookies (CookieTypes | None, optional): Cookies to include in the request.
+                Defaults to None.
+            auth (AuthTypes | httpx._client.UseClientDefault, optional): Authentication
+                credentials. Defaults to httpx._client.USE_CLIENT_DEFAULT.
+            follow_redirects (bool | None, optional): Whether to follow redirects.
+                Defaults to None.
+            timeout (TimeoutTypes | httpx._client.UseClientDefault, optional): Timeout
+                configuration. Defaults to httpx._client.USE_CLIENT_DEFAULT.
+            extensions (dict[str, Any] | None, optional): Extensions to include in the request.
+                Defaults to None.
+            stream (bool, optional): Whether to stream the response content. Defaults to False.
 
         Returns:
-            httpx.Response: The HTTP response.
+            httpx.Response: The response received from the application.
         """
         url = self._merge_url(url)
         redirect: bool | httpx._client.UseClientDefault = httpx._client.USE_CLIENT_DEFAULT
@@ -168,8 +275,6 @@ class TestClient(httpx.Client):
             redirect = follow_redirects
 
         if stream:
-            # Return an open streaming response context.
-            # Open a streaming context and return the httpx.Response (not Request)
             return self.stream(
                 method=method,
                 url=url,
@@ -202,17 +307,21 @@ class TestClient(httpx.Client):
             extensions=extensions,
         )
 
-    def _process_request(self, method: str, url: URLTypes, **kwargs: Any) -> httpx.Request:
+    def _process_request(self, method: str, url: URLTypes, **kwargs: Any) -> httpx.Response:
         """
-        Processes the request.
+        Internal helper to process a request with default values.
+
+        This ensures that necessary default arguments (like empty content or data dicts)
+        are populated if not provided by the caller, before delegating to the main
+        request method.
 
         Args:
-            method (str): The string method to request from.
-            url (URLTypes): The URL to send the request to.
-            **kwargs (RequestInputs): The request inputs.
+            method (str): The HTTP method.
+            url (URLTypes): The request URL.
+            **kwargs (Any): Additional keyword arguments for the request.
 
         Returns:
-            httpx.Request: The HTTP request.
+            httpx.Response: The resulting response object.
         """
         if not kwargs:
             kwargs = RequestInputsDefaultValues  # type: ignore
@@ -224,53 +333,95 @@ class TestClient(httpx.Client):
 
         return self.request(method=method, url=url, **kwargs)  # type: ignore
 
-    def get(
-        self,
-        url: URLTypes,
-        **kwargs: Any,
-    ) -> httpx.Response:
+    def get(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+        """
+        Sends a GET request.
+
+        Args:
+            url (URLTypes): The URL to send the request to.
+            **kwargs (Any): Additional arguments passed to `request`.
+
+        Returns:
+            httpx.Response: The response from the server.
+        """
         return self._process_request(method="GET", url=url, **kwargs)  # type: ignore
 
-    def head(
-        self,
-        url: URLTypes,
-        **kwargs: Any,
-    ) -> httpx.Response:
+    def head(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+        """
+        Sends a HEAD request.
+
+        Args:
+            url (URLTypes): The URL to send the request to.
+            **kwargs (Any): Additional arguments passed to `request`.
+
+        Returns:
+            httpx.Response: The response from the server.
+        """
         return self._process_request(method="HEAD", url=url, **kwargs)  # type: ignore
 
-    def post(
-        self,
-        url: URLTypes,
-        **kwargs: Any,
-    ) -> httpx.Response:
+    def post(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+        """
+        Sends a POST request.
+
+        Args:
+            url (URLTypes): The URL to send the request to.
+            **kwargs (Any): Additional arguments passed to `request`.
+
+        Returns:
+            httpx.Response: The response from the server.
+        """
         return self._process_request(method="POST", url=url, **kwargs)  # type: ignore
 
-    def put(
-        self,
-        url: URLTypes,
-        **kwargs: Any,
-    ) -> httpx.Response:
+    def put(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+        """
+        Sends a PUT request.
+
+        Args:
+            url (URLTypes): The URL to send the request to.
+            **kwargs (Any): Additional arguments passed to `request`.
+
+        Returns:
+            httpx.Response: The response from the server.
+        """
         return self._process_request(method="PUT", url=url, **kwargs)  # type: ignore
 
-    def patch(
-        self,
-        url: URLTypes,
-        **kwargs: Any,
-    ) -> httpx.Response:
+    def patch(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+        """
+        Sends a PATCH request.
+
+        Args:
+            url (URLTypes): The URL to send the request to.
+            **kwargs (Any): Additional arguments passed to `request`.
+
+        Returns:
+            httpx.Response: The response from the server.
+        """
         return self._process_request(method="PATCH", url=url, **kwargs)  # type: ignore
 
-    def delete(
-        self,
-        url: URLTypes,
-        **kwargs: Any,
-    ) -> httpx.Response:
+    def delete(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+        """
+        Sends a DELETE request.
+
+        Args:
+            url (URLTypes): The URL to send the request to.
+            **kwargs (Any): Additional arguments passed to `request`.
+
+        Returns:
+            httpx.Response: The response from the server.
+        """
         return self._process_request(method="DELETE", url=url, **kwargs)  # type: ignore
 
-    def options(
-        self,
-        url: URLTypes,
-        **kwargs: Any,
-    ) -> httpx.Response:
+    def options(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+        """
+        Sends an OPTIONS request.
+
+        Args:
+            url (URLTypes): The URL to send the request to.
+            **kwargs (Any): Additional arguments passed to `request`.
+
+        Returns:
+            httpx.Response: The response from the server.
+        """
         return self._process_request(method="OPTIONS", url=url, **kwargs)  # type: ignore
 
     def websocket_connect(
@@ -280,15 +431,22 @@ class TestClient(httpx.Client):
         **kwargs: Any,
     ) -> WebSocketTestSession:
         """
-        Establishes a WebSocket connection.
+        Initiates a WebSocket connection to the application.
+
+        This method constructs the necessary headers for a WebSocket upgrade request and
+        establishes a session if the upgrade is successful.
 
         Args:
-            url (str): The WebSocket URL.
-            subprotocols (Sequence[str] | None, optional): The WebSocket subprotocols. Defaults to None.
-            **kwargs (Any): Additional keyword arguments.
+            url (str): The URL path for the WebSocket connection (relative to base_url).
+            subprotocols (Sequence[str] | None, optional): A list of WebSocket subprotocols
+                to request. Defaults to None.
+            **kwargs (Any): Additional arguments passed to the request.
 
         Returns:
-            WebSocketTestSession: The WebSocket session.
+            WebSocketTestSession: An active WebSocket session object.
+
+        Raises:
+            RuntimeError: If the server does not upgrade the connection to a WebSocket.
         """
         url = urljoin("ws://testserver", url)
         headers = self._prepare_websocket_headers(subprotocols, **kwargs)
@@ -308,14 +466,15 @@ class TestClient(httpx.Client):
         **kwargs: dict[str, Any],
     ) -> dict[str, str]:
         """
-        Prepare the headers for a WebSocket connection.
+        Prepares the HTTP headers required for a WebSocket handshake.
 
         Args:
-            subprotocols (Sequence[str] | None, optional): The WebSocket subprotocols. Defaults to None.
-            **kwargs (dict[str, Any]): Additional keyword arguments.
+            subprotocols (Sequence[str] | None, optional): The subprotocols to include in
+                the handshake. Defaults to None.
+            **kwargs (dict[str, Any]): Additional keyword arguments containing existing headers.
 
         Returns:
-            dict[str, str]: The prepared headers.
+            dict[str, str]: The dictionary of headers including WebSocket specific ones.
         """
         headers = kwargs.get("headers", {})
         headers.setdefault("connection", "upgrade")
@@ -328,10 +487,13 @@ class TestClient(httpx.Client):
 
     def __enter__(self) -> TestClient:
         """
-        Enters the context manager.
+        Context manager entry point for synchronous usage.
+
+        Starts a blocking portal, sets up communication streams, and triggers the
+        lifespan startup event of the ASGI application.
 
         Returns:
-            TestClient: The test client.
+            TestClient: The initialized client instance.
         """
         with contextlib.ExitStack() as stack:
             self.portal = portal = stack.enter_context(
@@ -363,36 +525,46 @@ class TestClient(httpx.Client):
 
     async def __aenter__(self) -> TestClient:
         """
-        Enter the test client in an asynchronous context.
+        Context manager entry point for asynchronous usage.
 
-        Allows:
-            async with create_client(...) as client:
-                response = await client.get("/")
+        Creates a task group, sets up communication streams, and triggers the
+        lifespan startup event of the ASGI application asynchronously.
+
+        Returns:
+            TestClient: The initialized client instance.
         """
-        # Use a native AnyIO TaskGroup instead of blocking portals
         self._tg = anyio.create_task_group()
-        await self._tg.__aenter__()  # manually enter group
+        await self._tg.__aenter__()
 
-        # setup streams (same as sync path)
         send1, receive1 = anyio.create_memory_object_stream(math.inf)
         send2, receive2 = anyio.create_memory_object_stream(math.inf)
         self.stream_send = StapledObjectStream(send1, receive1)
         self.stream_receive = StapledObjectStream(send2, receive2)
 
-        # Run the lifespan coroutine as a background task
         self.task = await self._tg.start(self._lifespan_runner)
         await self.wait_startup()
         return self
 
     def __exit__(self, *args: Any) -> None:
         """
-        Exits the context manager.
+        Context manager exit point for synchronous usage.
+
+        Closes the exit stack, which triggers the lifespan shutdown event and
+        cleans up the blocking portal.
+
+        Args:
+            *args (Any): Exception arguments if an exception occurred.
         """
         self.exit_stack.close()
 
     async def __aexit__(self, *args: Any) -> None:
         """
-        Exit the asynchronous context, performing a graceful shutdown.
+        Context manager exit point for asynchronous usage.
+
+        Waits for the lifespan shutdown event and closes the task group.
+
+        Args:
+            *args (Any): Exception arguments if an exception occurred.
         """
         await self.wait_shutdown()
         await self._tg.__aexit__(None, None, None)
@@ -400,13 +572,22 @@ class TestClient(httpx.Client):
     async def _lifespan_runner(
         self, *, task_status: anyio.abc.TaskStatus = anyio.TASK_STATUS_IGNORED
     ) -> None:
-        """Helper task running the ASGI lifespan inside async context."""
+        """
+        Runs the lifespan protocol.
+
+        Args:
+            task_status (anyio.abc.TaskStatus, optional): Status object to signal when
+                the lifespan has started. Defaults to anyio.TASK_STATUS_IGNORED.
+        """
         task_status.started()
         await self.lifespan()
 
     async def lifespan(self) -> None:
         """
-        Handles the lifespan of the ASGI application.
+        Manages the ASGI lifespan protocol loop.
+
+        This method sends the lifespan context to the app and handles the receive/send
+        channels for lifespan events.
         """
         scope = {"type": "lifespan", "state": self.app_state}
         try:
@@ -417,7 +598,12 @@ class TestClient(httpx.Client):
 
     async def wait_startup(self) -> None:
         """
-        Waits for the ASGI application to start up.
+        Waits for the ASGI application to complete its startup sequence.
+
+        Sends the 'lifespan.startup' event and awaits the confirmation message.
+
+        Raises:
+            AssertionError: If the received message type is not a valid startup response.
         """
         await self.stream_receive.send({"type": "lifespan.startup"})
 
@@ -437,7 +623,13 @@ class TestClient(httpx.Client):
 
     async def wait_shutdown(self) -> None:
         """
-        Waits for the ASGI application to shut down.
+        Waits for the ASGI application to complete its shutdown sequence.
+
+        Sends the 'lifespan.shutdown' event and awaits the confirmation message.
+        Handles both sync (portal) and async (task group) modes.
+
+        Raises:
+            AssertionError: If the received message type is not a valid shutdown response.
         """
 
         async def receive() -> Any:

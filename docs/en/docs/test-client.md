@@ -153,3 +153,76 @@ def test_xframe_options_same_origin_responses(test_client_factory):
 
         assert response.headers["x-frame-options"] == "SAMEORIGIN"
 ```
+
+## Authentication helpers
+
+When testing endpoints that require authentication, it's common to want to bypass the authentication layer and
+directly mark the request as coming from a given user.
+
+Lilya's `TestClient` and `AsyncTestClient` support this via `authenticated(user)`.
+
+### TestClient.authenticate
+
+```python
+from lilya.apps import Lilya
+from lilya.responses import PlainText
+from lilya.routing import Path
+from lilya.testclient import TestClient
+
+
+def whoami(request):
+    user = getattr(request, "user", None)
+    return PlainText(str(user), status_code=200)
+
+
+app = Lilya(routes=[Path("/whoami", handler=whoami)])
+
+client = TestClient(app).authenticate({"id": 1, "email": "test@example.com"})
+response = client.get("/whoami")
+
+assert response.status_code == 200
+assert response.text == "{'id': 1, 'email': 'test@example.com'}"
+````
+
+To clear the authenticated user:
+
+```python
+client.unauthenticate()
+```
+
+### AsyncTestClient.authenticate
+
+```python
+import anyio
+
+from lilya.apps import Lilya
+from lilya.responses import PlainText
+from lilya.routing import Path
+from lilya.testclient import AsyncTestClient
+
+
+def whoami(request):
+    user = getattr(request, "user", None)
+    return PlainText(str(user), status_code=200)
+
+
+app = Lilya(routes=[Path("/whoami", handler=whoami)])
+
+
+async def test_async_authenticate():
+    async with AsyncTestClient(app) as client:
+        client.authenticate({"id": 2})
+        response = await client.get("/whoami")
+
+        assert response.status_code == 200
+        assert response.text == "{'id': 2}"
+
+
+anyio.run(test_async_authenticate)
+```
+
+To clear the authenticated user:
+
+```python
+client.logout()
+```

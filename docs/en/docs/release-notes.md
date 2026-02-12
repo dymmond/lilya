@@ -7,6 +7,12 @@ hide:
 
 ## 0.24.2
 
+### Added
+
+- `TestClient.authenticate(user)` and `AsyncTestClient.authenticate(user)` to allow injecting an authenticated user directly into the ASGI scope during tests.
+- `TestClient.logout()` and `AsyncTestClient.logout()` to clear any previously injected authenticated user.
+- Automatic injection of the authenticated user into both `scope["user"]` and `scope["state"]["user"]` for HTTP and WebSocket connections, enabling clean authentication bypass in tests without monkeypatching.
+
 ### Fixed
 
 - Settings inheritance now preserves typed fields from parent classes when type hint resolution falls back, allowing child settings classes to override inherited values without re-annotating fields.
