@@ -5,6 +5,12 @@ hide:
 
 # Release Notes
 
+## 0.24.3
+
+### Fixed
+
+- `BaseTemplateController.render_template()` now accepts **kwargs.
+
 ## 0.24.2
 
 ### Added

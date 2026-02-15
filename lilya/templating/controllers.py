@@ -213,7 +213,7 @@ class BaseTemplateController(Controller, metaclass=TemplateControllerMetaclass):
         return context
 
     async def render_template(
-        self, request: Request, context: dict[str, Any] | None = None
+        self, request: Request, context: dict[str, Any] | None = None, **kwargs: Any
     ) -> HTMLResponse:
         """
         Renders the specified template with the given context into an HTMLResponse.
