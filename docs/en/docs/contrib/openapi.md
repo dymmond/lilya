@@ -192,6 +192,33 @@ and **not** list `user_id` again under `in: query`.
 
     Always use distinct names for path and query parameters to avoid confusion. For example, use `user_id` in the path and `userIdQuery` in the query.
 
+### Request Bodies
+
+Use `request_body` in `@openapi(...)` to document inbound payloads.
+
+```python
+{!> ../../../docs_src/openapi/request_body.py !}
+```
+
+You can provide `request_body` as:
+
+* A model annotation (for example `Item`).
+* A list annotation (for example `list[Item]` or `[Item]`).
+* A JSON Schema dictionary.
+* A complete OpenAPI `requestBody` object (with `content`).
+
+For writing methods (`POST`, `PUT`, `PATCH`), the request body is now emitted even if you omit explicit `responses`.
+
+#### File Uploads (Multipart)
+
+For upload endpoints, model file fields as `bytes` and set `media_type` to `multipart/form-data`:
+
+```python
+{!> ../../../docs_src/openapi/request_body_upload.py !}
+```
+
+When the generated schema contains `format: binary`, Lilya defaults the request body media type to `multipart/form-data` if you don't set `media_type`.
+
 ---
 
 ### Response Models
