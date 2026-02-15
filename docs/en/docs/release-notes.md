@@ -5,6 +5,14 @@ hide:
 
 # Release Notes
 
+## 0.24.3
+
+### Fixed
+
+- `lilya.contrib.openapi` now emits `requestBody` for writing methods (`POST`, `PUT`, `PATCH`) even when `responses` are not explicitly declared.
+- `@openapi(request_body=...)` now supports multipart upload request bodies correctly, including binary fields (`format: binary`) and proper `multipart/form-data` content generation.
+- `BaseTemplateController.render_template()` now accepts **kwargs.
+
 ## 0.24.2
 
 ### Added

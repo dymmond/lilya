@@ -31,6 +31,11 @@ class ModelB(BaseModel):
     detail: str
 
 
+class UploadRequestBody(BaseModel):
+    user: str
+    file: bytes
+
+
 # Test 1: Basic path with async handler and no decorator
 def test_basic_path_async_without_decorator():
     app = Lilya(routes=[Path("/simple", async_handler)], enable_openapi=True)
@@ -421,6 +426,76 @@ def test_response_media_type_override():
     resp = spec["paths"]["/create"]["get"]["responses"]["201"]
 
     assert "application/json" in resp["content"]
+
+
+def test_request_body_is_emitted_without_explicit_responses():
+    @openapi(request_body=ModelA)
+    async def create_without_responses(request):
+        return {"id": 1, "name": "X"}
+
+    app = Lilya(
+        routes=[Path("/create-with-body", create_without_responses, methods=["POST"])],
+        enable_openapi=True,
+    )
+    spec = get_openapi(
+        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+    )
+    operation = spec["paths"]["/create-with-body"]["post"]
+
+    assert "requestBody" in operation
+    assert "application/json" in operation["requestBody"]["content"]
+    assert operation["responses"]["200"]["description"] == "Successful response"
+
+
+def test_request_body_upload_uses_multipart_for_binary_schema():
+    @openapi(
+        request_body=UploadRequestBody,
+        responses={200: OpenAPIResponse(model=ModelA, description="OK")},
+    )
+    async def upload_item(request):
+        return {"id": 1, "name": "uploaded"}
+
+    app = Lilya(
+        routes=[Path("/upload", upload_item, methods=["POST"])],
+        enable_openapi=True,
+    )
+    spec = get_openapi(
+        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+    )
+    request_body = spec["paths"]["/upload"]["post"]["requestBody"]
+    schema = request_body["content"]["multipart/form-data"]["schema"]
+
+    assert "multipart/form-data" in request_body["content"]
+    assert schema["properties"]["file"]["format"] == "binary"
+
+
+def test_request_body_accepts_raw_openapi_object():
+    raw_request_body = {
+        "content": {
+            "multipart/form-data": {
+                "schema": {
+                    "type": "object",
+                    "properties": {"file": {"type": "string", "format": "binary"}},
+                    "required": ["file"],
+                }
+            }
+        }
+    }
+
+    @openapi(request_body=raw_request_body)
+    async def upload_with_raw_body(request):
+        return {"ok": True}
+
+    app = Lilya(
+        routes=[Path("/upload-raw", upload_with_raw_body, methods=["POST"])],
+        enable_openapi=True,
+    )
+    spec = get_openapi(
+        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+    )
+    operation = spec["paths"]["/upload-raw"]["post"]
+
+    assert operation["requestBody"] == raw_request_body
 
 
 def test_default_response_no_decorator():

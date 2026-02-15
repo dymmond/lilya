@@ -1,7 +1,9 @@
 import inspect
 from collections.abc import Callable, Sequence
 from functools import lru_cache, wraps
-from typing import Annotated, Any, cast, get_args, get_origin
+from typing import Annotated, Any, cast, get_origin
+
+from pydantic import TypeAdapter
 
 from lilya._internal._responses import BaseHandler
 from lilya._utils import is_function
@@ -12,6 +14,91 @@ from lilya.contrib.openapi.params import Query, ResponseParam
 from lilya.contrib.security.base import SecurityBase, SecurityScheme
 
 SUCCESSFUL_RESPONSE = "Successful response"
+DEFAULT_REQUEST_MEDIA_TYPE = "application/json"
+MULTIPART_REQUEST_MEDIA_TYPE = "multipart/form-data"
+REQUEST_BODY_SCHEMA_KEYS = {
+    "$ref",
+    "allOf",
+    "anyOf",
+    "format",
+    "items",
+    "oneOf",
+    "properties",
+    "required",
+    "type",
+}
+
+
+def _is_openapi_request_body_dict(value: Any) -> bool:
+    """
+    Determine whether a value is already an OpenAPI ``requestBody`` object.
+    """
+    return isinstance(value, dict) and "content" in value and isinstance(value["content"], dict)
+
+
+def _is_json_schema_dict(value: Any) -> bool:
+    """
+    Determine whether a dictionary looks like a JSON Schema object.
+    """
+    return isinstance(value, dict) and any(key in value for key in REQUEST_BODY_SCHEMA_KEYS)
+
+
+def _schema_contains_binary_format(schema: Any) -> bool:
+    """
+    Recursively detect whether a JSON Schema contains ``format: binary``.
+    """
+    if isinstance(schema, dict):
+        if schema.get("format") == "binary":
+            return True
+        return any(_schema_contains_binary_format(value) for value in schema.values())
+    if isinstance(schema, list):
+        return any(_schema_contains_binary_format(value) for value in schema)
+    return False
+
+
+def _build_request_body_metadata(
+    request_body: Any | None,
+    media_type: str | None,
+) -> dict[str, Any]:
+    """
+    Normalize the ``request_body`` decorator input into an OpenAPI ``requestBody`` object.
+
+    Supported forms are:
+    - A Python annotation or model (e.g. ``MyModel`` or ``list[MyModel]``).
+    - A single-item list/tuple shorthand (e.g. ``[MyModel]``).
+    - A JSON Schema dictionary.
+    - A complete OpenAPI ``requestBody`` dictionary containing ``content``.
+    """
+    if request_body is None:
+        return {}
+
+    if _is_openapi_request_body_dict(request_body):
+        return request_body  # type: ignore
+
+    if _is_json_schema_dict(request_body):
+        schema = request_body
+    else:
+        if isinstance(request_body, (list, tuple)):
+            if len(request_body) != 1:
+                raise ValueError(
+                    "Request body list/tuple representation accepts a single model only. "
+                    "Example: request_body=[MyModel]."
+                )
+            annotation: Any = list[request_body[0]]  # type: ignore
+        elif get_origin(request_body) in (list, tuple, Sequence):
+            annotation = request_body
+        else:
+            annotation = request_body
+
+        converted_annotation = convert_annotation_to_pydantic_model(annotation)
+        schema = TypeAdapter(converted_annotation).json_schema()
+
+    selected_media_type = media_type or (
+        MULTIPART_REQUEST_MEDIA_TYPE
+        if _schema_contains_binary_format(schema)
+        else DEFAULT_REQUEST_MEDIA_TYPE
+    )
+    return {"content": {selected_media_type: {"schema": schema}}}
 
 
 class OpenAPIMethod:
@@ -37,6 +124,9 @@ class OpenAPIMethod:
 
 @lru_cache
 def get_signature(func: Callable[..., Any]) -> inspect.Signature:
+    """
+    Cache and return the function signature used by the response handler wrapper.
+    """
     return inspect.Signature.from_callable(func)
 
 
@@ -77,8 +167,8 @@ def openapi(
         str | None,
         Doc(
             """
-            The string indicating the content media type of the handler (e.g. "application/json").
-            Used for OpenAPI.
+            The media type used for the OpenAPI request body when `request_body` is provided
+            (e.g. "application/json" or "multipart/form-data").
             """
         ),
     ] = None,
@@ -152,7 +242,9 @@ def openapi(
         Any | None,
         Doc(
             """
-            Overridable request body for the payload to be sent.
+            Overridable request body definition.
+            It accepts a model annotation, a JSON Schema object, or a complete OpenAPI
+            requestBody object (with `content`).
             """
         ),
     ] = None,
@@ -169,6 +261,9 @@ def openapi(
             return handler.handle_response(func, other_signature=signature)
 
         def response_models(responses: dict[int, OpenAPIResponse] | None = None) -> Any:
+            """
+            Convert OpenAPI response model declarations into internal response metadata.
+            """
             responses: dict[int, ResponseParam] = {} if responses is None else responses  # type: ignore
 
             if responses:
@@ -191,6 +286,9 @@ def openapi(
         def query_strings(
             query_dict: dict[str, Query] | dict[str, Any] | set[str] | None = None,
         ) -> dict[str, Query]:
+            """
+            Normalize query parameter declarations into ``Query`` instances.
+            """
             if query_dict is None:
                 return {}
 
@@ -211,40 +309,12 @@ def openapi(
                 "Query must be a dict or set or a dict of key-pair value of str and Query"
             )
 
-        def get_request_body(
-            request_body: Any | None = None,
-        ) -> Any:
-            if request_body is None:
-                return {}
-
-            if isinstance(request_body, (list, tuple)):
-                model: Any = request_body[0]
-                annotation = list[model]
-            elif get_origin(request_body) is list:
-                annotation = request_body
-            else:
-                annotation = request_body
-
-            # 2. Convert to Pydantic model (handles encodings/nested types)
-            converted_annotation = convert_annotation_to_pydantic_model(annotation)
-
-            # 3. Generate Schema
-            # We must check if it's a list/sequence again on the converted annotation
-            origin = get_origin(converted_annotation)
-
-            if origin in (list, tuple, Sequence):
-                # It is a list: Extract args and get schema of the inner model
-                args = get_args(converted_annotation)
-                # Return as a list containing the schema, matching Lilya's expectation
-                body_fields = [args[0].model_json_schema()]
-            else:
-                # It is a single model: Get schema directly
-                body_fields = converted_annotation.model_json_schema()
-            return body_fields
-
         def handle_security_requirement(
             security_requirements: Sequence[Any] | None,
         ) -> list[dict[str, Any]] | None:
+            """
+            Normalize security requirements into OpenAPI security scheme declarations.
+            """
             security_schemes = []
             security_definitions: dict[str, dict[str, Any]] = {}
 
@@ -291,7 +361,7 @@ def openapi(
             "query": query_strings(query) or {},
         }
 
-        body_fields = get_request_body(request_body)
+        body_fields = _build_request_body_metadata(request_body, media_type)
         wrapper.openapi_meta["request_body"] = body_fields
 
         if is_function(func) and not inspect.ismethod(func):

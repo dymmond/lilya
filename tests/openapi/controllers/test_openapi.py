@@ -34,6 +34,11 @@ class ModelB(BaseModel):
     detail: str
 
 
+class UploadRequestBody(BaseModel):
+    user: str
+    file: bytes
+
+
 def test_basic_path_sync_with_summary():
     class HandlerController(Controller):
         @openapi(summary="Sync summary")
@@ -476,6 +481,49 @@ def test_response_media_type_override():
     resp = spec["paths"]["/create"]["get"]["responses"]["201"]
 
     assert "application/json" in resp["content"]
+
+
+def test_request_body_is_emitted_without_explicit_responses():
+    class CreateWithoutResponsesController(Controller):
+        @openapi(request_body=ModelA)
+        async def post(self, request):
+            return {"id": 1, "name": "X"}
+
+    app = Lilya(
+        routes=[Path("/create-with-body", CreateWithoutResponsesController, methods=["POST"])],
+        enable_openapi=True,
+    )
+    spec = get_openapi(
+        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+    )
+    operation = spec["paths"]["/create-with-body"]["post"]
+
+    assert "requestBody" in operation
+    assert "application/json" in operation["requestBody"]["content"]
+    assert operation["responses"]["200"]["description"] == "Successful response"
+
+
+def test_request_body_upload_uses_multipart_for_binary_schema():
+    class UploadController(Controller):
+        @openapi(
+            request_body=UploadRequestBody,
+            responses={200: OpenAPIResponse(model=ModelA, description="OK")},
+        )
+        async def post(self, request):
+            return {"id": 1, "name": "uploaded"}
+
+    app = Lilya(
+        routes=[Path("/upload", UploadController, methods=["POST"])],
+        enable_openapi=True,
+    )
+    spec = get_openapi(
+        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+    )
+    request_body = spec["paths"]["/upload"]["post"]["requestBody"]
+    schema = request_body["content"]["multipart/form-data"]["schema"]
+
+    assert "multipart/form-data" in request_body["content"]
+    assert schema["properties"]["file"]["format"] == "binary"
 
 
 def test_default_response_no_decorator():

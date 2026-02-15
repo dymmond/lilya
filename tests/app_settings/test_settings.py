@@ -75,7 +75,7 @@ def test_dict_default():
         "ptpython_config_file": "~/.config/ptpython/config.py",
         "debug": False,
         "environment": "production",
-        "version": "0.24.2",
+        "version": settings.version,
         "include_in_schema": True,
         "default_route_pattern": "route_patterns",
         "enforce_return_annotation": False,

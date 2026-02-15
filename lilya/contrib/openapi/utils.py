@@ -12,8 +12,38 @@ from lilya.contrib.openapi.params import Query, ResponseParam
 from lilya.controllers import Controller
 from lilya.enums import HTTPMethod
 
+DEFAULT_REQUEST_MEDIA_TYPE = "application/json"
+
+
+def _normalize_request_body_operation(
+    request_body: Any,
+    media_type: str | None = None,
+) -> dict[str, Any]:
+    """
+    Normalize request body metadata into a valid OpenAPI ``requestBody`` object.
+
+    This keeps backward compatibility with older metadata shapes where only a
+    plain schema (or a one-item list for array schema) was stored.
+    """
+    if not request_body:
+        return {}
+
+    if isinstance(request_body, dict) and "content" in request_body:
+        return request_body
+
+    if isinstance(request_body, list):
+        schema_payload = {"type": "array", "items": request_body[0]}
+    else:
+        schema_payload = request_body
+
+    request_media_type = media_type or DEFAULT_REQUEST_MEDIA_TYPE
+    return {"content": {request_media_type: {"schema": schema_payload}}}
+
 
 def extract_http_methods_from_endpoint(cls: type) -> list[str]:
+    """
+    Extract HTTP method names implemented by a controller class.
+    """
     return [
         method.upper()
         for method in HTTPMethod.to_list()
@@ -37,6 +67,9 @@ def get_openapi(
     license: dict[str, Any] | None = None,
     webhooks: Sequence[Any] | None = None,
 ) -> dict[str, Any]:
+    """
+    Generate the OpenAPI specification dictionary for a Lilya application.
+    """
     info = {
         "title": title,
         "version": version,
@@ -158,6 +191,14 @@ def get_openapi(
                 else:
                     operation["parameters"].append(query_param)
 
+            if m_lower in WRITING_METHODS:
+                request_body = _normalize_request_body_operation(
+                    request_body=meta.get("request_body", {}),
+                    media_type=meta.get("media_type"),
+                )
+                if request_body:
+                    operation["requestBody"] = request_body
+
             responses_obj = {}
             seen_responses = meta.get("responses", {})
             schema_generator = GenerateJsonSchema(ref_template=REF_TEMPLATE)
@@ -191,18 +232,6 @@ def get_openapi(
                 )
                 for name, schema_def in definitions.items():
                     spec["components"]["schemas"][name] = schema_def  # type: ignore
-
-                # For the request body
-                request_body = meta.get("request_body", {})
-                if m_lower in WRITING_METHODS and request_body:
-                    if isinstance(request_body, list):
-                        schema_payload = {"type": "array", "items": request_body[0]}
-                    else:
-                        schema_payload = request_body
-
-                    operation["requestBody"] = {
-                        "content": {"application/json": {"schema": schema_payload}}
-                    }
 
                 for status_code_int, response in seen_responses.items():
                     status_code = str(status_code_int)
