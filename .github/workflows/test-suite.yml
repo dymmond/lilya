@@ -64,6 +64,7 @@ jobs:
       - name: "Run linting checks"
         run: "hatch fmt --check"
       - name: "Run typing checks"
+        if: matrix.python-version != '3.14'  # mypy 1.19.x incomplete Python 3.14 support (github.com/python/mypy/issues/20186)
         run: "hatch run test:check_types"
       - name: "Run tests"
         run: "hatch run test:coverage"
