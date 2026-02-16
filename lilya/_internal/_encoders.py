@@ -221,7 +221,7 @@ class ENCODER_TYPES_TYPE(_ENCODER_TYPES_TYPE_BASE):
     # ContextVar interface
     name: str
 
-    def set(self, value: _ENCODER_TYPES_TYPE_BASE) -> Token: ...
+    def set(self, value: _ENCODER_TYPES_TYPE_BASE) -> Token: ...  # type: ignore[empty-body]
 
     def get(
         self, default: _ENCODER_TYPES_TYPE_BASE | None = None
