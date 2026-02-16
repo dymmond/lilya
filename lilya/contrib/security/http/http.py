@@ -71,7 +71,7 @@ class HTTPBase(HttpSecurityBase, AuthenticationErrorMixin):
         """
 
         return self.build_authentication_exception(
-            headers={"WWW-Authenticate": f"{self.scheme.title()}"},
+            headers={"WWW-Authenticate": f"{(self.scheme or 'Basic').title()}"},
             detail=detail,
         )
 
@@ -176,7 +176,7 @@ class HTTPBearer(HTTPBase):
         Raise an authentication error if the query parameter is missing.
         """
         return self.build_authentication_exception(
-            detail=detail, headers={"WWW-Authenticate": f"{self.scheme.title()}"}
+            detail=detail, headers={"WWW-Authenticate": f"{(self.scheme or 'Bearer').title()}"}
         )
 
     async def __call__(self, request: Request) -> HTTPAuthorizationCredentials | None:
@@ -221,7 +221,7 @@ class HTTPDigest(HTTPBase):
         Raise an authentication error if the query parameter is missing.
         """
         return self.build_authentication_exception(
-            detail=detail, headers={"WWW-Authenticate": f"{self.scheme.title()}"}
+            detail=detail, headers={"WWW-Authenticate": f"{(self.scheme or 'Digest').title()}"}
         )
 
     async def __call__(self, request: Request) -> HTTPAuthorizationCredentials | None:

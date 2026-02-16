@@ -229,7 +229,7 @@ def openapi(
         ),
     ] = None,
     query: Annotated[
-        dict[str, Query] | dict[str, Any] | set[str],
+        dict[str, Query] | dict[str, Any] | set[str] | None,
         None,
         Doc(
             """
