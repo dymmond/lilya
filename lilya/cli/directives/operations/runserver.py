@@ -211,7 +211,7 @@ def runserver(
             app_to_run = env.app or app_target
         else:
             # Use import path string for reload/workers compatibility
-            app_to_run = app_target  # type: ignore[assignment]
+            app_to_run = app_target
 
         uvicorn.run(
             # in case of no reload and workers, we might end up initializing twice when
