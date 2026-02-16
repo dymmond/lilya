@@ -1309,6 +1309,8 @@ class BaseRouter:
         "before_request",
         "after_request",
         "dependencies",
+        "dependency_overrides",
+        "wrapped_permissions",
         "_fast_path_len",
         "_fast_path_route",
     )

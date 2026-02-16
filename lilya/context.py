@@ -322,7 +322,7 @@ class LazyGProxy:
     def __getitem__(self, key: str) -> Any:
         return _get_or_create_g()[key]
 
-    def __repr__(self: LazyRequestProxy) -> str:
+    def __repr__(self) -> str:
         try:
             get_g()
         except LookupError:

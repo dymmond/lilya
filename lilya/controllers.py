@@ -89,7 +89,7 @@ class Controller(BaseController):
             with the baked-in arguments, and delegates the ASGI lifecycle.
             """
 
-            __is_controller__: ClassVar[bool] = True
+            __is_controller__: ClassVar[bool] = True  # type: ignore[misc]
             __factory_base__: ClassVar[type[Controller]] = parent
             __init_args__: ClassVar[tuple[Any, ...]] = init_args
             __init_kwargs__: ClassVar[dict[str, Any]] = init_kwargs
@@ -241,7 +241,7 @@ class WebSocketController(BaseController):
             newly created instance.
             """
 
-            __is_controller__: ClassVar[bool] = True
+            __is_controller__: ClassVar[bool] = True  # type: ignore[misc]
             __factory_base__: ClassVar[type[WebSocketController]] = parent
             __init_args__: ClassVar[tuple[Any, ...]] = init_args
             __init_kwargs__: ClassVar[dict[str, Any]] = init_kwargs

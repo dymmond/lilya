@@ -68,7 +68,7 @@ class DirectiveGroup(SayerGroup):
         as one of the params of any subcommand.
         """
         args = [*ctx.protected_args, *ctx.args]
-        cmd_name, cmd, args = self.resolve_command(ctx, args)
+        cmd_name, cmd, args = self.resolve_command(ctx, args)  # type: ignore[misc]
         sub_ctx = cmd.make_context(cmd_name, args, parent=ctx)
 
         settings = sub_ctx.params.get("settings", None)

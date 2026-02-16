@@ -110,7 +110,8 @@ class Response:
         self.cookies = cookies
         self.deduce_media_type_from_body = deduce_media_type_from_body
         self.encoders: list[Encoder] = [
-            encoder() if isclass(encoder) else encoder for encoder in encoders or _empty
+            encoder() if isclass(encoder) else encoder  # type: ignore[misc]
+            for encoder in encoders or _empty
         ]
         if isawaitable(content):
             self.async_content = content
@@ -515,7 +516,8 @@ class StreamingResponse(Response):
         encoders: Sequence[Encoder | type[Encoder]] | None = None,
     ) -> None:
         self.encoders: list[Encoder] = [
-            encoder() if isclass(encoder) else encoder for encoder in encoders or _empty
+            encoder() if isclass(encoder) else encoder  # type: ignore[misc]
+            for encoder in encoders or _empty
         ]
 
         if isinstance(content, AsyncIterable):
@@ -1006,7 +1008,8 @@ class FileResponse(DispositionResponse):
         self.background = background
 
         self.encoders: list[Encoder] = [
-            encoder() if isclass(encoder) else encoder for encoder in encoders or _empty
+            encoder() if isclass(encoder) else encoder  # type: ignore[misc]
+            for encoder in encoders or _empty
         ]
         self.make_headers(headers)
 
@@ -1240,7 +1243,7 @@ class FileResponse(DispositionResponse):
 class SimpleFileResponse(Response):
     """A simplified FileResponse which allows sending arbitary data formats as file."""
 
-    def __new__(
+    def __new__(  # type: ignore[misc]
         cls,
         content: bytes | memoryview | os.PathLike | str | IO[bytes] | FileIO,
         *,

@@ -76,9 +76,13 @@ def observable(send: list[str] | None = None, listen: list[str] | None = None) -
             if send:
                 async with anyio.create_task_group() as tg:
                     for event in send:
-                        tg.start_soon(
-                            lambda e=event, a=args, k=kwargs: EventDispatcher.emit(e, *a, **k)
-                        )
+
+                        async def _emit_wrapper(
+                            e: str = event, a: tuple = args, k: dict = kwargs
+                        ) -> None:
+                            await EventDispatcher.emit(e, *a, **k)
+
+                        tg.start_soon(_emit_wrapper)
 
             return result
 

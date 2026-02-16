@@ -308,7 +308,7 @@ class BaseHandler:
 
                 This wrapper is created once per handler to avoid per-request branching.
                 """
-                return await func()  # type: ignore[call-arg]
+                return await func()  # type: ignore[call-arg,misc]
 
             async def _executekw(**kwargs: Any) -> Any:
                 """
@@ -316,7 +316,7 @@ class BaseHandler:
 
                 This wrapper is created once per handler to avoid per-request branching.
                 """
-                return await func(**kwargs)  # type: ignore[call-arg]
+                return await func(**kwargs)  # type: ignore[call-arg,misc]
 
         else:
 

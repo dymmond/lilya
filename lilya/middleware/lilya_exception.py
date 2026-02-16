@@ -98,7 +98,7 @@ class LilyaExceptionMiddleware(MiddlewareProtocol):
                 raise
             handler = self._lookup_handler(exc)
             if handler:
-                response = await handler(request, exc)
+                response = await handler(request, exc)  # type: ignore[misc]
             else:
                 response = self.create_exception_response(exc)
             await response(scope, receive, send_wrapper)

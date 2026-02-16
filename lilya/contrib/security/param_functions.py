@@ -7,7 +7,7 @@ from pydantic_core import PydanticUndefined
 _PyUndefined: Any = PydanticUndefined
 
 
-class Param(FieldInfo):
+class Param(FieldInfo):  # type: ignore[misc]
     def __init__(
         self,
         default: Any = _PyUndefined,
