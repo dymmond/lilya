@@ -367,6 +367,10 @@ context = '${CONTEXT}'
 source = ["tests", "lilya"]
 # omit = []
 
+[tool.coverage.report]
+# Ratchet up toward 100% — current baseline measured on 2026-02-16
+fail_under = 92
+
 [[tool.mypy.overrides]]
 module = ["multipart.*", "mako.*", "uvicorn.*", "jwt.*"]
 ignore_missing_imports = true

@@ -1,4 +1,5 @@
 # folders
+.sisyphus/
 tests/cli/myproject
 *.egg-info/
 .hypothesis/
@@ -21,6 +22,7 @@ site_lang/
 target/
 
 # files
+**/AGENTS.md
 **/*.so
 **/*.sqlite
 *.iml
