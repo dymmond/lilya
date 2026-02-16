@@ -91,7 +91,7 @@ def get_routes_table(app: BaseLilya | None, table: Table) -> Table:
 
         for route in app.routes:  # type: ignore
             if isinstance(route, Path):
-                path = clean_path(prefix + route.path)
+                path = clean_path((prefix or "") + route.path)
 
                 if any(element in path for element in DOCS_ELEMENTS):
                     continue
@@ -111,7 +111,7 @@ def get_routes_table(app: BaseLilya | None, table: Table) -> Table:
             if not route_app:
                 continue
 
-            path = clean_path(prefix + route.path)  # type: ignore
+            path = clean_path((prefix or "") + route.path)  # type: ignore
             if any(element in path for element in DOCS_ELEMENTS):
                 continue
 

@@ -44,11 +44,13 @@ def get_ip(scope: Scope, trusted_proxies: None | Sequence[str] = None) -> str:
         headers = Header.ensure_header_instance(scope)
         try:
             ip_matches = _forwarded_regex.search(headers["forwarded"])
-            client_ip = ip_matches[1]
+            if ip_matches is not None:
+                client_ip = ip_matches[1]
         except KeyError:
             try:
                 ip_matches = _http_x_forwarded_regex.search(headers["x-forwarded-for"])
-                client_ip = ip_matches[1]
+                if ip_matches is not None:
+                    client_ip = ip_matches[1]
             except KeyError:
                 pass
     if client_ip == "unix":
