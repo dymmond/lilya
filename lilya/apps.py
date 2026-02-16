@@ -597,6 +597,7 @@ class BaseLilya:
             except HTTPException as exc:
                 if response_started:
                     raise
+                response: Response | None = None
                 if getattr(exc, "response", None) is not None:
                     response = exc.response
                 elif exc.status_code is not None and exc.status_code in {
@@ -610,7 +611,8 @@ class BaseLilya:
                         status_code=exc.status_code or status.HTTP_500_INTERNAL_SERVER_ERROR,
                         headers=exc.headers,
                     )
-                await response(scope, receive, sender)
+                if response is not None:
+                    await response(scope, receive, sender)
             except Exception:
                 if response_started:
                     raise
