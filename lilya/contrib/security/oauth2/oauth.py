@@ -149,8 +149,6 @@ class OAuth2PasswordRequestForm(BaseModel):
         Making sure the "scope" is not included in the model dump
         as the scopes should be the one being used by Lilya.
         """
-        if kwargs is None:
-            kwargs = {}
         kwargs["exclude"] = {"scope"}
         return super().model_dump(**kwargs)
 

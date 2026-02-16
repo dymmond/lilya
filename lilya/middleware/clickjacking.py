@@ -57,6 +57,7 @@ class XFrameOptionsMiddleware(MiddlewareProtocol):
         Returns:
             str: The X-Frame-Options value.
         """
-        if getattr(settings, "x_frame_options", None) is not None:
-            return settings.x_frame_options.upper()
+        x_frame_options = getattr(settings, "x_frame_options", None)
+        if isinstance(x_frame_options, str):
+            return x_frame_options.upper()
         return "DENY"

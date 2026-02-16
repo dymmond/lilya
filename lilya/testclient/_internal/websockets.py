@@ -27,7 +27,7 @@ except ModuleNotFoundError:  # pragma: no cover
     ) from None
 
 
-class WebSocketDenialResponse(
+class WebSocketDenialResponse(  # type: ignore[misc]
     httpx.Response,
     WebSocketDisconnect,
 ):

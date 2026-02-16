@@ -84,7 +84,10 @@ class TrustedReferrerMiddleware(MiddlewareProtocol):
             return True
         if not referrer:
             return self.allow_empty
-        referrer_host = URL(referrer).hostname.split(":")[0]
+        hostname = URL(referrer).hostname
+        if hostname is None:
+            return False
+        referrer_host = hostname.split(":")[0]
         if self.allow_same_origin and referrer_host == host:
             return True
 

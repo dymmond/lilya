@@ -254,7 +254,7 @@ class AsyncTestClient(httpx.AsyncClient):
                 auth=auth,
                 timeout=timeout,
                 extensions=extensions,
-                follow_redirects=follow_redirects,
+                follow_redirects=follow_redirects or httpx._client.USE_CLIENT_DEFAULT,
             ).__aenter__()
 
         return await super().request(

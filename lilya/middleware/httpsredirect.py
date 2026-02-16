@@ -53,6 +53,7 @@ class HTTPSRedirectMiddleware(MiddlewareProtocol):
             URL: The redirection URL.
         """
         url = URL.build_from_scope(scope=scope)
-        redirect_scheme = {"http": "https", "ws": "wss"}[url.scheme]
+        scheme = url.scheme or "http"
+        redirect_scheme = {"http": "https", "ws": "wss"}[scheme]
         netloc = url.hostname if url.port in (80, 443) else url.netloc
         return url.replace(scheme=redirect_scheme, netloc=netloc)
