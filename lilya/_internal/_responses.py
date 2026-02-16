@@ -287,6 +287,9 @@ class BaseHandler:
         # will be provided by the caller. We default to `inspect.signature(func)` only once.
         static_signature: inspect.Signature | None = other_signature or inspect.signature(func)
 
+        if static_signature is None:
+            static_signature = inspect.signature(func)
+
         # ---------------------------------------------------------------------
         # Performance notes:
         # - We resolve and cache the signature/plan once at decoration time, not per request.
@@ -404,7 +407,11 @@ class BaseHandler:
 
                 # The effective signature can still be overridden by the handler,
                 # but we avoid expensive resolution when it matches the static signature.
-                signature = other_signature or self.signature or static_signature
+                signature: inspect.Signature | None = (
+                    other_signature or self.signature or static_signature
+                )
+                if signature is None:
+                    signature = static_signature
                 if signature is static_signature:
                     signature = resolved_signature
                     effective_plan = plan
@@ -1027,14 +1034,18 @@ class BaseHandler:
         requested: dict[str, Provide | Resolve | Security] = {}
         for name, param in signature.parameters.items():
             if isinstance(param.default, Provides):
-                # we want to inject “name” if the handler did `foo = Provides()`
-                requested[name] = merged.get(name)
+                # we want to inject "name" if the handler did `foo = Provides()`
+                dep = merged.get(name)
+                if dep is not None:
+                    requested[name] = dep
 
             elif isinstance(param.default, (Resolve, Security)):
                 requested[name] = param.default
 
             elif param.name in merged and param.default is inspect.Parameter.empty:
-                requested[name] = merged.get(name)
+                dep = merged.get(name)
+                if dep is not None:
+                    requested[name] = dep
 
         # 3) Determine if the request body should be inferred and parsed.
         is_body_inferred: bool = _monkay.settings.infer_body

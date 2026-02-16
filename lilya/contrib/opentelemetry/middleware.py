@@ -99,8 +99,9 @@ class OpenTelemetryMiddleware(MiddlewareProtocol):
                 port = request.url.port or (443 if request.url.scheme == "https" else 80)
                 current_span.set_attribute("server.port", int(port))
 
-            current_span.set_attribute("url.path", request.url.path)
-            if request.url.query:
+            if request.url.path is not None:
+                current_span.set_attribute("url.path", request.url.path)
+            if request.url.query is not None:
                 current_span.set_attribute("url.query", request.url.query)
 
             if request.client:
@@ -115,7 +116,9 @@ class OpenTelemetryMiddleware(MiddlewareProtocol):
                 current_span.set_attribute("http.route", route.path)
             else:
                 # High-cardinality request path as fallback
-                current_span.set_attribute("lilya.route", scope.get("path"))
+                path = scope.get("path")
+                if path is not None:
+                    current_span.set_attribute("lilya.route", path)
 
             # Status code holder, defaults to 500 in case of non-handled crash before response start
             status_code_holder: dict[str, int] = {"value": 500}
@@ -153,13 +156,17 @@ class OpenTelemetryMiddleware(MiddlewareProtocol):
                 current_span.set_attribute(
                     "server.address", scope.get("server", ["testserver"])[0]
                 )
-                current_span.set_attribute("url.path", scope.get("path"))
+                path = scope.get("path")
+                if path is not None:
+                    current_span.set_attribute("url.path", path)
 
                 route = scope.get("route")
                 if route and hasattr(route, "path"):
                     current_span.set_attribute("lilya.route", route.path)
                 else:
-                    current_span.set_attribute("lilya.route", scope.get("path"))
+                    path = scope.get("path")
+                    if path is not None:
+                        current_span.set_attribute("lilya.route", path)
 
                 # Set final span status only if no exception was caught
                 if error is None:
