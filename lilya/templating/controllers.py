@@ -105,7 +105,7 @@ class BaseTemplateController(Controller, metaclass=TemplateControllerMetaclass):
     """
 
     __exclude_from_openapi__: bool = True
-    template_name: str = None
+    template_name: str | None = None
     csrf_enabled: bool = False
     csrf_token_form_name: str = "csrf_token"
     context_processors: list[str | Callable] | None = None

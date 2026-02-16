@@ -11,6 +11,8 @@ from lilya._internal._encoders import json_encode
 from lilya.protocols.cache import CacheBackend
 from lilya.serializers import serializer
 
+redis: Any
+
 try:
     import redis.asyncio as redis
 except ImportError:
