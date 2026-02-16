@@ -15,7 +15,6 @@ class AsyncExitStackMiddleware(MiddlewareProtocol):
         Args:
             app: The 'next' ASGI app to call.
         """
-        super().__init__(app)
         self.app = app
         self.debug = debug
 

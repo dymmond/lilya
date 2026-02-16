@@ -61,7 +61,6 @@ class LilyaExceptionMiddleware(MiddlewareProtocol):
                 a `Request` and an `Exception` instance, and return a `Response`.
                 If no handlers are provided, an empty mapping is used.
         """
-        super().__init__(app)
         self.app = app
         self.handlers = handlers or {}
 

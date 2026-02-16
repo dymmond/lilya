@@ -42,7 +42,6 @@ class OpenTelemetryMiddleware(MiddlewareProtocol):
             span_name: The format string used to generate the span name. The `{method}`
                        placeholder is replaced by the HTTP request method (e.g., "HTTP GET").
         """
-        super().__init__(app)
         self.app = app
         self.span_name: str = span_name
 

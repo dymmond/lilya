@@ -41,7 +41,6 @@ class BaseAuthMiddleware(ABC, MiddlewareProtocol):
         app: ASGIApp,
         on_error: Callable[[Connection, AuthenticationError], Response] | None = None,
     ) -> None:
-        super().__init__(app)
         self.app = app
         self.on_error: Callable[[Connection, Exception], Response] = (
             on_error if on_error is not None else self.default_on_error  # type: ignore[assignment]
@@ -122,7 +121,7 @@ class AuthenticationMiddleware(BaseAuthMiddleware):
             "'backend' is required for authenticate method. Overwrite 'authenticate' or provide AuthenticationBackend in backend"
         )
 
-    async def authenticate(self, conn: Connection) -> None | AuthResult:
+    async def authenticate(self, conn: Connection, **kwargs: Any) -> None | AuthResult:
         """Authorize users here."""
 
         for backend in self.backend:

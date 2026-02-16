@@ -8,7 +8,6 @@ from lilya.types import ASGIApp, Message, Receive, Scope, Send
 
 class XFrameOptionsMiddleware(MiddlewareProtocol):
     def __init__(self, app: ASGIApp):
-        super().__init__(app)
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:

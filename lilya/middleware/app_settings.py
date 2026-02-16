@@ -10,7 +10,6 @@ warn("This module is deprecated without replacement", DeprecationWarning, stackl
 
 class ApplicationSettingsMiddleware(MiddlewareProtocol):
     def __init__(self, app: ASGIApp):
-        super().__init__(app)
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
