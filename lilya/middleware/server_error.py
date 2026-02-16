@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import html
 import inspect
+import sys
 import traceback
 from collections.abc import Callable
 from typing import Any
@@ -197,10 +198,9 @@ class ServerErrorMiddleware(MiddlewareProtocol):
                 is_collapsed = True
 
         # escape error class and text
-        try:
-            exc_type_str = traceback_obj.exc_type_str  # type: ignore[attr-defined]
-        except Exception:  # noqa
-            # for older python versions < 3.13
+        if sys.version_info >= (3, 13):
+            exc_type_str = traceback_obj.exc_type_str
+        else:
             exc_type_str = traceback_obj.exc_type.__name__
         error = f"{html.escape(exc_type_str)}: {html.escape(str(traceback_obj))}"
 
