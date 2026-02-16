@@ -231,17 +231,20 @@ class Header(MultiDict, CIMultiDict):
             for key, value in self.multi_items()
         )
 
-    def __iter__(self) -> Generator[tuple[bytes, bytes], None, None]:
-        """For compatibility with ASGI."""
+    def __iter__(self) -> Generator[tuple[bytes, bytes], None, None]:  # type: ignore[override]
+        """For compatibility with ASGI - returns encoded tuples instead of keys."""
         return self.encoded_multi_items()
 
-    def __contains__(self, item: str | bytes | tuple[bytes | str, bytes | str]) -> bool:
+    def __contains__(self, item: object) -> bool:
         # required by uvicorn which assumes the headers are a container like list.
         # elaborate for generic use
         if isinstance(item, bytes):
             item = item.decode("utf-8", errors="surrogateescape")
         if isinstance(item, str):
             return super().__contains__(item)
+        # Handle tuple case
+        if not isinstance(item, tuple) or len(item) != 2:
+            return False
         try:
             k, v = (
                 x if isinstance(x, str) else x.decode("utf8", errors="surrogateescape")

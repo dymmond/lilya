@@ -75,7 +75,9 @@ class HTTPBase(HttpSecurityBase, AuthenticationErrorMixin):
             detail=detail,
         )
 
-    async def __call__(self, request: Request) -> HTTPAuthorizationCredentials | None:
+    async def __call__(
+        self, request: Request
+    ) -> HTTPAuthorizationCredentials | HTTPBasicCredentials | None:
         authorization = request.headers.get("Authorization")
         if not authorization:
             if self.__auto_error__:
@@ -115,7 +117,7 @@ class HTTPBasic(HTTPBase):
         self.__auto_error__ = auto_error
 
     def raise_for_authentication_error(
-        self, status_code: int = HTTP_401_UNAUTHORIZED, detail: str = "Not authenticated"
+        self, detail: str = "Not authenticated", status_code: int = HTTP_401_UNAUTHORIZED
     ) -> HTTPException:
         """
         Raise an authentication error if the query parameter is missing.

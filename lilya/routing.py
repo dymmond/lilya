@@ -158,7 +158,7 @@ class BasePath:
             return
 
         scope.update(child_scope)
-        await self.handle_dispatch(scope, receive, send)  # type: ignore
+        await self.handle_dispatch(scope, receive, send)
 
     async def handle_not_found(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -183,7 +183,7 @@ class BasePath:
     async def handle_not_found_fallthrough(scope: Scope, receive: Receive, send: Send) -> None:
         raise ContinueRouting()
 
-    def handle_dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
+    async def handle_dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
         Handles the dispatch of the request to the appropriate handler.
 
@@ -408,6 +408,10 @@ class Path(BaseHandler, BasePath):
             self._signature: inspect.Signature = inspect.signature(self.__handler_app__)
             self.handle_signature()
         return self._signature
+
+    @signature.setter
+    def signature(self, value: inspect.Signature) -> None:
+        self._signature = value
 
     def handle_signature(self) -> None:
         """
@@ -774,6 +778,10 @@ class WebSocketPath(BaseHandler, BasePath):
             self.handle_signature()
         return self._signature
 
+    @signature.setter
+    def signature(self, value: inspect.Signature) -> None:
+        self._signature = value
+
     def handle_signature(self) -> None:
         """
         Validates the return annotation of a handler
@@ -923,7 +931,7 @@ class WebSocketPath(BaseHandler, BasePath):
         except Exception as ex:
             await self.handle_exception_handlers(scope, receive, send, ex)
 
-    def path_for(self, name: str, **path_params: Any) -> URLPath:
+    def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         """
         Generates a URL path for the specified route name and parameters.
 
@@ -1490,7 +1498,7 @@ class BaseRouter:
 
         new_scope = dict(base_scope)
         new_scope.update(child)
-        await route.handle_dispatch(new_scope, path_handler.receive, path_handler.send)  # type: ignore
+        await route.handle_dispatch(new_scope, path_handler.receive, path_handler.send)
 
     async def handle_partial(self, route: BasePath, path_handler: PathHandler) -> None:
         """
@@ -1502,7 +1510,7 @@ class BaseRouter:
         """
         new_scope = dict(path_handler.scope)
         new_scope.update(path_handler.child_scope)
-        await route.handle_dispatch(new_scope, path_handler.receive, path_handler.send)  # type: ignore
+        await route.handle_dispatch(new_scope, path_handler.receive, path_handler.send)
 
     async def handle_default(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -1619,7 +1627,7 @@ class BaseRouter:
                             new_scope = dict(scope)
                             new_scope.update(child_scope)
 
-                        await fast_route.handle_dispatch(new_scope, receive, send)  # type: ignore
+                        await fast_route.handle_dispatch(new_scope, receive, send)
                         return
                     except ContinueRouting:
                         pass

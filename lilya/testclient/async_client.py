@@ -184,7 +184,7 @@ class AsyncTestClient(httpx.AsyncClient):
             else:
                 self.app_state[self._AUTH_USER_KEY] = previous
 
-    async def request(
+    async def request(  # type: ignore[override,unused-ignore]
         self,
         method: str,
         url: URLTypes,

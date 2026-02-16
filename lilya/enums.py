@@ -18,8 +18,8 @@ class DefaultPort(IntEnum):
     def __int__(self) -> int:
         return self.value
 
-    def __repr__(self) -> int:
-        return int(self)
+    def __repr__(self) -> str:
+        return str(int(self))
 
     @classmethod
     def to_dict(cls) -> dict[str, int]:
