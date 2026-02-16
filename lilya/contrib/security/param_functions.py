@@ -1,9 +1,9 @@
 from collections.abc import Callable
 from typing import Any
 
-from pydantic.fields import (
-    AliasChoices as AliasChoices,  # type: ignore[attr-defined]
-    AliasPath as AliasPath,  # type: ignore[attr-defined]
+from pydantic.fields import (  # type: ignore[attr-defined]
+    AliasChoices as AliasChoices,
+    AliasPath as AliasPath,
     FieldInfo,
 )
 from pydantic_core import PydanticUndefined
