@@ -21,6 +21,7 @@ site_lang/
 target/
 
 # files
+**/AGENTS.md
 **/*.so
 **/*.sqlite
 *.iml
@@ -32,3 +33,30 @@ target/
 coverage.*
 example.sqlite
 *.zip
+.sisyphus/boulder.json
+.sisyphus/notepads/00-baseline-measurement/decisions.md
+.sisyphus/notepads/00-baseline-measurement/issues.md
+.sisyphus/notepads/00-baseline-measurement/learnings.md
+.sisyphus/notepads/00-baseline-measurement/problems.md
+.sisyphus/notepads/01-cicd-quality-gates/decisions.md
+.sisyphus/notepads/01-cicd-quality-gates/issues.md
+.sisyphus/notepads/01-cicd-quality-gates/learnings.md
+.sisyphus/notepads/01-cicd-quality-gates/problems.md
+.sisyphus/notepads/report-enrichment/decisions.md
+.sisyphus/notepads/report-enrichment/issues.md
+.sisyphus/notepads/report-enrichment/learnings.md
+.sisyphus/notepads/report-enrichment/problems.md
+.sisyphus/plans/00-baseline-measurement.md
+.sisyphus/plans/01-cicd-quality-gates.md
+.sisyphus/plans/02-type-safety-enforcement.md
+.sisyphus/plans/03-docs-src-verification.md
+.sisyphus/plans/04-routing-decomposition.md
+.sisyphus/plans/05-architecture-cross-module.md
+.sisyphus/plans/06-performance-benchmarking.md
+.sisyphus/plans/07-observability-expansion.md
+.sisyphus/plans/08-security-hardening.md
+.sisyphus/plans/09-documentation-deployment.md
+.sisyphus/plans/10-openapi-enhancements.md
+.sisyphus/plans/11-innovation-features.md
+.sisyphus/plans/12-ecosystem-community.md
+.sisyphus/plans/report-enrichment.md
