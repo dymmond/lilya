@@ -41,3 +41,4 @@ TEMP.md
 coverage.*
 example.sqlite
 *.zip
+*.backup.*
