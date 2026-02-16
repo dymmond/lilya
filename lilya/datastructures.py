@@ -472,11 +472,11 @@ class URL:
         return str(
             urlunsplit(
                 SplitResult(
-                    scheme=self.scheme,
-                    netloc=self.netloc,
-                    path=self.path,
-                    fragment=self.fragment,
-                    query=self.query,
+                    scheme=self.scheme or "",
+                    netloc=self.netloc or "",
+                    path=self.path or "",
+                    fragment=self.fragment or "",
+                    query=self.query or "",
                 )
             )
         )
@@ -501,19 +501,19 @@ class URL:
             Any: The built netloc.
         """
         if hostname is None:
-            netloc = self.netloc
+            netloc = self.netloc or ""
             _, _, hostname = netloc.rpartition("@")
 
-            if hostname[-1] != "]":
+            if hostname and hostname[-1] != "]":
                 hostname = hostname.rsplit(":", 1)[0]
 
-        netloc = hostname
+        netloc = hostname or ""
         if port is not None:
-            netloc += f":{port}"
+            netloc = f"{netloc}:{port}"
         if username is not None:
             userpass = username
             if password is not None:
-                userpass += f":{password}"
+                userpass = f"{userpass}:{password}"
             netloc = f"{userpass}@{netloc}"
         return netloc
 
@@ -600,9 +600,9 @@ class URL:
             SplitResult(
                 scheme="",
                 netloc="",
-                path=self.path,
-                query=self.query,
-                fragment=self.fragment,
+                path=self.path or "",
+                query=self.query or "",
+                fragment=self.fragment or "",
             )
         )
         return self.__class__(url)
@@ -666,10 +666,10 @@ class URLPath(str):
                 },
             }[self.protocol][base_url.is_secure]
         else:
-            scheme = base_url.scheme
+            scheme = base_url.scheme or ""
 
-        netloc = self.host or base_url.netloc
-        path = base_url.path.rstrip("/") + str(self)
+        netloc = self.host or base_url.netloc or ""
+        path = (base_url.path or "").rstrip("/") + str(self)
         return URL(scheme=scheme, netloc=netloc, path=path)
 
 
@@ -680,11 +680,11 @@ class Secret:
     in stack traces.
     """
 
-    def __init__(self, value: str = None) -> None:
+    def __init__(self, value: str | None = None) -> None:
         self.value = value
 
     def __str__(self) -> str:
-        return self.value
+        return self.value or ""
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}('***********')"
@@ -693,7 +693,7 @@ class Secret:
         return bool(self.value)
 
     def __len__(self) -> int:
-        return len(self.value)
+        return len(self.value or "")
 
 
 class QueryParam(ImmutableMultiDict[Any]):
@@ -706,14 +706,14 @@ class QueryParam(ImmutableMultiDict[Any]):
         *args: MultiMapping | Mapping[str, Any] | Iterable[tuple[str, Any]] | None,
     ) -> None:
         assert len(args) < 2, "Too many arguments."
-        value = args[0] if args else []
+        value = args[0] if args else None
 
-        if isinstance(value, str):  # type: ignore
-            super().__init__(parse_qsl(value, keep_blank_values=True))  # type: ignore
-        elif isinstance(value, bytes):  # type: ignore
-            super().__init__(parse_qsl(value.decode("utf-8"), keep_blank_values=True))  # type: ignore
+        if isinstance(value, str):
+            super().__init__(parse_qsl(value, keep_blank_values=True))
+        elif isinstance(value, bytes):
+            super().__init__(parse_qsl(value.decode("utf-8"), keep_blank_values=True))
         else:
-            super().__init__(*args)
+            super().__init__(value or {})
 
     def __str__(self) -> str:
         return urlencode(sorted(self.multi_items()))
