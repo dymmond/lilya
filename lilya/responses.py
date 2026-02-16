@@ -1138,7 +1138,7 @@ class FileResponse(DispositionResponse):
             subheader: str = ""
             if content_ranges and "content-range" not in self.headers:
                 # TODO: check if there is a better way to escape media_type
-                media_type = self.media_type.replace(" ", "").replace("\n", "")
+                media_type = (self.media_type or "").replace(" ", "").replace("\n", "")
                 subheader = (
                     f"--{self.range_multipart_boundary}\ncontent-type: {media_type}\n"
                     "content-range: bytes {start}-{stop}/{fullsize}\n\n"
@@ -1154,7 +1154,7 @@ class FileResponse(DispositionResponse):
                         if last_stop != rangedef.start:
                             await file.seek(rangedef.start, os.SEEK_SET)
                         size = rangedef.stop - rangedef.start + 1
-                        if subheader:
+                        if subheader and content_ranges is not None:
                             await send(
                                 {
                                     "type": "http.response.body",
