@@ -841,6 +841,8 @@ class EventStreamResponse(Response):
 
             while self.active:
                 await anyio.sleep(self.ping_interval)
+                if not self.active:  # type: ignore[unreachable, unused-ignore]
+                    break  # type: ignore[unreachable, unused-ignore]
                 ping_event = (
                     self.ping_message_factory() if self.ping_message_factory else {":": "ping"}
                 )
