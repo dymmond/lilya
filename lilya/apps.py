@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Mapping, MutableMapping, Sequence
 from inspect import isawaitable
 from typing import Annotated, Any, ClassVar, ParamSpec, cast
 
@@ -56,6 +56,9 @@ class BaseLilya:
     populate_global_context: (
         Callable[[Connection], dict[str, Any] | Awaitable[dict[str, Any]]] | None
     ) = None
+    middleware_stack: ASGIApp | None = None
+    _fast_http: bool
+    _fast_route: Path | None
 
     @property
     def routes(self) -> list[BasePath]:
@@ -550,9 +553,9 @@ class BaseLilya:
 
     async def _dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
         if self._fast_http and scope["type"] == "http" and self._fast_route is not None:
-            response_started = False  # type: ignore
+            response_started = False
 
-            async def sender(message: dict[str, Any]) -> None:
+            async def sender(message: MutableMapping[str, Any]) -> None:
                 nonlocal response_started
                 if message.get("type") == "http.response.start":
                     response_started = True
@@ -1189,9 +1192,9 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
         self.logging_config = self.load_settings_value("logging_config", logging_config)
         self.serializer_config = self.load_settings_value("serializer_config", serializer_config)
         self.state = State()
-        self.middleware_stack: ASGIApp | None = None
-        self._fast_http: bool = False
-        self._fast_route: Path | None = None
+        self.middleware_stack = None
+        self._fast_http = False
+        self._fast_route = None
         self.enable_openapi = self.load_settings_value(
             "enable_openapi", enable_openapi, is_boolean=True
         )

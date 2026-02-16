@@ -87,6 +87,7 @@ class Response:
     headers: Header
     deduce_media_type_from_body: bool | Literal["force"] = False
     cleanup_handler: Callable[[], None | Awaitable[None]] | None = None
+    body: bytes
 
     def __init__(
         self,
