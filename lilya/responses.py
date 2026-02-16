@@ -134,9 +134,10 @@ class Response:
     async def resolve_async_content(self) -> None:
         if getattr(self, "async_content", None) is not None:
             self.body = self.make_response(await self.async_content)
-            self.async_content = None
+            self.async_content = None  # type: ignore[assignment]
             if (
-                HeaderHelper.has_body_message(self.status_code)
+                self.status_code is not None
+                and HeaderHelper.has_body_message(self.status_code)
                 and "content-length" not in self.headers
             ):
                 self.headers["content-length"] = str(len(self.body))
@@ -184,7 +185,7 @@ class Response:
         if transform_kwargs is not None:
             transform_kwargs = transform_kwargs.copy()
             if self.encoders:
-                transform_kwargs["with_encoders"] = (*self.encoders, *ENCODER_TYPES.get())
+                transform_kwargs["with_encoders"] = (*self.encoders, *(ENCODER_TYPES.get() or ()))
             # strip " from stringified primitives
             transform_kwargs.setdefault(
                 "post_transform_fn",
@@ -216,9 +217,11 @@ class Response:
         """
         headers: dict[str, str] = {} if content_headers is None else content_headers  # type: ignore
 
-        if HeaderHelper.has_entity_header_status(self.status_code):
+        if self.status_code is not None and HeaderHelper.has_entity_header_status(
+            self.status_code
+        ):
             headers = HeaderHelper.remove_entity_headers(headers)
-        if HeaderHelper.has_body_message(self.status_code):
+        if self.status_code is not None and HeaderHelper.has_body_message(self.status_code):
             if getattr(self, "body", None) is not None:
                 headers.setdefault("content-length", str(len(self.body)))
 
@@ -464,7 +467,7 @@ class JSONResponse(Response):
             new_params = {}
         new_params["post_transform_fn"] = None
         if self.encoders:
-            new_params["with_encoders"] = (*self.encoders, *ENCODER_TYPES.get())
+            new_params["with_encoders"] = (*self.encoders, *(ENCODER_TYPES.get() or ()))
         content = json_encode(content, **new_params)
 
         # convert them to bytes if not in passthrough_body_types
@@ -1541,7 +1544,7 @@ class NDJSONResponse(StreamingResponse):
             new_params = {}
         new_params["post_transform_fn"] = None
         if self.encoders:
-            new_params["with_encoders"] = (*self.encoders, *ENCODER_TYPES.get())
+            new_params["with_encoders"] = (*self.encoders, *(ENCODER_TYPES.get() or ()))
         async for row in self.body_iterator:
             if last_row is not None:
                 await send(

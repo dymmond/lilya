@@ -134,7 +134,7 @@ class Jinja2Template:
 
         if env is None:
             assert directory is not None, "directory must be provided if env is not provided"
-            self.env = self._create_environment(directory, **options)  # type: ignore[arg-type]
+            self.env = self._create_environment(directory, **options)
         else:
             self.env = self._add_defaults(env=env)
 

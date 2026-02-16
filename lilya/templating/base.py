@@ -41,7 +41,7 @@ class BaseTemplateRenderer(Generic[T]):
             context=context,
             status_code=status_code,
             headers=headers,
-            media_type=media_type,
+            media_type=media_type or "text/html",
             background=background,
             render_function_name=self.render_function_name,
         )
