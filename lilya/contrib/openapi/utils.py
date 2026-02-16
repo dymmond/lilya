@@ -153,8 +153,8 @@ def get_openapi(
             )
             meta = getattr(handler, "openapi_meta", {}) or {}
 
-            if hasattr(handler, "func"):
-                handler = handler.func
+            if handler is not None and hasattr(handler, "func"):
+                handler = cast(Any, handler).func
 
             operation = {
                 "operationId": meta.get("operation_id", handler.__name__ if handler else ""),

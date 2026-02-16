@@ -43,7 +43,7 @@ class TemplateDirective(BaseDirective):
             self.validate_name(name)
             top_dir = os.path.join(self.location, name)
         else:
-            top_dir = os.path.join(self.location, self.deployment_folder_name)
+            top_dir = os.path.join(self.location, self.deployment_folder_name or "deployment")
 
         try:
             os.makedirs(top_dir)

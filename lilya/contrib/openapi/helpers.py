@@ -77,11 +77,13 @@ def convert_annotation_to_pydantic_model(field_annotation: Any) -> Any:
         field_annotation.__args__ = annotations  # type: ignore
         return field_annotation
 
+    encoders = ENCODER_TYPES.get()
     if (
         not isinstance(field_annotation, BaseModel)
         # call before encoder check, because this test is faster
         and inspect.isclass(field_annotation)
-        and any(encoder.is_type(field_annotation) for encoder in ENCODER_TYPES.get())
+        and encoders is not None
+        and any(encoder.is_type(field_annotation) for encoder in encoders)
     ):
         field_definitions: dict[str, Any] = {}
 

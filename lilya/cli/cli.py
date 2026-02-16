@@ -82,6 +82,6 @@ application_directives = get_custom_directives_to_cli(str(Path.cwd()))
 if application_directives:
     for _, command in application_directives.items():
         if isinstance(command, Sayer):
-            lilya_cli.add_custom_command(command, command._group.name)
+            lilya_cli.add_custom_command(command, command._group.name or "")
         else:
             lilya_cli.add_custom_command(command)
