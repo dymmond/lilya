@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from importlib import import_module
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from lilya.conf import _monkay, settings
 from lilya.datastructures import URLPath
@@ -45,4 +45,7 @@ def reverse(
 
     path_params.update(kwargs)
     app_or_settings: ASGIApp = app or _monkay.instance
-    return cast(URLPath, app_or_settings.url_path_for(reverse_name, **path_params))
+    url_path = app_or_settings.url_path_for(reverse_name, **path_params)  # type: ignore[attr-defined]
+    if isinstance(url_path, URLPath):
+        return url_path
+    return URLPath(path=url_path)

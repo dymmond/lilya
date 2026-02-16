@@ -987,7 +987,7 @@ def inject(
                 return await func(*bound.args, **bound.kwargs)
 
             # Preserve original signature for introspection tools
-            async_wrapper.__signature__ = signature
+            async_wrapper.__signature__ = signature  # type: ignore[attr-defined]
             return async_wrapper
 
         # Sync branch
@@ -1015,7 +1015,7 @@ def inject(
 
             return func(*bound.args, **bound.kwargs)
 
-        sync_wrapper.__signature__ = signature
+        sync_wrapper.__signature__ = signature  # type: ignore[attr-defined]
         return sync_wrapper
 
     # Handle decorator usage (with or without arguments)

@@ -39,8 +39,8 @@ class DefinePermission(Generic[P]):
     def __repr__(self) -> str:
         args_repr = ", ".join(
             [self.permission.__name__]
-            + [f"{value!r}" for value in self.args]
-            + [f"{key}={value!r}" for key, value in self.kwargs.items()]
+            + [f"{value!r}" for value in cast(tuple[Any, ...], self.args)]
+            + [f"{key}={value!r}" for key, value in cast(dict[str, Any], self.kwargs).items()]
         )
         return f"{self.__class__.__name__}({args_repr})"
 

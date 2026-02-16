@@ -1302,8 +1302,13 @@ class SimpleFileResponse(Response):
                 filename=filename,
             )
             if content_disposition is not None:
-                headers = {} if headers is None else headers.copy()
-                headers.setdefault("content-disposition", content_disposition)
+                if headers is None:
+                    headers = {}
+                elif hasattr(headers, "copy"):
+                    headers = headers.copy()
+                else:
+                    headers = dict(headers)
+                headers.setdefault("content-disposition", content_disposition)  # type: ignore[union-attr]
 
             response = StreamingResponse(
                 content=content,
@@ -1388,7 +1393,8 @@ class CSVResponse(StreamingResponse):
 
     async def stream(self, send: Send) -> None:
         try:
-            row1 = await self.body_iterator.__anext__()
+            iterator = self.body_iterator.__aiter__()
+            row1 = await iterator.__anext__()
         except StopAsyncIteration:
             await send({"type": "http.response.body", "body": b"", "more_body": False})
             return

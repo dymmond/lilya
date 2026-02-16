@@ -180,7 +180,7 @@ def runserver(
         )
 
         if debug and env.lilya_app:
-            env.lilya_app.debug = debug
+            env.lilya_app.debug = debug  # type: ignore[attr-defined]
 
         toolkit.print_line()
 

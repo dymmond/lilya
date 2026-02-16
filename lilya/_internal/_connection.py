@@ -212,4 +212,6 @@ class Connection(Mapping[str, Any]):
             )
 
         url_path = router.url_path_for(name, **path_params)
-        return cast(URL, url_path.make_absolute_url(base_url=self.base_url))
+        if hasattr(url_path, "make_absolute_url"):
+            return url_path.make_absolute_url(base_url=self.base_url)  # type: ignore[no-any-return]
+        return URL(url_path)

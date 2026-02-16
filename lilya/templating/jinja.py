@@ -22,7 +22,7 @@ try:
     if hasattr(jinja2, "pass_context"):
         pass_context = jinja2.pass_context
     else:
-        pass_context = jinja2.contextfunction
+        pass_context = jinja2.contextfunction  # type: ignore[attr-defined]
 except ImportError as exc:
     raise MissingDependency("jinja2 is not installed") from exc
 

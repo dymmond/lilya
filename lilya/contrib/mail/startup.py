@@ -33,13 +33,13 @@ def setup_mail(
             to automatically open/close the mail backend connection.
 
     Raises:
-        BackendNotConfigured: If no backend is provided.
+        BackendNotConfigured: If no mail backend is provided.
     """
     if backend is None:
         raise BackendNotConfigured("No mail backend provided to setup_mail().")
 
     mailer = Mailer(backend=backend, template_dir=template_dir)
-    app.state.mailer = mailer
+    app.state.mailer = mailer  # type: ignore
 
     if attach_lifecycle:
         add_event_handler = getattr(app, "add_event_handler", None)

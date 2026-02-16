@@ -73,12 +73,12 @@ class BaseLilya:
         """
         if not is_boolean:
             if not value:
-                return self.__get_settings_value(self.settings_module, lilya_settings, name)
+                return self.__get_settings_value(self.settings_module, lilya_settings, name)  # type: ignore[attr-defined]
             return value
 
         if value is not None:
             return value
-        return self.__get_settings_value(self.settings_module, lilya_settings, name)
+        return self.__get_settings_value(self.settings_module, lilya_settings, name)  # type: ignore[attr-defined]
 
     def __get_settings_value(
         self,
@@ -112,12 +112,12 @@ class BaseLilya:
         exception_handlers = self._get_exception_handlers()
 
         middleware = [
-            DefineMiddleware(ServerErrorMiddleware, handler=error_handler, debug=self.debug),
-            *self.custom_middleware,
-            DefineMiddleware(ExceptionMiddleware, handlers=exception_handlers, debug=self.debug),
+            DefineMiddleware(ServerErrorMiddleware, handler=error_handler, debug=self.debug),  # type: ignore[attr-defined]
+            *self.custom_middleware,  # type: ignore[attr-defined]
+            DefineMiddleware(ExceptionMiddleware, handlers=exception_handlers, debug=self.debug),  # type: ignore[attr-defined]
         ]
 
-        if self.enable_intercept_global_exceptions:
+        if self.enable_intercept_global_exceptions:  # type: ignore[attr-defined]
             middleware.insert(
                 1,
                 DefineMiddleware(LilyaExceptionMiddleware, handlers=exception_handlers),
@@ -147,7 +147,7 @@ class BaseLilya:
         """
         return {
             key: value
-            for key, value in self.exception_handlers.items()
+            for key, value in self.exception_handlers.items()  # type: ignore[attr-defined]
             if key not in (500, Exception)
         }
 
@@ -391,7 +391,7 @@ class BaseLilya:
             raise RuntimeError("Middlewares cannot be added once the application has started.")
         self._fast_http = False
         self._fast_route = None
-        self.custom_middleware.insert(0, DefineMiddleware(middleware, *args, **kwargs))
+        self.custom_middleware.insert(0, DefineMiddleware(middleware, *args, **kwargs))  # type: ignore[attr-defined]
 
     def add_permission(
         self, permission: type[PermissionProtocol[P]], *args: P.args, **kwargs: P.kwargs
@@ -401,7 +401,7 @@ class BaseLilya:
         """
         if self.router.permission_started:
             raise RuntimeError("Permissions cannot be added once the application has started.")
-        self.router.permissions.insert(0, DefinePermission(permission, *args, **kwargs))
+        self.router.permissions.insert(0, DefinePermission(permission, *args, **kwargs))  # type: ignore[attr-defined]
 
     def add_exception_handler(
         self,
@@ -410,7 +410,7 @@ class BaseLilya:
     ) -> None:
         self._fast_http = False
         self._fast_route = None
-        self.exception_handlers[exception_cls_or_status_code] = handler
+        self.exception_handlers[exception_cls_or_status_code] = handler  # type: ignore[attr-defined]
 
     def add_event_handler(self, event_type: str, func: Callable[[], Any]) -> None:
         self.router.add_event_handler(event_type, func)
@@ -506,10 +506,10 @@ class BaseLilya:
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         scope["app"] = self
-        if self.root_path:
-            scope["root_path"] = self.root_path
+        if self.root_path:  # type: ignore[attr-defined]
+            scope["root_path"] = self.root_path  # type: ignore[attr-defined]
         if scope["type"] == "http" and (
-            self.exception_handlers.get(500) or self.exception_handlers.get(Exception)
+            self.exception_handlers.get(500) or self.exception_handlers.get(Exception)  # type: ignore[attr-defined]
         ):
             scope["lilya.error_handler"] = self._get_error_handler()
 
@@ -531,7 +531,7 @@ class BaseLilya:
             if self._fast_http and self.register_as_global_instance:
                 await self._dispatch(scope, receive, send)
             else:
-                use_monkay_context = self.settings_module is not None
+                use_monkay_context = self.settings_module is not None  # type: ignore[attr-defined]
                 if not use_monkay_context:
                     try:
                         current_instance = _monkay.instance
@@ -541,7 +541,7 @@ class BaseLilya:
 
                 if use_monkay_context:
                     with (
-                        _monkay.with_settings(self.settings),
+                        _monkay.with_settings(self.settings),  # type: ignore[attr-defined]
                         _monkay.with_instance(self),
                     ):
                         await self._dispatch(scope, receive, send)

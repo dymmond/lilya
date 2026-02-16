@@ -165,4 +165,5 @@ def setup_logging(logging_config: LoggingConfig | None = None) -> None:
 
     # Gets the logger instance from the logging_config
     _logger = config.get_logger()
-    logger.bind_logger(_logger)
+    if hasattr(logger, "bind_logger"):
+        logger.bind_logger(_logger)

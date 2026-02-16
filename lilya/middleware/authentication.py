@@ -131,4 +131,4 @@ class AuthenticationMiddleware(BaseAuthMiddleware):
                 return auth_result
         return None
 
-    authenticate.requires_backend = True
+    authenticate.requires_backend = True  # type: ignore[attr-defined]

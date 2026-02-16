@@ -147,7 +147,7 @@ class BaseTemplateController(Controller, metaclass=TemplateControllerMetaclass):
         """
         return get_or_set_csrf_token(
             request,
-            secret=_monkay.settings.secret_key,
+            secret=_monkay.settings.secret_key,  # type: ignore[attr-defined]
             httponly=True,
         )
 

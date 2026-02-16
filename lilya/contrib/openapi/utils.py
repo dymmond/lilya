@@ -266,7 +266,7 @@ def get_openapi(
                 }
 
             operation["responses"] = responses_obj
-            spec["paths"].setdefault(raw_path, {})[m_lower] = operation
+            spec["paths"].setdefault(raw_path, {})[m_lower] = operation  # type: ignore[attr-defined]
 
     if securitySchemes:
         spec["components"]["securitySchemes"] = securitySchemes  # type: ignore

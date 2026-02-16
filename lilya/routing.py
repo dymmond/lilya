@@ -249,9 +249,9 @@ class BasePath:
             exc (Exception): The exception to handle.
             status_code (int): The status code.
         """
-        exception_handler = self.exception_handlers.get(
+        exception_handler = self.exception_handlers.get(  # type: ignore[attr-defined]
             status_code
-        ) or self.exception_handlers.get(exc.__class__)
+        ) or self.exception_handlers.get(exc.__class__)  # type: ignore[attr-defined]
 
         if exception_handler is None:
             raise exc
@@ -280,9 +280,9 @@ class BasePath:
         Gets the param:type in string like list.
         Used for the directive `lilya show-urls`.
         """
-        path_components = parse_path(self.path)
+        path_components = parse_path(self.path)  # type: ignore[attr-defined]
         parameters = [component for component in path_components if isinstance(component, tuple)]
-        stringified_parameters = [f"{param.name}:{param.type}" for param in parameters]
+        stringified_parameters = [f"{param.name}:{param.type}" for param in parameters]  # type: ignore[attr-defined]
         return stringified_parameters
 
 
@@ -433,27 +433,27 @@ class Path(BaseHandler, BasePath):
         """
         if hasattr(self.app, "__is_controller__"):
             controller = self.app
-            if controller.permissions:
+            if controller.permissions:  # type: ignore[attr-defined]
                 self.wrapped_permissions.extend(
-                    [wrap_permission(permission) for permission in controller.permissions]
+                    [wrap_permission(permission) for permission in controller.permissions]  # type: ignore[attr-defined]
                 )
 
-            if controller.middleware:
-                self.middleware.extend([wrap_middleware(mid) for mid in controller.middleware])
+            if controller.middleware:  # type: ignore[attr-defined]
+                self.middleware.extend([wrap_middleware(mid) for mid in controller.middleware])  # type: ignore[attr-defined]
 
-            if controller.exception_handlers:
-                self.exception_handlers.update(controller.exception_handlers)
+            if controller.exception_handlers:  # type: ignore[attr-defined]
+                self.exception_handlers.update(controller.exception_handlers)  # type: ignore[attr-defined]
 
-            if controller.dependencies:
+            if controller.dependencies:  # type: ignore[attr-defined]
                 self.dependencies.update(
-                    {k: wrap_dependency(v) for k, v in controller.dependencies.items()}
+                    {k: wrap_dependency(v) for k, v in controller.dependencies.items()}  # type: ignore[attr-defined]
                 )
 
-            if controller.before_request:
-                self.before_request.extend(controller.before_request)
+            if controller.before_request:  # type: ignore[attr-defined]
+                self.before_request.extend(controller.before_request)  # type: ignore[attr-defined]
 
-            if controller.after_request:
-                self.after_request.extend(controller.after_request)
+            if controller.after_request:  # type: ignore[attr-defined]
+                self.after_request.extend(controller.after_request)  # type: ignore[attr-defined]
 
     def _apply_middleware(self, middleware: Sequence[DefineMiddleware] | None) -> None:
         """
@@ -802,25 +802,25 @@ class WebSocketPath(BaseHandler, BasePath):
         """
         if hasattr(self.app, "__is_controller__"):
             controller = self.app
-            if controller.permissions:
+            if controller.permissions:  # type: ignore[attr-defined]
                 self.wrapped_permissions.extend(
-                    [wrap_permission(permission) for permission in controller.permissions]
+                    [wrap_permission(permission) for permission in controller.permissions]  # type: ignore[attr-defined]
                 )
 
-            if controller.middleware:
-                self.middleware.extend([wrap_middleware(mid) for mid in controller.middleware])
+            if controller.middleware:  # type: ignore[attr-defined]
+                self.middleware.extend([wrap_middleware(mid) for mid in controller.middleware])  # type: ignore[attr-defined]
 
-            if controller.exception_handlers:
-                self.exception_handlers.update(controller.exception_handlers)
+            if controller.exception_handlers:  # type: ignore[attr-defined]
+                self.exception_handlers.update(controller.exception_handlers)  # type: ignore[attr-defined]
 
-            if controller.dependencies and self.dependencies:
-                self.dependencies.update(controller.dependencies)
+            if controller.dependencies and self.dependencies:  # type: ignore[attr-defined]
+                self.dependencies.update(controller.dependencies)  # type: ignore[attr-defined]
 
-            if controller.before_request:
-                self.before_request.extend(controller.before_request)
+            if controller.before_request:  # type: ignore[attr-defined]
+                self.before_request.extend(controller.before_request)  # type: ignore[attr-defined]
 
-            if controller.after_request:
-                self.after_request.extend(controller.after_request)
+            if controller.after_request:  # type: ignore[attr-defined]
+                self.after_request.extend(controller.after_request)  # type: ignore[attr-defined]
 
     def _apply_middleware(self, middleware: Sequence[DefineMiddleware] | None) -> None:
         """
@@ -2387,7 +2387,7 @@ class Router(RoutingMethodsMixin, BaseRouter):
                 before_request=before_request,
                 after_request=after_request,
             )
-            func._lilya_dependencies = dependencies or {}
+            func._lilya_dependencies = dependencies or {}  # type: ignore[attr-defined]
             return func
 
         return wrapper
@@ -2433,7 +2433,7 @@ class Router(RoutingMethodsMixin, BaseRouter):
                 before_request=before_request,
                 after_request=after_request,
             )
-            func._lilya_dependencies = dependencies or {}
+            func._lilya_dependencies = dependencies or {}  # type: ignore[attr-defined]
             return func
 
         return wrapper

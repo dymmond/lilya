@@ -118,7 +118,7 @@ class OpenAPIMethod:
             signature = get_signature(bound_func)
             return handler.handle_response(bound_func, other_signature=signature)
 
-        wrapper.openapi_meta = self.metadata
+        wrapper.openapi_meta = self.metadata  # type: ignore[attr-defined]
         return wrapper
 
 
@@ -337,7 +337,7 @@ def openapi(
                     by_alias=True,
                     exclude_none=True,
                 )
-                security_name = security_requirement.scheme_name
+                security_name = security_requirement.scheme_name  # type: ignore[attr-defined]
                 security_definitions[security_name] = security_definition
 
             if security_definitions:
@@ -345,7 +345,7 @@ def openapi(
                 return security_schemes
             return None
 
-        wrapper.openapi_meta = {
+        wrapper.openapi_meta = {  # type: ignore[attr-defined]
             "summary": summary,
             "description": description,
             "status_code": status_code,
@@ -362,10 +362,10 @@ def openapi(
         }
 
         body_fields = _build_request_body_metadata(request_body, media_type)
-        wrapper.openapi_meta["request_body"] = body_fields
+        wrapper.openapi_meta["request_body"] = body_fields  # type: ignore[attr-defined]
 
         if is_function(func) and not inspect.ismethod(func):
             return wrapper
-        return cast(Callable[..., Any], OpenAPIMethod(func, wrapper.openapi_meta))
+        return cast(Callable[..., Any], OpenAPIMethod(func, wrapper.openapi_meta))  # type: ignore[attr-defined]
 
     return decorator

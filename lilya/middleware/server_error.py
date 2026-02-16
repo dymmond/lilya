@@ -196,7 +196,7 @@ class ServerErrorMiddleware(MiddlewareProtocol):
 
         # escape error class and text
         try:
-            exc_type_str = traceback_obj.exc_type_str
+            exc_type_str = traceback_obj.exc_type_str  # type: ignore[attr-defined]
         except Exception:  # noqa
             # for older python versions < 3.13
             exc_type_str = traceback_obj.exc_type.__name__

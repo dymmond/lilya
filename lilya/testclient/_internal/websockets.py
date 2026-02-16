@@ -15,6 +15,8 @@ from lilya.testclient._internal.types import ASGI3App, PortalFactoryType
 from lilya.types import Message, Scope
 from lilya.websockets import WebSocketDisconnect
 
+__all__ = ["WebSocketDenialResponse", "WebSocketTestSession", "WebSocketDisconnect"]
+
 try:
     import httpx
 except ModuleNotFoundError:  # pragma: no cover

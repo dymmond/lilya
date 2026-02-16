@@ -1,5 +1,11 @@
 import inspect
-from typing import Any, Literal, _GenericAlias, get_args
+import sys
+from typing import TYPE_CHECKING, Any, Literal, get_args
+
+if TYPE_CHECKING or sys.version_info >= (3, 10):
+    from typing import _GenericAlias  # type: ignore[attr-defined]
+else:
+    from typing import _GenericAlias  # type: ignore[attr-defined]
 
 from pydantic import BaseModel, TypeAdapter, create_model
 from pydantic.fields import FieldInfo

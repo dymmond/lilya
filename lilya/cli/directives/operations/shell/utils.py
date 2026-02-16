@@ -5,6 +5,8 @@ from collections import OrderedDict
 from typing import Any
 
 import lilya
+import lilya.conf
+import lilya.routing
 from lilya._internal._module_loading import import_string
 from lilya.cli.terminal import OutputColour, Print
 
