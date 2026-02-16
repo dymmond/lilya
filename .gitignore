@@ -1,4 +1,5 @@
 # folders
+.sisyphus
 tests/cli/myproject
 *.egg-info/
 .hypothesis/
