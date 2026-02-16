@@ -117,7 +117,7 @@ class Response:
         if isawaitable(content):
             self.async_content = content
         else:
-            self.body = self.make_response(content)  # type: ignore
+            self.body = self.make_response(content)
         # deduce media type
         if self.deduce_media_type_from_body and getattr(self, "body", None) is not None:
             if self.deduce_media_type_from_body == "force" or self.media_type is None:
