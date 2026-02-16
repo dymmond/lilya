@@ -216,6 +216,9 @@ testing = [
     "pyyaml>=6.0,<7.0.0",
     "msgpack",
     "typing_extensions>=3.10.0",
+    # Type stubs for mypy
+    "types-PyYAML",
+    "msgpack-types",
     "ipython",
     "ptpython",
     "pyjwt",
@@ -320,7 +323,6 @@ warn_redundant_casts = true
 no_implicit_optional = true
 strict_equality = true
 strict_optional = true
-disable_error_code = "import-untyped"
 exclude = ["lilya/compat.py"]
 
 [tool.ruff]

@@ -16,10 +16,10 @@ try:
     from yaml import CSafeLoader as SafeLoader, YAMLError
 except ImportError:
     try:
-        from yaml import SafeLoader, YAMLError
+        from yaml import SafeLoader, YAMLError  # type: ignore[assignment]
     except ImportError:
-        SafeLoader = None
-        YAMLError = None
+        SafeLoader = None  # type: ignore[assignment, misc]
+        YAMLError = None  # type: ignore[assignment, misc]
 
 T = TypeVar("T")
 Cast = Callable[[Any], T]
@@ -303,7 +303,7 @@ class EnvironLoader(MultiDict):
         content = content.replace(sentinel, "$")
 
         try:
-            data = SafeLoader(io.StringIO(content)).get_data()
+            data = SafeLoader(io.StringIO(content)).get_data()  # type: ignore[no-untyped-call]
             return data if isinstance(data, dict) else {}
         except (YAMLError, AttributeError) as e:
             raise EnvError(f"Failed to parse YAML file '{file_path}': {e}") from e

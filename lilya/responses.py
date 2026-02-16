@@ -46,12 +46,12 @@ from lilya.types import Message, Receive, Scope, Send
 try:
     import yaml
 except ImportError:  # pragma: no cover
-    yaml = None
+    yaml = None  # type: ignore[assignment]
 
 try:
     import msgpack
 except ImportError:  # pragma: no cover
-    msgpack = None
+    msgpack = None  # type: ignore[assignment]
 
 try:
     import magic
@@ -1490,7 +1490,7 @@ class YAMLResponse(Response):
         """
         if content is None:
             return b""
-        return cast(bytes, yaml.safe_dump(content, sort_keys=False).encode(self.charset))
+        return yaml.safe_dump(content, sort_keys=False).encode(self.charset)
 
 
 class MessagePackResponse(Response):
@@ -1502,7 +1502,7 @@ class MessagePackResponse(Response):
         """
         if content is None:
             return b""
-        return cast(bytes, msgpack.packb(content, use_bin_type=True))
+        return msgpack.packb(content, use_bin_type=True)
 
 
 class NDJSONResponse(StreamingResponse):
