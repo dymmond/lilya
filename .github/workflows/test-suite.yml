@@ -55,7 +55,7 @@ jobs:
       - name: "Install dependencies"
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          pip install
+          pip install hatch
       - name: "Check for security vulnerabilities"
         run: |
           pip install pip-audit
