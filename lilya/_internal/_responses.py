@@ -1031,21 +1031,17 @@ class BaseHandler:
         merged.update(overrides)
 
         # 2) FILTER to only the ones the handler signature actually names as Provides()
-        requested: dict[str, Provide | Resolve | Security] = {}
+        requested: dict[str, Provide | Resolve | Security | None] = {}
         for name, param in signature.parameters.items():
             if isinstance(param.default, Provides):
                 # we want to inject "name" if the handler did `foo = Provides()`
-                dep = merged.get(name)
-                if dep is not None:
-                    requested[name] = dep
+                requested[name] = merged.get(name)
 
             elif isinstance(param.default, (Resolve, Security)):
                 requested[name] = param.default
 
             elif param.name in merged and param.default is inspect.Parameter.empty:
-                dep = merged.get(name)
-                if dep is not None:
-                    requested[name] = dep
+                requested[name] = merged.get(name)
 
         # 3) Determine if the request body should be inferred and parsed.
         is_body_inferred: bool = _monkay.settings.infer_body
