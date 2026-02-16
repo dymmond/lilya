@@ -20,8 +20,10 @@ results/
 site/
 site_lang/
 target/
+.spec-workflow/
 
 # files
+TEMP.md
 **/AGENTS.md
 **/*.so
 **/*.sqlite
