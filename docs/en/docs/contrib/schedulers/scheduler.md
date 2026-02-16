@@ -123,4 +123,3 @@ The `scheduler_tasks` is expecting a python dictionary where the both key and va
 
 * `key` - The name of the task.
 * `value` - Where the task is located.
-
