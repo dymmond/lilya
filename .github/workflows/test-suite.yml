@@ -62,7 +62,7 @@ jobs:
           pip-audit --strict --desc
       - uses: pre-commit/action@v3.0.1
         with:
-            extra_args: --all-files --exclude ^docs_src/
+            extra_args: --all-files --exclude '^docs_src/'
       - name: "Run linting checks"
         run: "hatch fmt --check"
       - name: "Run typing checks"
