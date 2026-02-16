@@ -374,7 +374,7 @@ source = ["tests", "lilya"]
 fail_under = 80
 
 [[tool.mypy.overrides]]
-module = ["multipart.*", "mako.*", "uvicorn.*", "jwt.*"]
+module = ["multipart.*", "mako.*", "uvicorn.*", "jwt.*", "yaml", "msgpack", "magic"]
 ignore_missing_imports = true
 ignore_errors = true
 
