@@ -1,0 +1,18 @@
+version: 3
+
+tasks:
+  clean:
+    desc: Cleans caching, pyc and pycache files
+    cmds:
+      - find . -type f -name "*.pyc" -delete || true
+      - find . -type d -name "*__pycache__*" -delete
+
+  run:
+    desc: Starts myproject
+    cmds:
+      - lilya runserver --reload
+
+  requirements:
+    desc: Install requirements
+    cmds:
+      - pip install -e .[dev,test]

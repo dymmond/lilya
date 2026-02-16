@@ -541,7 +541,7 @@ class BaseHandler:
                 handler: ExceptionHandler | None = None
 
                 if isinstance(exc, HTTPException):
-                    handler = status_handlers.get(exc.status_code)
+                    handler = status_handlers.get(exc.status_code or 500)
 
                 if handler is None:
                     handler = _lookup_exception_handler(exception_handlers, exc)

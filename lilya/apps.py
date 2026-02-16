@@ -464,8 +464,8 @@ class BaseLilya:
                 middleware=middleware,
                 permissions=permissions,
                 exception_handlers=exception_handlers,
-                include_in_schema=include_in_schema,
-                deprecated=deprecated,
+                include_in_schema=include_in_schema if include_in_schema is not None else True,
+                deprecated=deprecated if deprecated is not None else False,
             )
         )
 
@@ -499,8 +499,8 @@ class BaseLilya:
                 middleware=middleware,
                 permissions=permissions,
                 exception_handlers=exception_handlers,
-                include_in_schema=include_in_schema,
-                deprecated=deprecated,
+                include_in_schema=include_in_schema if include_in_schema is not None else True,
+                deprecated=deprecated if deprecated is not None else False,
             )
         )
 
@@ -599,14 +599,16 @@ class BaseLilya:
                     raise
                 if getattr(exc, "response", None) is not None:
                     response = exc.response
-                elif exc.status_code in {
+                elif exc.status_code is not None and exc.status_code in {
                     status.HTTP_204_NO_CONTENT,
                     status.HTTP_304_NOT_MODIFIED,
                 }:
                     response = Response(status_code=exc.status_code, headers=exc.headers)
                 else:
                     response = PlainText(
-                        exc.detail, status_code=exc.status_code, headers=exc.headers
+                        exc.detail,
+                        status_code=exc.status_code or status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        headers=exc.headers,
                     )
                 await response(scope, receive, sender)
             except Exception:
@@ -1096,7 +1098,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
             ),
         ] = None,
         enable_openapi: Annotated[
-            bool,
+            bool | None,
             Doc(
                 """
                 Enable or disable OpenAPI documentation generation. Defaults to False.
@@ -1112,7 +1114,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
             ),
         ] = None,
         enable_intercept_global_exceptions: Annotated[
-            bool,
+            bool | None,
             Doc(
                 """
                 By default, exception handlers are raised when a handler triggers but not
@@ -1238,7 +1240,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
                 on_startup=_on_startup,
                 on_shutdown=_on_shutdown,
                 lifespan=_lifespan,
-                include_in_schema=include_in_schema,
+                include_in_schema=include_in_schema if include_in_schema is not None else True,
                 settings_module=self.settings_module,
                 before_request=self.before_request_callbacks,
                 after_request=self.after_request_callbacks,

@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "myproject"
+version = "0.1.0"
+description = "Project generated via Lilya version: 0.24.3"
+requires-python = ">=3.14"
+dependencies = [
+  "lilya[standard]>=0.24.3",
+  "gunicorn",
+  "uvicorn"
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.15.0",
+]
+test = [
+  "pytest",
+  "pytest-cov",
+  "pytest-asyncio",
+  "anyio",
+  "coverage",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+asyncio_mode = "auto"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["myproject*"]
+exclude = ["migrations", "deployment", "tests"]
+namespaces = false

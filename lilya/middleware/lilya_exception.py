@@ -112,7 +112,7 @@ class LilyaExceptionMiddleware(MiddlewareProtocol):
             extra = getattr(exc, "extra", {}) or {}
             if extra:
                 content.extra = extra
-            status_code = exc.status_code
+            status_code = exc.status_code or 500
             headers = exc.headers or {}
         else:
             # generic 500 for all other exceptions
