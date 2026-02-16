@@ -56,7 +56,7 @@ except ImportError:  # pragma: no cover
 try:
     import magic
 except ImportError:  # pragma: no cover
-    magic = None
+    magic: Any = None  # type: ignore[no-redef]
 
 Content = str | bytes
 Encoder = EncoderProtocol | MoldingProtocol
@@ -841,8 +841,6 @@ class EventStreamResponse(Response):
 
             while self.active:
                 await anyio.sleep(self.ping_interval)
-                if not self.active:
-                    break
                 ping_event = (
                     self.ping_message_factory() if self.ping_message_factory else {":": "ping"}
                 )
@@ -1201,7 +1199,7 @@ class FileResponse(DispositionResponse):
                         if last_stop != rangedef.start:
                             await file.seek(rangedef.start, os.SEEK_SET)
                         size = rangedef.stop - rangedef.start + 1
-                        if subheader:
+                        if subheader and content_ranges is not None:
                             await send(
                                 {
                                     "type": "http.response.body",
