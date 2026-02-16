@@ -1,7 +1,7 @@
 
 # Lilya Introspection Graph (`ApplicationGraph`)
 
-* **What**: A structural, immutable graph of your Lilya application nodes for apps, routers, routes, middleware, permissions, and includes; edges for relationships like `WRAPS` and `DISPATCHES_TO`. It's designed for **introspection**, **auditing**, and **tooling**, not routing or runtime matching. 
+* **What**: A structural, immutable graph of your Lilya application nodes for apps, routers, routes, middleware, permissions, and includes; edges for relationships like `WRAPS` and `DISPATCHES_TO`. It's designed for **introspection**, **auditing**, and **tooling**, not routing or runtime matching.
 
 * **Why**: To answer questions such as: *Which middlewares wrap my app and in what order?*; *What permissions apply to a route?*; *How do includes compose with child apps?*; *Can I export my architecture to JSON for visualization and CI checks?*
 
@@ -18,7 +18,7 @@ app = Lilya()
 print(app.graph)  # Builds once, then reuses the same immutable graph
 ```
 
-The property `app.graph` constructs the graph on first access using `GraphBuilder().build(app)` and caches it on `app._graph`. Subsequent accesses return the same instance. 
+The property `app.graph` constructs the graph on first access using `GraphBuilder().build(app)` and caches it on `app._graph`. Subsequent accesses return the same instance.
 
 ---
 
@@ -27,17 +27,17 @@ The property `app.graph` constructs the graph on first access using `GraphBuilde
 ### Nodes & Kinds
 
 The graph contains typed nodes, including:
-- **APPLICATION** – The Lilya app itself (exactly one). 
-- **ROUTER** – The dispatching router discovered from the app. 
+- **APPLICATION** – The Lilya app itself (exactly one).
+- **ROUTER** – The dispatching router discovered from the app.
 - **ROUTE** – Path-like entries (e.g., `Path`, `WebSocketPath`) with metadata such as `path` and `methods`.
 - **MIDDLEWARE** – Classes wrapping either the application, includes, or routes. Metadata keeps the class name.
 - **PERMISSION** – Classes wrapping includes or routes; metadata keeps the class name.
-- **INCLUDE** – Entries that compose child apps or raw routes under a prefix. 
+- **INCLUDE** – Entries that compose child apps or raw routes under a prefix.
 
 ### Edges & Relationships
 
 - **`WRAPS`** – ordered chain (outer -> inner) for middleware and permissions around an app, include, or route. The builder preserves declaration order. `ApplicationGraph` traverses the first `WRAPS` target in a linear fashion.
-- **`DISPATCHES_TO`** – dispatch relationship (e.g., app -> router, router -> route/include, include -> child router or raw routes). 
+- **`DISPATCHES_TO`** – dispatch relationship (e.g., app -> router, router -> route/include, include -> child router or raw routes).
 
 ---
 
@@ -47,23 +47,23 @@ The graph contains typed nodes, including:
 
 `GraphBuilder` discovers a router-like object with the following preference order:
 1. `app.router` if present and `None`.
-2. Fallbacks: `app._router`, `app.routes` (if the object has a `routes` attribute). 
+2. Fallbacks: `app._router`, `app.routes` (if the object has a `routes` attribute).
 
 ### Global middleware chain
 
-For each entry in `app.custom_middleware`, the builder resolves the **class** (supports both raw classes and `DefineMiddleware`) and creates a `WRAPS` chain from the **APPLICATION** node to each **MIDDLEWARE** in declaration order. 
+For each entry in `app.custom_middleware`, the builder resolves the **class** (supports both raw classes and `DefineMiddleware`) and creates a `WRAPS` chain from the **APPLICATION** node to each **MIDDLEWARE** in declaration order.
 
 ### Router traversal
 
 From the discovered **ROUTER**, the builder walks `router.routes` and:
-- If the entry is an **INCLUDE**: adds the include, attaches its local **middlewares** then **permissions** as a `WRAPS` chain, and, if a **child app** is present, descends into its router (with cycle protection via visited app IDs). If the include has **raw routes** (no child app), those are attached under the include. 
-- Otherwise, treats the entry as a **ROUTE**, attaches it via `DISPATCHES_TO`, then attaches **route-level middlewares** followed by **permissions** using `WRAPS`. 
+- If the entry is an **INCLUDE**: adds the include, attaches its local **middlewares** then **permissions** as a `WRAPS` chain, and, if a **child app** is present, descends into its router (with cycle protection via visited app IDs). If the include has **raw routes** (no child app), those are attached under the include.
+- Otherwise, treats the entry as a **ROUTE**, attaches it via `DISPATCHES_TO`, then attaches **route-level middlewares** followed by **permissions** using `WRAPS`.
 
 ### Determinism & safety
 
-- Dangling edges (where source/target nodes aren't present) are ignored defensively during `ApplicationGraph` construction. 
-- Adjacency lists for outgoing/incoming edges are frozen. Edge insertion order is preserved. 
-- JSON serialization uses `_to_json_safe` which converts Enums to values, recurses into mappings, lists/tuples, and sorts sets for deterministic output. 
+- Dangling edges (where source/target nodes aren't present) are ignored defensively during `ApplicationGraph` construction.
+- Adjacency lists for outgoing/incoming edges are frozen. Edge insertion order is preserved.
+- JSON serialization uses `_to_json_safe` which converts Enums to values, recurses into mappings, lists/tuples, and sorts sets for deterministic output.
 
 ---
 
@@ -71,25 +71,25 @@ From the discovered **ROUTER**, the builder walks `router.routes` and:
 
 ### Properties
 
-- `nodes: Mapping[str, GraphNode]` – All nodes by ID (read-only). 
-- `edges: tuple[GraphEdge, ...]` – All edges in insertion order (read-only). 
+- `nodes: Mapping[str, GraphNode]` – All nodes by ID (read-only).
+- `edges: tuple[GraphEdge, ...]` – All edges in insertion order (read-only).
 
 ### Queries & helpers
-- `by_kind(kind: NodeKind) -> tuple[GraphNode, ...]` – Filter nodes by kind. 
-- `application() -> GraphNode` – Return the single **APPLICATION** node. Raises `RuntimeError` if missing or duplicated. 
-- `middlewares() -> tuple[GraphNode, ...]` – Global middlewares wrapping the application, outer->inner order, by traversing the linear `WRAPS` chain. 
-- `routes() -> tuple[GraphNode, ...]` – All route nodes. 
-- `route_by_path(path: str) -> GraphNode | None` – Structural lookup by exact `metadata['path']`. **Not** a runtime matcher. 
-- `permissions_for(route: GraphNode) -> tuple[GraphNode, ...]` – Permission chain wrapping a route (outer->inner). Requires a **ROUTE** node. 
-- `route_middlewares(route: GraphNode) -> tuple[GraphNode, ...]` – Middleware chain wrapping a route. Requires a **ROUTE** node. 
-- `includes() -> tuple[GraphNode, ...]` – All include nodes. 
-- `include_layers(include: GraphNode) -> {"middlewares": ..., "permissions": ...}` – Layers attached directly to an include. Requires an **INCLUDE** node. 
-- `explain(path: str) -> dict` – Structural explanation for a route that includes app `debug`, global middlewares (by class name), route `{path, methods}`, and route permissions (by class name). 
+- `by_kind(kind: NodeKind) -> tuple[GraphNode, ...]` – Filter nodes by kind.
+- `application() -> GraphNode` – Return the single **APPLICATION** node. Raises `RuntimeError` if missing or duplicated.
+- `middlewares() -> tuple[GraphNode, ...]` – Global middlewares wrapping the application, outer->inner order, by traversing the linear `WRAPS` chain.
+- `routes() -> tuple[GraphNode, ...]` – All route nodes.
+- `route_by_path(path: str) -> GraphNode | None` – Structural lookup by exact `metadata['path']`. **Not** a runtime matcher.
+- `permissions_for(route: GraphNode) -> tuple[GraphNode, ...]` – Permission chain wrapping a route (outer->inner). Requires a **ROUTE** node.
+- `route_middlewares(route: GraphNode) -> tuple[GraphNode, ...]` – Middleware chain wrapping a route. Requires a **ROUTE** node.
+- `includes() -> tuple[GraphNode, ...]` – All include nodes.
+- `include_layers(include: GraphNode) -> {"middlewares": ..., "permissions": ...}` – Layers attached directly to an include. Requires an **INCLUDE** node.
+- `explain(path: str) -> dict` – Structural explanation for a route that includes app `debug`, global middlewares (by class name), route `{path, methods}`, and route permissions (by class name).
 
 ### Export
 
-- `to_dict() -> dict` – JSON-friendly dict with `nodes` and `edges`. Node `ref` is intentionally excluded. Metadata is normalized via `_to_json_safe`. 
-- `to_json(indent: int | None = 2, sort_keys: bool = False) -> str` – JSON string export. Pairs with your favorite visualization tools (Mermaid, Graphviz, etc.). 
+- `to_dict() -> dict` – JSON-friendly dict with `nodes` and `edges`. Node `ref` is intentionally excluded. Metadata is normalized via `_to_json_safe`.
+- `to_json(indent: int | None = 2, sort_keys: bool = False) -> str` – JSON string export. Pairs with your favorite visualization tools (Mermaid, Graphviz, etc.).
 
 ---
 
@@ -115,7 +115,7 @@ route = app.graph.route_by_path("/r")
 assert set(route.metadata["methods"]) == {"GET", "HEAD", "POST"}
 ```
 
-The methods metadata captures the effective methods for the route, including implicit `HEAD`. 
+The methods metadata captures the effective methods for the route, including implicit `HEAD`.
 
 ### Explain a route end‑to‑end
 
@@ -127,7 +127,7 @@ info = app.graph.explain("/ping")
 #         "permissions": ()}
 ```
 
-`explain()` combines the app debug flag, global middleware classes, route `{path, methods}`, and route permissions into one compact dict. 
+`explain()` combines the app debug flag, global middleware classes, route `{path, methods}`, and route permissions into one compact dict.
 
 ### Verify route‑level middleware chain
 
@@ -147,7 +147,7 @@ names = [n.metadata["class"] for n in chain]
 assert names == ["RouteMW1", "RouteMW2"]
 ```
 
-Route-level middlewares are attached as a linear `WRAPS` chain in the declared order. 
+Route-level middlewares are attached as a linear `WRAPS` chain in the declared order.
 
 ### Check a route's permission chain
 
@@ -168,7 +168,7 @@ assert [p.metadata["class"] for p in perms] == ["Allow", "Deny"]
 ### Compose includes with child apps
 
 ```python
-async def inner(): 
+async def inner():
     return "child"
 
 child = ChildLilya(routes=[Path("/inner", inner)])
@@ -182,7 +182,7 @@ paths = [r.metadata["path"] for r in app.graph.routes()]
 assert paths.count("/inner") == 1
 ```
 
-Includes attach, and child app routers are traversed safely with cycle protection; child routes aren't duplicated. 
+Includes attach, and child app routers are traversed safely with cycle protection; child routes aren't duplicated.
 
 ### Include with local layers (middlewares & permissions)
 
@@ -195,7 +195,7 @@ child = ChildLilya(routes=[Path("/i", handler)])
 inc = Include("/inc", app=child,
               middleware=[DefineMiddleware(IncMW)],
               permissions=[DefinePermission(IncAllow)])
-    
+
 app = Lilya(routes=[inc])
 layers = app.graph.include_layers(app.graph.includes()[0])
 
@@ -203,7 +203,7 @@ assert [n.metadata["class"] for n in layers["middlewares"]] == ["IncMW"]
 assert [n.metadata["class"] for n in layers["permissions"]] == ["IncAllow"]
 ```
 
-Include-level layers are attached as a `WRAPS` chain (middlewares first, then permissions) in the declared order. 
+Include-level layers are attached as a `WRAPS` chain (middlewares first, then permissions) in the declared order.
 
 ### WebSocket route presence
 
@@ -214,7 +214,7 @@ ws_route = app.graph.route_by_path("/ws")
 assert ws_route is not None
 ```
 
-WebSocket paths are represented as **ROUTE** nodes and can be looked up by exact path. 
+WebSocket paths are represented as **ROUTE** nodes and can be looked up by exact path.
 
 ### Export for tooling & CI
 
@@ -236,26 +236,26 @@ assert loaded == app.graph.to_dict()
 
 ## Best Practices
 
-- **Use `DefineMiddleware` / `DefinePermission`** when you need to pass constructor args. The builder resolves the class correctly even if wrappers vary. 
-- **Prefer exact path lookups** with `route_by_path()` for static analysis. Remember this is structural, not a runtime matcher. 
-- **Keep chains linear**: The traversal assumes a first `WRAPS` target per step and preserves insertion order. 
-- **Export JSON for visualization**: `_to_json_safe` guarantees deterministic ordering (e.g., sorted sets), which is ideal for diffs in PRs. 
+- **Use `DefineMiddleware` / `DefinePermission`** when you need to pass constructor args. The builder resolves the class correctly even if wrappers vary.
+- **Prefer exact path lookups** with `route_by_path()` for static analysis. Remember this is structural, not a runtime matcher.
+- **Keep chains linear**: The traversal assumes a first `WRAPS` target per step and preserves insertion order.
+- **Export JSON for visualization**: `_to_json_safe` guarantees deterministic ordering (e.g., sorted sets), which is ideal for diffs in PRs.
 
 ---
 
 ## Troubleshooting & FAQs
 
 **Q: `ApplicationGraph has no APPLICATION node`?**
-- Ensure you're building the graph from a valid `Lilya` instance. The API raises if the node is missing or duplicated. 
+- Ensure you're building the graph from a valid `Lilya` instance. The API raises if the node is missing or duplicated.
 
 **Q: My route isn't found by `route_by_path()`**
-- The lookup is an **exact** match against `metadata['path']`. Confirm the path string, including braces for parameters (e.g., `"/users/{id}"`). 
+- The lookup is an **exact** match against `metadata['path']`. Confirm the path string, including braces for parameters (e.g., `"/users/{id}"`).
 
 **Q: Why do I see `HEAD` among methods?**
-- Lilya's routing may implicitly include `HEAD` for `GET` routes. The graph reflects effective methods from the route entry. Validate using tests as shown. 
+- Lilya's routing may implicitly include `HEAD` for `GET` routes. The graph reflects effective methods from the route entry. Validate using tests as shown.
 
 **Q: How do includes with child apps work?**
-- The builder descends into the child app's router and marks visited apps to prevent cycles. Child routes are attached under the include correctly without duplication. 
+- The builder descends into the child app's router and marks visited apps to prevent cycles. Child routes are attached under the include correctly without duplication.
 
 ---
 
@@ -274,7 +274,7 @@ assert loaded == app.graph.to_dict()
 }
 ```
 
-Nodes are exported without runtime `ref`. Metadata is normalized to JSON-safe values. 
+Nodes are exported without runtime `ref`. Metadata is normalized to JSON-safe values.
 
 ### Edge (dict form)
 
@@ -286,7 +286,7 @@ Nodes are exported without runtime `ref`. Metadata is normalized to JSON-safe va
 }
 ```
 
-Edges preserve insertion order and reference valid node IDs. 
+Edges preserve insertion order and reference valid node IDs.
 
 ---
 
@@ -310,11 +310,11 @@ class Allow(PermissionProtocol): ...
 class Deny(PermissionProtocol): ...
 class IncAllow(PermissionProtocol): ...
 
-async def handler(): 
+async def handler():
     return "Hello"
 
 
-async def ws_handler(ws): 
+async def ws_handler(ws):
     await ws.accept()
     await ws.close()
 

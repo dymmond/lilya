@@ -21,6 +21,10 @@ jobs:
         run: |
           pip install click==8.2.2
           pip install hatch
+      - name: "Check for security vulnerabilities"
+        run: |
+          pip install pip-audit
+          pip-audit --strict --desc
       - name: "Build package"
         run: "hatch run build_with_check"
       - name: "Publish to PyPI"
