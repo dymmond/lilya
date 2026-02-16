@@ -703,7 +703,7 @@ class QueryParam(ImmutableMultiDict[Any]):
 
     def __init__(
         self,
-        *args: MultiMapping | Mapping[str, Any] | Iterable[tuple[str, Any]] | None,
+        *args: str | bytes | MultiMapping | Mapping[str, Any] | Iterable[tuple[str, Any]] | None,
     ) -> None:
         assert len(args) < 2, "Too many arguments."
         value = args[0] if args else None
