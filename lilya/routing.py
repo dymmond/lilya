@@ -1231,7 +1231,7 @@ class Host(BasePath):
         if not remaining_params:
             return URLPath(path=path, host=host)
 
-        raise NoMatchFound(self.name, path_params)
+        raise NoMatchFound(self.name or "unknown", path_params)
 
     def path_for_without_name(self, name: str, path_params: dict) -> URLPath:
         """
@@ -1551,10 +1551,11 @@ class BaseRouter:
 
             # If it's a bound method (needs invoking to get the actual callable, example? From settings)
             if inspect.ismethod(self.lifespan_context):
-                self.lifespan_context = (
-                    self.lifespan_context()
-                )  # should return a (app)->AsyncContextManager callable
+                lifespan = self.lifespan_context()
+                if lifespan is not None:
+                    self.lifespan_context = lifespan
 
+            assert self.lifespan_context is not None
             async with self.lifespan_context(app) as state:
                 if state is not None:
                     if "state" not in scope:

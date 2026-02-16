@@ -186,7 +186,7 @@ class StaticFiles:
             if stat_result is not None and stat.S_ISREG(stat_result.st_mode):
                 if not scope["path"].endswith("/"):
                     url = URL.build_from_scope(scope=scope)
-                    url = url.replace(path=url.path + "/")
+                    url = url.replace(path=(url.path or "") + "/")
                     return RedirectResponse(url=url)
                 return self.file_response(full_path, stat_result, scope)
         if self.fall_through:

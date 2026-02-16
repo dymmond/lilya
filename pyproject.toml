@@ -319,7 +319,7 @@ warn_unused_ignores = true
 warn_redundant_casts = true
 no_implicit_optional = true
 strict_equality = true
-strict_optional = false
+strict_optional = true
 disable_error_code = "import-untyped"
 exclude = ["lilya/compat.py"]
 

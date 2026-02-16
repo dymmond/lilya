@@ -19,9 +19,6 @@ class AsyncExitStackMiddleware(MiddlewareProtocol):
         self.debug = debug
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if not AsyncExitStack:
-            await self.app(scope, receive, send)  # pragma: no cover
-
         stack = _LazyAsyncExitStack()
         scope["lilya_asyncexitstack"] = stack
         exception: Exception | None = None
