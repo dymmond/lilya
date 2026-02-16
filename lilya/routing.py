@@ -158,7 +158,7 @@ class BasePath:
             return
 
         scope.update(child_scope)
-        await self.handle_dispatch(scope, receive, send)  # type: ignore
+        await self.handle_dispatch(scope, receive, send)
 
     async def handle_not_found(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -183,7 +183,7 @@ class BasePath:
     async def handle_not_found_fallthrough(scope: Scope, receive: Receive, send: Send) -> None:
         raise ContinueRouting()
 
-    def handle_dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
+    async def handle_dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
         Handles the dispatch of the request to the appropriate handler.
 
@@ -249,9 +249,9 @@ class BasePath:
             exc (Exception): The exception to handle.
             status_code (int): The status code.
         """
-        exception_handler = self.exception_handlers.get(
+        exception_handler = self.exception_handlers.get(  # type: ignore[attr-defined]
             status_code
-        ) or self.exception_handlers.get(exc.__class__)
+        ) or self.exception_handlers.get(exc.__class__)  # type: ignore[attr-defined]
 
         if exception_handler is None:
             raise exc
@@ -280,9 +280,9 @@ class BasePath:
         Gets the param:type in string like list.
         Used for the directive `lilya show-urls`.
         """
-        path_components = parse_path(self.path)
+        path_components = parse_path(self.path)  # type: ignore[attr-defined]
         parameters = [component for component in path_components if isinstance(component, tuple)]
-        stringified_parameters = [f"{param.name}:{param.type}" for param in parameters]
+        stringified_parameters = [f"{param.name}:{param.type}" for param in parameters]  # type: ignore[attr-defined]
         return stringified_parameters
 
 
@@ -409,6 +409,10 @@ class Path(BaseHandler, BasePath):
             self.handle_signature()
         return self._signature
 
+    @signature.setter
+    def signature(self, value: inspect.Signature) -> None:
+        self._signature = value
+
     def handle_signature(self) -> None:
         """
         Validates the return annotation of a handler
@@ -429,27 +433,27 @@ class Path(BaseHandler, BasePath):
         """
         if hasattr(self.app, "__is_controller__"):
             controller = self.app
-            if controller.permissions:
+            if controller.permissions:  # type: ignore[attr-defined]
                 self.wrapped_permissions.extend(
-                    [wrap_permission(permission) for permission in controller.permissions]
+                    [wrap_permission(permission) for permission in controller.permissions]  # type: ignore[attr-defined]
                 )
 
-            if controller.middleware:
-                self.middleware.extend([wrap_middleware(mid) for mid in controller.middleware])
+            if controller.middleware:  # type: ignore[attr-defined]
+                self.middleware.extend([wrap_middleware(mid) for mid in controller.middleware])  # type: ignore[attr-defined]
 
-            if controller.exception_handlers:
-                self.exception_handlers.update(controller.exception_handlers)
+            if controller.exception_handlers:  # type: ignore[attr-defined]
+                self.exception_handlers.update(controller.exception_handlers)  # type: ignore[attr-defined]
 
-            if controller.dependencies:
+            if controller.dependencies:  # type: ignore[attr-defined]
                 self.dependencies.update(
-                    {k: wrap_dependency(v) for k, v in controller.dependencies.items()}
+                    {k: wrap_dependency(v) for k, v in controller.dependencies.items()}  # type: ignore[attr-defined]
                 )
 
-            if controller.before_request:
-                self.before_request.extend(controller.before_request)
+            if controller.before_request:  # type: ignore[attr-defined]
+                self.before_request.extend(controller.before_request)  # type: ignore[attr-defined]
 
-            if controller.after_request:
-                self.after_request.extend(controller.after_request)
+            if controller.after_request:  # type: ignore[attr-defined]
+                self.after_request.extend(controller.after_request)  # type: ignore[attr-defined]
 
     def _apply_middleware(self, middleware: Sequence[DefineMiddleware] | None) -> None:
         """
@@ -774,6 +778,10 @@ class WebSocketPath(BaseHandler, BasePath):
             self.handle_signature()
         return self._signature
 
+    @signature.setter
+    def signature(self, value: inspect.Signature) -> None:
+        self._signature = value
+
     def handle_signature(self) -> None:
         """
         Validates the return annotation of a handler
@@ -794,25 +802,25 @@ class WebSocketPath(BaseHandler, BasePath):
         """
         if hasattr(self.app, "__is_controller__"):
             controller = self.app
-            if controller.permissions:
+            if controller.permissions:  # type: ignore[attr-defined]
                 self.wrapped_permissions.extend(
-                    [wrap_permission(permission) for permission in controller.permissions]
+                    [wrap_permission(permission) for permission in controller.permissions]  # type: ignore[attr-defined]
                 )
 
-            if controller.middleware:
-                self.middleware.extend([wrap_middleware(mid) for mid in controller.middleware])
+            if controller.middleware:  # type: ignore[attr-defined]
+                self.middleware.extend([wrap_middleware(mid) for mid in controller.middleware])  # type: ignore[attr-defined]
 
-            if controller.exception_handlers:
-                self.exception_handlers.update(controller.exception_handlers)
+            if controller.exception_handlers:  # type: ignore[attr-defined]
+                self.exception_handlers.update(controller.exception_handlers)  # type: ignore[attr-defined]
 
-            if controller.dependencies and self.dependencies:
-                self.dependencies.update(controller.dependencies)
+            if controller.dependencies and self.dependencies:  # type: ignore[attr-defined]
+                self.dependencies.update(controller.dependencies)  # type: ignore[attr-defined]
 
-            if controller.before_request:
-                self.before_request.extend(controller.before_request)
+            if controller.before_request:  # type: ignore[attr-defined]
+                self.before_request.extend(controller.before_request)  # type: ignore[attr-defined]
 
-            if controller.after_request:
-                self.after_request.extend(controller.after_request)
+            if controller.after_request:  # type: ignore[attr-defined]
+                self.after_request.extend(controller.after_request)  # type: ignore[attr-defined]
 
     def _apply_middleware(self, middleware: Sequence[DefineMiddleware] | None) -> None:
         """
@@ -923,7 +931,7 @@ class WebSocketPath(BaseHandler, BasePath):
         except Exception as ex:
             await self.handle_exception_handlers(scope, receive, send, ex)
 
-    def path_for(self, name: str, **path_params: Any) -> URLPath:
+    def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         """
         Generates a URL path for the specified route name and parameters.
 
@@ -1223,7 +1231,7 @@ class Host(BasePath):
         if not remaining_params:
             return URLPath(path=path, host=host)
 
-        raise NoMatchFound(self.name, path_params)
+        raise NoMatchFound(self.name or "unknown", path_params)
 
     def path_for_without_name(self, name: str, path_params: dict) -> URLPath:
         """
@@ -1301,6 +1309,8 @@ class BaseRouter:
         "before_request",
         "after_request",
         "dependencies",
+        "dependency_overrides",
+        "wrapped_permissions",
         "_fast_path_len",
         "_fast_path_route",
     )
@@ -1490,7 +1500,7 @@ class BaseRouter:
 
         new_scope = dict(base_scope)
         new_scope.update(child)
-        await route.handle_dispatch(new_scope, path_handler.receive, path_handler.send)  # type: ignore
+        await route.handle_dispatch(new_scope, path_handler.receive, path_handler.send)
 
     async def handle_partial(self, route: BasePath, path_handler: PathHandler) -> None:
         """
@@ -1502,7 +1512,7 @@ class BaseRouter:
         """
         new_scope = dict(path_handler.scope)
         new_scope.update(path_handler.child_scope)
-        await route.handle_dispatch(new_scope, path_handler.receive, path_handler.send)  # type: ignore
+        await route.handle_dispatch(new_scope, path_handler.receive, path_handler.send)
 
     async def handle_default(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -1541,10 +1551,11 @@ class BaseRouter:
 
             # If it's a bound method (needs invoking to get the actual callable, example? From settings)
             if inspect.ismethod(self.lifespan_context):
-                self.lifespan_context = (
-                    self.lifespan_context()
-                )  # should return a (app)->AsyncContextManager callable
+                lifespan = self.lifespan_context()
+                if lifespan is not None:
+                    self.lifespan_context = lifespan
 
+            assert self.lifespan_context is not None
             async with self.lifespan_context(app) as state:
                 if state is not None:
                     if "state" not in scope:
@@ -1619,7 +1630,7 @@ class BaseRouter:
                             new_scope = dict(scope)
                             new_scope.update(child_scope)
 
-                        await fast_route.handle_dispatch(new_scope, receive, send)  # type: ignore
+                        await fast_route.handle_dispatch(new_scope, receive, send)
                         return
                     except ContinueRouting:
                         pass
@@ -2377,7 +2388,7 @@ class Router(RoutingMethodsMixin, BaseRouter):
                 before_request=before_request,
                 after_request=after_request,
             )
-            func._lilya_dependencies = dependencies or {}
+            func._lilya_dependencies = dependencies or {}  # type: ignore[attr-defined]
             return func
 
         return wrapper
@@ -2423,7 +2434,7 @@ class Router(RoutingMethodsMixin, BaseRouter):
                 before_request=before_request,
                 after_request=after_request,
             )
-            func._lilya_dependencies = dependencies or {}
+            func._lilya_dependencies = dependencies or {}  # type: ignore[attr-defined]
             return func
 
         return wrapper

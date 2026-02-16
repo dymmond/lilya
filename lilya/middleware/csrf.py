@@ -44,7 +44,6 @@ class CSRFMiddleware(MiddlewareProtocol):
         form_field_name: str | None = None,
         max_body_size: int = 2 * 1024 * 1024,
     ) -> None:
-        super().__init__(app)
         self.app = app
         self.secret = secret
         self.cookie_name = cookie_name or "csrftoken"

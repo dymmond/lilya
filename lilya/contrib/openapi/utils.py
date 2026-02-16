@@ -153,8 +153,8 @@ def get_openapi(
             )
             meta = getattr(handler, "openapi_meta", {}) or {}
 
-            if hasattr(handler, "func"):
-                handler = handler.func
+            if handler is not None and hasattr(handler, "func"):
+                handler = cast(Any, handler).func
 
             operation = {
                 "operationId": meta.get("operation_id", handler.__name__ if handler else ""),
@@ -266,7 +266,7 @@ def get_openapi(
                 }
 
             operation["responses"] = responses_obj
-            spec["paths"].setdefault(raw_path, {})[m_lower] = operation
+            spec["paths"].setdefault(raw_path, {})[m_lower] = operation  # type: ignore[attr-defined]
 
     if securitySchemes:
         spec["components"]["securitySchemes"] = securitySchemes  # type: ignore

@@ -15,14 +15,10 @@ class AsyncExitStackMiddleware(MiddlewareProtocol):
         Args:
             app: The 'next' ASGI app to call.
         """
-        super().__init__(app)
         self.app = app
         self.debug = debug
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if not AsyncExitStack:
-            await self.app(scope, receive, send)  # pragma: no cover
-
         stack = _LazyAsyncExitStack()
         scope["lilya_asyncexitstack"] = stack
         exception: Exception | None = None

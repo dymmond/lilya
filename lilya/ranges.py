@@ -95,6 +95,8 @@ def parse_range_value(
         except ValueError:
             # parse and logic errors cause None return
             return None
+        if range_val is None:
+            return None
         crange.size += range_val.stop - range_val.start + 1
         if last_range is not None and enforce_asc:
             if range_val.start <= last_range.stop:

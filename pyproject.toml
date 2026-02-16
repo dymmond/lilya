@@ -216,6 +216,9 @@ testing = [
     "pyyaml>=6.0,<7.0.0",
     "msgpack",
     "typing_extensions>=3.10.0",
+    # Type stubs for mypy
+    "types-PyYAML",
+    "msgpack-types",
     "ipython",
     "ptpython",
     "pyjwt",
@@ -317,10 +320,9 @@ show_error_codes = true
 disallow_incomplete_defs = true
 warn_unused_ignores = true
 warn_redundant_casts = true
-no_implicit_optional = false
-strict_equality = false
-strict_optional = false
-disable_error_code = "attr-defined,has-type,override,misc,safe-super,import-untyped"
+no_implicit_optional = true
+strict_equality = true
+strict_optional = true
 exclude = ["lilya/compat.py"]
 
 [tool.ruff]
@@ -372,7 +374,7 @@ source = ["tests", "lilya"]
 fail_under = 80
 
 [[tool.mypy.overrides]]
-module = ["multipart.*", "mako.*", "uvicorn.*", "jwt.*"]
+module = ["multipart.*", "mako.*", "uvicorn.*", "jwt.*", "yaml", "msgpack", "magic"]
 ignore_missing_imports = true
 ignore_errors = true
 

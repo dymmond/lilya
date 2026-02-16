@@ -61,7 +61,6 @@ class LilyaExceptionMiddleware(MiddlewareProtocol):
                 a `Request` and an `Exception` instance, and return a `Response`.
                 If no handlers are provided, an empty mapping is used.
         """
-        super().__init__(app)
         self.app = app
         self.handlers = handlers or {}
 
@@ -99,7 +98,7 @@ class LilyaExceptionMiddleware(MiddlewareProtocol):
                 raise
             handler = self._lookup_handler(exc)
             if handler:
-                response = await handler(request, exc)
+                response = await handler(request, exc)  # type: ignore[misc]
             else:
                 response = self.create_exception_response(exc)
             await response(scope, receive, send_wrapper)
@@ -113,7 +112,7 @@ class LilyaExceptionMiddleware(MiddlewareProtocol):
             extra = getattr(exc, "extra", {}) or {}
             if extra:
                 content.extra = extra
-            status_code = exc.status_code
+            status_code = exc.status_code or 500
             headers = exc.headers or {}
         else:
             # generic 500 for all other exceptions

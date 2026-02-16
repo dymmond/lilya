@@ -83,7 +83,6 @@ class SecurityMiddleware(MiddlewareProtocol):
             frame_options (str, optional): The X-Frame-Options policy. Defaults to "DENY".
             xss_protection (str, optional): The X-XSS-Protection policy. Defaults to "1; mode=block".
         """
-        super().__init__(app)
         self.app = app
         self.content_policy = parse_content_policy(content_policy)
         self.cross_origin_opener_policy = cross_origin_opener_policy

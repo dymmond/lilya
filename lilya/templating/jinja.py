@@ -22,7 +22,7 @@ try:
     if hasattr(jinja2, "pass_context"):
         pass_context = jinja2.pass_context
     else:
-        pass_context = jinja2.contextfunction
+        pass_context = jinja2.contextfunction  # type: ignore[attr-defined]
 except ImportError as exc:
     raise MissingDependency("jinja2 is not installed") from exc
 
@@ -133,6 +133,7 @@ class Jinja2Template:
         )
 
         if env is None:
+            assert directory is not None, "directory must be provided if env is not provided"
             self.env = self._create_environment(directory, **options)
         else:
             self.env = self._add_defaults(env=env)

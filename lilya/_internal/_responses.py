@@ -287,6 +287,9 @@ class BaseHandler:
         # will be provided by the caller. We default to `inspect.signature(func)` only once.
         static_signature: inspect.Signature | None = other_signature or inspect.signature(func)
 
+        if static_signature is None:
+            static_signature = inspect.signature(func)
+
         # ---------------------------------------------------------------------
         # Performance notes:
         # - We resolve and cache the signature/plan once at decoration time, not per request.
@@ -308,7 +311,7 @@ class BaseHandler:
 
                 This wrapper is created once per handler to avoid per-request branching.
                 """
-                return await func()  # type: ignore[call-arg]
+                return await func()  # type: ignore[call-arg,misc]
 
             async def _executekw(**kwargs: Any) -> Any:
                 """
@@ -316,7 +319,7 @@ class BaseHandler:
 
                 This wrapper is created once per handler to avoid per-request branching.
                 """
-                return await func(**kwargs)  # type: ignore[call-arg]
+                return await func(**kwargs)  # type: ignore[call-arg,misc]
 
         else:
 
@@ -404,7 +407,11 @@ class BaseHandler:
 
                 # The effective signature can still be overridden by the handler,
                 # but we avoid expensive resolution when it matches the static signature.
-                signature = other_signature or self.signature or static_signature
+                signature: inspect.Signature | None = (
+                    other_signature or self.signature or static_signature
+                )
+                if signature is None:
+                    signature = static_signature
                 if signature is static_signature:
                     signature = resolved_signature
                     effective_plan = plan
@@ -534,7 +541,7 @@ class BaseHandler:
                 handler: ExceptionHandler | None = None
 
                 if isinstance(exc, HTTPException):
-                    handler = status_handlers.get(exc.status_code)
+                    handler = status_handlers.get(exc.status_code or 500)
 
                 if handler is None:
                     handler = _lookup_exception_handler(exception_handlers, exc)
@@ -1024,10 +1031,10 @@ class BaseHandler:
         merged.update(overrides)
 
         # 2) FILTER to only the ones the handler signature actually names as Provides()
-        requested: dict[str, Provide | Resolve | Security] = {}
+        requested: dict[str, Provide | Resolve | Security | None] = {}
         for name, param in signature.parameters.items():
             if isinstance(param.default, Provides):
-                # we want to inject “name” if the handler did `foo = Provides()`
+                # we want to inject "name" if the handler did `foo = Provides()`
                 requested[name] = merged.get(name)
 
             elif isinstance(param.default, (Resolve, Security)):

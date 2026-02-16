@@ -1,13 +1,17 @@
 from collections.abc import Callable
 from typing import Any
 
-from pydantic.fields import AliasChoices, AliasPath, FieldInfo
+from pydantic.fields import (  # type: ignore[attr-defined]
+    AliasChoices as AliasChoices,
+    AliasPath as AliasPath,
+    FieldInfo,
+)
 from pydantic_core import PydanticUndefined
 
 _PyUndefined: Any = PydanticUndefined
 
 
-class Param(FieldInfo):
+class Param(FieldInfo):  # type: ignore[misc]
     def __init__(
         self,
         default: Any = _PyUndefined,

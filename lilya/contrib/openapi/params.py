@@ -3,7 +3,7 @@ from typing import Any
 from pydantic.fields import FieldInfo
 
 
-class Query(FieldInfo):
+class Query(FieldInfo):  # type: ignore[misc]
     """
     Use this in `@openapi(query=...)` to declare one or more query parameters.
     Inherits from pydantic.FieldInfo so you can pass the same arguments you'd pass to `Field(...)`.
@@ -62,4 +62,5 @@ class Query(FieldInfo):
         return param
 
 
-class ResponseParam(FieldInfo): ...
+class ResponseParam(FieldInfo):  # type: ignore[misc]
+    ...

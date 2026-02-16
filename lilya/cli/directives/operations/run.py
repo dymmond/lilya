@@ -93,6 +93,8 @@ async def run(
 
     ## Check if application is up and execute any event
     # Shutting down after
+    if env.lilya_app is None:
+        raise ValueError("Application not properly initialized")
     lifespan = generate_lifespan_events(
         env.lilya_app.router.on_startup,
         env.lilya_app.router.on_shutdown,

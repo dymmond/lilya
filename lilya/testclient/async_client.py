@@ -184,7 +184,7 @@ class AsyncTestClient(httpx.AsyncClient):
             else:
                 self.app_state[self._AUTH_USER_KEY] = previous
 
-    async def request(
+    async def request(  # type: ignore[override,unused-ignore]
         self,
         method: str,
         url: URLTypes,
@@ -254,7 +254,7 @@ class AsyncTestClient(httpx.AsyncClient):
                 auth=auth,
                 timeout=timeout,
                 extensions=extensions,
-                follow_redirects=follow_redirects,
+                follow_redirects=follow_redirects or httpx._client.USE_CLIENT_DEFAULT,
             ).__aenter__()
 
         return await super().request(

@@ -46,17 +46,17 @@ from lilya.types import Message, Receive, Scope, Send
 try:
     import yaml
 except ImportError:  # pragma: no cover
-    yaml = None
+    yaml = None  # type: ignore[assignment]
 
 try:
     import msgpack
 except ImportError:  # pragma: no cover
-    msgpack = None
+    msgpack = None  # type: ignore[assignment]
 
 try:
     import magic
 except ImportError:  # pragma: no cover
-    magic = None
+    magic: Any = None  # type: ignore[no-redef]
 
 Content = str | bytes
 Encoder = EncoderProtocol | MoldingProtocol
@@ -87,6 +87,7 @@ class Response:
     headers: Header
     deduce_media_type_from_body: bool | Literal["force"] = False
     cleanup_handler: Callable[[], None | Awaitable[None]] | None = None
+    body: bytes
 
     def __init__(
         self,
@@ -110,12 +111,13 @@ class Response:
         self.cookies = cookies
         self.deduce_media_type_from_body = deduce_media_type_from_body
         self.encoders: list[Encoder] = [
-            encoder() if isclass(encoder) else encoder for encoder in encoders or _empty
+            encoder() if isclass(encoder) else encoder  # type: ignore[misc]
+            for encoder in encoders or _empty
         ]
         if isawaitable(content):
             self.async_content = content
         else:
-            self.body = self.make_response(content)  # type: ignore
+            self.body = self.make_response(content)
         # deduce media type
         if self.deduce_media_type_from_body and getattr(self, "body", None) is not None:
             if self.deduce_media_type_from_body == "force" or self.media_type is None:
@@ -132,9 +134,10 @@ class Response:
     async def resolve_async_content(self) -> None:
         if getattr(self, "async_content", None) is not None:
             self.body = self.make_response(await self.async_content)
-            self.async_content = None
+            self.async_content = None  # type: ignore[assignment]
             if (
-                HeaderHelper.has_body_message(self.status_code)
+                self.status_code is not None
+                and HeaderHelper.has_body_message(self.status_code)
                 and "content-length" not in self.headers
             ):
                 self.headers["content-length"] = str(len(self.body))
@@ -182,7 +185,7 @@ class Response:
         if transform_kwargs is not None:
             transform_kwargs = transform_kwargs.copy()
             if self.encoders:
-                transform_kwargs["with_encoders"] = (*self.encoders, *ENCODER_TYPES.get())
+                transform_kwargs["with_encoders"] = (*self.encoders, *(ENCODER_TYPES.get() or ()))
             # strip " from stringified primitives
             transform_kwargs.setdefault(
                 "post_transform_fn",
@@ -214,9 +217,11 @@ class Response:
         """
         headers: dict[str, str] = {} if content_headers is None else content_headers  # type: ignore
 
-        if HeaderHelper.has_entity_header_status(self.status_code):
+        if self.status_code is not None and HeaderHelper.has_entity_header_status(
+            self.status_code
+        ):
             headers = HeaderHelper.remove_entity_headers(headers)
-        if HeaderHelper.has_body_message(self.status_code):
+        if self.status_code is not None and HeaderHelper.has_body_message(self.status_code):
             if getattr(self, "body", None) is not None:
                 headers.setdefault("content-length", str(len(self.body)))
 
@@ -462,7 +467,7 @@ class JSONResponse(Response):
             new_params = {}
         new_params["post_transform_fn"] = None
         if self.encoders:
-            new_params["with_encoders"] = (*self.encoders, *ENCODER_TYPES.get())
+            new_params["with_encoders"] = (*self.encoders, *(ENCODER_TYPES.get() or ()))
         content = json_encode(content, **new_params)
 
         # convert them to bytes if not in passthrough_body_types
@@ -515,7 +520,8 @@ class StreamingResponse(Response):
         encoders: Sequence[Encoder | type[Encoder]] | None = None,
     ) -> None:
         self.encoders: list[Encoder] = [
-            encoder() if isclass(encoder) else encoder for encoder in encoders or _empty
+            encoder() if isclass(encoder) else encoder  # type: ignore[misc]
+            for encoder in encoders or _empty
         ]
 
         if isinstance(content, AsyncIterable):
@@ -835,8 +841,8 @@ class EventStreamResponse(Response):
 
             while self.active:
                 await anyio.sleep(self.ping_interval)
-                if not self.active:
-                    break
+                if not self.active:  # type: ignore[unreachable, unused-ignore]
+                    break  # type: ignore[unreachable, unused-ignore]
                 ping_event = (
                     self.ping_message_factory() if self.ping_message_factory else {":": "ping"}
                 )
@@ -1006,7 +1012,8 @@ class FileResponse(DispositionResponse):
         self.background = background
 
         self.encoders: list[Encoder] = [
-            encoder() if isclass(encoder) else encoder for encoder in encoders or _empty
+            encoder() if isclass(encoder) else encoder  # type: ignore[misc]
+            for encoder in encoders or _empty
         ]
         self.make_headers(headers)
 
@@ -1134,7 +1141,7 @@ class FileResponse(DispositionResponse):
             subheader: str = ""
             if content_ranges and "content-range" not in self.headers:
                 # TODO: check if there is a better way to escape media_type
-                media_type = self.media_type.replace(" ", "").replace("\n", "")
+                media_type = (self.media_type or "").replace(" ", "").replace("\n", "")
                 subheader = (
                     f"--{self.range_multipart_boundary}\ncontent-type: {media_type}\n"
                     "content-range: bytes {start}-{stop}/{fullsize}\n\n"
@@ -1150,7 +1157,7 @@ class FileResponse(DispositionResponse):
                         if last_stop != rangedef.start:
                             await file.seek(rangedef.start, os.SEEK_SET)
                         size = rangedef.stop - rangedef.start + 1
-                        if subheader:
+                        if subheader and content_ranges is not None:
                             await send(
                                 {
                                     "type": "http.response.body",
@@ -1194,7 +1201,7 @@ class FileResponse(DispositionResponse):
                         if last_stop != rangedef.start:
                             await file.seek(rangedef.start, os.SEEK_SET)
                         size = rangedef.stop - rangedef.start + 1
-                        if subheader:
+                        if subheader and content_ranges is not None:
                             await send(
                                 {
                                     "type": "http.response.body",
@@ -1240,7 +1247,7 @@ class FileResponse(DispositionResponse):
 class SimpleFileResponse(Response):
     """A simplified FileResponse which allows sending arbitary data formats as file."""
 
-    def __new__(
+    def __new__(  # type: ignore[misc]
         cls,
         content: bytes | memoryview | os.PathLike | str | IO[bytes] | FileIO,
         *,
@@ -1298,8 +1305,13 @@ class SimpleFileResponse(Response):
                 filename=filename,
             )
             if content_disposition is not None:
-                headers = {} if headers is None else headers.copy()
-                headers.setdefault("content-disposition", content_disposition)
+                if headers is None:
+                    headers = {}
+                elif hasattr(headers, "copy"):
+                    headers = headers.copy()
+                else:
+                    headers = dict(headers)
+                headers.setdefault("content-disposition", content_disposition)  # type: ignore[union-attr]
 
             response = StreamingResponse(
                 content=content,
@@ -1384,7 +1396,8 @@ class CSVResponse(StreamingResponse):
 
     async def stream(self, send: Send) -> None:
         try:
-            row1 = await self.body_iterator.__anext__()
+            iterator = self.body_iterator.__aiter__()
+            row1 = await iterator.__anext__()
         except StopAsyncIteration:
             await send({"type": "http.response.body", "body": b"", "more_body": False})
             return
@@ -1479,7 +1492,7 @@ class YAMLResponse(Response):
         """
         if content is None:
             return b""
-        return cast(bytes, yaml.safe_dump(content, sort_keys=False).encode(self.charset))
+        return yaml.safe_dump(content, sort_keys=False).encode(self.charset)
 
 
 class MessagePackResponse(Response):
@@ -1491,7 +1504,7 @@ class MessagePackResponse(Response):
         """
         if content is None:
             return b""
-        return cast(bytes, msgpack.packb(content, use_bin_type=True))
+        return msgpack.packb(content, use_bin_type=True)
 
 
 class NDJSONResponse(StreamingResponse):
@@ -1531,7 +1544,7 @@ class NDJSONResponse(StreamingResponse):
             new_params = {}
         new_params["post_transform_fn"] = None
         if self.encoders:
-            new_params["with_encoders"] = (*self.encoders, *ENCODER_TYPES.get())
+            new_params["with_encoders"] = (*self.encoders, *(ENCODER_TYPES.get() or ()))
         async for row in self.body_iterator:
             if last_row is not None:
                 await send(

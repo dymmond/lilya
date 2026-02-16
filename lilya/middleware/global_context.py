@@ -48,7 +48,6 @@ class GlobalContextMiddleware(ABC, MiddlewareProtocol):
         populate_context: Callable[[Connection], dict[str, Any] | Awaitable[dict[str, Any]]]
         | None = None,
     ) -> None:
-        super().__init__(app)
         self.app = app
         self.populate_context = populate_context
         # Handle HTTP/WS by default; include lifespan to avoid an extra middleware layer.

@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Any, cast
 from lilya._internal._module_loading import import_string
 from lilya.exceptions import HTTPException
 from lilya.requests import Request
-from lilya.types import Scope
 
 if TYPE_CHECKING:
     from lilya.apps import Lilya
@@ -15,7 +14,7 @@ try:
     from a2wsgi.wsgi import WSGIMiddleware as A2WSGIMiddleware  # noqa
     from a2wsgi.wsgi import WSGIResponder
     from a2wsgi.wsgi_typing import WSGIApp
-    from a2wsgi.asgi_typing import HTTPScope, Receive, Send
+    from a2wsgi.asgi_typing import HTTPScope, Receive, Send, WebSocketScope, LifespanScope
 except ModuleNotFoundError:
     raise RuntimeError(
         "You need to install the package `a2wsgi` to be able to use this middleware. "
@@ -180,7 +179,9 @@ class WSGIMiddleware(A2WSGIMiddleware):
         self.redirect_exceptions = redirect_exceptions
         self._exception_class = exception_class
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+    async def __call__(
+        self, scope: HTTPScope | WebSocketScope | LifespanScope, receive: Receive, send: Send
+    ) -> None:
         """
         The ASGI callable method for the middleware.
 
@@ -194,14 +195,14 @@ class WSGIMiddleware(A2WSGIMiddleware):
             receive: The ASGI receive callable, used to get incoming messages.
             send: The ASGI send callable, used to send outgoing messages.
         """
-        app: Lilya = scope["app"]
+        app: Lilya = scope["app"]  # type: ignore[typeddict-item]
 
         if not self.redirect_exceptions:
             # If exception redirection is not enabled,
             # simply delegate to the parent class's __call__ method.
             # overrides or base class call signatures, which can happen with complex
             # inheritance from external libraries.
-            await super().__call__(scope, receive, send)  # type: ignore
+            await super().__call__(scope, receive, send)
         else:
             # If exception redirection is enabled, create a BufferedWSGIResponder.
             # This responder will catch exceptions from the WSGI app and wrap them

@@ -31,7 +31,7 @@ def directives(env: DirectiveEnv) -> None:
     if getattr(env, "app", None) is not None:
         app_directives = get_application_directives(env.command_path)
         if app_directives:
-            directives.extend(app_directives)
+            directives.extend(app_directives)  # type: ignore[attr-defined]
 
     directives_dict = defaultdict(lambda: [])
     for directive in directives:

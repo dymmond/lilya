@@ -46,7 +46,7 @@ class LilyaException(Exception):
 
 
 class HTTPException(LilyaException):
-    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    status_code: int | None = None
 
     def __init__(
         self,
@@ -58,11 +58,11 @@ class HTTPException(LilyaException):
         **extra: Any,
     ) -> None:
         detail = detail or getattr(self, "detail", None)
-        status_code = status_code or getattr(self, "status_code", None)
+        status_code_val = status_code or getattr(self, "status_code", None) or 500
         if not detail:
-            detail = args[0] if args else http.HTTPStatus(status_code or self.status_code).phrase
+            detail = args[0] if args else http.HTTPStatus(status_code_val).phrase
             args = args[1:]
-        self.status_code = status_code
+        self.status_code = status_code_val
         self.detail = detail
         self.headers = headers
         self.response = response
@@ -178,7 +178,7 @@ class ValidationError(HTTPException):
 
     def __init__(
         self,
-        detail: str | list[str] | dict[str, Any] | tuple[str] = None,
+        detail: str | list[str] | dict[str, Any] | tuple[str] | None = None,
         status_code: Annotated[
             int | None,
             Doc(
@@ -204,14 +204,19 @@ class ValidationError(HTTPException):
             ),
         ],
     ) -> None:
-        if isinstance(detail, tuple):
-            detail = list(detail)
-        elif not isinstance(detail, dict) and not isinstance(detail, list):
-            detail = [detail]
+        if detail is None:
+            detail_value: str | list[str] | dict[str, Any] | tuple[str] = []
+        else:
+            detail_value = detail
 
-        detail = _get_error_details(detail)
+        if isinstance(detail_value, tuple):
+            detail_value = list(detail_value)
+        elif not isinstance(detail_value, dict) and not isinstance(detail_value, list):
+            detail_value = [detail_value]
+
+        detail_processed = _get_error_details(detail_value)
         super().__init__(
-            status_code=status_code, detail=cast(str, detail), headers=headers, **extra
+            status_code=status_code, detail=cast(str, detail_processed), headers=headers, **extra
         )
 
 

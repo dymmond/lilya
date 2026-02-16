@@ -20,4 +20,4 @@ def get_random_secret_key(length: int | None = 50) -> str:
     Return a 50 character random string usable as a SECRET_KEY setting value.
     """
     chars = "abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)"
-    return get_random_string(length, chars)
+    return get_random_string(length or 50, chars)

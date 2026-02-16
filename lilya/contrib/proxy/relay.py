@@ -58,7 +58,7 @@ class Relay:
         *,
         upstream_prefix: str = "/",
         preserve_host: bool = False,
-        rewrite_set_cookie_domain: Callable[[str], str] | None = None,
+        rewrite_set_cookie_domain: Callable[[str], str | None] | None = None,
         timeout: httpx.Timeout | float = httpx.Timeout(10, connect=5, read=10, write=10),
         limits: httpx.Limits = httpx.Limits(max_connections=100, max_keepalive_connections=20),
         follow_redirects: bool = False,
@@ -567,11 +567,6 @@ class Relay:
             receive: Coroutine yielding WebSocket events from the client.
             send: Coroutine to send WebSocket events back to the client.
         """
-
-        if websockets is None:
-            # 501 (Not Implemented) because dependency is missing
-            await self._send_ws_close(send, 1011, "Server cannot proxy WebSockets")
-            return
 
         # Accept downstream connection first
         await send({"type": "websocket.accept"})

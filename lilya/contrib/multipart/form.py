@@ -210,16 +210,21 @@ class FormParser:
         self._ctype = ctype
         self._params = params
 
-        if self._ctype == "multipart/form-data":
+        if self._ctype == b"multipart/form-data":
             if boundary is None:
-                boundary_param = params.get("boundary")  # type: ignore
+                boundary_param = params.get(b"boundary")
                 if not boundary_param:
                     raise FormParserError("Missing boundary for multipart/form-data")
-                self.boundary = boundary_param.encode("ascii", "strict")
+                # boundary_param is already bytes, no need to encode
+                self.boundary = (
+                    boundary_param
+                    if isinstance(boundary_param, bytes)
+                    else boundary_param.encode("ascii", "strict")
+                )
         elif self._ctype in (
-            "application/octet-stream",
-            "application/x-www-form-urlencoded",
-            "text/plain",
+            b"application/octet-stream",
+            b"application/x-www-form-urlencoded",
+            b"text/plain",
         ):
             pass
         else:
@@ -233,9 +238,9 @@ class FormParser:
         self._octet_stream_parser: OctetStreamParser | None = None
 
         # Build the sub-parser immediately
-        if self._ctype == "multipart/form-data":
+        if self._ctype == b"multipart/form-data":
             self._multipart_parser = self._build_multipart_parser()
-        elif self._ctype == "application/octet-stream":
+        elif self._ctype == b"application/octet-stream":
             self._octet_stream_parser = self._build_octet_stream_parser()
         else:
             self._urlencoded_parser = self._build_urlencoded_parser()
@@ -256,13 +261,23 @@ class FormParser:
             content_disposition = parser._headers.get("content-disposition", "")
             _, params = parse_options_header(content_disposition)
 
-            field_name = params.get("name") or params.get("name*")  # type: ignore
-            if field_name and field_name.endswith("*"):
-                field_name = decode_rfc5987_param(params["name*"], "utf-8")  # type: ignore
+            field_name_raw = params.get(b"name") or params.get(b"name*")
+            field_name: str | None = None
+            if field_name_raw:
+                if field_name_raw.endswith(b"*"):
+                    field_name = decode_rfc5987_param(
+                        field_name_raw.decode("utf-8", "replace"), "utf-8"
+                    )
+                else:
+                    field_name = field_name_raw.decode("utf-8", "replace")
 
-            filename = params.get("filename")  # type: ignore
-            if not filename and "filename*" in params:
-                filename = decode_rfc5987_param(params["filename*"], "utf-8")  # type: ignore
+            filename_raw = params.get(b"filename")
+            filename: str | None = None
+            if filename_raw:
+                filename = filename_raw.decode("utf-8", "replace")
+            elif b"filename*" in params:
+                filename_val = params[b"filename*"]
+                filename = decode_rfc5987_param(filename_val.decode("utf-8", "replace"), "utf-8")
 
             content_type = parser._headers.get("content-type")
 
@@ -459,11 +474,15 @@ def create_form_parser(
     content_type = normalized_headers.get("content-type", "")
     boundary: bytes | None = None
     media_type, params = parse_options_header(content_type)
-    if media_type == "multipart/form-data":
-        boundary_param = params.get("boundary")  # type: ignore
+    if media_type == b"multipart/form-data":
+        boundary_param = params.get(b"boundary")
         if not boundary_param:
             raise FormParserError("Missing boundary in Content-Type")
-        boundary = boundary_param.encode("ascii", "strict")
+        boundary = (
+            boundary_param
+            if isinstance(boundary_param, bytes)
+            else boundary_param.encode("ascii", "strict")
+        )
 
     return FormParser(
         content_type=content_type,

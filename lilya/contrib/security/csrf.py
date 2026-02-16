@@ -90,7 +90,7 @@ def ensure_csrf_cookie(
     httponly: bool = False,
     samesite: Literal["lax", "strict", "none"] = "lax",
     domain: str | None = None,
-) -> str:
+) -> str | None:
     """
     Add a CSRF cookie to the response (if you need it *now*) and return the token value.
 
@@ -124,7 +124,7 @@ def get_or_set_csrf_token(
     httponly: bool = False,
     samesite: Literal["lax", "strict", "none"] = "lax",
     domain: str | None = None,
-) -> str:
+) -> str | None:
     """
     Return the existing CSRF cookie value if present, otherwise set a new cookie and return it.
 

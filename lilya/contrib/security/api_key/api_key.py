@@ -1,7 +1,5 @@
 from typing import Annotated, cast
 
-from pydantic import BaseModel
-
 from lilya.contrib.documentation import Doc
 from lilya.contrib.openapi.enums import APIKeyIn
 from lilya.contrib.openapi.models import APIKey
@@ -12,7 +10,7 @@ from lilya.requests import Request
 
 
 class APIKeyBase(SecurityBase, AuthenticationErrorMixin):
-    __model__: BaseModel | None = None
+    __model__: APIKey | None = None
 
 
 class APIKeyInQuery(APIKeyBase):
@@ -53,6 +51,8 @@ class APIKeyInQuery(APIKeyBase):
         return self.build_authentication_exception(headers={"WWW-Authenticate": "APIKey"})
 
     async def __call__(self, request: Request) -> str | None:
+        if self.__model__ is None:
+            return None
         api_key = request.query_params.get(self.__model__.name)
         if api_key:
             return cast(str, api_key)
@@ -99,6 +99,8 @@ class APIKeyInHeader(APIKeyBase):
         return self.build_authentication_exception(headers={"WWW-Authenticate": "APIKey"})
 
     async def __call__(self, request: Request) -> str | None:
+        if self.__model__ is None:
+            return None
         api_key = request.headers.get(self.__model__.name)
         if api_key:
             return cast(str, api_key)
@@ -145,6 +147,8 @@ class APIKeyInCookie(APIKeyBase):
         return self.build_authentication_exception(headers={"WWW-Authenticate": "APIKey"})
 
     async def __call__(self, request: Request) -> str | None:
+        if self.__model__ is None:
+            return None
         api_key = request.cookies.get(self.__model__.name)
         if api_key:
             return api_key

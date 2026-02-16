@@ -22,6 +22,8 @@ from lilya.exceptions import HTTPException
 from lilya.serializers import serializer
 from lilya.types import Empty, Message, Receive, Scope, Send
 
+__all__ = ["Connection", "Request"]
+
 
 class Request(Connection):
     """

@@ -39,6 +39,9 @@ class BaseController(BaseHandler):
         if not settings.enforce_return_annotation:
             return None
 
+        if self.signature is None:
+            return None
+
         if self.signature.return_annotation is inspect._empty:
             raise ImproperlyConfigured(
                 "A return value of a route handler function should be type annotated. "
@@ -89,7 +92,7 @@ class Controller(BaseController):
             with the baked-in arguments, and delegates the ASGI lifecycle.
             """
 
-            __is_controller__: ClassVar[bool] = True
+            __is_controller__: ClassVar[bool] = True  # type: ignore[misc]
             __factory_base__: ClassVar[type[Controller]] = parent
             __init_args__: ClassVar[tuple[Any, ...]] = init_args
             __init_kwargs__: ClassVar[dict[str, Any]] = init_kwargs
@@ -179,7 +182,8 @@ class Controller(BaseController):
 
     async def handle_not_allowed(self) -> Response:
         headers = {"Allow": ", ".join(self.__allowed_methods__)}
-        if "app" in self.__scope__:
+        scope = self.__scope__
+        if scope is not None and "app" in scope:
             raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED)
         return PlainText(
             "Method Not Allowed", status_code=status.HTTP_405_METHOD_NOT_ALLOWED, headers=headers
@@ -241,7 +245,7 @@ class WebSocketController(BaseController):
             newly created instance.
             """
 
-            __is_controller__: ClassVar[bool] = True
+            __is_controller__: ClassVar[bool] = True  # type: ignore[misc]
             __factory_base__: ClassVar[type[WebSocketController]] = parent
             __init_args__: ClassVar[tuple[Any, ...]] = init_args
             __init_kwargs__: ClassVar[dict[str, Any]] = init_kwargs

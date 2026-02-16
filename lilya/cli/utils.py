@@ -75,7 +75,8 @@ def load_directive_class_by_filename(app_name: str, location: str, skip_exit: bo
         sys.exit(1)
 
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    if spec.loader is not None:
+        spec.loader.exec_module(module)
 
     # If it exports a class called Directive
     if hasattr(module, "Directive"):

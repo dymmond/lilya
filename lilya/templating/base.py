@@ -30,8 +30,8 @@ class BaseTemplateRenderer(Generic[T]):
         name: str,
         context: dict,
         status_code: int = status.HTTP_200_OK,
-        headers: dict[str, Any] = None,
-        media_type: str = None,
+        headers: dict[str, Any] | None = None,
+        media_type: str | None = None,
         background: Task | None = None,
     ) -> TemplateResponse:
         context.setdefault("request", request)
@@ -41,7 +41,7 @@ class BaseTemplateRenderer(Generic[T]):
             context=context,
             status_code=status_code,
             headers=headers,
-            media_type=media_type,
+            media_type=media_type or "text/html",
             background=background,
             render_function_name=self.render_function_name,
         )

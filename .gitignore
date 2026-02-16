@@ -1,6 +1,11 @@
 # folders
 .sisyphus/
+/myproject/
+/another/
+/multiple/
 tests/cli/myproject
+tests/cli/another
+tests/cli/multiple
 *.egg-info/
 .hypothesis/
 .idea/
@@ -20,8 +25,10 @@ results/
 site/
 site_lang/
 target/
+.spec-workflow/
 
 # files
+TEMP.md
 **/AGENTS.md
 **/*.so
 **/*.sqlite
@@ -34,3 +41,4 @@ target/
 coverage.*
 example.sqlite
 *.zip
+*.backup.*

@@ -24,7 +24,7 @@ class AsynczConfig(SchedulerConfig):
     def __init__(
         self,
         scheduler_class: type[SchedulerType] = AsyncIOScheduler,
-        tasks: dict[str, str] = None,
+        tasks: dict[str, str] | None = None,
         timezone: dtimezone | str | None = None,
         configurations: dict[str, dict[str, str]] | None = None,
         **kwargs: dict[str, Any],

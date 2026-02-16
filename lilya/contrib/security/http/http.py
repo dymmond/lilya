@@ -71,11 +71,13 @@ class HTTPBase(HttpSecurityBase, AuthenticationErrorMixin):
         """
 
         return self.build_authentication_exception(
-            headers={"WWW-Authenticate": f"{self.scheme.title()}"},
+            headers={"WWW-Authenticate": f"{(self.scheme or 'Basic').title()}"},
             detail=detail,
         )
 
-    async def __call__(self, request: Request) -> HTTPAuthorizationCredentials | None:
+    async def __call__(
+        self, request: Request
+    ) -> HTTPAuthorizationCredentials | HTTPBasicCredentials | None:
         authorization = request.headers.get("Authorization")
         if not authorization:
             if self.__auto_error__:
@@ -115,7 +117,7 @@ class HTTPBasic(HTTPBase):
         self.__auto_error__ = auto_error
 
     def raise_for_authentication_error(
-        self, status_code: int = HTTP_401_UNAUTHORIZED, detail: str = "Not authenticated"
+        self, detail: str = "Not authenticated", status_code: int = HTTP_401_UNAUTHORIZED
     ) -> HTTPException:
         """
         Raise an authentication error if the query parameter is missing.
@@ -174,7 +176,7 @@ class HTTPBearer(HTTPBase):
         Raise an authentication error if the query parameter is missing.
         """
         return self.build_authentication_exception(
-            detail=detail, headers={"WWW-Authenticate": f"{self.scheme.title()}"}
+            detail=detail, headers={"WWW-Authenticate": f"{(self.scheme or 'Bearer').title()}"}
         )
 
     async def __call__(self, request: Request) -> HTTPAuthorizationCredentials | None:
@@ -219,7 +221,7 @@ class HTTPDigest(HTTPBase):
         Raise an authentication error if the query parameter is missing.
         """
         return self.build_authentication_exception(
-            detail=detail, headers={"WWW-Authenticate": f"{self.scheme.title()}"}
+            detail=detail, headers={"WWW-Authenticate": f"{(self.scheme or 'Digest').title()}"}
         )
 
     async def __call__(self, request: Request) -> HTTPAuthorizationCredentials | None:

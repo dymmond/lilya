@@ -330,12 +330,12 @@ class TestClientTransport(httpx.BaseTransport):
             if isinstance(cast(str, body), str):
                 if self.check_asgi_conformance:
                     raise ASGISpecViolation("ASGI Spec violation: body must be a bytes string")
-                body_bytes: bytes = body.encode("utf-8")
+                body_bytes: bytes = body.encode("utf-8")  # type: ignore[attr-defined]
             elif body is None:
-                body_bytes = b""
+                body_bytes = b""  # type: ignore[unreachable]
             elif isinstance(cast(str, body), GeneratorType):
                 try:
-                    chunk = body.send(None)
+                    chunk = body.send(None)  # type: ignore[attr-defined]
                     if isinstance(chunk, str):
                         if self.check_asgi_conformance:
                             raise ASGISpecViolation(
@@ -420,8 +420,8 @@ class TestClientTransport(httpx.BaseTransport):
 
         response = httpx.Response(**raw_kwargs, request=request)
         if template is not None:
-            response.template = template
-            response.context = context
+            response.template = template  # type: ignore[attr-defined]
+            response.context = context  # type: ignore[attr-defined]
         return response
 
 
@@ -627,7 +627,7 @@ class AsyncTestClientTransport(httpx.AsyncBaseTransport):
             "extensions": {"websocket.http.response": {}},
         }
         self._inject_authenticated_user(scope)
-        return WebSocketTestSession(self.app, scope, portal_factory=None)
+        return WebSocketTestSession(self.app, scope, portal_factory=None)  # type: ignore[arg-type]
 
     def _build_http_scope(
         self,
@@ -712,7 +712,7 @@ class AsyncTestClientTransport(httpx.AsyncBaseTransport):
                     raise ASGISpecViolation("ASGI Spec violation: body must be bytes")
                 body_bytes = body.encode("utf-8")
             elif body is None:
-                body_bytes = b""
+                body_bytes = b""  # type: ignore[unreachable]
             elif isinstance(body, GeneratorType):  # type: ignore[unreachable]
                 try:  # type: ignore[unreachable]
                     chunk = next(body)
@@ -793,6 +793,6 @@ class AsyncTestClientTransport(httpx.AsyncBaseTransport):
 
         response = httpx.Response(**raw_kwargs, request=request)
         if template is not None:
-            response.template = template
-            response.context = context
+            response.template = template  # type: ignore[attr-defined]
+            response.context = context  # type: ignore[attr-defined]
         return response

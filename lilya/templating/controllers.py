@@ -54,7 +54,7 @@ class TemplateControllerMetaclass(type):
             if method_name in attrs:
                 attrs[method_name] = make_wrapper(method_name, attrs[method_name])
 
-        return super().__new__(cls, name, bases, attrs)
+        return super().__new__(cls, name, bases, attrs)  # type: ignore[misc]
 
     def __init__(cls, name: str, bases: Any, dct: Any) -> None:
         """
@@ -105,7 +105,7 @@ class BaseTemplateController(Controller, metaclass=TemplateControllerMetaclass):
     """
 
     __exclude_from_openapi__: bool = True
-    template_name: str = None
+    template_name: str | None = None
     csrf_enabled: bool = False
     csrf_token_form_name: str = "csrf_token"
     context_processors: list[str | Callable] | None = None
@@ -147,7 +147,7 @@ class BaseTemplateController(Controller, metaclass=TemplateControllerMetaclass):
         """
         return get_or_set_csrf_token(
             request,
-            secret=_monkay.settings.secret_key,
+            secret=_monkay.settings.secret_key,  # type: ignore[attr-defined]
             httponly=True,
         )
 

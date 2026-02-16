@@ -153,4 +153,5 @@ def setup_serializer(serializer_config: SerializerConfig | None = None) -> None:
 
     # Gets the serializer instance from the serializer_config
     _serializer = config.get_serializer()
-    serializer.bind_serializer(_serializer)
+    if hasattr(serializer, "bind_serializer"):
+        serializer.bind_serializer(_serializer)

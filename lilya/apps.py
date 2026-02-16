@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Mapping, MutableMapping, Sequence
 from inspect import isawaitable
 from typing import Annotated, Any, ClassVar, ParamSpec, cast
 
@@ -56,6 +56,9 @@ class BaseLilya:
     populate_global_context: (
         Callable[[Connection], dict[str, Any] | Awaitable[dict[str, Any]]] | None
     ) = None
+    middleware_stack: ASGIApp | None = None
+    _fast_http: bool
+    _fast_route: Path | None
 
     @property
     def routes(self) -> list[BasePath]:
@@ -70,12 +73,12 @@ class BaseLilya:
         """
         if not is_boolean:
             if not value:
-                return self.__get_settings_value(self.settings_module, lilya_settings, name)
+                return self.__get_settings_value(self.settings_module, lilya_settings, name)  # type: ignore[attr-defined]
             return value
 
         if value is not None:
             return value
-        return self.__get_settings_value(self.settings_module, lilya_settings, name)
+        return self.__get_settings_value(self.settings_module, lilya_settings, name)  # type: ignore[attr-defined]
 
     def __get_settings_value(
         self,
@@ -109,12 +112,12 @@ class BaseLilya:
         exception_handlers = self._get_exception_handlers()
 
         middleware = [
-            DefineMiddleware(ServerErrorMiddleware, handler=error_handler, debug=self.debug),
-            *self.custom_middleware,
-            DefineMiddleware(ExceptionMiddleware, handlers=exception_handlers, debug=self.debug),
+            DefineMiddleware(ServerErrorMiddleware, handler=error_handler, debug=self.debug),  # type: ignore[attr-defined]
+            *self.custom_middleware,  # type: ignore[attr-defined]
+            DefineMiddleware(ExceptionMiddleware, handlers=exception_handlers, debug=self.debug),  # type: ignore[attr-defined]
         ]
 
-        if self.enable_intercept_global_exceptions:
+        if self.enable_intercept_global_exceptions:  # type: ignore[attr-defined]
             middleware.insert(
                 1,
                 DefineMiddleware(LilyaExceptionMiddleware, handlers=exception_handlers),
@@ -144,7 +147,7 @@ class BaseLilya:
         """
         return {
             key: value
-            for key, value in self.exception_handlers.items()
+            for key, value in self.exception_handlers.items()  # type: ignore[attr-defined]
             if key not in (500, Exception)
         }
 
@@ -388,7 +391,7 @@ class BaseLilya:
             raise RuntimeError("Middlewares cannot be added once the application has started.")
         self._fast_http = False
         self._fast_route = None
-        self.custom_middleware.insert(0, DefineMiddleware(middleware, *args, **kwargs))
+        self.custom_middleware.insert(0, DefineMiddleware(middleware, *args, **kwargs))  # type: ignore[attr-defined]
 
     def add_permission(
         self, permission: type[PermissionProtocol[P]], *args: P.args, **kwargs: P.kwargs
@@ -398,7 +401,7 @@ class BaseLilya:
         """
         if self.router.permission_started:
             raise RuntimeError("Permissions cannot be added once the application has started.")
-        self.router.permissions.insert(0, DefinePermission(permission, *args, **kwargs))
+        self.router.permissions.insert(0, DefinePermission(permission, *args, **kwargs))  # type: ignore[attr-defined]
 
     def add_exception_handler(
         self,
@@ -407,7 +410,7 @@ class BaseLilya:
     ) -> None:
         self._fast_http = False
         self._fast_route = None
-        self.exception_handlers[exception_cls_or_status_code] = handler
+        self.exception_handlers[exception_cls_or_status_code] = handler  # type: ignore[attr-defined]
 
     def add_event_handler(self, event_type: str, func: Callable[[], Any]) -> None:
         self.router.add_event_handler(event_type, func)
@@ -461,8 +464,8 @@ class BaseLilya:
                 middleware=middleware,
                 permissions=permissions,
                 exception_handlers=exception_handlers,
-                include_in_schema=include_in_schema,
-                deprecated=deprecated,
+                include_in_schema=include_in_schema if include_in_schema is not None else True,
+                deprecated=deprecated if deprecated is not None else False,
             )
         )
 
@@ -496,17 +499,17 @@ class BaseLilya:
                 middleware=middleware,
                 permissions=permissions,
                 exception_handlers=exception_handlers,
-                include_in_schema=include_in_schema,
-                deprecated=deprecated,
+                include_in_schema=include_in_schema if include_in_schema is not None else True,
+                deprecated=deprecated if deprecated is not None else False,
             )
         )
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         scope["app"] = self
-        if self.root_path:
-            scope["root_path"] = self.root_path
+        if self.root_path:  # type: ignore[attr-defined]
+            scope["root_path"] = self.root_path  # type: ignore[attr-defined]
         if scope["type"] == "http" and (
-            self.exception_handlers.get(500) or self.exception_handlers.get(Exception)
+            self.exception_handlers.get(500) or self.exception_handlers.get(Exception)  # type: ignore[attr-defined]
         ):
             scope["lilya.error_handler"] = self._get_error_handler()
 
@@ -528,7 +531,7 @@ class BaseLilya:
             if self._fast_http and self.register_as_global_instance:
                 await self._dispatch(scope, receive, send)
             else:
-                use_monkay_context = self.settings_module is not None
+                use_monkay_context = self.settings_module is not None  # type: ignore[attr-defined]
                 if not use_monkay_context:
                     try:
                         current_instance = _monkay.instance
@@ -538,7 +541,7 @@ class BaseLilya:
 
                 if use_monkay_context:
                     with (
-                        _monkay.with_settings(self.settings),
+                        _monkay.with_settings(self.settings),  # type: ignore[attr-defined]
                         _monkay.with_instance(self),
                     ):
                         await self._dispatch(scope, receive, send)
@@ -550,9 +553,9 @@ class BaseLilya:
 
     async def _dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
         if self._fast_http and scope["type"] == "http" and self._fast_route is not None:
-            response_started = False  # type: ignore
+            response_started = False
 
-            async def sender(message: dict[str, Any]) -> None:
+            async def sender(message: MutableMapping[str, Any]) -> None:
                 nonlocal response_started
                 if message.get("type") == "http.response.start":
                     response_started = True
@@ -594,18 +597,22 @@ class BaseLilya:
             except HTTPException as exc:
                 if response_started:
                     raise
+                response: Response | None = None
                 if getattr(exc, "response", None) is not None:
                     response = exc.response
-                elif exc.status_code in {
+                elif exc.status_code is not None and exc.status_code in {
                     status.HTTP_204_NO_CONTENT,
                     status.HTTP_304_NOT_MODIFIED,
                 }:
                     response = Response(status_code=exc.status_code, headers=exc.headers)
                 else:
                     response = PlainText(
-                        exc.detail, status_code=exc.status_code, headers=exc.headers
+                        exc.detail,
+                        status_code=exc.status_code or status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        headers=exc.headers,
                     )
-                await response(scope, receive, sender)
+                if response is not None:
+                    await response(scope, receive, sender)
             except Exception:
                 if response_started:
                     raise
@@ -1093,7 +1100,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
             ),
         ] = None,
         enable_openapi: Annotated[
-            bool,
+            bool | None,
             Doc(
                 """
                 Enable or disable OpenAPI documentation generation. Defaults to False.
@@ -1109,7 +1116,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
             ),
         ] = None,
         enable_intercept_global_exceptions: Annotated[
-            bool,
+            bool | None,
             Doc(
                 """
                 By default, exception handlers are raised when a handler triggers but not
@@ -1189,9 +1196,9 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
         self.logging_config = self.load_settings_value("logging_config", logging_config)
         self.serializer_config = self.load_settings_value("serializer_config", serializer_config)
         self.state = State()
-        self.middleware_stack: ASGIApp | None = None
-        self._fast_http: bool = False
-        self._fast_route: Path | None = None
+        self.middleware_stack = None
+        self._fast_http = False
+        self._fast_route = None
         self.enable_openapi = self.load_settings_value(
             "enable_openapi", enable_openapi, is_boolean=True
         )
@@ -1235,7 +1242,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
                 on_startup=_on_startup,
                 on_shutdown=_on_shutdown,
                 lifespan=_lifespan,
-                include_in_schema=include_in_schema,
+                include_in_schema=include_in_schema if include_in_schema is not None else True,
                 settings_module=self.settings_module,
                 before_request=self.before_request_callbacks,
                 after_request=self.after_request_callbacks,

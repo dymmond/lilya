@@ -104,7 +104,7 @@ class TrustedHostMiddleware(MiddlewareProtocol):
         scope[self.scope_flag_name] = False
         if found_www_redirect and self.www_redirect:
             url = URL.build_from_scope(scope=scope)
-            redirect_url = url.replace(netloc="www." + url.netloc)
+            redirect_url = url.replace(netloc="www." + (url.netloc or ""))
             response = RedirectResponse(url=str(redirect_url))
         elif self.block_untrusted_hosts:
             response = PlainText("Invalid host header", status_code=400)

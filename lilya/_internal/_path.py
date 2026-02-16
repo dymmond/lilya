@@ -168,7 +168,7 @@ def update_paths_and_convertors(
     param_name: str,
     convertor: Transformer[Any],
     match: re.Match,
-) -> tuple[str, str, dict[str, Transformer[Any]], int, str, str]:
+) -> tuple[str, str, dict[str, Transformer[Any]], int, str, str | None]:
     path_start = path[index : match.start()]
 
     path_regex += re.escape(path_start)
@@ -176,7 +176,7 @@ def update_paths_and_convertors(
 
     path_format += path_start
     path_format += f"{{{param_name}}}"
-    duplicate_param: str = None
+    duplicate_param: str | None = None
 
     if param_name in param_convertors:
         duplicate_param = param_name

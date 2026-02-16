@@ -12,6 +12,7 @@ from sayer import Argument, Option, command, error
 from lilya.cli.env import DirectiveEnv
 from lilya.cli.exceptions import DirectiveError
 from lilya.cli.terminal.utils import get_log_config, get_ui_toolkit
+from lilya.types import ASGIApp
 
 
 def get_app_tree(module_paths: list[Path], discovery_file: str) -> Tree:
@@ -132,9 +133,15 @@ def runserver(
         toolkit.print(f"Importing module '{env.path}'", tag="Lilya")
         toolkit.print_line()
 
-        if env.module_info.module_paths:
+        module_info = env.module_info
+        if (
+            module_info
+            and module_info.module_paths
+            and module_info.discovery_file
+            and module_info.module_import
+        ):
             root_tree = get_app_tree(
-                env.module_info.module_paths, discovery_file=env.module_info.discovery_file
+                module_info.module_paths, discovery_file=module_info.discovery_file
             )
             toolkit.print(root_tree, tag="module")
             toolkit.print_line()
@@ -143,8 +150,8 @@ def runserver(
                 tag="code",
             )
             toolkit.print(
-                f"[underline]from [bold]{env.module_info.module_import[0]}[/bold] import [bold]{env.module_info.module_import[1]}[/bold]",
-                tag=env.module_info.module_import[1],
+                f"[underline]from [bold]{module_info.module_import[0]}[/bold] import [bold]{module_info.module_import[1]}[/bold]",
+                tag=module_info.module_import[1],
             )
 
         url = f"http://{host}:{port}"
@@ -180,16 +187,17 @@ def runserver(
         )
 
         if debug and env.lilya_app:
-            env.lilya_app.debug = debug
+            env.lilya_app.debug = debug  # type: ignore[attr-defined]
 
         toolkit.print_line()
 
         # Determine which app path or object to run
+        app_target: str | ASGIApp
         if path:
             # User explicitly provided the app path (e.g., myproject.main:app)
             app_target = path
             toolkit.print(f"Using app path provided: [green]{path}[/green]", tag="Lilya")
-        elif getattr(env, "path", None):
+        elif env.path:
             # Use discovered or environment app path
             app_target = env.path
         else:
@@ -203,7 +211,7 @@ def runserver(
             app_to_run = env.app or app_target
         else:
             # Use import path string for reload/workers compatibility
-            app_to_run = app_target  # type: ignore[assignment]
+            app_to_run = app_target
 
         uvicorn.run(
             # in case of no reload and workers, we might end up initializing twice when

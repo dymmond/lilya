@@ -55,9 +55,13 @@ class Encoder(Generic[T]):
     __type__: type | tuple[type, ...] | None = None
 
     def is_type(self, value: Any) -> bool:
+        if self.__type__ is None:
+            return False
         return isinstance(value, self.__type__)
 
     def is_type_structure(self, value: Any) -> bool:
+        if self.__type__ is None:
+            return False
         return isclass(value) and issubclass(value, self.__type__)
 
 
@@ -217,7 +221,7 @@ class ENCODER_TYPES_TYPE(_ENCODER_TYPES_TYPE_BASE):
     # ContextVar interface
     name: str
 
-    def set(self, value: _ENCODER_TYPES_TYPE_BASE) -> Token: ...
+    def set(self, value: _ENCODER_TYPES_TYPE_BASE) -> Token: ...  # type: ignore[empty-body]
 
     def get(
         self, default: _ENCODER_TYPES_TYPE_BASE | None = None
@@ -285,6 +289,9 @@ def json_encode_default(
     """
     encoder_types = ENCODER_TYPES.get()
 
+    if encoder_types is None:
+        raise ValueError(f"Object of type '{type(value).__name__}' is not JSON serializable.")
+
     for encoder in encoder_types:
         if hasattr(encoder, "serialize") and encoder.is_type(value):
             return encoder.serialize(value)
@@ -343,6 +350,8 @@ def json_encode(
         value = _exclude_none_recursively(value)
 
     if with_encoders is None:
+        if json_encode_fn is None:
+            raise TypeError("json_encode_fn cannot be None")
         result = json_encode_fn(value, default=json_encode_default)
         if post_transform_fn is None:
             return result
@@ -387,6 +396,9 @@ def apply_structure(
     """
     if with_encoders is None:
         encoder_types = ENCODER_TYPES.get()
+
+        if encoder_types is None:
+            return value
 
         for encoder in encoder_types:
             if (

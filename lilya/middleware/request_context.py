@@ -36,7 +36,6 @@ class RequestContextMiddleware(ABC, MiddlewareProtocol):
         Args:
             app (ASGIApp): The ASGI application instance.
         """
-        super().__init__(app)
         self.app = app
         self.scopes: set[str] = {ScopeType.HTTP, ScopeType.WEBSOCKET}
 

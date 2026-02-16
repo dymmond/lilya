@@ -126,7 +126,7 @@ class ExceptionMiddleware(MiddlewareProtocol):
             handler = None
 
             if isinstance(exc, HTTPException):
-                handler = self._status_handlers.get(exc.status_code)
+                handler = self._status_handlers.get(exc.status_code or 500)
 
             if handler is None:
                 for cls in type(exc).__mro__:
@@ -165,7 +165,7 @@ class ExceptionMiddleware(MiddlewareProtocol):
         }:
             return Response(status_code=exc.status_code, headers=exc.headers)
 
-        return PlainText(exc.detail, status_code=exc.status_code, headers=exc.headers)
+        return PlainText(exc.detail, status_code=exc.status_code or 500, headers=exc.headers)
 
     async def websocket_exception(self, websocket: WebSocket, exc: Exception) -> None:
         """

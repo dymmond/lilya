@@ -54,7 +54,7 @@ class OpenAPIConfig(BaseModel):
     """
 
     title: Annotated[
-        str | None,
+        str,
         Doc(
             """
             Title of the application/API documentation.
@@ -62,7 +62,7 @@ class OpenAPIConfig(BaseModel):
         ),
     ] = "Lilya"
     version: Annotated[
-        str | None,
+        str,
         Doc(
             """
             The version of the API documentation.
@@ -118,7 +118,7 @@ class OpenAPIConfig(BaseModel):
         ),
     ] = None
     servers: Annotated[
-        list[dict[str, str | Any]] | None,
+        list[dict[str, str | Any]],
         Doc(
             """
             A python list with dictionary compatible with OpenAPI specification.
@@ -134,7 +134,7 @@ class OpenAPIConfig(BaseModel):
         ),
     ] = None
     openapi_version: Annotated[
-        str | None,
+        str,
         Doc(
             """
             The version of the OpenAPI being used. Lilya uses the version 3.1.0 by
@@ -195,7 +195,7 @@ class OpenAPIConfig(BaseModel):
         ),
     ] = "/docs/oauth2-redirect"
     redoc_js_url: Annotated[
-        str | None,
+        str,
         Doc(
             """
             String default URL where the ReDoc Javascript is located
@@ -206,7 +206,7 @@ class OpenAPIConfig(BaseModel):
         ),
     ] = "https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js"
     redoc_favicon_url: Annotated[
-        str | None,
+        str,
         Doc(
             """
             String default URL where the ReDoc favicon is located
@@ -234,7 +234,7 @@ class OpenAPIConfig(BaseModel):
         ),
     ] = None
     swagger_js_url: Annotated[
-        str | None,
+        str,
         Doc(
             """
             Boolean flag indicating if the google fonts shall be used
@@ -243,7 +243,7 @@ class OpenAPIConfig(BaseModel):
         ),
     ] = "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.4/swagger-ui-bundle.min.js"
     swagger_css_url: Annotated[
-        str | None,
+        str,
         Doc(
             """
             String default URL where the Swagger Javascript is located
@@ -254,7 +254,7 @@ class OpenAPIConfig(BaseModel):
         ),
     ] = "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.4/swagger-ui.min.css"
     swagger_favicon_url: Annotated[
-        str | None,
+        str,
         Doc(
             """
             String default URL where the Swagger favicon is located
@@ -274,7 +274,7 @@ class OpenAPIConfig(BaseModel):
         ),
     ] = True
     stoplight_js_url: Annotated[
-        str | None,
+        str,
         Doc(
             """
             Boolean flag indicating if the google fonts shall be used
@@ -283,7 +283,7 @@ class OpenAPIConfig(BaseModel):
         ),
     ] = "https://unpkg.com/@stoplight/elements/web-components.min.js"
     stoplight_css_url: Annotated[
-        str | None,
+        str,
         Doc(
             """
             String default URL where the Stoplight CSS is located
@@ -327,7 +327,7 @@ class OpenAPIConfig(BaseModel):
         ),
     ] = "/docs/rapidoc"
     rapidoc_js_url: Annotated[
-        str | None,
+        str,
         Doc(
             """
             String default URL where the Stoplight Javascript is located
@@ -336,7 +336,7 @@ class OpenAPIConfig(BaseModel):
         ),
     ] = "https://unpkg.com/rapidoc@9.3.4/dist/rapidoc-min.js"
     rapidoc_favicon_url: Annotated[
-        str | None,
+        str,
         Doc(
             """
             String default URL where the RapiDoc favicon is located
@@ -369,7 +369,7 @@ class OpenAPIConfig(BaseModel):
             description=self.description,
             routes=app.routes,
             tags=self.tags,
-            servers=self.servers,
+            servers=self.servers or [{"url": "/"}],
             terms_of_service=self.terms_of_service,  # type: ignore
             contact=self.contact,
             license=self.license,
@@ -470,7 +470,7 @@ class OpenAPIConfig(BaseModel):
                     title=self.title + " - Stoplight Elements",
                     stoplight_js=self.stoplight_js_url,
                     stoplight_css=self.stoplight_css_url,
-                    stoplight_favicon_url=self.stoplight_favicon_url,
+                    stoplight_favicon_url=self.stoplight_favicon_url or "",
                 )
 
             app.add_route(

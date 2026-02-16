@@ -55,12 +55,13 @@ class SessionFixingMiddleware(MiddlewareProtocol):
         session_clientip = session.get(self.session_name_clientip)
         if session_clientip is None:
             session[self.session_name_clientip] = clientip
-            self.notify_fn(
-                old_session=session,
-                new_session=session,
-                old_ip=None,
-                new_ip=clientip,
-            )
+            if self.notify_fn:
+                self.notify_fn(
+                    old_session=session,
+                    new_session=session,
+                    old_ip=None,
+                    new_ip=clientip,
+                )
         elif session_clientip != clientip:
             if self.notify_fn:
                 old_session = session.copy()

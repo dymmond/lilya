@@ -161,5 +161,5 @@ def create_async_client(
 
     if dependency_overrides is not None:
         for key, override in dependency_overrides.items():
-            client.app.override_dependency(key, override)
+            client.app.override_dependency(key, override)  # type: ignore[attr-defined]
     return client

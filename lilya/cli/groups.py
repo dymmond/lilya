@@ -36,11 +36,15 @@ class DirectiveGroup(SayerGroup):
         )
 
     def add_command(
-        self, cmd: click.Command, name: str | None = None, is_custom: bool = False
+        self,
+        cmd: click.Command | typing.Any,
+        name: str | None = None,
+        is_custom: bool = False,
+        **kwargs: typing.Any,
     ) -> None:
         if cmd.callback:
             cmd.callback = self.wrap_args(cmd.callback)
-        return super().add_command(cmd, name, is_custom=is_custom)
+        return super().add_command(cmd, name, is_custom=is_custom, **kwargs)
 
     def wrap_args(self, func: Callable[..., T]) -> Callable[..., T]:
         original = inspect.unwrap(func)
@@ -64,7 +68,7 @@ class DirectiveGroup(SayerGroup):
         as one of the params of any subcommand.
         """
         args = [*ctx.protected_args, *ctx.args]
-        cmd_name, cmd, args = self.resolve_command(ctx, args)
+        cmd_name, cmd, args = self.resolve_command(ctx, args)  # type: ignore[misc]
         sub_ctx = cmd.make_context(cmd_name, args, parent=ctx)
 
         settings = sub_ctx.params.get("settings", None)

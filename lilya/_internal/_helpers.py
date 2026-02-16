@@ -64,7 +64,7 @@ class HeaderHelper:
         return bool(status_code not in (204, 304) and not (100 <= status_code < 200))
 
     @classmethod
-    def get_content_type(self, charset: str, media_type: str | None = None) -> str:
+    def get_content_type(self, charset: str, media_type: str | None = None) -> str | None:
         """
         Builds the content-type based on the media type and charset.
         """

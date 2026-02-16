@@ -4,7 +4,7 @@ from ._internal.websockets import (
     WebSocketTestSession,
 )
 from .async_client import AsyncTestClient
-from .base import TestClient
+from .base import TestClient  # type: ignore[attr-defined]
 from .helpers import create_async_client, create_client
 from .utils import override_settings
 

@@ -79,14 +79,19 @@ class DirectiveEnv:
         _path = os.getenv(LILYA_DISCOVER_APP) if not path else path
         _app = self.find_app(path=_path, cwd=cwd)
 
+        if not _app.app_location or not _app.discovery_file:
+            module_info = ModuleInfo()
+        else:
+            module_info = self.get_module_data_from_path(
+                _app.app_location, _app.path, _app.discovery_file
+            )
+
         return DirectiveEnv(
             path=_app.path,
             app=_app.app,
             lilya_app=_app.lilya_app,
             command_path=command_path,
-            module_info=self.get_module_data_from_path(
-                _app.app_location, _app.path, _app.discovery_file
-            ),
+            module_info=module_info,
         )
 
     def get_module_data_from_path(
@@ -142,7 +147,7 @@ class DirectiveEnv:
         module = import_module(module_str_path)
         app = getattr(module, app_name)
         if isinstance(app, BaseLilya):
-            lilya = app
+            lilya: BaseLilya | None = app
         else:
             lilya = _monkay.instance
         return Scaffold(path=path, app=app, lilya_app=lilya)

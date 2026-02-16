@@ -5,6 +5,8 @@ from pydantic import Field
 from lilya.contrib.openapi.enums import APIKeyIn, SecuritySchemeType
 from lilya.contrib.security.base import OAuthFlows, SecurityScheme
 
+__all__ = ["APIKey", "HTTPBase", "HTTPBearer", "OAuth2", "OpenIdConnect", "OAuthFlows"]
+
 
 class APIKey(SecurityScheme):
     type: Literal["apiKey", "http", "mutualTLS", "oauth2", "openIdConnect"] = Field(
