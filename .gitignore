@@ -4,6 +4,8 @@
 /another/
 /multiple/
 tests/cli/myproject
+tests/cli/another
+tests/cli/multiple
 *.egg-info/
 .hypothesis/
 .idea/
