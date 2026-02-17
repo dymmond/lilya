@@ -14,7 +14,7 @@ authors:
 repository-code: 'https://github.com/dymmond/lilya'
 url: 'https://lilya.dev'
 abstract: >-
-  Lilya is an high-performance ASGI web framework for
+  Lilya is a high-performance ASGI web framework for
   Python.
 keywords:
   - asgi
