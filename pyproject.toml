@@ -289,6 +289,7 @@ test = "hatch test -- {args}"
 test_man = "hatch test -- {args} -s -vv"
 coverage = "hatch test -- --cov=lilya --cov=tests --cov-report=term-missing:skip-covered --cov-report=html tests {args}"
 check_types = "mypy -p lilya"
+verify_docs = "python scripts/verify_docs_src.py"
 
 
 [tool.hatch.envs.hatch-static-analysis]
