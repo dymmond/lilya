@@ -1,0 +1,23 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Lilya
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Tiago
+    family-names: Silva
+    email: tiago@tarsild.io
+repository-code: 'https://github.com/dymmond/lilya'
+url: 'https://lilya.dev'
+abstract: >-
+  Lilya is an high-performance ASGI web framework for
+  Python.
+keywords:
+  - asgi
+  - python
+  - lilya
+license: BSD-3-Clause
