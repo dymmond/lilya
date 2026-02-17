@@ -42,3 +42,4 @@ coverage.*
 example.sqlite
 *.zip
 *.backup.*
+opencode.json
