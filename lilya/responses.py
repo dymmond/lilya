@@ -1140,7 +1140,7 @@ class FileResponse(DispositionResponse):
             )
             subheader: str = ""
             if content_ranges and "content-range" not in self.headers:
-                # TODO: check if there is a better way to escape media_type
+                # Strip whitespace/newlines from media_type per RFC 7230 (no line folding in HTTP headers)
                 media_type = (self.media_type or "").replace(" ", "").replace("\n", "")
                 subheader = (
                     f"--{self.range_multipart_boundary}\ncontent-type: {media_type}\n"
