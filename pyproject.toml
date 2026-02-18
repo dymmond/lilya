@@ -209,6 +209,7 @@ testing = [
     "pydantic>=2.6.0,<3",
     "pytest>=7.2.2,<10.0.0",
     "pytest-asyncio>=0.23.2",
+    "pytest-benchmark>=4.0.0",
     "pytest-cov>=4.0.0,<8.0.0",
     "pytest-mock>=3.12.0",
     "python-multipart>=0.0.13",
@@ -285,9 +286,10 @@ installer = "pip"
 
 [tool.hatch.envs.test.scripts]
 # needs docker services running
-test = "hatch test -- {args}"
-test_man = "hatch test -- {args} -s -vv"
-coverage = "hatch test -- --cov=lilya --cov=tests --cov-report=term-missing:skip-covered --cov-report=html tests {args}"
+test = "hatch test -- --benchmark-disable {args}"
+test_man = "hatch test -- --benchmark-disable {args} -s -vv"
+coverage = "hatch test -- --benchmark-disable --cov=lilya --cov=tests --cov-report=term-missing:skip-covered --cov-report=html tests {args}"
+benchmark = "hatch test -- --benchmark-only -v {args}"
 check_types = "mypy -p lilya"
 verify_docs = "python scripts/verify_docs_src.py"
 
