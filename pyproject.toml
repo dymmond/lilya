@@ -370,7 +370,9 @@ combine-as-imports = true
 parallel = true
 context = '${CONTEXT}'
 source = ["tests", "lilya"]
-# omit = []
+omit = [
+    "tests/cli/myproject/.gitignore",
+]
 
 [tool.coverage.report]
 # Ratchet up toward 100% — current baseline measured on 2026-02-16
