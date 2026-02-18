@@ -1,5 +1,4 @@
 import asyncio
-import warnings
 from collections.abc import Generator
 
 import pytest
@@ -23,10 +22,4 @@ def event_loop() -> Generator:
 @pytest.fixture
 def client():
     """Fixture to provide a test client for the Lilya CLI."""
-    warnings.filterwarnings(
-        "ignore",
-        message=".*protected_args.*",
-        category=DeprecationWarning,
-        module="sayer.*",
-    )
     return SayerTestClient(lilya_cli)
