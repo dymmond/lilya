@@ -238,40 +238,51 @@ class AsyncTestClient(httpx.AsyncClient):
         if follow_redirects is not None:
             redirect = follow_redirects
 
-        if stream:
-            # If streaming is requested, manually enter the async context manager
-            # to retrieve the response object.
-            return await self.stream(
-                method=method,
-                url=url,
+        # httpx 0.28+ deprecated per-request cookies= parameter
+        # Save current cookies, merge per-request cookies, then restore after request
+        if cookies is not None:
+            _saved_cookies = dict(self.cookies)
+            self.cookies.update(cookies)
+        else:
+            _saved_cookies = None
+
+        try:
+            if stream:
+                # If streaming is requested, manually enter the async context manager
+                # to retrieve the response object.
+                return await self.stream(
+                    method=method,
+                    url=url,
+                    content=content,
+                    data=data,
+                    files=files,
+                    json=json,
+                    params=params,
+                    headers=headers,
+                    auth=auth,
+                    timeout=timeout,
+                    extensions=extensions,
+                    follow_redirects=follow_redirects or httpx._client.USE_CLIENT_DEFAULT,
+                ).__aenter__()
+
+            return await super().request(
+                method,
+                url,
                 content=content,
                 data=data,
                 files=files,
                 json=json,
                 params=params,
                 headers=headers,
-                cookies=cookies,
                 auth=auth,
+                follow_redirects=redirect,
                 timeout=timeout,
                 extensions=extensions,
-                follow_redirects=follow_redirects or httpx._client.USE_CLIENT_DEFAULT,
-            ).__aenter__()
-
-        return await super().request(
-            method,
-            url,
-            content=content,
-            data=data,
-            files=files,
-            json=json,
-            params=params,
-            headers=headers,
-            cookies=cookies,
-            auth=auth,
-            follow_redirects=redirect,
-            timeout=timeout,
-            extensions=extensions,
-        )
+            )
+        finally:
+            if _saved_cookies is not None:
+                self.cookies.clear()
+                self.cookies.update(_saved_cookies)
 
     async def get(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
         """

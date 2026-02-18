@@ -4,6 +4,7 @@ import inspect
 import os
 import sys
 import typing
+import warnings
 from collections.abc import Callable
 from functools import wraps
 from typing import TypeVar
@@ -67,7 +68,11 @@ class DirectiveGroup(SayerGroup):
         Exports any LILYA_SETTINGS_MODULE to the environment if --settings is passed and exists
         as one of the params of any subcommand.
         """
-        args = [*ctx.protected_args, *ctx.args]
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message=".*protected_args.*", category=DeprecationWarning
+            )
+            args = [*ctx.protected_args, *ctx.args]
         cmd_name, cmd, args = self.resolve_command(ctx, args)  # type: ignore[misc]
         sub_ctx = cmd.make_context(cmd_name, args, parent=ctx)
 

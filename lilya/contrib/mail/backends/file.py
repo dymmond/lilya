@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from email.generator import BytesGenerator
 from email.policy import default as default_policy
 from pathlib import Path
@@ -52,7 +52,7 @@ class FileBackend(BaseMailBackend):
         """
         email_message = await build_email_message(message)
 
-        timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S-%f")
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S-%f")
         safe_subject = "".join(
             char for char in (message.subject or "no-subject") if char.isalnum() or char in "-_"
         )[:60]
