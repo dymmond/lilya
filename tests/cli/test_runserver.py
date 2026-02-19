@@ -52,7 +52,7 @@ def create_folders():
 async def test_runserver_uses_cli_path(monkeypatch):
     """
     Ensures that runserver uses the CLI `path` argument when provided
-    and calls uvicorn.run() with correct parameters.
+    and calls palfrey.run() with correct parameters.
     """
     (o, e, ss) = run_cmd("tests.cli.main:app", "lilya createproject myproject")
     assert ss == 0
@@ -65,8 +65,8 @@ async def test_runserver_uses_cli_path(monkeypatch):
 
     monkeypatch.setenv("LILYA_DEFAULT_APP", "")
 
-    fake_uvicorn = types.SimpleNamespace(run=fake_run)
-    sys.modules["uvicorn"] = fake_uvicorn
+    fake_palfrey = types.SimpleNamespace(run=fake_run)
+    sys.modules["palfrey"] = fake_palfrey
 
     # Simulate a fake Lilya app
     os.environ.pop("LILYA_DEFAULT_APP", None)
@@ -105,7 +105,7 @@ async def test_runserver_uses_cli_path(monkeypatch):
     )
 
     assert called
-    assert called["app"] == app
+    assert called["config_or_app"] == app
     assert called["port"] == 9000
     assert called["host"] == "127.0.0.1"
     assert called["reload"] is False
@@ -134,7 +134,7 @@ def test_runserver_sets_custom_settings(monkeypatch):
         called.update(kwargs)
         return None
 
-    sys.modules["uvicorn"] = types.SimpleNamespace(run=fake_run)
+    sys.modules["palfrey"] = types.SimpleNamespace(run=fake_run)
     monkeypatch.delenv("LILYA_SETTINGS_MODULE", raising=False)
 
     env = runserver_module.DirectiveEnv()
@@ -168,7 +168,7 @@ def test_runserver_uses_default_settings(monkeypatch):
     def fake_run(**_):
         return None
 
-    sys.modules["uvicorn"] = types.SimpleNamespace(run=fake_run)
+    sys.modules["palfrey"] = types.SimpleNamespace(run=fake_run)
 
     class FakeSettings:
         __class__ = type("Settings", (), {"__module__": "lilya.conf.default"})
@@ -197,11 +197,11 @@ def test_runserver_uses_default_settings(monkeypatch):
     runserver_module.runserver.callback(path="tests.cli.main:app")
 
 
-def test_runserver_raises_directive_error_if_uvicorn_missing(monkeypatch):
+def test_runserver_raises_directive_error_if_palfrey_missing(monkeypatch):
     original_import = builtins.__import__
 
     def fake_import(name, *a, **kw):
-        if name == "uvicorn":
+        if name == "palfrey":
             raise ImportError()
         return original_import(name, *a, **kw)
 
@@ -237,7 +237,7 @@ def test_runserver_uses_env_path(monkeypatch):
         called.update(kwargs)
         return None
 
-    sys.modules["uvicorn"] = types.SimpleNamespace(run=fake_run)
+    sys.modules["palfrey"] = types.SimpleNamespace(run=fake_run)
 
     env = runserver_module.DirectiveEnv()
     env.app = app
@@ -258,7 +258,7 @@ def test_runserver_uses_env_path(monkeypatch):
 
     runserver_module.runserver.callback(path=None)
 
-    assert called["app"] == app
+    assert called["config_or_app"] == app
 
 
 def test_runserver_exits_if_no_path(monkeypatch):
@@ -289,7 +289,7 @@ def test_runserver_exits_if_no_path(monkeypatch):
 
 def test_runserver_with_reload_or_workers(monkeypatch):
     called = {}
-    sys.modules["uvicorn"] = types.SimpleNamespace(run=lambda **kw: called.update(kw))
+    sys.modules["palfrey"] = types.SimpleNamespace(run=lambda **kw: called.update(kw))
 
     env = runserver_module.DirectiveEnv()
     env.app = app
@@ -311,4 +311,4 @@ def test_runserver_with_reload_or_workers(monkeypatch):
     runserver_module.runserver.callback(path="tests.cli.main:app", reload=True)
 
     # When reload=True, it should use string path, not app object
-    assert called["app"] == "tests.cli.main:app"
+    assert called["config_or_app"] == "tests.cli.main:app"

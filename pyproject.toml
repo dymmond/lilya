@@ -79,7 +79,7 @@ keywords = [
     "async-framework",
     "non-blocking",
     "event-driven",
-    "uvicorn",
+    "palfrey",
     "hypercorn",
     "anyio",
 
@@ -152,7 +152,7 @@ all = [
     # The base client for Lilya
     "sayer>=0.7.4",
     # The server for runserver command
-    "uvicorn[standard]>=0.29.0",
+    "palfrey[standard]>=0.1.1",
     # HTTP client for Lilya
     "httpx>=0.25.0",
     # For sessions
@@ -172,7 +172,7 @@ cli = [
     # The base client for Lilya
     "sayer>=0.7.4",
     # The server for runserver command
-    "uvicorn[standard]>=0.29.0",
+    "palfrey[standard]>=0.1.1",
 ]
 
 standard = [
@@ -185,7 +185,7 @@ standard = [
     # The base client for Lilya
     "sayer>=0.7.4",
     # The server for runserver command
-    "uvicorn[standard]>=0.29.0",
+    "palfrey[standard]>=0.1.1",
 ]
 test = ["httpx>=0.25.0"]
 testing = [
@@ -379,7 +379,7 @@ omit = [
 fail_under = 80
 
 [[tool.mypy.overrides]]
-module = ["multipart.*", "mako.*", "uvicorn.*", "jwt.*", "yaml", "msgpack", "magic"]
+module = ["multipart.*", "mako.*", "palfrey.*", "jwt.*", "yaml", "msgpack", "magic"]
 ignore_missing_imports = true
 ignore_errors = true
 
