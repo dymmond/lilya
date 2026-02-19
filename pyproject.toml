@@ -152,7 +152,7 @@ all = [
     # The base client for Lilya
     "sayer>=0.7.4",
     # The server for runserver command
-    "palfrey[standard]>=0.1.0",
+    "palfrey[standard]>=0.1.1",
     # HTTP client for Lilya
     "httpx>=0.25.0",
     # For sessions
@@ -172,7 +172,7 @@ cli = [
     # The base client for Lilya
     "sayer>=0.7.4",
     # The server for runserver command
-    "palfrey[standard]>=0.1.0",
+    "palfrey[standard]>=0.1.1",
 ]
 
 standard = [
@@ -185,7 +185,7 @@ standard = [
     # The base client for Lilya
     "sayer>=0.7.4",
     # The server for runserver command
-    "palfrey[standard]>=0.1.0",
+    "palfrey[standard]>=0.1.1",
 ]
 test = ["httpx>=0.25.0"]
 testing = [

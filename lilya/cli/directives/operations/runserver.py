@@ -222,10 +222,10 @@ def runserver(
             # Use import path string for reload/workers compatibility
             app_to_run = app_target
 
-        palfrey.run(
+        palfrey.run(  # type: ignore[call-overload]
             # in case of no reload and workers, we might end up initializing twice when
             # using a function, so use app instead
-            app=app_to_run,
+            config_or_app=app_to_run,
             port=port,
             host=host,
             reload=reload,
