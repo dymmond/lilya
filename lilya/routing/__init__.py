@@ -5,6 +5,7 @@ from lilya._internal._events import (
     AsyncLifespan as AsyncLifespan,
     handle_lifespan_events as handle_lifespan_events,
 )
+from lilya._internal._path import compile_path, get_route_path
 from lilya.conf import _monkay as _monkay
 from lilya.conf.global_settings import Settings as Settings
 from lilya.contrib.documentation import Doc as Doc
@@ -66,4 +67,6 @@ __all__ = [
     "WebSocketPath",
     "WebSocketRoute",
     "get_name",
+    "compile_path",
+    "get_route_path",
 ]
