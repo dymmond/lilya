@@ -43,26 +43,35 @@ def runserver(
     path: Annotated[str | None, Argument(help="Path to the application.", required=False)],
     *,
     port: Annotated[
-        int, Option(8000, "-p", help="Port to run the development server.", show_default=True)
+        int,
+        Option(8000, "-p", help="Port to run the development server.", show_default=True),
     ],
     reload: Annotated[
-        bool, Option(False, "-r", help="Reload server on file changes.", show_default=True)
+        bool,
+        Option(False, "-r", help="Reload server on file changes.", show_default=True),
     ],
     host: Annotated[
-        str, Option(default="localhost", help="Host to run the server on.", show_default=True)
+        str,
+        Option(default="localhost", help="Host to run the server on.", show_default=True),
     ],
     debug: Annotated[
-        bool, Option(default=True, help="Run the server in debug mode.", show_default=True)
+        bool,
+        Option(default=True, help="Run the server in debug mode.", show_default=True),
     ],
     log_level: Annotated[
-        str, Option(default="debug", help="Log level for the server.", show_default=True)
+        str,
+        Option(default="debug", help="Log level for the server.", show_default=True),
     ],
     lifespan: Annotated[
         str, Option(default="on", help="Enable lifespan events.", show_default=True)
     ],
     settings: Annotated[
         str | None,
-        Option(help="Any custom settings to be initialised.", required=False, show_default=False),
+        Option(
+            help="Any custom settings to be initialised.",
+            required=False,
+            show_default=False,
+        ),
     ],
     proxy_headers: Annotated[
         bool,
@@ -112,10 +121,10 @@ def runserver(
             os.environ.setdefault("LILYA_SETTINGS_MODULE", settings)
 
         try:
-            import uvicorn
+            import palfrey
         except ImportError:
             raise DirectiveError(
-                detail="Uvicorn needs to be installed to run Lilya. Run `pip install lilya[cli]`."
+                detail="Palfrey needs to be installed to run Lilya. Run `pip install lilya[cli]`."
             ) from None
 
         server_environment: str = ""
@@ -213,7 +222,7 @@ def runserver(
             # Use import path string for reload/workers compatibility
             app_to_run = app_target
 
-        uvicorn.run(
+        palfrey.run(
             # in case of no reload and workers, we might end up initializing twice when
             # using a function, so use app instead
             app=app_to_run,
