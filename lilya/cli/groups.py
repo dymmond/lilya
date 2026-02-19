@@ -4,6 +4,7 @@ import inspect
 import os
 import sys
 import typing
+import warnings
 from collections.abc import Callable
 from functools import wraps
 from typing import TypeVar
@@ -67,14 +68,27 @@ class DirectiveGroup(SayerGroup):
         Exports any LILYA_SETTINGS_MODULE to the environment if --settings is passed and exists
         as one of the params of any subcommand.
         """
-        args = [*ctx.protected_args, *ctx.args]
+        args = self._collect_remaining_args(ctx)
         cmd_name, cmd, args = self.resolve_command(ctx, args)  # type: ignore[misc]
         sub_ctx = cmd.make_context(cmd_name, args, parent=ctx)
 
-        settings = sub_ctx.params.get("settings", None)
-        if settings:
-            settings_module: str = os.environ.get(LILYA_SETTINGS_MODULE, settings)
+        settings = sub_ctx.params.get("settings")
+        if isinstance(settings, str) and settings:
+            settings_module = os.environ.get(LILYA_SETTINGS_MODULE, settings)
             os.environ.setdefault(LILYA_SETTINGS_MODULE, settings_module)
+
+    @staticmethod
+    def _collect_remaining_args(ctx: click.Context) -> list[str]:
+        protected: typing.Iterable[str] = getattr(ctx, "protected_args", ())
+        if protected:
+            warnings.warn(
+                "click.Context.protected_args is deprecated; Lilya CLI now "
+                "falls back to Context.args automatically.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            return [*protected, *ctx.args]
+        return list(ctx.args)
 
     def invoke(self, ctx: click.Context) -> typing.Any:
         """

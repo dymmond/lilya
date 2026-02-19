@@ -85,5 +85,5 @@ def test_post_invalid_json_is_error(test_client_factory) -> None:
     app = build_app()
     client = TestClient(app, raise_server_exceptions=False)
 
-    r = client.post("/users", data=b'{"user_id": "u2", "email": ')  # invalid JSON
+    r = client.post("/users", content=b'{"user_id": "u2", "email": ')  # invalid JSON
     assert r.status_code >= 400

@@ -83,8 +83,10 @@ def test_handles_missing_files_gracefully(tmp_path):
     env_file = tmp_path / "nonexistent.env"
     yaml_file = tmp_path / "nonexistent.yaml"
 
-    loader = EnvironLoader(env_file=env_file)
-    loader.load_from_files(env_file=str(env_file), yaml_file=str(yaml_file))
+    with pytest.warns(UserWarning):
+        loader = EnvironLoader(env_file=env_file)
+    with pytest.warns(UserWarning):
+        loader.load_from_files(env_file=str(env_file), yaml_file=str(yaml_file))
     assert isinstance(loader, EnvironLoader)
     assert len(loader) == len(os.environ)
 
@@ -110,7 +112,8 @@ PROJECT=two
     )
     loader = EnvironLoader()
     # Should not raise if strict=False
-    loader._read_env_file(env_file, strict=False)
+    with pytest.warns(UserWarning):
+        loader._read_env_file(env_file, strict=False)
 
 
 def test_yaml_expansion_with_env(tmp_path, monkeypatch):
