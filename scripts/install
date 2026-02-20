@@ -17,4 +17,4 @@ else
 fi
 
 "$PIP" install -U pip
-"$PIP" install -e .[standard,all,testing,docs,cli,openapi]
+"$PIP" install -e .[standard,all,testing,docs,cli,openapi,benchmarks]

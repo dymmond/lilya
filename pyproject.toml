@@ -245,6 +245,17 @@ docs = [
 
 openapi = ["pydantic>=2.11.5,<3"]
 
+benchmarks = [
+  "palfrey",
+  "httpx>=0.27",
+  "websockets>=12.0",
+  "starlette>=0.37",
+  "fastapi>=0.112",
+  "litestar>=2.10",
+  "ravyn[standard]",
+  "matplotlib>=3.8"
+]
+
 [tool.hatch.version]
 path = "lilya/__init__.py"
 
