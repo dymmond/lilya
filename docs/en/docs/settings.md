@@ -85,9 +85,9 @@ if nothing is provided then it will execute the application defaults.
 === "Without LILYA_SETTINGS_MODULE"
 
     ```shell
-    uvicorn src:app --reload
+    palfrey src:app --reload
 
-    INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+    INFO:     Listening on ('127.0.0.1', 8000) (Press CTRL+C to quit)
     INFO:     Started reloader process [28720]
     INFO:     Started server process [28722]
     INFO:     Waiting for application startup.
@@ -97,9 +97,9 @@ if nothing is provided then it will execute the application defaults.
 === "With LILYA_SETTINGS_MODULE"
 
     ```shell
-    LILYA_SETTINGS_MODULE=src.configs.production.ProductionSettings uvicorn src:app
+    LILYA_SETTINGS_MODULE=src.configs.production.ProductionSettings palfrey src:app
 
-    INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+    INFO:     Listening on ('127.0.0.1', 8000) (Press CTRL+C to quit)
     INFO:     Started reloader process [28720]
     INFO:     Started server process [28722]
     INFO:     Waiting for application startup.
@@ -223,9 +223,9 @@ Now we can start the server using the `AppSettings` as global and `InstanceSetti
 via instantiation. The AppSettings from the main_settings.py is used to call from the command-line.
 
 ```shell
-LILYA_SETTINGS_MODULE=src.configs.main_settings.AppSettings uvicorn src:app --reload
+LILYA_SETTINGS_MODULE=src.configs.main_settings.AppSettings palfrey src:app --reload
 
-INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Listening on ('127.0.0.1', 8000) (Press CTRL+C to quit)
 INFO:     Started reloader process [28720]
 INFO:     Started server process [28722]
 INFO:     Waiting for application startup.

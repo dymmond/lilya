@@ -283,8 +283,7 @@ executar com suas configurações personalizadas.
 Assim que a aplicação iniciar, deve ter um *output* na consola semelhante a esta:
 
 ```shell
-INFO:     Uvicorn running on http://localhost:8000 (Press CTRL+C to quit)
-INFO:     Started reloader process [4623] using WatchFiles
+INFO:     Listening on ('127.0.0.1', 8000) (Press CTRL+C to quit)
 INFO:     Started server process [4625]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
@@ -420,7 +419,7 @@ Esta directiva ajuda a iniciar o desenvolvimento local de uma maneira simples, m
 `runserver` do Django, na verdade, como foi inspirado nele, o mesmo nome foi mantido.
 
 !!! Perigo
-    Para usar esta directiva, o `uvicorn` deve estar instalado.
+    Para usar esta directiva, o [palfrey](https://palfrey.dymmond.com) deve estar instalado.
 
 #### Parâmetros
 
@@ -440,7 +439,7 @@ Esta directiva ajuda a iniciar o desenvolvimento local de uma maneira simples, m
 
     <sup>Padrão: `True`</sup>
 
-* **--log-level** - Nível de log que o uvicorn deve usar.
+* **--log-level** - Nível de log que o palfrey deve usar.
 
     <sup>Padrão: `debug`</sup>
 

@@ -10,7 +10,7 @@ requires-python = ">=3.14"
 dependencies = [
   "lilya[standard]>={{ lilya_version }}",
   "gunicorn",
-  "uvicorn"
+  "palfrey"
 ]
 
 [project.optional-dependencies]

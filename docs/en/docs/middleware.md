@@ -162,9 +162,9 @@ to use to start a Lilya application.
 
 
 ```shell
-LILYA_SETTINGS_MODULE=configs.live.AppSettings uvicorn src:app
+LILYA_SETTINGS_MODULE=configs.live.AppSettings palfrey src:app
 
-INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Listening on ('127.0.0.1', 8000) (Press CTRL+C to quit)
 INFO:     Started reloader process [28720]
 INFO:     Started server process [28722]
 INFO:     Waiting for application startup.
