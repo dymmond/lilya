@@ -64,12 +64,12 @@ Let's use:
 
     ```txt
     lilya
-    uvicorn
+    palfrey
     nginx
     supervisor
     ```
 
-**As mentioned in these docs, we will be using uvicorn for our examples but you are free to use whatever you want**.
+**As mentioned in these docs, we will be using [palfrey](https://palfrey.dymmond.com) for our examples but you are free to use whatever you want**.
 
 ### The application
 
@@ -111,7 +111,7 @@ It looks complex and big but let's translate what this configuration is actually
 
 1. Creates the initial configurations for the `supervisor` and `supervisord`.
 2. Declares instructions how to start the [nginx](#nginx).
-3. Declares the instrutions how to start the `uvicorn` and the lilya application.
+3. Declares the instructions how to start the [palfrey](https://palfrey.dymmond.com) and the lilya application.
 
 ### Dockefile
 
@@ -171,7 +171,7 @@ CMD ["/usr/bin/supervisord"]
     system folders.
 
 7. Tells `supervisor` to start running. The system will be using the `supervisor.conf` file created and it will
-trigger the instructions declared like starting the nginx and uvicorn.
+trigger the instructions declared like starting the nginx and [palfrey](https://palfrey.dymmond.com).
 
 ## Build the docker image
 

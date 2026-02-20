@@ -228,8 +228,8 @@ can see [more details](./directives.md#runserver) how to use it and the correspo
 It is time to run this directive.
 
 !!! Note
-    For development purposes, Lilya uses `uvicorn`. If you don't have it installed, please run
-    `pip install uvicorn`.
+    For development purposes, Lilya uses [palfrey](https://palfrey.dymmond.com). If you don't have it installed, please run
+    `pip install palfrey`.
 
 ##### Using the auto discover
 

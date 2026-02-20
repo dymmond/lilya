@@ -236,7 +236,7 @@ class Header(MultiDict, CIMultiDict):
         return self.encoded_multi_items()
 
     def __contains__(self, item: object) -> bool:
-        # required by uvicorn which assumes the headers are a container like list.
+        # required by palfrey which assumes the headers are a container like list.
         # elaborate for generic use
         if isinstance(item, bytes):
             item = item.decode("utf-8", errors="surrogateescape")

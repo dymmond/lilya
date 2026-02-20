@@ -61,12 +61,12 @@ Vamos utilizar:
 
     ```txt
     lilya
-    uvicorn
+    palfrey
     nginx
     supervisor
     ```
 
-**Como mencionado nestes documentos, estaremos a utilizar o uvicorn nos exemplos, mas é livre de usar o que quiser**
+**Como mencionado nestes documentos, estaremos a utilizar o [palfrey](https://palfrey.dymmond.com) nos exemplos, mas é livre de usar o que quiser**
 
 ### A aplicação
 
@@ -106,7 +106,7 @@ Parece complexo e extenso, mas vamos traduzir o que esta configuração está re
 
 1. Cria as configurações iniciais para o `supervisor` e `supervisord`.
 2. Declara as instruções de como iniciar o [nginx](#nginx).
-3. Declara as instruções de como iniciar o `uvicorn` e a aplicação lilya.
+3. Declara as instruções de como iniciar o [palfrey](https://palfrey.dymmond.com) e a aplicação lilya.
 
 ### Dockefile
 
@@ -163,7 +163,7 @@ CMD ["/usr/bin/supervisord"]
     Também copie os ficheiros `nginx.conf` e `supervisor.conf` previamente criados para as respectivas pastas do sistema.
 
 7. Indique ao `supervisor` para começar a ser executado. O sistema usará o ficheiro `supervisor.conf` criado e acionará
-as instruções declaradas, como iniciar o Nginx e o Uvicorn.
+as instruções declaradas, como iniciar o Nginx e o Palfrey.
 ## Construir a imagem Docker
 
 Com o [Dockerfile](#dockefile) criado, agora é hora de construir a imagem.

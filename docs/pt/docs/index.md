@@ -91,7 +91,7 @@ $ pip install lilya[all]
 
 ### Adicional
 
-Também vai querer instalar um servidor local ASGI como o [uvicorn](https://www.uvicorn.org/) ou
+Também vai querer instalar um servidor local ASGI como o [palfrey](https://palfrey.dymmond.com), [uvicorn](https://www.uvicorn.org/) ou
 [hypercorn](https://pgjones.gitlab.io/hypercorn/).
 
 ## Início rápido
@@ -145,11 +145,11 @@ ou [FastAPI][fastapi] ou qualquer outro, na realidade.
 Para executar a aplicação do exemplo.
 
 ```shell
-$ uvicorn myapp:app
+$ palfrey myapp:app
 INFO:     Started server process [140552]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
-INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Listening on ('127.0.0.1', 8000) (Press CTRL+C to quit)
 ```
 
 [esmerald]: https://lilya.dev/esmerald

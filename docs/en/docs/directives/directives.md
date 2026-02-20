@@ -276,8 +276,7 @@ run with your custom settings.
 Once the application starts, you should have an output in the console similar to this:
 
 ```shell
-INFO:     Uvicorn running on http://localhost:8000 (Press CTRL+C to quit)
-INFO:     Started reloader process [4623] using WatchFiles
+INFO:     Listening on ('127.0.0.1', 8000) (Press CTRL+C to quit)
 INFO:     Started server process [4625]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
@@ -414,7 +413,7 @@ This directive helps you starting your local development in a simple way, very s
 `runserver` from Django, actually, since it was inspired by it, the same name was kept.
 
 !!! Danger
-    To use this directive, `uvicorn` must be installed.
+    To use this directive, [palfrey](https://palfrey.dymmond.com) must be installed.
 
 #### Parameters
 
@@ -434,7 +433,7 @@ This directive helps you starting your local development in a simple way, very s
 
     <sup>Default: `True`</sup>
 
-* **--log-level** - What log level should uvicorn run.
+* **--log-level** - What log level should palfrey run.
 
     <sup>Default: `debug`</sup>
 

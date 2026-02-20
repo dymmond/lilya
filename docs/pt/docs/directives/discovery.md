@@ -213,8 +213,8 @@ Pode ver [mais detalhes](./directives.md#runserver) de como usá-la e os parâme
 É hora de executar esta directiva.
 
 !!! Note
-    Para fins de desenvolvimento, o Lilya usa o `uvicorn`. Se não o tiver instalado, execute
-    `pip install uvicorn`.
+    Para fins de desenvolvimento, o Lilya usa o [palfrey](https://palfrey.dymmond.com). Se não o tiver instalado, execute
+    `pip install palfrey`.
 
 ##### Usando a descoberta automática
 
