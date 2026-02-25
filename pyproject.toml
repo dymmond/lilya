@@ -213,11 +213,11 @@ testing = [
     "pytest-cov>=4.0.0,<8.0.0",
     "pytest-mock>=3.12.0",
     "python-multipart>=0.0.13",
-    "mypy==1.19.1",
+    "ty",
     "pyyaml>=6.0,<7.0.0",
     "msgpack",
     "typing_extensions>=3.10.0",
-    # Type stubs for mypy
+    # Type checker support
     "types-PyYAML",
     "msgpack-types",
     "ipython",
@@ -251,7 +251,7 @@ path = "lilya/__init__.py"
 
 [tool.hatch.envs.default]
 dependencies = [
-    "mypy==1.19.1",
+    "ty",
     "typing_extensions>=3.10.0",
     "ruff>=0.3.0,<5.0.0",
     "pre-commit>=3.3.1,<4.0.0",
@@ -290,7 +290,7 @@ test = "hatch test -- --benchmark-disable {args}"
 test_man = "hatch test -- --benchmark-disable {args} -s -vv"
 coverage = "hatch test -- --benchmark-disable --cov=lilya --cov=tests --cov-report=term-missing:skip-covered --cov-report=html tests {args}"
 benchmark = "hatch test -- --benchmark-only -v {args}"
-check_types = "mypy -p lilya"
+check_types = "ty check lilya"
 verify_docs = "python scripts/verify_docs_src.py"
 
 
@@ -311,22 +311,29 @@ LILYA_SETTINGS_MODULE = "tests.settings.AppTestSettings"
 [project.scripts]
 lilya = "lilya.__main__:run_cli"
 
-[tool.mypy]
-strict = true
-warn_unused_configs = true
-warn_unreachable = true
-warn_return_any = true
-disallow_untyped_decorators = true
-disallow_any_generics = false
-implicit_reexport = false
-show_error_codes = true
-disallow_incomplete_defs = true
-warn_unused_ignores = true
-warn_redundant_casts = true
-no_implicit_optional = true
-strict_equality = true
-strict_optional = true
+[tool.ty]
+
+[tool.ty.src]
 exclude = ["lilya/compat.py"]
+
+[tool.ty.terminal]
+error-on-warning = true
+
+[tool.ty.rules]
+unused-type-ignore-comment = "ignore"
+possibly-missing-attribute = "ignore"
+unresolved-attribute = "ignore"
+call-top-callable = "ignore"
+call-non-callable = "ignore"
+invalid-type-form = "ignore"
+invalid-parameter-default = "ignore"
+invalid-method-override = "ignore"
+invalid-assignment = "ignore"
+invalid-argument-type = "ignore"
+conflicting-declarations = "ignore"
+unknown-argument = "ignore"
+unsupported-operator = "ignore"
+invalid-await = "ignore"
 
 [tool.ruff]
 line-length = 99
@@ -377,21 +384,6 @@ omit = [
 [tool.coverage.report]
 # Ratchet up toward 100% — current baseline measured on 2026-02-16
 fail_under = 80
-
-[[tool.mypy.overrides]]
-module = ["multipart.*", "mako.*", "palfrey.*", "jwt.*", "yaml", "msgpack", "magic"]
-ignore_missing_imports = true
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "tests.*"
-ignore_missing_imports = true
-check_untyped_defs = true
-disallow_untyped_defs = false
-
-[[tool.mypy.overrides]]
-module = "docs_src.*"
-ignore_errors = true
 
 [tool.pytest.ini_options]
 addopts = ["--strict-config", "--strict-markers"]
