@@ -20,6 +20,10 @@
 <a href="https://pypi.org/project/lilya" target="_blank">
     <img src="https://img.shields.io/pypi/pyversions/lilya.svg?color=%2334D058" alt="Supported Python versions">
 </a>
+
+<a href="https://codspeed.io/dymmond/lilya?utm_source=badge" target="_blank">
+    <img src="https://img.shields.io/endpoint?url=https://codspeed.io/badge/dymmond/lilya" alt="CodSpeed">
+</a>
 </p>
 
 ---
