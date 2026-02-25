@@ -1,0 +1,36 @@
+---
+name: CodSpeed
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  benchmarks:
+    name: Run benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          pip install -e ".[testing,cli]"
+
+      - name: Run benchmarks
+        uses: CodSpeedHQ/action@v4
+        env:
+          LILYA_SETTINGS_MODULE: tests.settings.AppTestSettings
+        with:
+          mode: simulation
+          run: pytest tests/benchmarks/ --codspeed
