@@ -22,7 +22,9 @@ class Person(BaseModel):
     summary="Get items for a user",
     description="Returns a list of items belonging to a specific user.",
     query={
-        "limit": OpenAPIQuery(default=5, schema={"type": "integer"}, description="Max items"),
+        "limit": OpenAPIQuery(
+            default=5, schema={"type": "integer"}, description="Max items"
+        ),
         "tags": OpenAPIQuery(
             default=[],
             schema={"type": "array", "items": {"type": "string"}},

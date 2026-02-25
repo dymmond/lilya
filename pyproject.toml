@@ -290,7 +290,7 @@ test = "hatch test -- --benchmark-disable {args}"
 test_man = "hatch test -- --benchmark-disable {args} -s -vv"
 coverage = "hatch test -- --benchmark-disable --cov=lilya --cov=tests --cov-report=term-missing:skip-covered --cov-report=html tests {args}"
 benchmark = "hatch test -- --benchmark-only -v {args}"
-check_types = "ty check lilya"
+check_types = "ty check --error-on-warning --python \"$VIRTUAL_ENV\" lilya "
 verify_docs = "python scripts/verify_docs_src.py"
 
 
