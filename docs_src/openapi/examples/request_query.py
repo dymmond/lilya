@@ -1,7 +1,7 @@
 from lilya.apps import Lilya
 from lilya.routing import Path
 from lilya.contrib.openapi.decorator import openapi
-from lilya.contrib.openapi.params import Query
+from lilya.contrib.openapi.params import OpenAPIQuery
 from lilya.contrib.openapi.datastructures import OpenAPIResponse
 from pydantic import BaseModel
 
@@ -17,8 +17,8 @@ class ErrorModel(BaseModel):
     summary="List items",
     description="Return a paginated list of items",
     query={
-        "limit": Query(default=10, schema={"type": "integer"}, description="Max items"),
-        "tags": Query(
+        "limit": OpenAPIQuery(default=10, schema={"type": "integer"}, description="Max items"),
+        "tags": OpenAPIQuery(
             default=[],
             schema={"type":"array","items":{"type":"string"}},
             style="form",

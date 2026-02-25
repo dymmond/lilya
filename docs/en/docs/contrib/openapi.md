@@ -89,7 +89,7 @@ This is just for explanatory and visual purposes, in reality, Lilya produces a J
 
 ### Query Parameters
 
-To declare query parameters, use the `Query` class from `lilya.contrib.openapi.params`. It accepts:
+To declare query parameters, use the `OpenAPIQuery` class from `lilya.contrib.openapi.params`. It accepts:
 
 * `default`: a default value.
 * `description`: human‐readable text.

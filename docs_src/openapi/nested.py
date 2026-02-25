@@ -1,16 +1,16 @@
 from lilya.contrib.openapi.decorator import openapi
-from lilya.contrib.openapi.params import Query
+from lilya.contrib.openapi.params import OpenAPIQuery
+
 
 @openapi(
     query={
-        "filter": Query(
+        "filter": OpenAPIQuery(
             default={},
             schema={"type": "object", "additionalProperties": {"type": "string"}},
             description="Filter object",
             style="deepObject",
-            explode=True
+            explode=True,
         )
     }
 )
-async def filter_items(request):
-    ...
+async def filter_items(request): ...
