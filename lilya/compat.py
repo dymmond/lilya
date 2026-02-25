@@ -9,7 +9,9 @@ from typing import Any, Generic, Protocol, TypeVar
 
 import anyio
 
+from lilya._internal._module_loading import import_string as import_string  # noqa
 from lilya._internal._urls import reverse as reverse  # noqa
+from lilya._utils import is_class_and_subclass as is_class_and_subclass  # noqa
 
 T = TypeVar("T")
 

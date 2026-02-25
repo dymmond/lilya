@@ -5,6 +5,21 @@ hide:
 
 # Release Notes
 
+## 0.25.0
+
+### Added
+
+- `lilya/.agents/skills/SKILL.md` template for creating reusable skills in the Lilya Agents framework.
+- Expose an alias `OpenAPIQuery` for `Query` in `lilya.contrib.openapi` to allow using it directly in the OpenAPI documentation.
+
+### Changed
+
+- Expose `is_class_and_subclass` in `lilya.compat`.
+- Expose `import_string` in `lilya.compat`.
+- Reorganize internals to remove mypy and validations in favour of `ty`.
+- `lilya.routing` is now a submodule of `lilya` splitting the responsibilities of the routing and the path definitions. This allows to have a cleaner separation of concerns and a better internal structure.
+The public API is not affected and the imports are still the same but internally.
+
 ## 0.24.3
 
 ### Fixed

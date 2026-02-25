@@ -1,7 +1,7 @@
 from lilya.apps import Lilya, ChildLilya
 from lilya.routing import Path, Include
 from lilya.contrib.openapi.decorator import openapi
-from lilya.contrib.openapi.params import Query
+from lilya.contrib.openapi.params import OpenAPIQuery
 from lilya.contrib.openapi.datastructures import OpenAPIResponse
 from pydantic import BaseModel
 
@@ -22,8 +22,10 @@ class Person(BaseModel):
     summary="Get items for a user",
     description="Returns a list of items belonging to a specific user.",
     query={
-        "limit": Query(default=5, schema={"type": "integer"}, description="Max items"),
-        "tags": Query(
+        "limit": OpenAPIQuery(
+            default=5, schema={"type": "integer"}, description="Max items"
+        ),
+        "tags": OpenAPIQuery(
             default=[],
             schema={"type": "array", "items": {"type": "string"}},
             style="form",

@@ -64,3 +64,6 @@ class Query(FieldInfo):  # type: ignore[misc]
 
 class ResponseParam(FieldInfo):  # type: ignore[misc]
     ...
+
+
+OpenAPIQuery = Query

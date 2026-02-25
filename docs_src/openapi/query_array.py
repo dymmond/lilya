@@ -1,16 +1,16 @@
 from lilya.contrib.openapi.decorator import openapi
-from lilya.contrib.openapi.params import Query
+from lilya.contrib.openapi.params import OpenAPIQuery
+
 
 @openapi(
     query={
-        "tags": Query(
+        "tags": OpenAPIQuery(
             default=[],
             schema={"type": "array", "items": {"type": "string"}},
             description="Filter by multiple tag names",
             style="form",
-            explode=True
+            explode=True,
         )
     }
 )
-async def filter_by_tags(request):
-    ...
+async def filter_by_tags(request): ...
