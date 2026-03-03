@@ -236,6 +236,7 @@ docs = [
     "zensical>=0.0.23,<0.1.0",
     "griffe-typingdoc>=0.2.2,<1.0",
     "mkdocs-meta-descriptions-plugin>=2.3.0",
+    "mkdocstrings>=0.28.3",
     "mkdocstrings-python>=2.0.3",
     "pyyaml>=6.0,<7.0.0",
     "typing_extensions>=3.10.0",
