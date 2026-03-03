@@ -24,6 +24,7 @@ node_modules/
 results/
 site/
 site_lang/
+docs/generated/
 target/
 .spec-workflow/
 

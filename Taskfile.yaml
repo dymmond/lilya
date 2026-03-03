@@ -37,20 +37,20 @@ tasks:
 
   #---------------------------- DOCS -------------------------------
 
-  update_languages:
-    desc: Updates the local docs with a new language
+  docs_prepare:
+    desc: Prepares documentation sources for Zensical
     cmds:
-      - hatch run docs:update_languages
+      - hatch run docs:prepare
+
+  docs_clean:
+    desc: Cleans generated docs artifacts
+    cmds:
+      - hatch run docs:clean
 
   build:
     desc: Builds the documentation
     cmds:
       - hatch run docs:build
-
-  build_lang:
-    desc: Builds for a givin langage
-    cmds:
-      - hatch run docs:build_lang {{ .LANG }}
 
   serve:
     desc: Runs the documentation in live mode
@@ -61,16 +61,6 @@ tasks:
     desc: Runs the documentation in dev mode
     cmds:
       - hatch run docs:dev
-
-  serve_lang:
-    desc: Runs the documentation in dev mode for a given language
-    cmds:
-      - hatch run docs:serve_lang {{ .LANG }}
-
-  new_lang:
-    desc: Creates a new language
-    cmds:
-      - hatch run docs:new_lang {{ .LANG }}
 
   # --------------------------- TEST ------------------------------------
 

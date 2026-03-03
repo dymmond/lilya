@@ -349,8 +349,6 @@ This approach helps keep templates focused on presentation logic rather than I/O
 
 [jinja2]: https://jinja.palletsprojects.com/en/3.0.x/api/?highlight=environment#writing-filters
 
-Okay, here is the documentation section formatted for MkDocs. It uses standard Markdown with triple backticks for code blocks, specifying the language (`python` or `jinja`). The `{!> ... !}` syntax is kept as it seems to be part of your MkDocs setup for including files.
-
 ## Class-Based Template Controllers
 
 Leveraging Lilya's `Controller` class provides a structured and reusable approach to handling requests.
