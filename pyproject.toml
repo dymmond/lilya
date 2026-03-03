@@ -233,11 +233,8 @@ testing = [
 
 docs = [
     "sayer>=0.7.4",
+    "zensical>=0.0.23,<0.1.0",
     "griffe-typingdoc>=0.2.2,<1.0",
-    "mkdocs>=1.1.2,<2.0.0",
-    "mkdocs-material>=9.4.4",
-    "mdx-include>=1.4.2",
-    "mkdocs-macros-plugin>=0.4.0",
     "mkdocs-meta-descriptions-plugin>=2.3.0",
     "mkdocstrings[python]>=0.23.0",
     "pyyaml>=6.0,<7.0.0",
@@ -266,20 +263,19 @@ clean_pyc = "find . -type f -name \"*.pyc\" -delete"
 clean_pyi = "find . -type f -name \"*.pyi\" -delete"
 clean_pycache = "find . -type d -name \"*__pycache__*\" -delete"
 build_with_check = "hatch build; twine check dist/*"
-lint = "hatch fmt --check && hatch run test:check_types"
-format = "hatch fmt && hatch fmt --check && hatch run test:check_types"
+check_types = "ty check --error-on-warning lilya"
+lint = "hatch fmt --check && ty check --error-on-warning lilya"
+format = "hatch fmt && hatch fmt --check && ty check --error-on-warning lilya"
 
 [tool.hatch.envs.docs]
 features = ["all", "docs"]
 
 [tool.hatch.envs.docs.scripts]
-update_languages = "scripts/docs.py update-languages"
-build = "hatch run docs:update_languages; scripts/docs.py build-all"
-build_lang = "hatch run docs:update_languages; scripts/docs.py build --lang {args}"
-serve = "hatch run docs:update_languages; scripts/docs.py live"
-dev = "hatch run docs:update_languages; scripts/docs.py serve"
-serve_lang = "hatch run docs:update_languages; scripts/docs.py live --lang {args}"
-new_lang = "hatch run docs:update_languages; scripts/docs.py new-lang --lang {args}"
+prepare = "scripts/docs.py prepare"
+clean = "scripts/docs.py clean"
+build = "scripts/docs.py build --clean"
+serve = "scripts/docs.py serve"
+dev = "scripts/docs.py serve"
 
 [tool.hatch.envs.test]
 features = ['testing', "cli"]
@@ -291,7 +287,7 @@ test = "hatch test -- --benchmark-disable {args}"
 test_man = "hatch test -- --benchmark-disable {args} -s -vv"
 coverage = "hatch test -- --benchmark-disable --cov=lilya --cov=tests --cov-report=term-missing:skip-covered --cov-report=html tests {args}"
 benchmark = "hatch test -- --benchmark-only -v {args}"
-check_types = "ty check --error-on-warning --python \"$VIRTUAL_ENV\" lilya "
+check_types = "ty check --error-on-warning lilya"
 verify_docs = "python scripts/verify_docs_src.py"
 
 
