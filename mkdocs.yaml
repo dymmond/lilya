@@ -75,6 +75,7 @@ nav:
 - Resources:
   - resources/index.md
   - applications.md
+  - architecture.md
   - settings.md
   - routing.md
   - controllers.md
@@ -153,6 +154,7 @@ nav:
   - contrib/mail.md
   - contrib/opentelemetry.md
 - contributing.md
+- troubleshooting.md
 - sponsorship.md
 - release-notes.md
 

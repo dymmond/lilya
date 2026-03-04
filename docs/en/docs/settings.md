@@ -107,7 +107,7 @@ INFO:     Application startup complete.
 ```
 
 It is very simple, `LILYA_SETTINGS_MODULE` looks for the custom settings class created for the application
-and loads it in lazy mode and make it globaly available.
+and loads it in lazy mode and make it globally available.
 
 ## The settings_module
 
@@ -254,10 +254,19 @@ The following are the available parameters you can configure inside your `Settin
   The version of the application. Defaults to Lilya's internal version if not set.
 
 * **`logging_level`**: `str`
-  The default logging level for the application. Defaults to `"DEBUG"`.
+  The default logging level for the application. Defaults to `"INFO"`.
 
 * **`logging_config`**: `LoggingConfig | None`
   Provides a logging configuration instance. Defaults to `StandardLoggingConfig`.
+
+* **`serializer_config`**: `SerializerConfig | None`
+  Provides the serializer backend used by request/response serialization.
+
+* **`routes`**: `list`
+  Default initial route collection for the application.
+
+* **`dependencies`**: `Dependencies | None`
+  Default global dependencies available to the application tree.
 
 * **enable_intercept_global_exceptions**: `bool`. This enables the `LilyaExceptionMiddleware` and allow
 global exception handlers to be used in the application besides the normal standard behaviour.
@@ -352,6 +361,17 @@ Where here the post can be directly sent like:
 * **`enforce_return_annotation`**: `bool`
   Enforces return type annotations on handlers. Raises `ImproperlyConfigured` if missing.
 
+* **`redirect_slashes`**: `bool`
+  Enables/disables automatic trailing-slash redirects for HTTP routes.
+
+### Proxy / URL generation
+
+* **`root_path`**: `str | None`
+  Prefix used when app is mounted behind a proxy path.
+
+* **`root_path_in_servers`**: `bool`
+  Controls inclusion of root path in generated OpenAPI `servers` information.
+
 ### Middleware
 
 * **`middleware`**: `Sequence[DefineMiddleware]`
@@ -366,6 +386,9 @@ Where here the post can be directly sent like:
 
 * **`x_frame_options`**: `str | None`
   Controls the `X-Frame-Options` response header (`"DENY"`, `"SAMEORIGIN"`, etc.). Used with `XFrameOptionsMiddleware`.
+
+* **`csrf_token_name`**: `str`
+  Name used for CSRF form field token (`CSRFMiddleware` and related utilities).
 
 ### Events & Lifespan
 
@@ -388,6 +411,26 @@ Where here the post can be directly sent like:
 
 * **`exception_handlers`**: `ExceptionHandler | dict[Any, Any]`
   Global handlers for application exceptions. Can be a dictionary or a single handler.
+
+### Caching
+
+* **`cache_backend`**: `CacheBackend`
+  Default cache backend used by `@cache` decorator when no backend is explicitly set.
+
+* **`cache_default_ttl`**: `int`
+  Default cache TTL used by cache operations.
+
+### Contrib / scheduler settings
+
+* **`timezone`**: `str`
+  Default timezone used by scheduler integrations.
+
+### Internal CLI helpers
+
+These settings are mostly useful when using Lilya CLI shell integrations:
+
+* **`ptpython_config_file`**: `str`
+* **`runserver_theme`**: `dict[str, str]`
 
 ## Accessing settings
 

@@ -88,3 +88,27 @@ Options:
 
 Check how you can leverage the [directives](./directives/directives.md) of Lilya to power your
 application.
+
+## App discovery in practice
+
+The CLI can load your app from:
+
+* `--app module.path:app`
+* `--path` (auto-discovery in a package/file tree)
+* default discovery rules (see [Application Discovery](./directives/discovery.md))
+
+This makes it easier to run commands in monorepos or multi-package projects where app location is not always at root.
+
+## Running project directives
+
+To run a project directive:
+
+```shell
+lilya --app src.main:app run -n createsuperuser
+```
+
+To inspect all directives available in the current app:
+
+```shell
+lilya directives --app src.main:app
+```

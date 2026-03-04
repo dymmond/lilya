@@ -12,6 +12,29 @@ a *Lilyaception*.
 Using this middleware is very simple, let's use Flask as example since it is very fast to spin-up a Flask service
 compared to other giants like Django.
 
+You can mount WSGI applications in multiple ways:
+
+* directly in routes using `Include(..., app=WSGIMiddleware(...))`
+* behind nested includes
+* side-by-side with native Lilya routes
+
+### Why this exists
+
+This is mostly useful when:
+
+* migrating incrementally from WSGI to ASGI;
+* keeping legacy admin/billing modules while new APIs are built in Lilya;
+* reusing existing Flask/Django WSGI apps under selected prefixes.
+
+### Important behavior
+
+* WSGI apps run in a sync model under the adapter.
+* Lilya routes still run as native ASGI handlers.
+* Prefix mapping decides which requests hit WSGI vs Lilya handlers.
+
+!!! note
+    Keep path boundaries explicit when mixing WSGI and Lilya. Prefix collisions are usually the main source of confusion.
+
 === "Simple Routing"
 
 ```python
@@ -48,7 +71,7 @@ compared to other giants like Django.
 {!> ../../../docs_src/wsgi/childlilya.py!}
 ```
 
-You already get the idea, the integrations are endeless!
+You already get the idea, the integrations are endless!
 
 ## Check it
 
@@ -84,3 +107,9 @@ Accessing any `Lilya` endpoint:
     "name": "lilya"
 }
 ```
+
+## Production notes
+
+* Prefer clear mount prefixes (`/legacy`, `/admin`, etc.) over overlapping paths.
+* Keep heavy async workloads in native ASGI routes when possible.
+* Add request logging to verify traffic distribution between WSGI and Lilya branches.

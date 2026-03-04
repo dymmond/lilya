@@ -69,6 +69,23 @@ websocket = WebSocket(scope, receive, send)
 websocket.path_params['username']
 ```
 
+#### Auth, user and session
+
+Just like `Request`, websocket connection data can expose:
+
+* `websocket.auth`
+* `websocket.user`
+* `websocket.session`
+
+These are available when corresponding middleware sets them in the scope.
+
+#### URL reverse helpers
+
+You can reverse routes from a websocket connection using:
+
+* `websocket.path_for(...)`
+* `websocket.url_path_for(...)`
+
 ### Operations
 
 #### Accepting connection
@@ -123,16 +140,27 @@ This approach ensures proper upkeep of the WebSocket's internal state.
 * `await websocket.send(message)`
 * `await websocket.receive()`
 
-#### Send Denial Response
+#### Connection state and cleanup
 
-Should `websocket.close()` be invoked prior to `websocket.accept()`, the server will automatically
-dispatch an HTTP 403 error to the client.
+WebSocket state is tracked internally using:
 
-For customized error responses, the `websocket.send_denial_response()` method can be employed.
-This method facilitates the transmission of the specified response before closing the connection.
+* `websocket.client_state`
+* `websocket.application_state`
 
-* `await websocket.send_denial_response(response)`
+If you try to receive/send in an invalid state, Lilya raises `WebSocketRuntimeError`.
 
-!!! warning
-    This functionality relies on the ASGI server supporting the WebSocket Denial Response extension.
-    In the absence of support, attempting to use it will result in a `RuntimeError` being raised.
+For connection-scoped cleanup, register callbacks:
+
+* `websocket.add_cleanup(fn)`
+
+Cleanup callbacks run when the websocket is closed.
+
+#### WebSocketClose helper
+
+Lilya also provides a `WebSocketClose` ASGI app helper:
+
+```python
+from lilya.websockets import WebSocketClose
+
+close_app = WebSocketClose(code=1000, reason="done")
+```

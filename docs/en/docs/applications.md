@@ -28,7 +28,7 @@ $ curl -X GET http://localhost:8000/user/lilya
 
 ## Create an instance of an application
 
-Creating an appliation instance can be done in different ways and with a great plus of using the
+Creating an application instance can be done in different ways and with a great plus of using the
 [settings](./settings.md) for a cleaner approach.
 
 **Parameters**:
@@ -51,12 +51,66 @@ functions on an application top level. Exception handler callables should be of 
 arguments, and may be be either standard functions, or async functions.
 * **on_startup** - A list of callables to run on application startup. Startup handler callables do not take any
 arguments, and may be be either standard functions, or async functions.
-* **lifepan** - The lifespan context function is a newer style that replaces on_startup / on_shutdown handlers.
+* **lifespan** - The lifespan context function is a newer style that replaces on_startup / on_shutdown handlers.
 Use one or the other, not both.
 * **include_in_schema** - Boolean flag to indicate if should be schema included or not. This can be useful
-if you are depracating a whole [Included](./routing.md#include) Lilya application in favour of a new one. The flag
+if you are deprecating a whole [Included](./routing.md#include) Lilya application in favour of a new one. The flag
 should indicate that all the paths should be considered deprecated.
 * **redirect_slashes** - Flag to enable/disable redirect slashes for the handlers. It is enabled by default.
+
+## Decorating routes directly in the app
+
+Lilya can also register routes using decorators directly on the application instance.
+
+```python
+from lilya.apps import Lilya
+
+app = Lilya()
+
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
+@app.route("/items", methods=["GET", "POST"])
+async def items():
+    return {"items": []}
+```
+
+This style is useful when you prefer route declaration close to handler definitions.
+
+For advanced route composition (namespaces, nested include trees, host routing), keep using [routing](./routing.md).
+
+## Runtime route registration
+
+Besides the constructor `routes=[...]`, the app can register routes dynamically:
+
+* `app.add_route(...)`
+* `app.add_websocket_route(...)`
+* `app.include(...)`
+* `app.host(...)`
+* `app.add_child_lilya(...)`
+* `app.add_asgi_app(...)`
+
+This can be useful for plugin-like systems or dynamically assembled applications.
+
+## Dependency overrides (testing and controlled swaps)
+
+Application-level dependency overrides are available at runtime:
+
+* `app.override_dependency(key, dependency)`
+* `app.reset_dependency_overrides()`
+
+This is the recommended way to replace integrations (mail, database adapters, external clients) in tests without rewriting routes.
+
+## Introspection graph
+
+Every app instance exposes `app.graph`, which gives a complete graph representation of routes, includes, middleware, permissions and links between them.
+
+This is very useful for architecture audits and debugging large route trees.
+
+Read more in [Introspection](./introspection.md) and [Architecture Overview](./architecture.md).
 
 ## Application settings
 
