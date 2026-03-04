@@ -304,6 +304,16 @@ shouldn't always be recreated per request.
 
 You can set the scope when defining a dependency with `Provide`.
 
+```mermaid
+flowchart LR
+    A["Incoming request"] --> B["Scope.REQUEST"]
+    B --> C["new instance per request"]
+    A --> D["Scope.APP"]
+    D --> E["cached per app instance"]
+    A --> F["Scope.GLOBAL"]
+    F --> G["shared process-wide instance"]
+```
+
 ### Example: Request Scope (default)
 
 ```python
@@ -334,6 +344,14 @@ Here, `config` is created once globally and shared across multiple app instances
 * **Use `APP` scope** for shared infrastructure like API clients, feature toggles, or metrics reporters.
 * **Use `GLOBAL` scope** sparingly, typically for immutable data or global registries.
 * **Avoid mixing lifetimes** in the same dependency chain (e.g., injecting a request-scoped dependency into a global one).
+
+### Scope selection quick guide
+
+If you are unsure which scope to choose:
+
+1. Choose `REQUEST` when dependency state must not leak between requests.
+2. Choose `APP` for expensive clients/resources tied to app lifecycle.
+3. Choose `GLOBAL` only when process-wide sharing is intentional and safe.
 
 
 ## Dependency Overrides

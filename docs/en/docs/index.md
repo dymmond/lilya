@@ -138,6 +138,34 @@ and inject them for you.
 
 Pretty cool, right? This is just scratching the surface.
 
+## Learning paths
+
+Depending on where you are, this sequence tends to work best.
+
+### Beginner path
+
+1. [Applications](./applications.md)
+2. [Architecture Overview](./architecture.md)
+3. [Routing](./routing.md)
+4. [Requests](./requests.md)
+5. [Responses](./responses.md)
+6. [Settings](./settings.md)
+
+### Production path
+
+1. [Dependencies](./dependencies.md)
+2. [Middleware](./middleware.md)
+3. [Permissions](./permissions.md)
+4. [Exceptions](./exceptions.md)
+5. [Troubleshooting](./troubleshooting.md)
+
+### Advanced path
+
+1. [Introspection](./introspection.md)
+2. [OpenAPI](./contrib/openapi.md)
+3. [WebSocket](./websockets.md)
+4. [WSGI frameworks](./wsgi.md)
+
 ## Definitions
 
 Lilya can be considered a framework or a toolkit and the reasoning for it its because each component

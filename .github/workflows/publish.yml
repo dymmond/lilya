@@ -19,7 +19,6 @@ jobs:
       - name: "Install dependencies"
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          pip install click==8.2.2
           pip install hatch
       - name: "Check for security vulnerabilities"
         run: |

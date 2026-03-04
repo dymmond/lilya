@@ -113,3 +113,9 @@ Accessing any `Lilya` endpoint:
 * Prefer clear mount prefixes (`/legacy`, `/admin`, etc.) over overlapping paths.
 * Keep heavy async workloads in native ASGI routes when possible.
 * Add request logging to verify traffic distribution between WSGI and Lilya branches.
+
+## See also
+
+* [Routing](./routing.md#include) for mounting composition using includes.
+* [Applications](./applications.md) for app-level setup patterns.
+* [Troubleshooting](./troubleshooting.md) for common path/mount issues.

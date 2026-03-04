@@ -76,4 +76,10 @@ This reduces bandwidth and improves browser cache behavior for unchanged assets.
 * Symlink setups require `follow_symlink=True` when needed.
 * Multi-worker deployments should rely on shared static storage when applicable.
 
+## See also
+
+* [Routing](./routing.md#include) for mount/include behavior.
+* [Server Push](./server-push.md) for proactive asset delivery.
+* [Troubleshooting](./troubleshooting.md) for static path debugging checklist.
+
 [pathlike]: https://docs.python.org/3/library/os.html#os.PathLike

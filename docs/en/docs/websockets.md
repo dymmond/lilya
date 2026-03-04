@@ -164,3 +164,9 @@ from lilya.websockets import WebSocketClose
 
 close_app = WebSocketClose(code=1000, reason="done")
 ```
+
+## See also
+
+* [Routing](./routing.md#websocketpath) for websocket route registration.
+* [Dependencies](./dependencies.md) for websocket-compatible dependency injection.
+* [Test Client](./test-client.md) for websocket test sessions.
