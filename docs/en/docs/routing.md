@@ -13,6 +13,15 @@ Lilya handles with those cases without any kind of issues at all.
 The Router is the main object that links the whole Lilya to the [Path](#path),
 [WebSocketPath](#websocketpath) and [Include](#include).
 
+```mermaid
+flowchart TD
+    A["Incoming scope"] --> B["Host match (optional)"]
+    B --> C["Include/Path/WebSocketPath search"]
+    C --> D["Matched route chain"]
+    D --> E["Apply dependencies + permissions + middleware"]
+    E --> F["Dispatch handler"]
+```
+
 ## Router class
 
 The router class is composed by many attributes that are by default populated within the application but Lilya

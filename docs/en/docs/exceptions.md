@@ -2,6 +2,16 @@
 
 Exception handlers are, as the name suggests, the handlers in case an exception of type X occurs.
 
+```mermaid
+flowchart TD
+    A["Route / middleware code"] --> B["Exception raised"]
+    B --> C{"Matching handler?"}
+    C -->|Yes| D["Custom exception handler"]
+    C -->|No| E["Default exception handling"]
+    D --> F["Response returned"]
+    E --> F
+```
+
 ## Exception handlers
 
 In every level the `exception_handler` parameter (among others) are available to be used and handle specific exeptions
@@ -73,3 +83,18 @@ In the default `ExceptionMiddleware` implementation, plain-text HTTP responses a
 ## WebSocketException
 
 The `WebSocketException` class is designed for raising errors specifically within WebSocket endpoints.
+
+```python
+from lilya.exceptions import WebSocketException
+
+
+async def ws(websocket):
+    await websocket.accept()
+    raise WebSocketException(code=1008, reason="policy violation")
+```
+
+## See also
+
+* [Routing](./routing.md#middleware-exception-handlers-and-permissions) for exception layering in route chains.
+* [Middleware](./middleware.md) for middleware-level error behavior.
+* [Troubleshooting](./troubleshooting.md) for common runtime exception diagnostics.

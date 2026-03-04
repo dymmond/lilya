@@ -31,6 +31,18 @@ At a high level, this is what happens for a typical HTTP request:
 
 The same idea is used for WebSockets, but with `websocket.connect`, `websocket.receive`, and `websocket.close` events.
 
+```mermaid
+flowchart TD
+    A["ASGI server"] --> B["Lilya app"]
+    B --> C["Middleware stack"]
+    C --> D["Router match"]
+    D --> E["Path/Include/Host chain"]
+    E --> F["Dependencies resolution"]
+    F --> G["Permissions + route middleware"]
+    G --> H["Handler execution"]
+    H --> I["Response dispatch"]
+```
+
 ## Route composition model
 
 `Include` is one of the key pieces in Lilya architecture.
@@ -43,6 +55,17 @@ It allows:
 * applying middleware/permissions/dependencies per include boundary.
 
 This lets you treat each feature area as a sub-system, instead of keeping everything in one large route list.
+
+```mermaid
+flowchart LR
+    A["Lilya"] --> B["Include /users"]
+    A --> C["Include /billing"]
+    B --> D["Path /"]
+    B --> E["Path /{id:int}"]
+    C --> F["ChildLilya"]
+    F --> G["Path /invoices"]
+    F --> H["WebSocketPath /events"]
+```
 
 ## Layers and precedence
 
@@ -110,3 +133,12 @@ A common production setup:
 * Feature-local dependencies and permissions.
 
 This keeps startup simple while still allowing clear boundaries between teams and domains.
+
+## Where to go next
+
+To continue from here:
+
+1. [Routing](./routing.md) for composition and matching behavior.
+2. [Dependencies](./dependencies.md) for scoped dependency design.
+3. [Middleware](./middleware.md) for cross-cutting request policies.
+4. [Introspection](./introspection.md) for graph-level inspection and audits.

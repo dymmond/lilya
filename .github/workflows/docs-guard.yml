@@ -74,7 +74,10 @@ jobs:
             cat changed_files.txt
             exit 1
           fi
-
+      - name: "Install hatch"
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          pip install hatch
       - name: Build docs (optional but recommended)
         if: always()
         run: |

@@ -29,3 +29,8 @@ If support is unavailable, `await request.send_push_promise(...)` is safely igno
 * Use push only for assets that are very likely needed immediately.
 * Avoid pushing large assets blindly.
 * Measure real browser behavior before relying on push for performance gains.
+
+## See also
+
+* [Request](./requests.md) for `send_push_promise()` and request extension checks.
+* [StaticFiles](./static-files.md) for static asset serving behavior.
