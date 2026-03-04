@@ -10,6 +10,13 @@ for a `request` type of object.
 from lilya.requests import Request
 ```
 
+## Conceptual model
+
+If you want the full execution context around request processing, read:
+
+* [ASGI Mental Model](./concepts/asgi-mental-model.md)
+* [Request Lifecycle](./concepts/request-lifecycle.md)
+
 ## The `Request` class
 
 A `Request` instance receives a `scope`, a `receive` and a `send` parameter.
@@ -144,6 +151,17 @@ request.cookies.get('a-cookie')
 
 Now here it is different. To extract and use the `body`, a `receive` must be passed into the
 request instance and it can be extracted in different ways.
+
+##### Body consumption state model
+
+Use one body strategy per request flow:
+
+| First call | Allowed follow-up calls |
+| --- | --- |
+| `await request.body()` | `json()` and `text()` use buffered body |
+| `await request.json()` | `body()` and `text()` use buffered body |
+| `await request.text()` | `body()` and `json()` use buffered body |
+| `request.stream()` | Do not call `body()`, `json()`, or `form()` afterwards |
 
 ##### As bytes
 
@@ -471,3 +489,9 @@ The `before_request` and `after_request` cycles **are lists** of callables, whic
 in the list.
 
 **Example**: `[CallableOne, CallableTwo, CallableThree]` will execute from left to right.
+
+## See also
+
+* [Request Lifecycle](./concepts/request-lifecycle.md) for the complete dispatch sequence.
+* [Responses](./responses.md) for return value and encoding behavior.
+* [Troubleshooting](./troubleshooting.md#stream-consumed-when-reading-body) for body-consumption errors.

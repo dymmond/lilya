@@ -4,6 +4,21 @@ Welcome to the definitive guide for using dependency injection in Lilya. In this
 how to leverage the `Provide` and `Provides` primitives to cleanly manage shared resources, services, and configuration across your application,
 includes (sub-applications), and individual routes.
 
+## Conceptual model: resolution order and failure modes
+
+Dependency resolution follows Lilya's layering model:
+
+1. App-level registrations
+2. Include/Host-level registrations
+3. Route-level registrations
+4. Handler parameter declarations (`Provides` and fallback)
+
+Common failure modes to keep in mind:
+
+* Required `Provides()` parameter without matching key -> runtime error.
+* Dependency key registered but never consumed -> startup configuration error.
+* Mixed usage of request-scoped DI and request-less `Depends` in the same mental model -> confusing lifecycle assumptions.
+
 ## Why Dependency Injection?
 
 Dependency injection helps:
@@ -432,3 +447,9 @@ which always call the given function directly.
 * `Depends` and `inject` are used **outside** the request/response cycle and must not be mistaken for the rest.
 
 With these patterns, you'll keep your Lilya code clean, testable, and maintainable.
+
+## See also
+
+* [Layering and Precedence](./concepts/layering-and-precedence.md) for merge order intuition.
+* [Request Lifecycle](./concepts/request-lifecycle.md) for where DI is evaluated during dispatch.
+* [Build a Modular API](./tutorials/build-a-modular-api.md) for feature-scoped dependency design.

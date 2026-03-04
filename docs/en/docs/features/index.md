@@ -11,3 +11,5 @@ A practical sequence for most projects:
 3. [Dependencies](../dependencies.md)
 4. [Exceptions](../exceptions.md)
 5. [Tasks](../tasks.md)
+
+If you want implementation walkthroughs, continue with [Tutorials](../tutorials/index.md).

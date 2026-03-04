@@ -10,6 +10,15 @@ quite possibly, many requests.
 This can be particularly useful for setting up your application resources and cleaning them up.
 These cycles cover the **whole** application.
 
+## Lifespan vs startup/shutdown lists
+
+| Approach | Best when |
+| --- | --- |
+| `on_startup` and `on_shutdown` | You prefer explicit lists of handlers |
+| `lifespan` async context manager | You want one cohesive setup/teardown block |
+
+Both cover whole-application startup and shutdown phases. Use one style per app instance.
+
 ## Types of events
 
 Currently Lilya supports **on_startup**, **on_shutdown** and **lifespan**.
@@ -160,3 +169,9 @@ This time the `@asynccontextmanager` wasn't necessary to decorate the class. The
 implemented by that is done via `aenter` and `aexit`.
 
 Async context managers can be a powerful tool in your application.
+
+## See also
+
+* [Lifecycle Events](./lifecycle.md) for global and app-level lifecycle hooks.
+* [First Production Run](./getting-started/first-production-run.md) for startup configuration in deployment.
+* [Troubleshooting](./troubleshooting.md) for startup/shutdown diagnostics.

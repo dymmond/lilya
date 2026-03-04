@@ -5,6 +5,17 @@ What is docker? Quoting them
 > Docker is a set of platform as a service products that use OS-level virtualization to deliver software in packages
 called containers.
 
+## Before using this guide
+
+This page focuses on one deployment shape, not the only one. Validate baseline runtime controls first:
+
+- Environment-specific settings
+- Security middleware (`TrustedHostMiddleware`, HTTPS strategy)
+- Logging and health checks
+- Rollback path
+
+Use [Production Readiness Checklist](./guides/production-readiness-checklist.md) alongside this guide.
+
 ## The conventional way
 
 When you deploy usually you need to:
@@ -204,3 +215,9 @@ check if it works as you need it to work.
 It was given an example of how to build some files similar to the ones needed for a given deployment.
 
 **You should always check and change any of the examples to fit your needs and make sure it works for you**
+
+## See also
+
+* [Deployment Fundamentals](./intro.md)
+* [First Production Run](./getting-started/first-production-run.md)
+* [Troubleshooting](./troubleshooting.md)

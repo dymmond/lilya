@@ -37,6 +37,30 @@ hide:
 
 ---
 
+## Choose your path
+
+If you are not sure where to start, pick one of these tracks:
+
+### New to Lilya
+
+1. [Install and First App](./getting-started/install-and-first-app.md)
+2. [ASGI Mental Model](./concepts/asgi-mental-model.md)
+3. [Request Lifecycle](./concepts/request-lifecycle.md)
+4. [Build a Modular API](./tutorials/build-a-modular-api.md)
+
+### Building production APIs
+
+1. [First Production Run](./getting-started/first-production-run.md)
+2. [Layering and Precedence](./concepts/layering-and-precedence.md)
+3. [Production Readiness Checklist](./guides/production-readiness-checklist.md)
+4. [Troubleshooting](./troubleshooting.md)
+
+### I need one task right now
+
+- [Developer Workflow](./guides/developer-workflow-local-dev-test-debug.md)
+- [Migration from FastAPI](./guides/migration-from-fastapi.md)
+- [Docker Deployment](./docker.md)
+
 ## Motivation
 
 In the world of ASGI, alternatives are always great to have and no tool serves it all.
@@ -165,6 +189,8 @@ Depending on where you are, this sequence tends to work best.
 2. [OpenAPI](./contrib/openapi.md)
 3. [WebSocket](./websockets.md)
 4. [WSGI frameworks](./wsgi.md)
+
+If you prefer a step-by-step format, follow [Tutorials](./tutorials/index.md).
 
 ## Definitions
 
