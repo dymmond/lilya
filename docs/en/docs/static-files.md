@@ -18,6 +18,18 @@ Lilya provides a convenient `StaticFiles` class for serving files from a specifi
 For requests that do not match, static files will respond with "404 Not Found" or "405 Method Not Allowed" responses.
 In HTML mode, if a `404.html` file exists, it will be displayed as the 404 response.
 
+## Request behavior
+
+`StaticFiles` serves only `GET` and `HEAD` requests.
+
+If `html=True`:
+
+* directory requests can resolve to `index.html`;
+* paths without trailing slash can be redirected to slash form;
+* `404.html` is used (if present) for not found responses.
+
+When `fall_through=True`, missing files raise `ContinueRouting` and routing can continue to the next matching handler.
+
 As directory also a tuple or list can be provided. This is useful for overwrites or multiple directories which should served under the same
 location.
 
@@ -30,6 +42,11 @@ You can provide multiple `StaticFiles` and use `fall_through=True` for all excep
 ```python
     {!> ../../../docs_src/static_files/overwrite_fall_through.py!}
 ```
+
+This is especially useful for layered assets:
+
+* custom project statics first (`fall_through=True`)
+* package/default statics second (`fall_through=False`)
 
 The `packages` option allows inclusion of "static" directories from within a Python package.
 The Python "bootstrap4" package serves as an example.
@@ -45,5 +62,18 @@ By default, `StaticFiles` looks for the `statics` directory in each package. You
 ```
 
 While you may choose to include static files directly within the "static" directory, using Python packaging to include static files can be beneficial for bundling reusable components.
+
+## Conditional requests and 304 responses
+
+Lilya compares request headers (`If-None-Match`, `If-Modified-Since`) with file response headers and returns `304 Not Modified` when possible.
+
+This reduces bandwidth and improves browser cache behavior for unchanged assets.
+
+## Common pitfalls
+
+* `check_dir=True` and directory missing -> startup/runtime error.
+* File exists but wrong mount prefix -> still 404.
+* Symlink setups require `follow_symlink=True` when needed.
+* Multi-worker deployments should rely on shared static storage when applicable.
 
 [pathlike]: https://docs.python.org/3/library/os.html#os.PathLike

@@ -344,4 +344,4 @@ print(g.explain("/users/{id}"))
 print(g.to_json())
 ```
 
-This example exercises global middleware, route-level middleware and permissions, include-local layers with a child app, and a WebSocket route—all reflected in `ApplicationGraph` and exportable to JSON.
+This example exercises global middleware, route-level middleware and permissions, include-local layers with a child app, and a WebSocket route, all reflected in `ApplicationGraph` and exportable to JSON.

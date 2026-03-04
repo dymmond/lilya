@@ -67,6 +67,53 @@ to inject the **values found by order from the path parameters** for you.
 
 The `customer_id` declared in the `path` was obtained by accessing the `request` object.
 
+## Decorator-based routing
+
+`Lilya` and `Router` both support decorators for route declaration.
+
+**Single-method decorators**
+
+* `get`
+* `head`
+* `post`
+* `put`
+* `patch`
+* `delete`
+* `trace`
+* `options`
+
+**Generic decorators**
+
+* `route(path=..., methods=[...])`
+* `websocket(path=...)`
+
+Example:
+
+```python
+from lilya.apps import Lilya
+
+app = Lilya()
+
+
+@app.get("/users/{user_id:int}")
+async def get_user(user_id: int):
+    return {"user_id": user_id}
+
+
+@app.route("/users", methods=["POST"])
+async def create_user(request):
+    return {"ok": True}
+
+
+@app.websocket("/ws")
+async def ws(websocket):
+    await websocket.accept()
+    await websocket.send_text("connected")
+    await websocket.close()
+```
+
+Decorator routes support the same route-level controls (`middleware`, `permissions`, `exception_handlers`, `dependencies`, `before_request`, `after_request`).
+
 ## Custom Router
 
 Let's assume there are specific **customer** submodules inside a `customers` dedicated file.
@@ -125,7 +172,7 @@ You can add as many `ChildLilya` as you desire, there are no limits.
 
 The example above, it is showing that you could even add the same application within nested includes and for each
 include you can add specific unique [permissions](./permissions.md) and [middlewares](./middleware.md) which are available on each
-instance of the `Include`. The options are endeless.
+instance of the `Include`. The options are endless.
 
 !!! Note
     In terms of organisation, `ChildLilya` has a clean approach to the isolation of responsabilities and allow
@@ -162,6 +209,9 @@ requests (HTTP and Websockets).
 * **exception handlers** - A dictionary of [exception types](./exceptions.md) (or custom exceptions) and the handler
 functions on an application top level. Exception handler callables should be of the form of
 `handler(request, exc) -> response` and may be be either standard functions, or async functions.
+* **dependencies** - A dictionary-like of route dependencies to be resolved for this route.
+* **before_request** - A list of callables executed before this route is handled.
+* **after_request** - A list of callables executed after this route is handled.
 
 ### add_websocket_route()
 
@@ -180,6 +230,9 @@ requests (HTTP and Websockets).
 * **exception handlers** - A dictionary of [exception types](./exceptions.md) (or custom exceptions) and the handler
 functions on an application top level. Exception handler callables should be of the form of
 `handler(request, exc) -> response` and may be be either standard functions, or async functions.
+* **dependencies** - A dictionary-like of route dependencies to be resolved for this route.
+* **before_request** - A list of callables executed before this route is handled.
+* **after_request** - A list of callables executed after this route is handled.
 
 ### add_child_lilya()
 
@@ -228,6 +281,9 @@ requests (HTTP and Websockets).
 * **exception handlers** - A dictionary of [exception types](./exceptions.md) (or custom exceptions) and the handler
 functions on an application top level. Exception handler callables should be of the form of
 `handler(request, exc) -> response` and may be be either standard functions, or async functions.
+* **dependencies** - A dictionary-like of dependencies resolved for the route handler.
+* **before_request** - A list of callables executed before the route handler.
+* **after_request** - A list of callables executed after the route handler.
 * **deprecated** - Boolean if this ChildLilya should be marked as deprecated.
 
 === "In a nutshell"
@@ -255,6 +311,9 @@ requests (HTTP and Websockets).
 * **exception handlers** - A dictionary of [exception types](./exceptions.md) (or custom exceptions) and the handler
 functions on an application top level. Exception handler callables should be of the form of
 `handler(request, exc) -> response` and may be be either standard functions, or async functions.
+* **dependencies** - A dictionary-like of dependencies resolved for the route handler.
+* **before_request** - A list of callables executed before the route handler.
+* **after_request** - A list of callables executed after the route handler.
 * **deprecated** - Boolean if this ChildLilya should be marked as deprecated.
 
 === "In a nutshell"
@@ -303,8 +362,12 @@ requests (HTTP and Websockets).
 * **exception handlers** - A dictionary of [exception types](./exceptions.md) (or custom exceptions) and the handler
 functions on an application top level. Exception handler callables should be of the form of
 `handler(request, exc) -> response` and may be be either standard functions, or async functions.
+* **dependencies** - A dictionary-like of dependencies resolved at include level and inherited by child routes.
+* **before_request** - A list of callables executed before requests entering this include.
+* **after_request** - A list of callables executed after requests leaving this include.
 * **include_in_schema** - If route should be added to the OpenAPI Schema
 * **deprecated** - Boolean if this `Include` should be marked as deprecated.
+* **redirect_slashes** - Controls trailing slash redirect behavior for namespace/routes based includes.
 
 === "Importing using namespace"
 
@@ -538,6 +601,9 @@ Path('/customers/{customer_id:int}', handler=customer)
 Path('/floating-point/{number:float}', handler=floating_point)
 Path('/uploaded/{rest_of_path:path}', handler=uploaded)
 ```
+
+!!! Note
+    For HTTP `Path`, when `GET` is enabled, Lilya also exposes `HEAD` automatically.
 
 ### Custom transformers
 

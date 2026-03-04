@@ -296,6 +296,80 @@ request = Request(scope)
 request.state.admin = "example@lilya.dev"
 ```
 
+#### Content-Type helpers
+
+Request parsing can be guided using built-in helpers:
+
+* `request.content_type`
+* `request.media`
+* `request.charset`
+* `request.is_json`
+* `request.is_form`
+
+These are useful when you want custom body parsing strategies before calling `.json()` or `.form()`.
+
+```python
+from lilya.requests import Request
+
+request = Request(scope, receive)
+
+if request.is_json:
+    payload = await request.json()
+elif request.is_form:
+    payload = await request.form()
+else:
+    payload = await request.text()
+```
+
+#### Auth, user and session
+
+`Request` also exposes authentication/session data coming from middleware:
+
+* `request.auth`
+* `request.user`
+* `request.session`
+
+These values are available when the corresponding middleware populates them.
+
+#### URL reverse helpers from request
+
+The request object can reverse URLs without touching the app instance directly:
+
+* `request.path_for(...)`
+* `request.url_path_for(...)`
+
+```python
+from lilya.requests import Request
+
+request = Request(scope)
+request.url_path_for("user-detail", user_id=1)
+```
+
+#### Cleanup callbacks
+
+For request-bound resources, you can register cleanup hooks:
+
+* `request.add_cleanup(fn)`
+* `await request.close()`
+
+If your callback is async, Lilya awaits it.
+
+#### Server push
+
+Lilya exposes `await request.send_push_promise(path)` for servers supporting the `http.response.push` extension.
+
+If the ASGI server does not support push extension, this method becomes a no-op.
+
+```python
+from lilya.requests import Request
+from lilya.responses import HTMLResponse
+
+
+async def homepage(request: Request):
+    await request.send_push_promise("/statics/site.css")
+    return HTMLResponse("<html><body>Hello</body></html>")
+```
+
 ## Request Lifecycle
 
 Lilya supports the concept of request lifecycle. What does this actually mean?
