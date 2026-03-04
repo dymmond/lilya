@@ -18,6 +18,17 @@ There are two ways of using the settings object within a Lilya application.
 
 Each one of them has particular use cases but they also work together is perfect harmony.
 
+## Settings precedence at a glance
+
+```mermaid
+flowchart TD
+    A["Explicit Lilya(...) parameter"] --> B["settings_module"]
+    B --> C["LILYA_SETTINGS_MODULE"]
+    C --> D["Lilya defaults"]
+```
+
+The first available value in this chain wins.
+
 ## Settings and the application
 
 When starting a Lilya instance if no parameters are provided, it will automatically load the defaults from the
@@ -75,6 +86,17 @@ What just happened?
 1. Created an `AppSettings` inherited from the `Settings` with common cross environment properties.
 2. Created one settings file per environment and inherited from the base `AppSettings`.
 3. Created specific  events `on_startup` and `on_shutdown` for each environment.
+
+### Recommended environment layout
+
+For most projects, this structure scales well:
+
+- `base.py` for shared defaults
+- `development.py` for local defaults
+- `testing.py` for CI and integration runs
+- `production.py` for runtime-safe defaults
+
+This keeps environment drift visible and reviewable.
 
 
 ## Settings Module
@@ -187,6 +209,8 @@ So the order of priority:
 * Parameter instance value takes priority above `settings_module`.
 * `settings_module` takes priority above `LILYA_SETTINGS_MODULE`.
 * `LILYA_SETTINGS_MODULE` is the last being checked.
+
+Related concept: [Layering and Precedence](./concepts/layering-and-precedence.md).
 
 ## Settings config and Lilya settings module
 
@@ -509,3 +533,9 @@ to maintain.
     values via `request.app.settings`, the values **won't be in the settings** as those were passed via application
     instantiation and not via settings object. The way to access those values is, for example, via `request.app.debug`
     directly.
+
+## See also
+
+* [First Production Run](./getting-started/first-production-run.md) for initial deployment setup.
+* [Production Readiness Checklist](./guides/production-readiness-checklist.md) for environment verification.
+* [Troubleshooting](./troubleshooting.md#settings-do-not-look-applied) for precedence debugging.

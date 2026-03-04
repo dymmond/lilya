@@ -3,6 +3,15 @@
 This section explains how to harden lilya based projects.
 It explains how to use the security features and common attack vectors.
 
+## Threat model quick map
+
+| Threat | Primary control | Configure in | Related guide |
+| --- | --- | --- | --- |
+| Host header abuse | `TrustedHostMiddleware` | [Middleware](./middleware/trustedhost.md) | [Production Readiness Checklist](./guides/production-readiness-checklist.md) |
+| Referrer-based injection abuse | `TrustedReferrerMiddleware` | [Middleware](./middleware/trustedreferrer.md) | [Troubleshooting](./troubleshooting.md) |
+| Resource exhaustion | Rate limiting based on client IP | [ClientIPMiddleware](./middleware.md) | [Developer Workflow](./guides/developer-workflow-local-dev-test-debug.md) |
+| Session hijacking risk | Session fixing + auth hardening | [SessionFixingMiddleware](./middleware.md#sessionfixingmiddleware) | [Add Auth and Permissions](./tutorials/add-auth-and-permissions.md) |
+
 ## Host limiting
 
 ### Problem
@@ -78,3 +87,9 @@ headers. The usage is documented in [SessionFixingMiddleware](./middleware.md#se
 !!! Note
     If the client has an unstable connection, the session can reset from time to time. It is recommended to use the session fixing
     carefully only for sensitive areas or use the `notify_fn` parameter to port from the old session to the new session when appropiate.
+
+## See also
+
+* [Authentication](./authentication.md) for identity and credentials handling.
+* [Permissions](./permissions.md) for authorization policy layers.
+* [Production Readiness Checklist](./guides/production-readiness-checklist.md) for deployment-oriented security review.

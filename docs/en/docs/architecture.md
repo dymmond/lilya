@@ -4,6 +4,15 @@ Lilya is built in layers. Each layer is small and composable, and all of them ar
 
 If you understand these layers, it becomes much easier to design bigger applications without losing control.
 
+## Concept map
+
+For deeper conceptual treatment of each axis, use:
+
+* [ASGI Mental Model](./concepts/asgi-mental-model.md)
+* [Request Lifecycle](./concepts/request-lifecycle.md)
+* [Layering and Precedence](./concepts/layering-and-precedence.md)
+* [Component Interactions](./concepts/component-interactions.md)
+
 ## Core building blocks
 
 The main pieces are:
@@ -142,3 +151,8 @@ To continue from here:
 2. [Dependencies](./dependencies.md) for scoped dependency design.
 3. [Middleware](./middleware.md) for cross-cutting request policies.
 4. [Introspection](./introspection.md) for graph-level inspection and audits.
+
+## See also
+
+* [Build a Modular API](./tutorials/build-a-modular-api.md) for boundary-oriented architecture in practice.
+* [Production Readiness Checklist](./guides/production-readiness-checklist.md) for deployment-facing architecture validation.

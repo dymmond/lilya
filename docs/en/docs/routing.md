@@ -8,6 +8,29 @@ Using  an enterprise application as example, the routing system surely will not 
 components and packages and imported also inside complex design systems.
 Lilya handles with those cases without any kind of issues at all.
 
+## Routing decision matrix
+
+Use this as a quick chooser before diving into implementation details:
+
+| Need | Best fit |
+| --- | --- |
+| One HTTP endpoint | `Path` |
+| One WebSocket endpoint | `WebSocketPath` |
+| Group routes under a URL prefix | `Include` |
+| Route by domain or host | `Host` |
+| Isolated sub-application with its own stack | `ChildLilya` |
+
+## Layer precedence for route execution
+
+When a route is matched, Lilya composes behavior in this order:
+
+1. App-level declarations
+2. Include/Host-level declarations
+3. Route-level declarations
+4. Handler-level declarations (when available)
+
+This applies across middleware, permissions, dependencies, and exception handlers.
+
 ## Router
 
 The Router is the main object that links the whole Lilya to the [Path](#path),
@@ -723,3 +746,9 @@ The reverse also allow path parameters.
 ```python
 {!> ../../../docs_src/routing/routes/reverse_path.py !}
 ```
+
+## See also
+
+* [Request Lifecycle](./concepts/request-lifecycle.md) for end-to-end dispatch flow.
+* [Layering and Precedence](./concepts/layering-and-precedence.md) for composition rules.
+* [Build a Modular API](./tutorials/build-a-modular-api.md) for route boundary design in practice.

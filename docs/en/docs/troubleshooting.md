@@ -12,6 +12,16 @@ Before diving into specific errors, quickly check:
 * If using forms, did you install `python-multipart`?
 * If using optional features (CLI, OpenAPI, etc.), did you install the right extras?
 
+## Symptom to root-cause map
+
+| Symptom | Likely root cause | First page to check |
+| --- | --- | --- |
+| 404 for known endpoint | Include prefix mismatch or route precedence | [Routing](./routing.md) |
+| Unexpected auth failures | Permission layering or middleware ordering | [Permissions](./permissions.md) |
+| Wrong config values at runtime | Settings precedence misunderstanding | [Settings](./settings.md) |
+| Body read errors (`Stream consumed`) | Mixed streaming and buffered body access | [Request](./requests.md) |
+| Startup/shutdown issues | Lifespan hook composition | [Lifecycle](./lifecycle.md) |
+
 ## Route returns 404 but I expected a match
 
 Most common causes:

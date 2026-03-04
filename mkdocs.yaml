@@ -72,41 +72,59 @@ plugins:
           show_symbol_type_toc: true
 nav:
 - index.md
-- Resources:
+- Getting Started:
+  - getting-started/index.md
+  - getting-started/install-and-first-app.md
+  - getting-started/first-production-run.md
+- Concepts:
+  - concepts/index.md
+  - concepts/asgi-mental-model.md
+  - concepts/request-lifecycle.md
+  - concepts/layering-and-precedence.md
+  - concepts/component-interactions.md
+  - architecture.md
+- Tutorials:
+  - tutorials/index.md
+  - tutorials/build-a-modular-api.md
+  - tutorials/add-auth-and-permissions.md
+  - tutorials/realtime-with-websockets.md
+- How-to Guides:
+  - guides/index.md
+  - guides/developer-workflow-local-dev-test-debug.md
+  - guides/production-readiness-checklist.md
+  - guides/migration-from-fastapi.md
+- Reference:
   - resources/index.md
   - applications.md
-  - architecture.md
   - settings.md
   - routing.md
   - controllers.md
   - requests.md
   - responses.md
-  - caching.md
-  - websockets.md
-  - encoders.md
-  - context.md
-  - authentication.md
-  - logging.md
-  - serializers.md
-  - security.md
-  - threadpool.md
-  - introspection.md
-- Features:
-  - features/index.md
-  - tasks.md
-  - lifespan.md
+  - dependencies.md
   - middleware.md
   - permissions.md
-  - dependencies.md
+  - exceptions.md
+  - authentication.md
+  - security.md
+  - parameters.md
+  - introspection.md
+  - features/index.md
+  - lifecycle.md
+  - lifespan.md
+  - tasks.md
   - observables.md
   - static-files.md
   - templates.md
   - server-push.md
-  - exceptions.md
-  - parameters.md
+  - websockets.md
   - wsgi.md
-  - environments.md
-- Clients:
+  - encoders.md
+  - serializers.md
+  - caching.md
+  - context.md
+  - logging.md
+  - threadpool.md
   - clients/index.md
   - Lilya Client:
     - lilya-cli.md
@@ -116,11 +134,7 @@ nav:
     - directives/directive-decorator.md
     - directives/shell.md
   - test-client.md
-- Deployment:
-  - deployment/index.md
-  - intro.md
-  - docker.md
-- Contrib:
+- Integrations:
   - contrib/index.md
   - contrib/openapi.md
   - contrib/forms-and-body-inference.md
@@ -153,10 +167,16 @@ nav:
     - contrib/shortcuts/responses.md
   - contrib/mail.md
   - contrib/opentelemetry.md
-- contributing.md
-- troubleshooting.md
-- sponsorship.md
-- release-notes.md
+- Operations:
+  - deployment/index.md
+  - intro.md
+  - docker.md
+  - environments.md
+  - troubleshooting.md
+- Project:
+  - contributing.md
+  - sponsorship.md
+  - release-notes.md
 
 markdown_extensions:
 - attr_list

@@ -11,3 +11,5 @@ If you are starting fresh, this order usually works very well:
 4. [Requests](../requests.md)
 5. [Responses](../responses.md)
 6. [Settings](../settings.md)
+
+For mental models and diagrams, start with [Concepts](../concepts/index.md).

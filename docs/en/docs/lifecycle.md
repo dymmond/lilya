@@ -9,6 +9,16 @@ Lifecycle hooks exist at **three levels**:
 2. **App hooks** – Specific to a `Lilya` or `ChildLilya` instance.
 3. **Custom lifespan managers** – Using `@asynccontextmanager`.
 
+## Lifecycle API quick chooser
+
+| Need | Prefer |
+| --- | --- |
+| Global shared startup/shutdown | `@on_startup` and `@on_shutdown` |
+| Simple app-level setup/teardown lists | `on_startup=[...]`, `on_shutdown=[...]` |
+| One coherent startup/shutdown block | `lifespan=...` |
+
+For full context manager behavior, see [Lifespan](./lifespan.md).
+
 ## Global Lifecycle Hooks
 
 Global hooks are declared once and automatically injected into every `Lilya` or `ChildLilya` instance.
@@ -199,3 +209,9 @@ Telemetry stopped
 * **App hooks** – Defined per `Lilya` or `ChildLilya` instance.
 * **Independent lifecycles** – No cross-triggering between parent and child apps.
 * **Optional `lifespan`** – For advanced setup/teardown logic.
+
+## See also
+
+* [Lifespan](./lifespan.md) for context-manager-first lifecycle style.
+* [Request Lifecycle](./concepts/request-lifecycle.md) for per-request execution flow.
+* [Production Readiness Checklist](./guides/production-readiness-checklist.md) for startup/shutdown validation.

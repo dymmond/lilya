@@ -32,6 +32,18 @@ to unblock some potential ideas.
 
 We opted for using a standard, [docker](./docker.md).
 
+## Minimum production baseline
+
+Before selecting infrastructure, validate these baseline controls:
+
+- Explicit settings module per environment
+- `debug=False`
+- Host validation middleware
+- Structured logging and error reporting
+- Health endpoint for liveness checks
+
+Use the full [Production Readiness Checklist](./guides/production-readiness-checklist.md) before release.
+
 ## Deploying using Pydantic
 
 Pydantic is fantastic handling with majority of the heavy lifting when it comes to read environment variables and
@@ -65,3 +77,9 @@ class AppSettings(Settings):
         self.allowed_hosts = self.allowed_hosts.split(",")
 
 ```
+
+## See also
+
+* [First Production Run](./getting-started/first-production-run.md)
+* [Docker Deployment](./docker.md)
+* [Settings](./settings.md)

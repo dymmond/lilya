@@ -6,6 +6,11 @@ Lilya brings a class called `Lilya` which wraps all the functionality of the app
 from lilya.apps import Lilya
 ```
 
+Before going deeper, the conceptual model is in:
+
+* [Component Interactions](./concepts/component-interactions.md)
+* [Layering and Precedence](./concepts/layering-and-precedence.md)
+
 There are many ways of creating a Lilya application but:
 
 === "In a nutshell"
