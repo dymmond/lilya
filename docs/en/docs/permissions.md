@@ -58,15 +58,15 @@ Those can be included in the `Lilya`/`ChildLilya`, `Include`, `Path` and `WebSoc
 
 === "Application level"
 
-    ```python
-    {!> ../../../docs_src/permissions/adding_permission.py !}
-    ```
+```python
+{!> ../../../docs_src/permissions/adding_permission.py !}
+```
 
 === "Any other level"
 
-    ```python
-    {!> ../../../docs_src/permissions/any_other_level.py !}
-    ```
+```python
+{!> ../../../docs_src/permissions/any_other_level.py !}
+```
 
 ## Pure ASGI permission
 

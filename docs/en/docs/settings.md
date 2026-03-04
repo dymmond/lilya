@@ -25,15 +25,15 @@ system settings object, the `Settings`.
 
 === "No parameters"
 
-    ```python
-    {!> ../../../docs_src/settings/app/no_parameters.py!}
-    ```
+```python
+{!> ../../../docs_src/settings/app/no_parameters.py!}
+```
 
 === "With Parameters"
 
-    ```python
-    {!> ../../../docs_src/settings/app/with_parameters.py!}
-    ```
+```python
+{!> ../../../docs_src/settings/app/with_parameters.py!}
+```
 
 ## Custom settings
 
@@ -48,27 +48,27 @@ file that contains common settings across the three environments.
 
 === "Base"
 
-    ```python
-    {!> ../../../docs_src/settings/custom/base.py!}
-    ```
+```python
+{!> ../../../docs_src/settings/custom/base.py!}
+```
 
 === "Development"
 
-    ```python
-    {!> ../../../docs_src/settings/custom/development.py!}
-    ```
+```python
+{!> ../../../docs_src/settings/custom/development.py!}
+```
 
 === "Testing"
 
-    ```python
-    {!> ../../../docs_src/settings/custom/testing.py!}
-    ```
+```python
+{!> ../../../docs_src/settings/custom/testing.py!}
+```
 
 === "Production"
 
-    ```python
-    {!> ../../../docs_src/settings/custom/production.py!}
-    ```
+```python
+{!> ../../../docs_src/settings/custom/production.py!}
+```
 
 What just happened?
 
@@ -84,27 +84,27 @@ if nothing is provided then it will execute the application defaults.
 
 === "Without LILYA_SETTINGS_MODULE"
 
-    ```shell
-    palfrey src:app --reload
+```shell
+palfrey src:app --reload
 
-    INFO:     Listening on ('127.0.0.1', 8000) (Press CTRL+C to quit)
-    INFO:     Started reloader process [28720]
-    INFO:     Started server process [28722]
-    INFO:     Waiting for application startup.
-    INFO:     Application startup complete.
-    ```
+INFO:     Listening on ('127.0.0.1', 8000) (Press CTRL+C to quit)
+INFO:     Started reloader process [28720]
+INFO:     Started server process [28722]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+```
 
 === "With LILYA_SETTINGS_MODULE"
 
-    ```shell
-    LILYA_SETTINGS_MODULE=src.configs.production.ProductionSettings palfrey src:app
+```shell
+LILYA_SETTINGS_MODULE=src.configs.production.ProductionSettings palfrey src:app
 
-    INFO:     Listening on ('127.0.0.1', 8000) (Press CTRL+C to quit)
-    INFO:     Started reloader process [28720]
-    INFO:     Started server process [28722]
-    INFO:     Waiting for application startup.
-    INFO:     Application startup complete.
-    ```
+INFO:     Listening on ('127.0.0.1', 8000) (Press CTRL+C to quit)
+INFO:     Started reloader process [28720]
+INFO:     Started server process [28722]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+```
 
 It is very simple, `LILYA_SETTINGS_MODULE` looks for the custom settings class created for the application
 and loads it in lazy mode and make it globaly available.
@@ -395,15 +395,15 @@ To access the application settings there are different ways:
 
 === "Within the application request"
 
-    ```python
-    {!> ../../../docs_src/settings/access/within_app.py!}
-    ```
+```python
+{!> ../../../docs_src/settings/access/within_app.py!}
+```
 
 === "From the global settings"
 
-    ```python
-    {!> ../../../docs_src/settings/access/global.py!}
-    ```
+```python
+{!> ../../../docs_src/settings/access/global.py!}
+```
 
 !!! info
     Some of this information might have been mentioned in some other parts of the documentation but we assume

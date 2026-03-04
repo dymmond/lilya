@@ -27,6 +27,7 @@ The property `app.graph` constructs the graph on first access using `GraphBuilde
 ### Nodes & Kinds
 
 The graph contains typed nodes, including:
+
 - **APPLICATION** – The Lilya app itself (exactly one).
 - **ROUTER** – The dispatching router discovered from the app.
 - **ROUTE** – Path-like entries (e.g., `Path`, `WebSocketPath`) with metadata such as `path` and `methods`.
@@ -46,6 +47,7 @@ The graph contains typed nodes, including:
 ### Router discovery
 
 `GraphBuilder` discovers a router-like object with the following preference order:
+
 1. `app.router` if present and `None`.
 2. Fallbacks: `app._router`, `app.routes` (if the object has a `routes` attribute).
 

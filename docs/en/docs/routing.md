@@ -232,9 +232,9 @@ functions on an application top level. Exception handler callables should be of 
 
 === "In a nutshell"
 
-    ```python
-    {!> ../../../docs_src/routing/routes/gateway_nutshell.py!}
-    ```
+```python
+{!> ../../../docs_src/routing/routes/gateway_nutshell.py!}
+```
 
 ## WebSocketPath
 
@@ -259,9 +259,9 @@ functions on an application top level. Exception handler callables should be of 
 
 === "In a nutshell"
 
-    ```python
-    {!> ../../../docs_src/routing/routes/websocket_nutshell.py!}
-    ```
+```python
+{!> ../../../docs_src/routing/routes/websocket_nutshell.py!}
+```
 
 ## Include
 
@@ -308,24 +308,24 @@ functions on an application top level. Exception handler callables should be of 
 
 === "Importing using namespace"
 
-    ```python title='myapp/urls.py'
-    {!> ../../../docs_src/routing/routes/include/with_namespace.py!}
-    ```
+```python title='myapp/urls.py'
+{!> ../../../docs_src/routing/routes/include/with_namespace.py!}
+```
 
 === "Importing using routes list"
 
-    ```python title='src/myapp/urls.py'
-    {!> ../../../docs_src/routing/routes/include/routes_list.py!}
-    ```
+```python title='src/myapp/urls.py'
+{!> ../../../docs_src/routing/routes/include/routes_list.py!}
+```
 
 === "Import the app via string"
 
-    This is an alternative of loading the app via `string` import instead
-    of passing the object directly.
+This is an alternative of loading the app via `string` import instead
+of passing the object directly.
 
-    ```python title='src/myapp/urls.py'
-    {!> ../../../docs_src/routing/routes/include/app_str.py!}
-    ```
+```python title='src/myapp/urls.py'
+{!> ../../../docs_src/routing/routes/include/app_str.py!}
+```
 
 #### Using a different pattern
 
@@ -339,9 +339,9 @@ functions on an application top level. Exception handler callables should be of 
 
 === "Importing using namespace"
 
-    ```python title='src/myapp/urls.py'
-    {!> ../../../docs_src/routing/routes/include/namespace.py!}
-    ```
+```python title='src/myapp/urls.py'
+{!> ../../../docs_src/routing/routes/include/namespace.py!}
+```
 
 #### Include and application instance
 
@@ -365,15 +365,15 @@ When complexity increses and the level of routes increases as well, `Include` al
 
 === "Simple Nested"
 
-    ```python hl_lines="9"
-    {!> ../../../docs_src/routing/routes/include/nested/simple.py!}
-    ```
+```python hl_lines="9"
+{!> ../../../docs_src/routing/routes/include/nested/simple.py!}
+```
 
 === "Complex Nested Routes"
 
-    ```python hl_lines="10-41"
-    {!> ../../../docs_src/routing/routes/include/nested/complex.py!}
-    ```
+```python hl_lines="10-41"
+{!> ../../../docs_src/routing/routes/include/nested/complex.py!}
+```
 
 `Include` supports as many nested routes with different paths and Includes as you
 desire to have. Once the application starts, the routes are assembled and it will immediatly available.

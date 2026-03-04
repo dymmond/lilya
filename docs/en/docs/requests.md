@@ -325,14 +325,15 @@ There are two ways of making it happening: `sync` and `async`.
 
 === "Async"
 
-    ```python
-    {!> ../../../docs_src/requests/cycle/class_async.py !}
-    ```
+```python
+{!> ../../../docs_src/requests/cycle/class_async.py !}
+```
+
 === "Sync"
 
-    ```python
-    {!> ../../../docs_src/requests/cycle/func_sync.py !}
-    ```
+```python
+{!> ../../../docs_src/requests/cycle/func_sync.py !}
+```
 
 ##### Within levels
 
@@ -340,14 +341,14 @@ You can mix with different levels as well, for instance with an `Include`.
 
 === "Async"
 
-    ```python
-    {!> ../../../docs_src/requests/cycle/func_async_include.py !}
-    ```
+```python
+{!> ../../../docs_src/requests/cycle/func_async_include.py !}
+```
 === "Sync"
 
-    ```python
-    {!> ../../../docs_src/requests/cycle/func_sync_include.py !}
-    ```
+```python
+{!> ../../../docs_src/requests/cycle/func_sync_include.py !}
+```
 
 You get the point, don't you? It is this simple and versatile.
 
@@ -361,14 +362,15 @@ to the handler.
 
 === "Async"
 
-    ```python
-    {!> ../../../docs_src/requests/cycle/func_async.py !}
-    ```
+```python
+{!> ../../../docs_src/requests/cycle/func_async.py !}
+```
+
 === "Sync"
 
-    ```python
-    {!> ../../../docs_src/requests/cycle/class_sync.py !}
-    ```
+```python
+{!> ../../../docs_src/requests/cycle/class_sync.py !}
+```
 
 ##### Within levels
 
@@ -376,14 +378,15 @@ You can mix with different levels as well, for instance with an `Include`.
 
 === "Async"
 
-    ```python
-    {!> ../../../docs_src/requests/cycle/class_async_include.py !}
-    ```
+```python
+{!> ../../../docs_src/requests/cycle/class_async_include.py !}
+```
+
 === "Sync"
 
-    ```python
-    {!> ../../../docs_src/requests/cycle/class_sync_include.py !}
-    ```
+```python
+{!> ../../../docs_src/requests/cycle/class_sync_include.py !}
+```
 
 You get the point, don't you? This is also this simple.
 

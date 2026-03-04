@@ -18,7 +18,7 @@ Encoders provide two public methods:
 types to json.
 By default only a simplification is done, therefore the json string is deserialized again so a simple datastructure is returned.
 
-``` python
+```python
 {!> ../../../docs_src/encoders/direct_usage.py !}
 ```
 
@@ -30,7 +30,7 @@ If one encoder matches via `is_type_structure` (for Encoder by default `isclass(
 First is checked via `is_type` if the value is already converted and if yes simply returned.
 Otherwise the value is molded via the structure in an instance and returned.
 
-``` python
+```python
 {!> ../../../docs_src/encoders/molding.py !}
 ```
 
@@ -155,6 +155,7 @@ library.
 !!! Tip
     You can replace other Encoders by providing a name attribute.
     By default all encoders use their class-name as name.
+
 #### Custom encoders and responses
 
 After the [custom encoders in the examples](#build-a-custom-encoder) are created, this allows to
@@ -186,12 +187,12 @@ json serializer/deserializer.
 
 This is no problem for Lilya:
 
-``` python
+```python
 {!> ../../../docs_src/encoders/direct_usage_orjson.py !}
 ```
 
 Or the `make_response` example with orjson
 
-``` python
+```python
 {!> ../../../docs_src/encoders/make_response_orjson.py !}
 ```

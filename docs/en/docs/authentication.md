@@ -161,8 +161,7 @@ app = Lilya(
 
 If you want to fully disable unauthenticated access, you can define something like
 
-``` python
-
+```python
 from lilya.apps import Lilya
 from lilya.middleware import DefineMiddleware
 from lilya.middleware.authentication import AuthenticationMiddleware

@@ -17,20 +17,20 @@ HTTP Bearer authentication is a simple and effective method for securing API end
 #### How It Works
 
 1. **Token Generation**:
-   - The client first authenticates with the server using credentials (like username and password) or another authentication method.
-   - Upon successful authentication, the server generates a token and sends it back to the client. This token is usually time-limited and encoded to ensure security.
+    - The client first authenticates with the server using credentials (like username and password) or another authentication method.
+    - Upon successful authentication, the server generates a token and sends it back to the client. This token is usually time-limited and encoded to ensure security.
 
 2. **Token Transmission**:
-   - For subsequent requests, the client includes this token in the `Authorization` header of the HTTP request.
-   - The token is prefixed with the word `Bearer` followed by a space and then the token itself. For example:
+    - For subsequent requests, the client includes this token in the `Authorization` header of the HTTP request.
+    - The token is prefixed with the word `Bearer` followed by a space and then the token itself. For example:
      ```
      Authorization: Bearer <token>
      ```
 
 3. **Token Validation**:
-   - The server receives the request and extracts the token from the `Authorization` header.
-   - The server then validates the token to ensure it is still valid (not expired or tampered with).
-   - If the token is valid, the server processes the request and sends the appropriate response. If not, it returns an authentication error.
+    - The server receives the request and extracts the token from the `Authorization` header.
+    - The server then validates the token to ensure it is still valid (not expired or tampered with).
+    - If the token is valid, the server processes the request and sends the appropriate response. If not, it returns an authentication error.
 
 #### Example
 

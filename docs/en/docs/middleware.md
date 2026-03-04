@@ -50,15 +50,15 @@ To add middlewares to the application is very simple.
 
 === "Application level"
 
-    ```python
-    {!> ../../../docs_src/middleware/adding_middleware.py !}
-    ```
+```python
+{!> ../../../docs_src/middleware/adding_middleware.py !}
+```
 
 === "Any other level"
 
-    ```python
-    {!> ../../../docs_src/middleware/any_other_level.py !}
-    ```
+```python
+{!> ../../../docs_src/middleware/any_other_level.py !}
+```
 
 ### Quick note
 
@@ -115,34 +115,34 @@ See [Authentication](./authentication.md) for more details.
 
 === "From the application instance"
 
-    ```python
-    from lilya.apps import Lilya
-    from lilya.middleware import DefineMiddleware
-    from .middleware.jwt import JWTAuthMiddleware
+```python
+from lilya.apps import Lilya
+from lilya.middleware import DefineMiddleware
+from .middleware.jwt import JWTAuthMiddleware
 
 
-    app = Lilya(routes=[...], middleware=[DefineMiddleware(JWTAuthMiddleware)])
-    ```
+app = Lilya(routes=[...], middleware=[DefineMiddleware(JWTAuthMiddleware)])
+```
 
 === "From the settings"
 
-    ```python
-    from lilya.conf.global_settings import Settings
-    from lilya.middleware import DefineMiddleware
+```python
+from lilya.conf.global_settings import Settings
+from lilya.middleware import DefineMiddleware
 
 
-    class AppSettings(Settings):
+class AppSettings(Settings):
 
-        @property
-        def middleware(self) -> list[DefineMiddleware]:
-            return [
-                # you can also use absolute import strings
-                DefineMiddleware("project.middleware.jwt.JWTAuthMiddleware")
-            ]
+    @property
+    def middleware(self) -> list[DefineMiddleware]:
+        return [
+            # you can also use absolute import strings
+            DefineMiddleware("project.middleware.jwt.JWTAuthMiddleware")
+        ]
 
-    # load the settings via LILYA_SETTINGS_MODULE=src.configs.live.AppSettings
-    app = Lilya(routes=[...])
-    ```
+# load the settings via LILYA_SETTINGS_MODULE=src.configs.live.AppSettings
+app = Lilya(routes=[...])
+```
 
 !!! Tip
     To know more about loading the settings and the available properties, have a look at the

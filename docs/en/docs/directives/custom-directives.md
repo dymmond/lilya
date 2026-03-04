@@ -197,15 +197,15 @@ When calling a `Directive`, `lilya` will execute the `handle()` and run the all 
 
 === "Sync"
 
-    ```python hl_lines="15"
-    {!> ../../../docs_src/directives/sync_handler.py !}
-    ```
+```python hl_lines="15"
+{!> ../../../docs_src/directives/sync_handler.py !}
+```
 
 === "Async"
 
-    ```python hl_lines="15"
-    {!> ../../../docs_src/directives/async_handler.py !}
-    ```
+```python hl_lines="15"
+{!> ../../../docs_src/directives/async_handler.py !}
+```
 
 As you can see, Lilya Directives also allow `async` and `sync` type of functions. This can be
 particularly useful for when you need to run specific tasks in async mode, for example.

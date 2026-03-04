@@ -230,27 +230,27 @@ Start the application with the new settings.
 
 === "MacOS & Linux"
 
-    ```shell
-    LILYA_SETTINGS_MODULE=AppSettings palfrey src:app --reload
+```shell
+LILYA_SETTINGS_MODULE=AppSettings palfrey src:app --reload
 
-    INFO:     Listening on ('127.0.0.1', 8000) (Press CTRL+C to quit)
-    INFO:     Started reloader process [28720]
-    INFO:     Started server process [28722]
-    INFO:     Waiting for application startup.
-    INFO:     Application startup complete.
-    ```
+INFO:     Listening on ('127.0.0.1', 8000) (Press CTRL+C to quit)
+INFO:     Started reloader process [28720]
+INFO:     Started server process [28722]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+```
 
 === "Windows"
 
-    ```shell
-    $env:LILYA_SETTINGS_MODULE="AppSettings"; palfrey src:app --reload
+```shell
+$env:LILYA_SETTINGS_MODULE="AppSettings"; palfrey src:app --reload
 
-    INFO:     Listening on ('127.0.0.1', 8000) (Press CTRL+C to quit)
-    INFO:     Started reloader process [28720]
-    INFO:     Started server process [28722]
-    INFO:     Waiting for application startup.
-    INFO:     Application startup complete.
-    ```
+INFO:     Listening on ('127.0.0.1', 8000) (Press CTRL+C to quit)
+INFO:     Started reloader process [28720]
+INFO:     Started server process [28722]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+```
 
 
 ### Configurations and the handler

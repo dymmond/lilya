@@ -167,6 +167,9 @@ Now you can use the custom backend in your Lilya application.
 ## Recap
 
 ✅ **Lilya provides an easy-to-use caching system with multiple backends.**
+
 ✅ **You can use the `@cache` decorator to cache responses.**
+
 ✅ **You can set a global cache backend via `Settings`.**
+
 ✅ **You can create custom caching backends to store data in different ways.**
