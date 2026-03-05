@@ -17,6 +17,11 @@ palfrey myapp:app --reload
 # run tests
 hatch run test:test
 
+# run full CI-style split locally
+hatch run test:test_non_cli
+hatch run test:test_cli
+hatch run test:test_serial_only
+
 # run one test file
 hatch run test:test tests/test_routing.py
 

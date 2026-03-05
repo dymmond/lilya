@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+from pathlib import Path
 from typing import Any
 
 import msgspec
@@ -47,3 +48,32 @@ class AttrsEncoder(Encoder):
 
 
 register_encoder(AttrsEncoder())
+
+
+def _is_relative_to(path: Path, base: Path) -> bool:
+    try:
+        path.relative_to(base)
+    except ValueError:
+        return False
+    return True
+
+
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    tests_root = Path(__file__).resolve().parent
+    cli_root = tests_root / "cli"
+    benchmarks_root = tests_root / "benchmarks"
+
+    for item in items:
+        path = Path(str(item.path)).resolve()
+
+        if _is_relative_to(path, cli_root):
+            item.add_marker(pytest.mark.cli)
+
+        if _is_relative_to(path, benchmarks_root):
+            item.add_marker(pytest.mark.slow)
+
+        if "/integration/" in path.as_posix() or _is_relative_to(path, tests_root / "caches"):
+            item.add_marker(pytest.mark.integration)
+
+        if path == tests_root / "test_observable.py":
+            item.add_marker(pytest.mark.serial)

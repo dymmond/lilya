@@ -212,6 +212,7 @@ testing = [
     "pytest-benchmark>=4.0.0",
     "pytest-codspeed>=4.3.0",
     "pytest-cov>=4.0.0,<8.0.0",
+    "pytest-xdist>=3.6.1",
     "pytest-mock>=3.12.0",
     "python-multipart>=0.0.13",
     "ty",
@@ -284,8 +285,12 @@ installer = "pip"
 
 [tool.hatch.envs.test.scripts]
 # needs docker services running
-test = "hatch test -- --benchmark-disable {args}"
+test = "hatch test -- --benchmark-disable -n auto --dist=loadscope -m 'not cli and not serial and not slow' {args}"
 test_man = "hatch test -- --benchmark-disable {args} -s -vv"
+test_serial = "hatch test -- --benchmark-disable -n 0 {args}"
+test_non_cli = "hatch test -- --benchmark-disable -n auto --dist=loadscope --maxfail=1 --durations=20 -q -m 'not cli and not serial and not slow' {args}"
+test_cli = "hatch test -- --benchmark-disable -n 0 --maxfail=1 --durations=20 -q -m cli {args}"
+test_serial_only = "hatch test -- --benchmark-disable -n 0 --maxfail=1 --durations=20 -q -m serial {args}"
 coverage = "hatch test -- --benchmark-disable --cov=lilya --cov=tests --cov-report=term-missing:skip-covered --cov-report=html tests {args}"
 benchmark = "hatch test -- --benchmark-only -v {args}"
 check_types = "ty check --error-on-warning lilya"
@@ -385,6 +390,12 @@ fail_under = 80
 
 [tool.pytest.ini_options]
 addopts = ["--strict-config", "--strict-markers"]
+markers = [
+    "cli: CLI and subprocess-driven tests with cwd/filesystem coupling.",
+    "serial: Tests that must run in a single worker due unavoidable shared global state.",
+    "integration: Tests requiring external services or cross-component integration.",
+    "slow: Long-running tests (for example benchmarks).",
+]
 xfail_strict = true
 junit_family = "xunit2"
 

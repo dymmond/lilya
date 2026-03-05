@@ -41,9 +41,9 @@ def create_folders():
 
 
 @pytest.mark.skipif(sys.version_info < (3, 11), reason="requires python 3.11 or higher")
-def test_send_mail_directive(client, create_folders):
+def test_send_mail_directive(client, create_folders, monkeypatch):
     # Create the project
-    os.environ["LILYA_DEFAULT_APP"] = "tests.cli.main:app"
+    monkeypatch.setenv("LILYA_DEFAULT_APP", "tests.cli.main:app")
     result = client.invoke(["createproject", "myproject"])
 
     assert result.exit_code == 0
@@ -70,9 +70,9 @@ def test_send_mail_directive(client, create_folders):
 
 
 @pytest.mark.skipif(sys.version_info < (3, 11), reason="requires python 3.11 or higher")
-def test_send_mail_directive_to_multiple(client, create_folders):
+def test_send_mail_directive_to_multiple(client, create_folders, monkeypatch):
     # Create the project
-    os.environ["LILYA_DEFAULT_APP"] = "tests.cli.main:app"
+    monkeypatch.setenv("LILYA_DEFAULT_APP", "tests.cli.main:app")
     result = client.invoke(["createproject", "myproject"])
 
     assert result.exit_code == 0
@@ -100,9 +100,9 @@ def test_send_mail_directive_to_multiple(client, create_folders):
 
 
 @pytest.mark.skipif(sys.version_info < (3, 11), reason="requires python 3.11 or higher")
-def test_send_mail_directive_html(client, create_folders):
+def test_send_mail_directive_html(client, create_folders, monkeypatch):
     # Create the project
-    os.environ["LILYA_DEFAULT_APP"] = "tests.cli.main:app"
+    monkeypatch.setenv("LILYA_DEFAULT_APP", "tests.cli.main:app")
     result = client.invoke(["createproject", "myproject"])
 
     assert result.exit_code == 0

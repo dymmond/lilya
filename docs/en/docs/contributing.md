@@ -80,20 +80,65 @@ $ hatch run pre-commit install
 
 ### Run the tests
 
-To run the tests, use:
+Lilya runs tests with `pytest-xdist` in the test environment. The default local command is a fast
+parallel lane that excludes CLI and `serial` tests.
 
 ```shell
 $ hatch run test:test
 ```
 
-Because Lilya uses pytest, any additional arguments will be passed. More info within the
-[pytest documentation](https://docs.pytest.org/en/latest/how-to/usage.html)
+Run the CI non-CLI lane locally (parallel):
+
+```shell
+$ hatch run test:test_non_cli
+```
+
+Run CLI tests in a dedicated serial lane:
+
+```shell
+$ hatch run test:test_cli
+```
+
+Run only tests marked as serial:
+
+```shell
+$ hatch run test:test_serial_only
+```
+
+Fallback full serial run:
+
+```shell
+$ hatch run test:test_serial
+```
+
+Because Lilya uses pytest, any additional arguments are passed through. More info within the
+[pytest documentation](https://docs.pytest.org/en/latest/how-to/usage.html).
 
 For example, to run a single test_script:
 
 ```shell
 $ hatch run test:test tests/test_encoders.py
 ```
+
+#### When to use `@pytest.mark.serial`
+
+Use `@pytest.mark.serial` only for tests that cannot be safely isolated, for example:
+
+* unavoidable process-global mutable state
+* third-party singleton state that cannot be reset
+* tests that must run alone for correctness
+
+Do not use `serial` for convenience. Prefer fixture-based isolation first.
+
+#### Writing parallel-safe tests
+
+Use this checklist when adding tests:
+
+* Use `tmp_path` / `tmp_path_factory` for files and directories.
+* Use `monkeypatch.setenv()` / `monkeypatch.delenv()` for environment changes.
+* Avoid hard-coded ports; use pytest port fixtures like `unused_tcp_port`.
+* Avoid shared cache keys and shared filesystem roots across tests.
+* Mark CLI-style subprocess tests with `@pytest.mark.cli`.
 
 To run the linting, use:
 
