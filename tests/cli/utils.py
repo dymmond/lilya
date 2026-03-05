@@ -4,10 +4,18 @@ import subprocess
 
 
 def run_cmd(app, cmd, is_app=True):
+    env = os.environ.copy()
     if is_app:
-        os.environ["LILYA_DEFAULT_APP"] = app
+        env["LILYA_DEFAULT_APP"] = app
+    else:
+        env.pop("LILYA_DEFAULT_APP", None)
 
-    process = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    process = subprocess.Popen(
+        shlex.split(cmd),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+    )
     (stdout, stderr) = process.communicate()
     print("\n$ " + cmd)
     print(stdout.decode("utf-8"))

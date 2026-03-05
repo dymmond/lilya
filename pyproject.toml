@@ -285,7 +285,7 @@ installer = "pip"
 
 [tool.hatch.envs.test.scripts]
 # needs docker services running
-test = "hatch test -- --benchmark-disable -n auto --dist=loadscope {args}"
+test = "hatch test -- --benchmark-disable -n auto --dist=loadscope -m 'not cli and not serial' {args}"
 test_man = "hatch test -- --benchmark-disable {args} -s -vv"
 test_serial = "hatch test -- --benchmark-disable -n 0 {args}"
 test_non_cli = "hatch test -- --benchmark-disable -n auto --dist=loadscope --maxfail=1 --durations=20 -q -m 'not cli and not serial' {args}"

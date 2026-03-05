@@ -74,3 +74,6 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
 
         if "/integration/" in path.as_posix() or _is_relative_to(path, tests_root / "caches"):
             item.add_marker(pytest.mark.integration)
+
+        if path == tests_root / "test_observable.py":
+            item.add_marker(pytest.mark.serial)

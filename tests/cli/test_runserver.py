@@ -69,7 +69,7 @@ async def test_runserver_uses_cli_path(monkeypatch):
     sys.modules["palfrey"] = fake_palfrey
 
     # Simulate a fake Lilya app
-    os.environ.pop("LILYA_DEFAULT_APP", None)
+    monkeypatch.delenv("LILYA_DEFAULT_APP", raising=False)
 
     env = runserver_module.DirectiveEnv()
     env.app = app  # use your Lilya instance

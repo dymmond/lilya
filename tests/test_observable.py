@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from typing import Any
 
 import anyio
@@ -32,6 +33,30 @@ email_event = anyio.Event()
 extra_event = anyio.Event()
 registration_event = anyio.Event()
 role_event = anyio.Event()
+
+
+@pytest.fixture(autouse=True)
+def reset_observable_state() -> None:
+    global TOTAL_SEND, TOTAL_EMAIL, TOTAL_EXTRA, TOTAL_REGISTRATIONS, TOTAL_ROLE_ASSIGNMENTS
+    global send_event, email_event, extra_event, registration_event, role_event
+
+    TOTAL_SEND = 0
+    TOTAL_EMAIL = 0
+    TOTAL_EXTRA = 0
+    TOTAL_REGISTRATIONS = 0
+    TOTAL_ROLE_ASSIGNMENTS = 0
+
+    send_event = anyio.Event()
+    email_event = anyio.Event()
+    extra_event = anyio.Event()
+    registration_event = anyio.Event()
+    role_event = anyio.Event()
+
+
+async def wait_for(condition: Callable[[], bool], timeout: float = 1.0) -> None:
+    with anyio.fail_after(timeout):
+        while not condition():
+            await anyio.sleep(0.01)
 
 
 @observable(send=["item_send", "email_send", "extra_event"])
@@ -141,10 +166,7 @@ async def test_observable():
         assert response.status_code == 200
         assert response.json() == {"item_id": 1}
 
-        # ✅ Allow time for async events to process
-        await send_event.wait()
-        await email_event.wait()
-        await extra_event.wait()
+        await wait_for(lambda: TOTAL_SEND == 1 and TOTAL_EMAIL == 2 and TOTAL_EXTRA == 1)
 
         # ✅ Check values
         assert TOTAL_SEND == 1
@@ -154,16 +176,15 @@ async def test_observable():
 
 async def test_no_listeners():
     """Test case where an event is emitted but has no listeners."""
-    await anyio.sleep(0.1)  # Ensure previous tests don't interfere
 
     # Log messages outside async task group
     logger.info("Emitting unused event")
     logger.info("No listeners should be triggered")
 
-    # Ensure counts remain the same
-    assert TOTAL_SEND == 1
-    assert TOTAL_EMAIL == 2
-    assert TOTAL_EXTRA == 1
+    # Ensure counts remain the same for this isolated test run
+    assert TOTAL_SEND == 0
+    assert TOTAL_EMAIL == 0
+    assert TOTAL_EXTRA == 0
 
 
 async def test_multiple_executions():
@@ -172,14 +193,11 @@ async def test_multiple_executions():
         for _ in range(3):  # Trigger the event multiple times
             client.get("/")
 
-        # ✅ Wait for all events
-        await send_event.wait()
-        await email_event.wait()
-        await extra_event.wait()
+        await wait_for(lambda: TOTAL_SEND == 3 and TOTAL_EMAIL == 6 and TOTAL_EXTRA == 3)
 
         # ✅ Validate results
-        assert TOTAL_SEND == 1 + 3  # Previous + 3 new executions
-        assert TOTAL_EXTRA == 1 + 3  # 1 previous + 3 new executions
+        assert TOTAL_SEND == 3
+        assert TOTAL_EXTRA == 3
 
 
 async def test_user_registration():
@@ -195,10 +213,7 @@ async def test_user_registration():
             "id": 42,
         }
 
-        # ✅ Wait for all events
-        await registration_event.wait()
-        await email_event.wait()
-        await role_event.wait()
+        await wait_for(lambda: TOTAL_REGISTRATIONS == 1 and TOTAL_ROLE_ASSIGNMENTS == 1)
 
         # ✅ Validate results
         assert TOTAL_REGISTRATIONS == 1
@@ -213,11 +228,8 @@ async def test_multiple_user_registrations():
         for i in range(3):  # Register 3 users
             client.post("/register", json={"email": f"user{i}@example.com", "id": i})
 
-        # ✅ Wait for all events
-        await registration_event.wait()
-        await email_event.wait()
-        await role_event.wait()
+        await wait_for(lambda: TOTAL_REGISTRATIONS == 3 and TOTAL_ROLE_ASSIGNMENTS == 3)
 
         # ✅ Validate results
-        assert TOTAL_REGISTRATIONS == 1 + 3  # Previous + 3 new registrations
-        assert TOTAL_ROLE_ASSIGNMENTS == 1 + 3  # Previous total + 3 new role assignments
+        assert TOTAL_REGISTRATIONS == 3
+        assert TOTAL_ROLE_ASSIGNMENTS == 3
