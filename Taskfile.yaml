@@ -71,6 +71,43 @@ tasks:
     cmds:
       - hatch run test:test {{ .ARGS }}
 
+  test_non_cli:
+    desc: Runs non-CLI tests in parallel (CI lane A)
+    env:
+      LILYA_SETTINGS_MODULE: tests.settings.AppTestSettings
+    cmds:
+      - hatch run test:test_non_cli {{ .ARGS }}
+
+  test_cli:
+    desc: Runs CLI tests in serial mode (CI lane B)
+    env:
+      LILYA_SETTINGS_MODULE: tests.settings.AppTestSettings
+    cmds:
+      - hatch run test:test_cli {{ .ARGS }}
+
+  test_serial_only:
+    desc: Runs @pytest.mark.serial tests in serial mode (CI lane C)
+    env:
+      LILYA_SETTINGS_MODULE: tests.settings.AppTestSettings
+    cmds:
+      - hatch run test:test_serial_only {{ .ARGS }}
+
+  test_serial:
+    desc: Runs the full suite in serial mode (fallback)
+    env:
+      LILYA_SETTINGS_MODULE: tests.settings.AppTestSettings
+    cmds:
+      - hatch run test:test_serial {{ .ARGS }}
+
+  test_ci_split:
+    desc: Runs all CI test lanes locally (A+B+C)
+    env:
+      LILYA_SETTINGS_MODULE: tests.settings.AppTestSettings
+    cmds:
+      - task: test_non_cli
+      - task: test_cli
+      - task: test_serial_only
+
   test_man:
     desc: Runs the manual tests with more output details and python breakpoints allowed
     env:
