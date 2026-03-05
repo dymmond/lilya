@@ -5,6 +5,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor, SpanExporter, Spa
 
 from lilya.contrib.opentelemetry.config import OpenTelemetryConfig
 from lilya.contrib.opentelemetry.instrumentation import get_tracer_provider, setup_tracing
+from tests.contrib.opentelemetry.reset import reset_opentelemetry_globals
 
 
 class DummyExporter(SpanExporter):
@@ -37,18 +38,14 @@ def reset_global_tracer(monkeypatch):
     Fully reset OpenTelemetry global tracer state between tests.
     Works with modern OTel (≥1.27) which uses internal proxy provider.
     """
-    import opentelemetry.trace as ot_trace
-
     from lilya.contrib.opentelemetry import instrumentation
 
-    monkeypatch.setattr(ot_trace, "_TRACER_PROVIDER", None)
-    monkeypatch.setattr(ot_trace, "_PROXY_TRACER_PROVIDER", None)
+    reset_opentelemetry_globals()
     monkeypatch.setattr(instrumentation, "_provider", None)
 
     yield
 
-    monkeypatch.setattr(ot_trace, "_TRACER_PROVIDER", None)
-    monkeypatch.setattr(ot_trace, "_PROXY_TRACER_PROVIDER", None)
+    reset_opentelemetry_globals()
     monkeypatch.setattr(instrumentation, "_provider", None)
 
 

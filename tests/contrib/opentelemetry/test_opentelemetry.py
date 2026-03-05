@@ -11,13 +11,14 @@ from lilya.middleware import DefineMiddleware
 from lilya.responses import PlainText
 from lilya.routing import Path
 from lilya.testclient import create_client
+from tests.contrib.opentelemetry.reset import reset_opentelemetry_globals
 
 pytestmark = pytest.mark.asyncio
 
 
 @pytest.fixture(autouse=True)
 def reset_global_tracer(monkeypatch):
-    monkeypatch.setattr(trace, "_TRACER_PROVIDER", None, raising=False)
+    reset_opentelemetry_globals()
     monkeypatch.setattr(trace, "_PROXY_TRACER_PROVIDER", ProxyTracerProvider(), raising=False)
     monkeypatch.setattr(instrumentation, "_provider", None, raising=False)
 
@@ -28,7 +29,7 @@ def reset_global_tracer(monkeypatch):
     yield
 
     # Clean up after each test
-    monkeypatch.setattr(trace, "_TRACER_PROVIDER", None, raising=False)
+    reset_opentelemetry_globals()
     monkeypatch.setattr(trace, "_PROXY_TRACER_PROVIDER", ProxyTracerProvider(), raising=False)
     monkeypatch.setattr(instrumentation, "_provider", None, raising=False)
 
