@@ -181,8 +181,8 @@ class Jinja2Template:
             request: Request = context["request"]
             return request.url_path_for(name, **path_params)
 
-        env.globals.setdefault("path_for", path_for)
-        env.globals.setdefault("url_for", url_path_for)
+        env.globals.setdefault("path_for", path_for)  # type: ignore
+        env.globals.setdefault("url_for", url_path_for)  # type: ignore
         return env
 
     def _create_environment(
@@ -244,7 +244,8 @@ class Jinja2Template:
             TemplateResponse: The rendered template response.
         """
         template_renderer: TemplateRenderer = TemplateRenderer(
-            template=self, render_function_name="render_async" if self.env.is_async else "render"
+            template=self,
+            render_function_name="render_async" if self.env.is_async else "render",
         )
         return template_renderer(*args, **kwargs)
 
