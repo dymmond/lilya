@@ -1,5 +1,19 @@
 # Release Notes
 
+
+## 0.26.0
+
+Client ip retrieval improvements.
+
+### Added
+
+- `sanitize_clientip` keyword parameter for `ClientIPScopeOnlyMiddleware`, `ClientIPMiddleware` and `get_ip`.
+- `sanitize_proxyip` keyword parameter for `ClientIPScopeOnlyMiddleware`, `ClientIPMiddleware` and `get_ip`.
+
+### Changed
+
+- `get_ip()` uses now only scope as not keyword-only parameter. The rest did defacto already always use keyword arguments.
+
 ## 0.25.0
 
 ### Added
