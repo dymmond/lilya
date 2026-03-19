@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator
+from collections.abc import Callable
 from typing import Any, Generic, ParamSpec, cast
 
 from lilya._internal._module_loading import import_string
@@ -30,11 +30,8 @@ class DefineMiddleware(Generic[P]):
             self.middleware_or_string = middleware_or_string = import_string(middleware_or_string)
         return cast(Callable[..., ASGIApp], middleware_or_string)
 
-    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> Any:
-        return self.middleware(*args, **kwargs)
-
-    def __iter__(self) -> Iterator[Any]:
-        return iter((self.middleware, self.args, self.kwargs))
+    def __call__(self, app: ASGIApp) -> ASGIApp:
+        return self.middleware(app, *self.args, **self.kwargs)
 
     def __repr__(self) -> str:
         args_repr = ", ".join(
