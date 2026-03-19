@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from typing import Any, Generic, ParamSpec, cast
+from warnings import warn
 
 from lilya._internal._module_loading import import_string
 from lilya.types import ASGIApp
@@ -32,6 +33,14 @@ class DefineMiddleware(Generic[P]):
 
     def __call__(self, app: ASGIApp) -> ASGIApp:
         return self.middleware(app, *self.args, **self.kwargs)
+
+    def __iter__(self) -> Iterator[Any]:
+        warn(
+            "Extracting DefineMiddleware like an Iterator is deprecated.",
+            DeprecationWarning,
+            stacklevel=1,
+        )
+        return iter((self.middleware, self.args, self.kwargs))
 
     def __repr__(self) -> str:
         args_repr = ", ".join(
