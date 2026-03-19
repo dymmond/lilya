@@ -465,11 +465,51 @@ If you don't want an injected header use the `ClientIPScopeOnlyMiddleware`:
 ```
 
 !!! Note
-    If you don't want to use the middleware you can use: `get_ip` from `lilya.clientip` directly.
+    If you don't want to use the middleware you can use: `get_ip` from `lilya.clientip` directly. This is however not
+    recommended for performance reasons. It is better to use the retrieved ip in the scope.
 
 !!! Note
     It is currently not possible to simulate a client ip address in lilyas TestClient. So you may want to use the Forwarded header and trust "unix" for tests.
+    You can also provide a custom middleware which injects a fake `client` in the scope. See clientip tests for this approach.
 
+### Sanitizing ips
+
+Given there are two ip protocols (ipv4 an ipv6) and every ASGI server which serves both, handles addresses different.
+So there are two sanitizer options:
+- `sanitize_proxyip(str) -> str`: Modifies the ip used for matching against proxy ips.
+- `sanitize_clientip(str) -> str`: Modifies the returned user facing ip.
+
+**Example**
+
+Remove mapping prefix from ipv4 addresses mapped to ipv6.
+
+``` python
+
+app = Lilya(
+    middleware=[
+        DefineMiddleware(
+            ClientIPMiddleware,
+            # if not specified the proxies from settings are used
+            # trusted_proxies=["127.0.0.1"],
+            sanitize_proxyip=lambda x: x.removeprefix("::ffff:"),
+            sanitize_clientip=lambda x: x.removeprefix("::ffff:"),
+        ),
+    ],
+)
+```
+
+These arguments are also available for `get_ip`:
+
+``` python
+from lilya.clientip import get_ip
+ip = get_ip(
+    asgi_scope,
+    # if not specified the proxies from settings are used
+    # trusted_proxies=["127.0.0.1"],
+    sanitize_proxyip=lambda x: x.removeprefix("::ffff:"),
+    sanitize_clientip=lambda x: x.removeprefix("::ffff:")
+)
+```
 
 ### SessionFixingMiddleware
 
