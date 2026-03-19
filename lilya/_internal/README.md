@@ -75,13 +75,6 @@ This directory contains the private implementation details of Lilya. These modul
 - **Key API**: `wrap_middleware` (with `lru_cache`).
 - **Usage**: Used during app and router initialization to normalize middleware stacks.
 
-### _module_loading.py
-- **Purpose**: Dynamic import utility to load classes or attributes from a dotted string path.
-- **Public vs Internal**: Internal utility.
-- **Stability**: Internal - Can change without notice.
-- **Key API**: `import_string`.
-- **Usage**: Used by CLI, settings resolution, and Monkay bootstrap.
-
 ### _parsers.py
 - **Purpose**: Robust parsers for cookies and form data (urlencoded and multipart).
 - **Public vs Internal**: Internal; requires `python-multipart` for form parsing.
