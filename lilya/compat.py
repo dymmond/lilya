@@ -8,8 +8,8 @@ from concurrent import futures
 from typing import Any, Generic, Protocol, TypeVar
 
 import anyio
+from monkay import load
 
-from lilya._internal._module_loading import import_string as import_string  # noqa
 from lilya._internal._urls import reverse as reverse  # noqa
 from lilya._utils import is_class_and_subclass as is_class_and_subclass  # noqa
 
@@ -23,6 +23,8 @@ class SupportsAsyncClose(Protocol):
 SupportsAsyncCloseType = TypeVar(
     "SupportsAsyncCloseType", bound=SupportsAsyncClose, covariant=False
 )
+
+import_string = functools.partial(load, allow_splits=".")
 
 
 try:

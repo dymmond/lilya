@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterator
 from typing import Any, Generic, ParamSpec, cast
 
-from lilya._internal._module_loading import import_string
+from lilya.compat import import_string
 from lilya.types import ASGIApp
 
 P = ParamSpec("P")

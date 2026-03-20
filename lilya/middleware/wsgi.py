@@ -3,7 +3,7 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING, Any, cast
 
-from lilya._internal._module_loading import import_string
+from lilya.compat import import_string
 from lilya.exceptions import HTTPException
 from lilya.requests import Request
 
