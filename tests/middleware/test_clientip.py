@@ -23,6 +23,16 @@ class InjectClientIPMiddleware(MiddlewareProtocol):
         await self.app(scope, receive, send)
 
 
+class InjectIPMiddleware(MiddlewareProtocol):
+    def __init__(self, app: ASGIApp, *, ip: str) -> None:
+        self.app = app
+        self.ip = ip
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        scope[ClientIPMiddleware.scope_name] = self.ip
+        await self.app(scope, receive, send)
+
+
 def test_clientip_none(test_client_factory: TestClientFactory):
     def homepage(request: Request):
         assert request.headers.get("x-real-ip") == "127.0.0.1"
@@ -105,6 +115,7 @@ def test_clientip_all(test_client_factory: TestClientFactory) -> None:
 
 def test_clientip_ip(test_client_factory: TestClientFactory) -> None:
     def homepage(request: Request) -> PlainText:
+        assert request.scope.get("real-clientip") == "8.193.38.177"
         assert request.headers.get("x-real-ip") == "8.193.38.177"
         return PlainText("Ok", status_code=200)
 
@@ -121,11 +132,34 @@ def test_clientip_ip(test_client_factory: TestClientFactory) -> None:
 def test_clientip_ip_scope_only(test_client_factory: TestClientFactory) -> None:
     def homepage(request: Request) -> PlainText:
         assert request.scope.get("real-clientip") == "8.193.38.177"
+        assert not request.headers.get("x-real-ip")
         return PlainText("Ok", status_code=200)
 
     app = Lilya(
         routes=[Path("/", handler=homepage)],
         middleware=[DefineMiddleware(ClientIPScopeOnlyMiddleware, trusted_proxies=["unix"])],
+    )
+
+    client = test_client_factory(app)
+    response = client.get("/", headers={"forwarded": "for=8.193.38.177,for=8.193.38.176"})
+    assert response.status_code == 200
+
+
+def test_clientip_ip_scope_overwrite_existing(test_client_factory: TestClientFactory) -> None:
+    def homepage(request: Request) -> PlainText:
+        assert request.scope.get("real-clientip") == "8.193.38.177"
+        assert request.headers.get("x-real-ip") == "8.193.38.177"
+        return PlainText("Ok", status_code=200)
+
+    app = Lilya(
+        routes=[Path("/", handler=homepage)],
+        middleware=[
+            DefineMiddleware(InjectIPMiddleware, ip="8.194.2.188"),
+            DefineMiddleware(
+                ClientIPMiddleware,
+                trusted_proxies=["unix"],
+            ),
+        ],
     )
 
     client = test_client_factory(app)
