@@ -12,11 +12,10 @@ from collections.abc import Callable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from lilya._internal._middleware import wrap_middleware
-from lilya._internal._module_loading import import_string
 from lilya._internal._path import clean_path, compile_path, get_route_path, replace_params
 from lilya._internal._permissions import wrap_permission
 from lilya._internal._urls import include
-from lilya.compat import is_async_callable
+from lilya.compat import import_string, is_async_callable
 from lilya.concurrency import run_in_threadpool
 from lilya.datastructures import URLPath
 from lilya.dependencies import wrap_dependency

@@ -1,26 +1,11 @@
 from __future__ import annotations
 
-from importlib import import_module
-from typing import Any, ParamSpec
+import warnings
 
-P = ParamSpec("P")
+from lilya.compat import import_string as import_string
 
-
-def import_string(dotted_path: str) -> Any:
-    """
-    Import a dotted module path and return the attribute/class designated by the
-    last name in the path. Raise ImportError if the import failed.
-    """
-    try:
-        module_path, class_name = dotted_path.rsplit(".", 1)
-    except ValueError as err:
-        raise ImportError(f"{dotted_path} doesn't look like a module path") from err
-
-    module = import_module(module_path)
-
-    try:
-        return getattr(module, class_name)
-    except AttributeError as err:
-        raise ImportError(
-            f'Module "{module_path}" does not define a "{class_name}" attribute/class'
-        ) from err
+warnings.warn(
+    "This module is deprecated. Use either `monkay.load` directly or `lilya.compat.import_string`.",
+    DeprecationWarning,
+    1,
+)
