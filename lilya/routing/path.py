@@ -10,7 +10,7 @@ import functools
 import inspect
 import re
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any
+from typing import Any, cast
 
 from lilya._internal._middleware import wrap_middleware
 from lilya._internal._path import (
@@ -363,8 +363,9 @@ class Path(BaseHandler, BasePath):
         Instantiates the Controller object and executes
         the call.
         """
-        app = self.app()  # type: ignore[call-arg]
-        await app(scope, receive, send)  # type: ignore
+        app_factory = cast(type[Any], self.app)
+        app = app_factory()
+        await app(scope, receive, send)
 
     async def handle_dispatch(self, scope: Scope, receive: Receive, send: Send) -> None:
         """

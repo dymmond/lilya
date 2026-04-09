@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Any, Protocol
+from typing import Any, Protocol, TypeVar
 
 
 class DirectiveFunction(Protocol):
@@ -11,11 +11,14 @@ class DirectiveFunction(Protocol):
     def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
 
 
+F = TypeVar("F", bound=Callable[..., Any])
+
+
 def directive(
-    func: Callable[..., Any] | None = None,
+    func: F | None = None,
     *,
     display_in_cli: bool = False,
-) -> Callable[[Callable[..., Any]], DirectiveFunction]:
+) -> Callable[[F], F]:
     """
     Marks a function-based Sayer CLI command as a custom Lilya directive.
 
@@ -35,10 +38,10 @@ def directive(
         Callable: A decorator that marks the function as a custom directive.
     """
 
-    def wrapper(f: Callable[..., Any]) -> DirectiveFunction:
+    def wrapper(f: F) -> F:
         f.__is_custom_directive__ = True  # type: ignore[attr-defined]
         f.__display_in_cli__ = display_in_cli  # type: ignore[attr-defined]
-        return f  # type: ignore[return-value]
+        return f
 
     if func is not None:
         return wrapper(func)

@@ -217,9 +217,15 @@ DEFAULT_ENCODER_TYPES: deque[EncoderProtocol] = deque(
 _ENCODER_TYPES_TYPE_BASE = Sequence[EncoderProtocol | MoldingProtocol]
 
 
-class ENCODER_TYPES_TYPE(_ENCODER_TYPES_TYPE_BASE):
+class ENCODER_TYPES_TYPE(Protocol):
     # ContextVar interface
     name: str
+
+    def __iter__(self) -> Iterable[EncoderProtocol | MoldingProtocol]: ...
+
+    def __len__(self) -> int: ...
+
+    def __getitem__(self, index: int) -> EncoderProtocol | MoldingProtocol: ...
 
     def set(self, value: _ENCODER_TYPES_TYPE_BASE) -> Token: ...  # type: ignore[empty-body]
 

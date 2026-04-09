@@ -138,6 +138,7 @@ nav:
   - contrib/index.md
   - contrib/openapi.md
   - contrib/forms-and-body-inference.md
+  - contrib/ai.md
   - contrib/sse.md
   - contrib/cqrs.md
   - Schedulers:
