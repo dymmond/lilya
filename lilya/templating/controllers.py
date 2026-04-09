@@ -4,8 +4,7 @@ import inspect
 from collections.abc import Callable, Iterable
 from typing import Any
 
-from lilya._internal._module_loading import import_string
-from lilya.compat import is_async_callable, reverse
+from lilya.compat import import_string, is_async_callable, reverse
 from lilya.conf import _monkay
 from lilya.contrib.security.csrf import get_or_set_csrf_token
 from lilya.controllers import Controller

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Protocol, cast
 
-from lilya._internal._module_loading import import_string
+from lilya.compat import import_string
 from lilya.enums import ScopeType
 from lilya.exceptions import ImproperlyConfigured
 from lilya.protocols.middleware import MiddlewareProtocol

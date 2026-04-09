@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Sequence
+from collections.abc import Callable, Collection, Container
 
 from lilya.datastructures import ALL, Header
 from lilya.types import Scope
@@ -12,7 +12,10 @@ _ip6_port_cleanup_regex = re.compile(r"(?<=\]):[0-9]+$")
 _ip4_port_cleanup_regex = re.compile(r":[0-9]+$")
 
 
-def get_trusted_proxies(value: None | Sequence[str] = None) -> frozenset:
+def get_trusted_proxies(value: None | Collection[str] = None) -> Container[str]:
+    # shortcut
+    if value is ALL or isinstance(value, frozenset):
+        return value
     if value is None:
         from lilya.conf import settings
 
@@ -23,14 +26,25 @@ def get_trusted_proxies(value: None | Sequence[str] = None) -> frozenset:
         return frozenset(value)
 
 
-def get_ip(scope: Scope, trusted_proxies: None | Sequence[str] = None) -> str:
+def get_ip(
+    scope: Scope,
+    *,
+    trusted_proxies: None | Collection[str] = None,
+    sanitize_clientip: Callable[[str], str] | None = None,
+    sanitize_proxyip: Callable[[str], str] | None = None,
+) -> str:
     """
     Get real client ip, using trustworthy proxies
     Args:
-        trusted_proxies (Optional[Sequence[str]]):  List of trusted proxy ips.
+        scope (Scope): ASGI Scope
+    Kwargs:
+        trusted_proxies (Optional[Collection[str]]):  List of trusted proxy ips.
                                                     Leave None to use the lily settings.
                                                     Set to ["*"] for trusting all proxies.
                                                     Use "unix" for unix sockets.
+        sanitize_proxyip (Optional[Callable[[str], str]]): Sanitize ip before comparing with proxies (ip of proxy).
+        sanitize_clientip (Optional[Callable[[str], str]]): Sanitize ip retrieved from proxy for outputting.
+                                                            This is probably what you want to provide.
     """
     client = scope.get("client")
     if client:
@@ -40,7 +54,9 @@ def get_ip(scope: Scope, trusted_proxies: None | Sequence[str] = None) -> str:
     if not client_ip:
         client_ip = "unix"
 
-    if client_ip in get_trusted_proxies(trusted_proxies):
+    proxy_ip = client_ip if sanitize_proxyip is None else sanitize_proxyip(client_ip)
+
+    if proxy_ip in get_trusted_proxies(trusted_proxies):
         headers = Header.ensure_header_instance(scope)
         try:
             ip_matches = _forwarded_regex.search(headers["forwarded"])
@@ -55,9 +71,10 @@ def get_ip(scope: Scope, trusted_proxies: None | Sequence[str] = None) -> str:
                 pass
     if client_ip == "unix":
         raise ValueError("Could not determinate ip address")
+    # strip ports
     if "." in client_ip and client_ip.count(":") <= 1:
         client_ip = _ip4_port_cleanup_regex.sub("", client_ip)
-    else:
+    elif ":" in client_ip:
         client_ip = _ip6_port_cleanup_regex.sub("", client_ip).strip("[]")
 
-    return client_ip
+    return client_ip if sanitize_clientip is None else sanitize_clientip(client_ip)

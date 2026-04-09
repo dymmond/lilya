@@ -13,7 +13,6 @@ from collections.abc import Callable, Mapping, Sequence
 from typing import Any, cast
 
 from lilya._internal._middleware import wrap_middleware
-from lilya._internal._module_loading import import_string
 from lilya._internal._path import (
     clean_path,
     compile_path,
@@ -22,7 +21,7 @@ from lilya._internal._path import (
 )
 from lilya._internal._permissions import wrap_permission
 from lilya._internal._responses import BaseHandler
-from lilya.compat import is_async_callable
+from lilya.compat import import_string, is_async_callable
 from lilya.concurrency import run_in_threadpool
 from lilya.conf import _monkay
 from lilya.datastructures import URLPath
