@@ -67,9 +67,15 @@ def convert_annotation_to_pydantic_model(field_annotation: Any) -> Any:
     we convert the encoders into a Pydantic model for OpenAPI representation purposes only.
     """
     annotation_args = get_args(field_annotation)
-    if isinstance(field_annotation, GenericAlias) or get_args(field_annotation):
+    if isinstance(field_annotation, GenericAlias) or annotation_args:
+        origin = getattr(field_annotation, "__origin__", None)
         annotations = tuple(convert_annotation_to_pydantic_model(arg) for arg in annotation_args)
-        field_annotation.__args__ = annotations  # type: ignore
+
+        if origin is not None and annotations:
+            if len(annotations) == 1:
+                return origin[annotations[0]]  # type: ignore[index]
+            return origin[annotations]  # type: ignore[index]
+
         return field_annotation
 
     encoders = ENCODER_TYPES.get()
