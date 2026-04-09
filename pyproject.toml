@@ -147,6 +147,8 @@ Source = "https://github.com/dymmond/lilya"
 all = [
     # The templating engine
     "jinja2>=3.1.3",
+    # AI provider HTTP integrations
+    "httpx>=0.25.0",
     # Used for the runserver CLI command
     "rich_toolkit>=0.14.7",
     # The base client for Lilya
@@ -162,6 +164,11 @@ all = [
     "ptpython",
     # For deducing Responses
     "python-magic"
+]
+
+ai = [
+    # Base HTTP transport for AI provider integrations
+    "httpx>=0.25.0",
 ]
 
 cli = [

@@ -6,6 +6,7 @@ shape or form the core of it.
 Most used modules in this section:
 
 * [OpenAPI](./openapi.md)
+* [AI](./ai.md)
 * [Security](./security/index.md)
 * [Mail](./mail.md)
 * [SSE Channels](./sse.md)
