@@ -472,7 +472,7 @@ If you don't want an injected header use the `ClientIPScopeOnlyMiddleware`:
     It is currently not possible to simulate a client ip address in lilyas TestClient. So you may want to use the Forwarded header and trust "unix" for tests.
     You can also provide a custom middleware which injects a fake `client` in the scope. See clientip tests for this approach.
 
-### Sanitizing ips
+#### Sanitizing ips
 
 Given there are two ip protocols (ipv4 an ipv6) and every ASGI server which serves both, handles addresses different.
 So there are two sanitizer options:
