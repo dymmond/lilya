@@ -54,7 +54,7 @@ class TemplateControllerMetaclass(type):
             if method_name in attrs:
                 attrs[method_name] = make_wrapper(method_name, attrs[method_name])
 
-        return super().__new__(cls, name, bases, attrs)  # type: ignore[misc]
+        return type.__new__(cls, name, bases, attrs)
 
     def __init__(cls, name: str, bases: Any, dct: Any) -> None:
         """

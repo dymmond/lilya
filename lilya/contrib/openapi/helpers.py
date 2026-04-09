@@ -1,11 +1,6 @@
 import inspect
-import sys
-from typing import TYPE_CHECKING, Any, Literal, get_args
-
-if TYPE_CHECKING or sys.version_info >= (3, 10):
-    from typing import _GenericAlias  # type: ignore[attr-defined]
-else:
-    from typing import _GenericAlias  # type: ignore[attr-defined]
+from types import GenericAlias
+from typing import Any, Literal, cast, get_args
 
 from pydantic import BaseModel, TypeAdapter, create_model
 from pydantic.fields import FieldInfo
@@ -28,7 +23,7 @@ def get_definitions(
         inputs=inputs  # type: ignore
     )
 
-    return field_mapping, definitions  # type: ignore[return-value]
+    return field_mapping, cast(dict[str, dict[str, Any]], definitions)
 
 
 def get_base_annotations(base_annotation: Any, is_class: bool = False) -> dict[str, Any]:
@@ -72,7 +67,7 @@ def convert_annotation_to_pydantic_model(field_annotation: Any) -> Any:
     we convert the encoders into a Pydantic model for OpenAPI representation purposes only.
     """
     annotation_args = get_args(field_annotation)
-    if isinstance(field_annotation, (_GenericAlias, list, tuple)):
+    if isinstance(field_annotation, GenericAlias) or get_args(field_annotation):
         annotations = tuple(convert_annotation_to_pydantic_model(arg) for arg in annotation_args)
         field_annotation.__args__ = annotations  # type: ignore
         return field_annotation

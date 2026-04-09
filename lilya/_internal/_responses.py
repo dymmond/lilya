@@ -59,6 +59,11 @@ INDEX_REGEX = re.compile(r"^(.+)\[(\d+)\]$")
 _SIG_CACHE_ATTR = "__lilya_resolved_signature__"
 _PLAN_CACHE_ATTR = "__lilya_handler_plan__"
 
+ZeroArgAsyncHandler = Callable[[], Awaitable[Any]]
+KwargsAsyncHandler = Callable[..., Awaitable[Any]]
+ZeroArgSyncHandler = Callable[[], Any]
+KwargsSyncHandler = Callable[..., Any]
+
 
 def _build_handler_plan(sig: inspect.Signature) -> dict[str, Any]:
     """
@@ -304,6 +309,7 @@ class BaseHandler:
 
         # Pre-bind execution strategy so we don't call `is_async_callable(func)` per request.
         if is_async_callable(func):
+            async_func = cast(ZeroArgAsyncHandler | KwargsAsyncHandler, func)
 
             async def _execute0() -> Any:
                 """
@@ -311,7 +317,7 @@ class BaseHandler:
 
                 This wrapper is created once per handler to avoid per-request branching.
                 """
-                return await func()  # type: ignore[call-arg,misc]
+                return await cast(ZeroArgAsyncHandler, async_func)()
 
             async def _executekw(**kwargs: Any) -> Any:
                 """
@@ -319,9 +325,10 @@ class BaseHandler:
 
                 This wrapper is created once per handler to avoid per-request branching.
                 """
-                return await func(**kwargs)  # type: ignore[call-arg,misc]
+                return await cast(KwargsAsyncHandler, async_func)(**kwargs)
 
         else:
+            sync_func = cast(ZeroArgSyncHandler | KwargsSyncHandler, func)
 
             async def _execute0() -> Any:
                 """
@@ -329,7 +336,7 @@ class BaseHandler:
 
                 This wrapper is created once per handler to avoid per-request branching.
                 """
-                return await run_in_threadpool(func)
+                return await run_in_threadpool(cast(ZeroArgSyncHandler, sync_func))
 
             async def _executekw(**kwargs: Any) -> Any:
                 """
@@ -337,7 +344,7 @@ class BaseHandler:
 
                 This wrapper is created once per handler to avoid per-request branching.
                 """
-                return await run_in_threadpool(func, **kwargs)
+                return await run_in_threadpool(cast(KwargsSyncHandler, sync_func), **kwargs)
 
         # Precompute common toggles from the plan.
         param_names = plan["param_names"]

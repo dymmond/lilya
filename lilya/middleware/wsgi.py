@@ -195,7 +195,7 @@ class WSGIMiddleware(A2WSGIMiddleware):
             receive: The ASGI receive callable, used to get incoming messages.
             send: The ASGI send callable, used to send outgoing messages.
         """
-        app: Lilya = scope["app"]  # type: ignore[typeddict-item]
+        app = cast(Lilya, cast(dict[str, object], scope).get("app"))
 
         if not self.redirect_exceptions:
             # If exception redirection is not enabled,
