@@ -1,6 +1,23 @@
 # Release Notes
 
 
+## 0.26.0
+
+### Added
+
+- New provider-agnostic `lilya.contrib.ai` integration for building AI-powered Lilya applications.
+- `AIClient` with normalized prompt/chat APIs for non-streaming and streaming model interactions.
+- Typed AI configuration and response objects, including `ChatMessage`, `PromptRequest`, `AIResponse`, `AIResponseChunk`, and `AIUsage`.
+- Built-in AI provider adapters for OpenAI-compatible APIs, including `OpenAIProvider`, `GroqProvider`, `MistralProvider`, and the generic `OpenAICompatibleProvider`.
+- Built-in `AnthropicProvider` adapter for Anthropic's Messages API.
+- `setup_ai()` startup helper and `AI` dependency integration for wiring AI clients into Lilya applications through `app.state` and dependency injection.
+- New [AI contrib documentation](./contrib/ai.md) with installation steps, full app examples, endpoint recipes, streaming patterns, testing strategies, and provider-switching how-tos.
+
+### Changed
+
+- AI contrib documentation now includes more concrete endpoint integration examples, user-facing route patterns, and practical how-to recipes to make adoption clearer in real Lilya applications.
+
+
 ## 0.25.1
 
 Client ip retrieval improvements.

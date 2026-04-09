@@ -33,7 +33,7 @@ class AIProvider(Protocol):
         Execute a non-streaming completion request.
         """
 
-    async def stream(self, request: PromptRequest) -> AsyncIterator[AIResponseChunk]:
+    def stream(self, request: PromptRequest) -> AsyncIterator[AIResponseChunk]:
         """
         Execute a streaming completion request.
         """

@@ -170,6 +170,56 @@ provider = AnthropicProvider(
 client = AIClient(provider, default_model="claude-sonnet-4-20250514")
 ```
 
+## Full Application Example
+
+If you want to see the full shape in one place, this is the most useful mental model:
+
+1. configure a provider
+2. build one shared `AIClient`
+3. attach it with `setup_ai()`
+4. inject it into routes with `AI`
+
+```python
+from lilya.apps import Lilya
+from lilya.contrib.ai import AI, AIClient, ChatMessage, OpenAIConfig, OpenAIProvider, setup_ai
+
+provider = OpenAIProvider(
+    OpenAIConfig(
+        api_key="your-openai-key",
+        timeout=20.0,
+    )
+)
+
+client = AIClient(
+    provider,
+    default_model="gpt-4o-mini",
+    default_system_prompt="You are a helpful assistant for Lilya applications.",
+)
+
+app = Lilya()
+setup_ai(app, client=client)
+
+
+@app.post("/summarize", dependencies={"ai": AI})
+async def summarize(ai: AI):
+    result = await ai.chat(
+        [
+            ChatMessage.user(
+                "Summarize the following incident in three bullets: "
+                "API latency increased after deployment. Error rate stayed low. "
+                "A cache misconfiguration caused most of the slowdown."
+            )
+        ]
+    )
+    return {
+        "provider": result.provider,
+        "model": result.model,
+        "text": result.text,
+    }
+```
+
+This gives you one central AI integration point for the entire app instead of scattering provider calls across handlers.
+
 ## Core Types
 
 ### `ChatMessage`
@@ -332,6 +382,92 @@ This is useful when:
 * you want to experiment without changing the contrib core
 * you need provider-specific tuning knobs
 
+## Endpoint Integration Patterns
+
+Most users will consume this feature through Lilya endpoints, not through standalone scripts, so here are the most practical route shapes.
+
+### 1. Basic JSON endpoint
+
+```python
+from lilya.contrib.ai import AI
+
+@app.post("/rewrite", dependencies={"ai": AI})
+async def rewrite(ai: AI):
+    result = await ai.prompt(
+        "Rewrite this sentence to sound more professional: "
+        "'hey, your payment failed, try again later.'"
+    )
+    return {"text": result.text}
+```
+
+Use this when:
+
+* the caller expects one final answer
+* you want a simple HTTP request/response interaction
+* you do not need token streaming
+
+### 2. Endpoint with explicit user input
+
+In a real application, the prompt usually comes from the request body, query, or resolved domain data.
+
+```python
+from lilya.contrib.ai import AI, ChatMessage
+
+@app.post("/support/reply", dependencies={"ai": AI})
+async def draft_support_reply(ai: AI, request):
+    payload = await request.json()
+    customer_message = payload["message"]
+
+    result = await ai.chat(
+        [
+            ChatMessage.system("You are a senior support engineer."),
+            ChatMessage.user(
+                f"Draft a helpful reply to this customer message:\\n\\n{customer_message}"
+            ),
+        ],
+        temperature=0.4,
+    )
+
+    return {"reply": result.text}
+```
+
+That pattern is usually clearer than creating raw provider payloads in the handler.
+
+### 3. Endpoint with domain context
+
+Most real AI features combine user input with business context from your own system.
+
+```python
+from lilya.contrib.ai import AI, ChatMessage
+
+@app.get("/accounts/{account_id}/health-summary", dependencies={"ai": AI})
+async def account_health_summary(account_id: str, ai: AI):
+    metrics = {
+        "open_incidents": 2,
+        "last_deployment": "2026-04-09T10:00:00Z",
+        "error_rate": "0.08%",
+        "latency_p95": "420ms",
+    }
+
+    result = await ai.chat(
+        [
+            ChatMessage.system("You produce short, executive-friendly account summaries."),
+            ChatMessage.user(
+                "Write a concise health summary for this account using the following metrics: "
+                f"{metrics}"
+            ),
+        ]
+    )
+
+    return {"account_id": account_id, "summary": result.text}
+```
+
+This is the most common production pattern:
+
+* fetch your own data first
+* shape it into a prompt
+* keep the AI call as the final transformation step
+
 ## Startup Integration
 
 Attach the AI client to your Lilya app with `setup_ai()`.
@@ -374,6 +510,125 @@ This is the recommended integration style because it:
 * avoids direct provider construction inside routes
 * follows the same pattern Lilya already uses for other contrib services
 
+### When to use `request.app.state.ai`
+
+`request.app.state.ai` is still valid, but prefer the dependency helper in handlers.
+
+Use `app.state.ai` directly when:
+
+* you are in startup code
+* you are wiring custom services
+* you are outside a normal handler dependency flow
+
+Use `AI` when:
+
+* you are inside endpoints
+* you want easy test overrides
+* you want the clearest Lilya-native route signature
+
+## How-To Recipes
+
+These are the most common things developers try to do when first integrating AI.
+
+### How to switch providers without rewriting handlers
+
+Keep your handlers dependent on `AIClient`, not on a specific provider class.
+
+```python
+# handler code stays the same
+@app.post("/classify", dependencies={"ai": AI})
+async def classify(ai: AI):
+    result = await ai.prompt("Classify this text as billing, support, or abuse.")
+    return {"label": result.text}
+```
+
+Only the startup wiring changes:
+
+```python
+from lilya.contrib.ai import AIClient, GroqConfig, GroqProvider
+
+provider = GroqProvider(GroqConfig(api_key="..."))
+client = AIClient(provider, default_model="llama-3.3-70b-versatile")
+setup_ai(app, client=client)
+```
+
+### How to use a self-hosted or gateway provider
+
+Use `OpenAICompatibleProvider` when the gateway exposes a compatible chat completions surface.
+
+```python
+from lilya.contrib.ai import AIClient, OpenAICompatibleConfig, OpenAICompatibleProvider
+
+provider = OpenAICompatibleProvider(
+    OpenAICompatibleConfig(
+        provider_name="internal-gateway",
+        api_key="gateway-token",
+        base_url="https://gateway.example.com/v1",
+        headers={"X-Workspace": "ops"},
+    )
+)
+
+client = AIClient(provider, default_model="meta-llama/llama-4")
+```
+
+### How to add per-request system behavior
+
+Use `system_prompt=` when the instruction should be request-specific.
+
+```python
+result = await ai.prompt(
+    "Summarize the latest build output.",
+    system_prompt="Respond with no more than 4 bullet points.",
+)
+```
+
+Use `default_system_prompt` on `AIClient` when the instruction should apply globally across the app.
+
+### How to return usage metadata to clients
+
+`AIResponse.usage` is normalized when the provider sends token counts.
+
+```python
+@app.post("/token-aware", dependencies={"ai": AI})
+async def token_aware(ai: AI):
+    result = await ai.prompt("Explain what ASGI is.")
+    return {
+        "text": result.text,
+        "usage": {
+            "input_tokens": result.usage.input_tokens if result.usage else None,
+            "output_tokens": result.usage.output_tokens if result.usage else None,
+            "total_tokens": result.usage.total_tokens if result.usage else None,
+        },
+    }
+```
+
+### How to keep request handlers small
+
+Move prompt construction into a service function and keep the endpoint thin.
+
+```python
+from lilya.contrib.ai import AIClient, ChatMessage
+
+
+async def generate_release_summary(ai: AIClient, release_notes: str) -> str:
+    response = await ai.chat(
+        [
+            ChatMessage.system("You write concise engineering release summaries."),
+            ChatMessage.user(f"Summarize these notes:\\n\\n{release_notes}"),
+        ]
+    )
+    return response.text
+
+
+@app.post("/releases/summary", dependencies={"ai": AI})
+async def release_summary(ai: AI, request):
+    payload = await request.json()
+    summary = await generate_release_summary(ai, payload["notes"])
+    return {"summary": summary}
+```
+
+This tends to produce cleaner handlers and much easier tests.
+
 ## Streaming
 
 Streaming is essential for chat UIs, assistant surfaces, terminals, and progressive rendering.
@@ -412,6 +667,35 @@ async def stream_answer(ai: AI):
     return StreamingResponse(body(), media_type="text/plain")
 ```
 
+### Streaming chat to a browser client
+
+For browser-like consumers, you will often want newline-delimited chunks or SSE-style output.
+
+```python
+from lilya.responses import StreamingResponse
+
+@app.get("/chat/stream", dependencies={"ai": AI})
+async def chat_stream(ai: AI):
+    async def body():
+        async for chunk in ai.stream_chat(
+            [
+                ChatMessage.system("You are a debugging assistant."),
+                ChatMessage.user("Help me understand why a health check might flap."),
+            ]
+        ):
+            if chunk.delta:
+                yield f"{chunk.delta}\n"
+
+    return StreamingResponse(body(), media_type="text/plain")
+```
+
+The important part is that your handler decides how to frame streamed chunks for the client:
+
+* plain text
+* newline-delimited text
+* SSE
+* custom JSON fragments
+
 ## Real-World Usage Patterns
 
 ### 1. Internal knowledge assistant
@@ -440,9 +724,35 @@ result = await ai.prompt(
 )
 ```
 
+### 2a. Support endpoint example
+
+```python
+@app.post("/tickets/{ticket_id}/summary", dependencies={"ai": AI})
+async def summarize_ticket(ticket_id: str, ai: AI):
+    ticket_text = """
+    Customer cannot access billing.
+    Payment method was updated yesterday.
+    They now receive a 403 in the billing portal.
+    """
+
+    result = await ai.prompt(
+        "Summarize this ticket in two bullets and add one likely next action:\\n\\n"
+        f"{ticket_text}"
+    )
+    return {"ticket_id": ticket_id, "summary": result.text}
+```
+
 ### 3. Structured draft generation
 
 Use `extra` to pass provider-specific structured output options while keeping the rest of your code provider-neutral.
+
+```python
+result = await ai.prompt(
+    "Return a JSON object with keys `title`, `priority`, and `summary` for this incident: "
+    "checkout latency increased after a cache flush",
+    extra={"response_format": {"type": "json_object"}},
+)
+```
 
 ### 4. Content moderation or classification front door
 
@@ -557,6 +867,41 @@ Mock the HTTP transport and assert:
 
 This repo includes dedicated tests for all of these patterns.
 
+### Example: testing a Lilya endpoint with a fake AI client
+
+```python
+from lilya.dependencies import Provide
+
+
+class FakeAIClient:
+    async def prompt(self, prompt: str, **kwargs):
+        class Response:
+            text = "fake summary"
+            provider = "fake"
+            model = "fake-model"
+            usage = None
+
+        return Response()
+
+
+fake_ai = FakeAIClient()
+
+
+async def resolve_fake_ai(request, **kwargs):
+    return fake_ai
+
+
+FakeAI = Provide(resolve_fake_ai)
+
+
+@app.post("/summary", dependencies={"ai": FakeAI})
+async def summary(ai):
+    result = await ai.prompt("Summarize this.")
+    return {"text": result.text}
+```
+
+This style makes route tests deterministic and avoids external provider calls.
+
 ## Production Guidance
 
 ### Keep provider setup centralized
@@ -600,6 +945,14 @@ Set a default model on `AIClient` or pass `model=` for the request.
 ### `No AIClient configured`
 
 Make sure you called `setup_ai(app, client=...)`.
+
+### The endpoint works locally but not in tests
+
+Usually one of these is happening:
+
+* the route did not declare `dependencies={"ai": AI}`
+* the app did not call `setup_ai(...)`
+* the test needs to override the AI dependency with a fake provider or fake client
 
 ### Streaming returns nothing
 
