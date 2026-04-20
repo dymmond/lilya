@@ -187,11 +187,22 @@ class AuthCredentials:
 class UserInterface(Protocol):
     @property
     def is_authenticated(self) -> bool:
+        """Is this user authenticated?"""
         raise NotImplementedError()
 
     @property
     def display_name(self) -> str:
+        """Returns the displayed name."""
         raise NotImplementedError()
+
+    @property
+    def identifier(self) -> str:
+        """
+        Returns unique string identifier for authenticated users.
+
+        For example the id in string format.
+        """
+        return self.display_name
 
 
 # bw compatibility alias
@@ -210,6 +221,11 @@ class BasicUser(UserInterface):
     def display_name(self) -> str:
         return self._username
 
+    @property
+    def identifier(self) -> str:
+        """Returns the stringified .id with fallback: .display_name."""
+        return str(getattr(self, "id", self.display_name))
+
 
 class AnonymousUser(UserInterface):
     """
@@ -225,4 +241,8 @@ class AnonymousUser(UserInterface):
 
     @property
     def display_name(self) -> str:
+        return ""
+
+    @property
+    def identifier(self) -> str:
         return ""

@@ -1,5 +1,10 @@
 # Release Notes
 
+## 0.27.0
+
+### Added
+
+- `identifier` field for UserInterface. This is required for tracking authenticated users in libraries.
 
 ## 0.26.0
 

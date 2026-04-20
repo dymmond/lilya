@@ -30,12 +30,14 @@ Backends are retrievable on the middleware via the `backend` attribute. It is al
 Once you have installed `AuthenticationMiddleware`, the `request.user` interface becomes
 available to your endpoints and other middleware.
 
-The implementation should implement the interface `UserInterface`, which includes two properties and any additional information your user model requires.
+The implementation should implement the interface `UserInterface`, which includes three properties and any additional information your user model requires.
 
-* `.is_authenticated`
-* `.display_name`
+* `.is_authenticated`: Is authenticated.
+* `.display_name`: Name displayed in UI.
+* `.identifier`: Unique string identifying the authenticated user object. Can be created from an id.
 
 Lilya provides two built-in user implementations: `AnonymousUser()` and `BasicUser(username)`.
+`BasicUser` defaults to use an `id` field when available with fallback `display_name` for creating the `identifier`.
 
 ## AuthCredentials
 
