@@ -44,7 +44,9 @@ class BasicAuth(AuthenticationBackend):
             raise AuthenticationError("Invalid basic auth credentials") from None
 
         username, _, password = decoded.partition(":")
-        return AuthCredentials(["authenticated"]), BasicUser(username)
+        buser = BasicUser(username)
+        buser.id = 1  # type: ignore
+        return AuthCredentials(["authenticated"]), buser
 
 
 def homepage(request: Request) -> JSONResponse:
@@ -52,6 +54,7 @@ def homepage(request: Request) -> JSONResponse:
         {
             "authenticated": request.user.is_authenticated,
             "user": request.user.display_name,
+            "identifier": request.user.identifier,
         }
     )
 
@@ -62,6 +65,7 @@ async def dashboard(request: Request) -> JSONResponse:
         {
             "authenticated": request.user.is_authenticated,
             "user": request.user.display_name,
+            "identifier": request.user.identifier,
         }
     )
 
@@ -72,6 +76,7 @@ async def admin(request: Request) -> JSONResponse:
         {
             "authenticated": request.user.is_authenticated,
             "user": request.user.display_name,
+            "identifier": request.user.identifier,
         }
     )
 
@@ -82,6 +87,7 @@ def dashboard_sync(request: Request) -> JSONResponse:
         {
             "authenticated": request.user.is_authenticated,
             "user": request.user.display_name,
+            "identifier": request.user.identifier,
         }
     )
 
@@ -93,6 +99,7 @@ class Dashboard(Controller):
             {
                 "authenticated": request.user.is_authenticated,
                 "user": request.user.display_name,
+                "identifier": request.user.identifier,
             }
         )
 
@@ -103,6 +110,7 @@ def admin_sync(request: Request) -> JSONResponse:
         {
             "authenticated": request.user.is_authenticated,
             "user": request.user.display_name,
+            "identifier": request.user.identifier,
         }
     )
 
@@ -114,6 +122,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
         {
             "authenticated": websocket.user.is_authenticated,
             "user": websocket.user.display_name,
+            "identifier": websocket.user.identifier,
         }
     )
 
@@ -137,6 +146,7 @@ async def decorated_async(request: Request, additional: str) -> JSONResponse:
         {
             "authenticated": request.user.is_authenticated,
             "user": request.user.display_name,
+            "identifier": request.user.identifier,
             "additional": additional,
         }
     )
@@ -161,6 +171,7 @@ def decorated_sync(request: Request, additional: str) -> JSONResponse:
         {
             "authenticated": request.user.is_authenticated,
             "user": request.user.display_name,
+            "identifier": request.user.identifier,
             "additional": additional,
         }
     )
@@ -184,6 +195,7 @@ async def websocket_endpoint_decorated(websocket: WebSocket, additional: str) ->
         {
             "authenticated": websocket.user.is_authenticated,
             "user": websocket.user.display_name,
+            "identifier": websocket.user.identifier,
             "additional": additional,
         }
     )
@@ -217,11 +229,11 @@ def test_user_interface(test_client_factory) -> None:
     with test_client_factory(app) as client:
         response = client.get("/")
         assert response.status_code == 200
-        assert response.json() == {"authenticated": False, "user": ""}
+        assert response.json() == {"authenticated": False, "user": "", "identifier": ""}
 
         response = client.get("/", auth=("lilya", "example"))
         assert response.status_code == 200
-        assert response.json() == {"authenticated": True, "user": "lilya"}
+        assert response.json() == {"authenticated": True, "user": "lilya", "identifier": "1"}
 
 
 def test_authentication_required(test_client_factory) -> None:
@@ -231,27 +243,28 @@ def test_authentication_required(test_client_factory) -> None:
 
         response = client.get("/dashboard", auth=("lilya", "example"))
         assert response.status_code == 200
-        assert response.json() == {"authenticated": True, "user": "lilya"}
+        assert response.json() == {"authenticated": True, "user": "lilya", "identifier": "1"}
 
         response = client.get("/dashboard/sync")
         assert response.status_code == 403
 
         response = client.get("/dashboard/sync", auth=("lilya", "example"))
         assert response.status_code == 200
-        assert response.json() == {"authenticated": True, "user": "lilya"}
+        assert response.json() == {"authenticated": True, "user": "lilya", "identifier": "1"}
 
         response = client.get("/dashboard/class")
         assert response.status_code == 403
 
         response = client.get("/dashboard/class", auth=("lilya", "example"))
         assert response.status_code == 200
-        assert response.json() == {"authenticated": True, "user": "lilya"}
+        assert response.json() == {"authenticated": True, "user": "lilya", "identifier": "1"}
 
         response = client.get("/dashboard/decorated", auth=("lilya", "example"))
         assert response.status_code == 200
         assert response.json() == {
             "authenticated": True,
             "user": "lilya",
+            "identifier": "1",
             "additional": "payload",
         }
 
@@ -263,6 +276,7 @@ def test_authentication_required(test_client_factory) -> None:
         assert response.json() == {
             "authenticated": True,
             "user": "lilya",
+            "identifier": "1",
             "additional": "payload",
         }
 
@@ -283,7 +297,7 @@ def test_authentication_redirect(test_client_factory) -> None:
 
         response = client.get("/admin", auth=("lilya", "example"))
         assert response.status_code == 200
-        assert response.json() == {"authenticated": True, "user": "lilya"}
+        assert response.json() == {"authenticated": True, "user": "lilya", "identifier": "1"}
 
         response = client.get("/admin/sync")
         assert response.status_code == 200
@@ -294,7 +308,7 @@ def test_authentication_redirect(test_client_factory) -> None:
 
         response = client.get("/admin/sync", auth=("lilya", "example"))
         assert response.status_code == 200
-        assert response.json() == {"authenticated": True, "user": "lilya"}
+        assert response.json() == {"authenticated": True, "user": "lilya", "identifier": "1"}
 
 
 def on_auth_error(request: Connection, exc: AuthenticationError) -> JSONResponse:
@@ -307,6 +321,7 @@ def control_panel(request: Request) -> JSONResponse:
         {
             "authenticated": request.user.is_authenticated,
             "user": request.user.display_name,
+            "identifier": "1",
         }
     )
 
@@ -325,7 +340,7 @@ def test_custom_on_error(test_client_factory) -> None:
     with test_client_factory(other_app) as client:
         response = client.get("/control-panel", auth=("lilya", "example"))
         assert response.status_code == 200
-        assert response.json() == {"authenticated": True, "user": "lilya"}
+        assert response.json() == {"authenticated": True, "user": "lilya", "identifier": "1"}
 
         response = client.get("/control-panel", headers={"Authorization": "basic foobar"})
         assert response.status_code == 401
