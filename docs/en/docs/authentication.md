@@ -39,6 +39,12 @@ The implementation should implement the interface `UserInterface`, which include
 Lilya provides two built-in user implementations: `AnonymousUser()` and `BasicUser(username)`.
 `BasicUser` defaults to use an `id` field when available with fallback `display_name` for creating the `identifier`.
 
+**What is the benefit of using `identifier`?**
+
+Basically `identifier` is an abstraction of ids. Some may are integers, some are strings.
+The difference to `display_name` is that, `display_name` can be an non-unique string but `identifier` should identify an resource.
+This is particular handy for third-party libraries which depend on an unique identification.
+
 ## AuthCredentials
 
 Authentication credentials should be considered distinct from user identities.
