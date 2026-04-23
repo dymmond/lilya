@@ -175,7 +175,9 @@ def requires(
 
 class AuthenticationBackend(ABC):
     @abstractmethod
-    async def authenticate(self, connection: Connection, **kwargs: Any) -> AuthResult | None: ...
+    async def authenticate(
+        self, connection: Connection, /, **kwargs: Any
+    ) -> AuthResult | None: ...
 
 
 class AuthCredentials:

@@ -13,6 +13,7 @@ from lilya.authentication import (
     AuthCredentials,
     AuthenticationBackend,
     BasicUser,
+    UserInterface,
     requires,
 )
 from lilya.controllers import Controller
@@ -44,9 +45,9 @@ class BasicAuth(AuthenticationBackend):
             raise AuthenticationError("Invalid basic auth credentials") from None
 
         username, _, password = decoded.partition(":")
-        buser = BasicUser(username)
-        buser.id = 1  # type: ignore
-        return AuthCredentials(["authenticated"]), buser
+        user = BasicUser(username)
+        user.id = 1  # type: ignore
+        return AuthCredentials(["authenticated"]), user
 
 
 def homepage(request: Request) -> JSONResponse:
@@ -216,6 +217,44 @@ app = Lilya(
         WebSocketPath("/ws/decorated", handler=websocket_endpoint_decorated),
     ],
 )
+
+
+def test_interface_implementation():
+    user = BasicUser("test")
+    # let's check if it implements the userinterface
+    assert isinstance(user, UserInterface)
+
+
+def test_overwrites_full():
+    class AdvancedUser(BasicUser):
+        @property
+        def is_authenticated(self) -> bool:
+            return not super().is_authenticated
+
+        @property
+        def display_name(self) -> str:
+            return self._username.upper()
+
+        identifier = "foo"
+
+    user = AdvancedUser("test")
+    assert user.display_name == "TEST"
+    assert not user.is_authenticated
+    assert user.identifier == "foo"
+
+
+def test_overwrites_partial():
+    class AdvancedUser(BasicUser):
+        @property
+        def display_name(self) -> str:
+            return self._username.upper()
+
+    user = AdvancedUser("test")
+    assert user.display_name == "TEST"
+    assert user.is_authenticated
+    assert user.identifier == "TEST"
+    user.id = 123
+    assert user.identifier == "123"
 
 
 def test_invalid_decorator_usage() -> None:
