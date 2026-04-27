@@ -198,11 +198,12 @@ class UserInterface(Protocol):
         raise NotImplementedError()
 
     @property
-    def identifier(self) -> str:
+    def unique_identifier(self) -> str:
         """
         Returns unique string identifier for authenticated users.
 
         For example the id in string format.
+        For unauthenticated users it can be empty.
         """
         return self.display_name
 
@@ -224,7 +225,7 @@ class BasicUser(UserInterface):
         return self._username
 
     @property
-    def identifier(self) -> str:
+    def unique_identifier(self) -> str:
         """Returns the stringified .id with fallback: .display_name."""
         return str(getattr(self, "id", self.display_name))
 
@@ -246,5 +247,5 @@ class AnonymousUser(UserInterface):
         return ""
 
     @property
-    def identifier(self) -> str:
+    def unique_identifier(self) -> str:
         return ""

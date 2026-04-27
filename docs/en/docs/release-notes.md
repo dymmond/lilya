@@ -4,7 +4,7 @@
 
 ### Added
 
-- `identifier` field for UserInterface. This is required for tracking authenticated users in libraries.
+- `unique_identifier` field for UserInterface. This is required for tracking authenticated users in libraries.
 
 ## 0.26.0
 

@@ -34,16 +34,21 @@ The implementation should implement the interface `UserInterface`, which include
 
 * `.is_authenticated`: Is authenticated.
 * `.display_name`: Name displayed in UI.
-* `.identifier`: Unique string identifying the authenticated user object. Can be created from an id.
+* `.unique_identifier`: Unique string identifying the authenticated user object. Can be created from an id.
 
 Lilya provides two built-in user implementations: `AnonymousUser()` and `BasicUser(username)`.
-`BasicUser` defaults to use an `id` field when available with fallback `display_name` for creating the `identifier`.
+`BasicUser` defaults to use an `id` field when available with fallback `display_name` for creating the `unique_identifier`.
 
-**What is the benefit of using `identifier`?**
+**What is the benefit of using `unique_identifier`?**
 
-Basically `identifier` is an abstraction of ids. Some may are integers, some are strings.
-The difference to `display_name` is that, `display_name` can be an non-unique string but `identifier` should identify an resource.
+Basically `unique_identifier` is an abstraction of ids. Some may are integers, some are strings.
+The difference to `display_name` is that, `display_name` can be an non-unique string but `unique_identifier` should identify an resource.
 This is particular handy for third-party libraries which depend on an unique identification.
+
+!!! Note
+    Please think about the case empty `unique_identifier` when the user was not authenticated. You might should think about
+    handling unauthenticated users with a non-empty `unique_identifier`. This could be the case for tracking sessions where users can choose their name.
+    Think about adhoc instant-messaging like jitsi-meet.
 
 ## AuthCredentials
 
