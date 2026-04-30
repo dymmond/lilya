@@ -60,6 +60,9 @@ exposes:
 
 * `.scopes`
 
+The scopes are for describing the resources allowed to the user. For example: `issues`, `issues:ro` or even more simple
+`read`, `write`.
+
 ## Permissions
 
 Permissions are enforced using an endpoint decorator that ensures the incoming request contains the necessary authentication scopes.
