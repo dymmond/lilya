@@ -30,12 +30,25 @@ Backends are retrievable on the middleware via the `backend` attribute. It is al
 Once you have installed `AuthenticationMiddleware`, the `request.user` interface becomes
 available to your endpoints and other middleware.
 
-The implementation should implement the interface `UserInterface`, which includes two properties and any additional information your user model requires.
+The implementation should implement the interface `UserInterface`, which includes three properties and any additional information your user model requires.
 
-* `.is_authenticated`
-* `.display_name`
+* `.is_authenticated`: Is authenticated.
+* `.display_name`: Name displayed in UI.
+* `.unique_identifier`: Unique string identifying the authenticated user object. Can be created from an id.
 
 Lilya provides two built-in user implementations: `AnonymousUser()` and `BasicUser(username)`.
+`BasicUser` defaults to use an `id` field when available with fallback `display_name` for creating the `unique_identifier`.
+
+**What is the benefit of using `unique_identifier`?**
+
+Basically `unique_identifier` is an abstraction of ids. Some may are integers, some are strings.
+The difference to `display_name` is that, `display_name` can be an non-unique string but `unique_identifier` should identify an resource.
+This is particular handy for third-party libraries which depend on an unique identification.
+
+!!! Note
+    Please think about the case empty `unique_identifier` when the user was not authenticated. You might should think about
+    handling unauthenticated users with a non-empty `unique_identifier`. This could be the case for tracking sessions where users can choose their name.
+    Think about adhoc instant-messaging like jitsi-meet.
 
 ## AuthCredentials
 
@@ -46,6 +59,9 @@ The `AuthCredentials` class provides the basic interface that `request.auth`
 exposes:
 
 * `.scopes`
+
+The scopes are for describing the resources allowed to the user. For example: `issues`, `issues:ro` or even more simple
+`read`, `write`.
 
 ## Permissions
 

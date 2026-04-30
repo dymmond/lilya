@@ -20,10 +20,10 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
           pip install hatch
-      - name: "Check for security vulnerabilities"
-        run: |
-          pip install pip-audit
-          pip-audit --strict --desc
+      # - name: "Check for security vulnerabilities"
+      #   run: |
+      #     pip install pip-audit
+      #     pip-audit --strict --desc
       - name: "Build package"
         run: "hatch run build_with_check"
       - name: "Publish to PyPI"

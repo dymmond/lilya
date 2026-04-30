@@ -13,6 +13,7 @@ from lilya.authentication import (
     AuthCredentials,
     AuthenticationBackend,
     BasicUser,
+    UserInterface,
     requires,
 )
 from lilya.controllers import Controller
@@ -44,7 +45,9 @@ class BasicAuth(AuthenticationBackend):
             raise AuthenticationError("Invalid basic auth credentials") from None
 
         username, _, password = decoded.partition(":")
-        return AuthCredentials(["authenticated"]), BasicUser(username)
+        user = BasicUser(username)
+        user.id = 1  # type: ignore
+        return AuthCredentials(["authenticated"]), user
 
 
 def homepage(request: Request) -> JSONResponse:
@@ -52,6 +55,7 @@ def homepage(request: Request) -> JSONResponse:
         {
             "authenticated": request.user.is_authenticated,
             "user": request.user.display_name,
+            "unique_identifier": request.user.unique_identifier,
         }
     )
 
@@ -62,6 +66,7 @@ async def dashboard(request: Request) -> JSONResponse:
         {
             "authenticated": request.user.is_authenticated,
             "user": request.user.display_name,
+            "unique_identifier": request.user.unique_identifier,
         }
     )
 
@@ -72,6 +77,7 @@ async def admin(request: Request) -> JSONResponse:
         {
             "authenticated": request.user.is_authenticated,
             "user": request.user.display_name,
+            "unique_identifier": request.user.unique_identifier,
         }
     )
 
@@ -82,6 +88,7 @@ def dashboard_sync(request: Request) -> JSONResponse:
         {
             "authenticated": request.user.is_authenticated,
             "user": request.user.display_name,
+            "unique_identifier": request.user.unique_identifier,
         }
     )
 
@@ -93,6 +100,7 @@ class Dashboard(Controller):
             {
                 "authenticated": request.user.is_authenticated,
                 "user": request.user.display_name,
+                "unique_identifier": request.user.unique_identifier,
             }
         )
 
@@ -103,6 +111,7 @@ def admin_sync(request: Request) -> JSONResponse:
         {
             "authenticated": request.user.is_authenticated,
             "user": request.user.display_name,
+            "unique_identifier": request.user.unique_identifier,
         }
     )
 
@@ -114,6 +123,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
         {
             "authenticated": websocket.user.is_authenticated,
             "user": websocket.user.display_name,
+            "unique_identifier": websocket.user.unique_identifier,
         }
     )
 
@@ -137,6 +147,7 @@ async def decorated_async(request: Request, additional: str) -> JSONResponse:
         {
             "authenticated": request.user.is_authenticated,
             "user": request.user.display_name,
+            "unique_identifier": request.user.unique_identifier,
             "additional": additional,
         }
     )
@@ -161,6 +172,7 @@ def decorated_sync(request: Request, additional: str) -> JSONResponse:
         {
             "authenticated": request.user.is_authenticated,
             "user": request.user.display_name,
+            "unique_identifier": request.user.unique_identifier,
             "additional": additional,
         }
     )
@@ -184,6 +196,7 @@ async def websocket_endpoint_decorated(websocket: WebSocket, additional: str) ->
         {
             "authenticated": websocket.user.is_authenticated,
             "user": websocket.user.display_name,
+            "unique_identifier": websocket.user.unique_identifier,
             "additional": additional,
         }
     )
@@ -206,6 +219,44 @@ app = Lilya(
 )
 
 
+def test_interface_implementation():
+    user = BasicUser("test")
+    # let's check if it implements the userinterface
+    assert isinstance(user, UserInterface)
+
+
+def test_overwrites_full():
+    class AdvancedUser(BasicUser):
+        @property
+        def is_authenticated(self) -> bool:
+            return not super().is_authenticated
+
+        @property
+        def display_name(self) -> str:
+            return self._username.upper()
+
+        unique_identifier = "foo"
+
+    user = AdvancedUser("test")
+    assert user.display_name == "TEST"
+    assert not user.is_authenticated
+    assert user.unique_identifier == "foo"
+
+
+def test_overwrites_partial():
+    class AdvancedUser(BasicUser):
+        @property
+        def display_name(self) -> str:
+            return self._username.upper()
+
+    user = AdvancedUser("test")
+    assert user.display_name == "TEST"
+    assert user.is_authenticated
+    assert user.unique_identifier == "TEST"
+    user.id = 123
+    assert user.unique_identifier == "123"
+
+
 def test_invalid_decorator_usage() -> None:
     with pytest.raises(Exception):  # noqa
 
@@ -217,11 +268,15 @@ def test_user_interface(test_client_factory) -> None:
     with test_client_factory(app) as client:
         response = client.get("/")
         assert response.status_code == 200
-        assert response.json() == {"authenticated": False, "user": ""}
+        assert response.json() == {"authenticated": False, "user": "", "unique_identifier": ""}
 
         response = client.get("/", auth=("lilya", "example"))
         assert response.status_code == 200
-        assert response.json() == {"authenticated": True, "user": "lilya"}
+        assert response.json() == {
+            "authenticated": True,
+            "user": "lilya",
+            "unique_identifier": "1",
+        }
 
 
 def test_authentication_required(test_client_factory) -> None:
@@ -231,27 +286,40 @@ def test_authentication_required(test_client_factory) -> None:
 
         response = client.get("/dashboard", auth=("lilya", "example"))
         assert response.status_code == 200
-        assert response.json() == {"authenticated": True, "user": "lilya"}
+        assert response.json() == {
+            "authenticated": True,
+            "user": "lilya",
+            "unique_identifier": "1",
+        }
 
         response = client.get("/dashboard/sync")
         assert response.status_code == 403
 
         response = client.get("/dashboard/sync", auth=("lilya", "example"))
         assert response.status_code == 200
-        assert response.json() == {"authenticated": True, "user": "lilya"}
+        assert response.json() == {
+            "authenticated": True,
+            "user": "lilya",
+            "unique_identifier": "1",
+        }
 
         response = client.get("/dashboard/class")
         assert response.status_code == 403
 
         response = client.get("/dashboard/class", auth=("lilya", "example"))
         assert response.status_code == 200
-        assert response.json() == {"authenticated": True, "user": "lilya"}
+        assert response.json() == {
+            "authenticated": True,
+            "user": "lilya",
+            "unique_identifier": "1",
+        }
 
         response = client.get("/dashboard/decorated", auth=("lilya", "example"))
         assert response.status_code == 200
         assert response.json() == {
             "authenticated": True,
             "user": "lilya",
+            "unique_identifier": "1",
             "additional": "payload",
         }
 
@@ -263,6 +331,7 @@ def test_authentication_required(test_client_factory) -> None:
         assert response.json() == {
             "authenticated": True,
             "user": "lilya",
+            "unique_identifier": "1",
             "additional": "payload",
         }
 
@@ -283,7 +352,11 @@ def test_authentication_redirect(test_client_factory) -> None:
 
         response = client.get("/admin", auth=("lilya", "example"))
         assert response.status_code == 200
-        assert response.json() == {"authenticated": True, "user": "lilya"}
+        assert response.json() == {
+            "authenticated": True,
+            "user": "lilya",
+            "unique_identifier": "1",
+        }
 
         response = client.get("/admin/sync")
         assert response.status_code == 200
@@ -294,7 +367,11 @@ def test_authentication_redirect(test_client_factory) -> None:
 
         response = client.get("/admin/sync", auth=("lilya", "example"))
         assert response.status_code == 200
-        assert response.json() == {"authenticated": True, "user": "lilya"}
+        assert response.json() == {
+            "authenticated": True,
+            "user": "lilya",
+            "unique_identifier": "1",
+        }
 
 
 def on_auth_error(request: Connection, exc: AuthenticationError) -> JSONResponse:
@@ -307,6 +384,7 @@ def control_panel(request: Request) -> JSONResponse:
         {
             "authenticated": request.user.is_authenticated,
             "user": request.user.display_name,
+            "unique_identifier": "1",
         }
     )
 
@@ -325,7 +403,11 @@ def test_custom_on_error(test_client_factory) -> None:
     with test_client_factory(other_app) as client:
         response = client.get("/control-panel", auth=("lilya", "example"))
         assert response.status_code == 200
-        assert response.json() == {"authenticated": True, "user": "lilya"}
+        assert response.json() == {
+            "authenticated": True,
+            "user": "lilya",
+            "unique_identifier": "1",
+        }
 
         response = client.get("/control-panel", headers={"Authorization": "basic foobar"})
         assert response.status_code == 401
