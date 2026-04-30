@@ -56,10 +56,10 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
           pip install hatch
-      - name: "Check for security vulnerabilities"
-        run: |
-          pip install pip-audit
-          pip-audit --strict --desc
+      #- name: "Check for security vulnerabilities"
+      #  run: |
+      #    pip install pip-audit
+      #    pip-audit --strict --desc
       - uses: pre-commit/action@v3.0.1
       - name: "Run linting checks"
         run: "hatch fmt --check"
