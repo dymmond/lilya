@@ -37,3 +37,12 @@ class EncoderSettings(AppTestSettings):
             ValidationError: validation_error_exception_handler,
             HTTPException: http_exception,
         }
+
+
+class DependencySettings(AppTestSettings):
+    @property
+    def exception_handlers(self) -> ExceptionHandler | dict[Any, Any]:
+        return {
+            ValidationError: validation_error_exception_handler,
+            HTTPException: http_exception,
+        }

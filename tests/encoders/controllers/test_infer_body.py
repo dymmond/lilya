@@ -9,7 +9,7 @@ from lilya.datastructures import DataUpload as UploadFile
 from lilya.dependencies import Provide, Provides
 from lilya.routing import Path
 from lilya.testclient import create_client
-from tests.encoders.settings import EncoderSettings
+from tests.encoders.settings import DependencySettings, EncoderSettings
 
 
 class User(BaseModel):
@@ -39,6 +39,20 @@ def test_infer_body(test_client_factory):
         assert response.json() == {"name": "lilya", "age": 10, "sku": "test"}
 
 
+def test_infer_body_from_lilya_app(test_client_factory):
+    data = {"user": {"name": "lilya", "age": 10}, "item": {"sku": "test"}}
+
+    with create_client(
+        routes=[Path("/infer", handler=Test, methods=["POST"])],
+        settings_module=DependencySettings,
+        infer_body=True,
+    ) as client:
+        response = client.post("/infer", json=data)
+
+        assert response.status_code == 200
+        assert response.json() == {"name": "lilya", "age": 10, "sku": "test"}
+
+
 class TestWithDep(Controller):
     async def post(self, user: User, item: Item, x=Provides()):
         return {**user.model_dump(), "sku": item.sku, "x": x}
@@ -55,7 +69,32 @@ def test_infer_body_with_dependency(test_client_factory):
         response = client.post("/infer", json=data)
 
         assert response.status_code == 200
-        assert response.json() == {"name": "lilya", "age": 10, "sku": "test", "x": "app_value"}
+        assert response.json() == {
+            "name": "lilya",
+            "age": 10,
+            "sku": "test",
+            "x": "app_value",
+        }
+
+
+def test_infer_body_with_dependency_from_lilya_app(test_client_factory):
+    data = {"user": {"name": "lilya", "age": 10}, "item": {"sku": "test"}}
+
+    with create_client(
+        routes=[Path("/infer", handler=TestWithDep, methods=["POST"])],
+        dependencies={"x": Provide(lambda: "app_value")},
+        settings_module=DependencySettings,
+        infer_body=True,
+    ) as client:
+        response = client.post("/infer", json=data)
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "name": "lilya",
+            "age": 10,
+            "sku": "test",
+            "x": "app_value",
+        }
 
 
 class TestOptDep(Controller):
@@ -70,6 +109,21 @@ def test_infer_body_with_dependency_not_passed(test_client_factory):
         routes=[Path("/infer", handler=TestOptDep, methods=["POST"])],
         dependencies={"x": Provide(lambda: "app_value")},
         settings_module=EncoderSettings,
+    ) as client:
+        response = client.post("/infer", json=data)
+
+        assert response.status_code == 200
+        assert response.json() == {"name": "lilya", "age": 10, "sku": "test"}
+
+
+def test_infer_body_with_dependency_not_passed_in_app(test_client_factory):
+    data = {"user": {"name": "lilya", "age": 10}, "item": {"sku": "test"}}
+
+    with create_client(
+        routes=[Path("/infer", handler=TestOptDep, methods=["POST"])],
+        dependencies={"x": Provide(lambda: "app_value")},
+        settings_module=DependencySettings,
+        infer_body=True,
     ) as client:
         response = client.post("/infer", json=data)
 
@@ -93,7 +147,32 @@ def test_infer_body_with_dependency_without_provides(test_client_factory):
         response = client.post("/infer", json=data)
 
         assert response.status_code == 200
-        assert response.json() == {"name": "lilya", "age": 10, "sku": "test", "x": "app_value"}
+        assert response.json() == {
+            "name": "lilya",
+            "age": 10,
+            "sku": "test",
+            "x": "app_value",
+        }
+
+
+def test_infer_body_with_dependency_without_provides_in_app(test_client_factory):
+    data = {"user": {"name": "lilya", "age": 10}, "item": {"sku": "test"}}
+
+    with create_client(
+        routes=[Path("/infer", handler=TestOptDepNP, methods=["POST"])],
+        dependencies={"x": Provide(lambda: "app_value")},
+        settings_module=DependencySettings,
+        infer_body=True,
+    ) as client:
+        response = client.post("/infer", json=data)
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "name": "lilya",
+            "age": 10,
+            "sku": "test",
+            "x": "app_value",
+        }
 
 
 class FormController(Controller):
@@ -107,6 +186,21 @@ def test_infer_body_from_form(test_client_factory):
     with create_client(
         routes=[Path("/infer-form", handler=FormController)],
         settings_module=EncoderSettings,
+    ) as client:
+        # send as form
+        response = client.post("/infer-form", data=data)
+
+        assert response.status_code == 200
+        assert response.json() == {"name": "lilya", "age": 10, "sku": "test"}
+
+
+def test_infer_body_from_form_in_app(test_client_factory):
+    data = {"user": '{"name": "lilya", "age": 10}', "item": '{"sku": "test"}'}
+
+    with create_client(
+        routes=[Path("/infer-form", handler=FormController)],
+        settings_module=DependencySettings,
+        infer_body=True,
     ) as client:
         # send as form
         response = client.post("/infer-form", data=data)
@@ -144,10 +238,50 @@ def test_infer_body_with_json_field_and_file(test_client_factory):
         }
 
 
+def test_infer_body_with_json_field_and_file_in_app(test_client_factory):
+    with create_client(
+        routes=[Path("/upload-json", handler=ProfileController, methods=["POST"])],
+        settings_module=DependencySettings,
+        infer_body=True,
+    ) as client:
+        response = client.post(
+            "/upload-json",
+            data={"user": '{"name":"lilya","age":10}'},
+            files={"file": ("hello.txt", io.BytesIO(b"hello world"), "text/plain")},
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "user": {"name": "lilya", "age": 10},
+            "filename": "hello.txt",
+            "filesize": 11,
+        }
+
+
 def test_infer_body_with_flat_form_and_file(test_client_factory):
     with create_client(
         routes=[Path("/upload-flat", handler=ProfileController, methods=["POST"])],
         settings_module=EncoderSettings,
+    ) as client:
+        response = client.post(
+            "/upload-flat",
+            data={"user.name": "lilya", "user.age": "10"},
+            files={"file": ("hello.txt", io.BytesIO(b"hello world"), "text/plain")},
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "user": {"name": "lilya", "age": 10},
+            "filename": "hello.txt",
+            "filesize": 11,
+        }
+
+
+def test_infer_body_with_flat_form_and_file_in_app(test_client_factory):
+    with create_client(
+        routes=[Path("/upload-flat", handler=ProfileController, methods=["POST"])],
+        settings_module=DependencySettings,
+        infer_body=True,
     ) as client:
         response = client.post(
             "/upload-flat",
@@ -212,7 +346,23 @@ def test_single_param_list_structuring_root_and_wrapped(test_client_factory):
         assert response.json()["skus"] == ["x", "y"]
 
 
-# Dict[str, Item]
+def test_single_param_list_structuring_root_and_wrapped_in_app(test_client_factory):
+    with create_client(
+        routes=[Path("/items", handler=ProccessListItemController, methods=["POST"])],
+        settings_module=DependencySettings,
+        infer_body=True,
+    ) as client:
+        response = client.post("/items", json=[{"sku": "a"}, {"sku": "b"}])
+
+        assert response.status_code == 200
+        assert response.json()["elem_types"] == ["Item", "Item"]
+        assert response.json()["skus"] == ["a", "b"]
+
+        response = client.post("/items", json={"items": [{"sku": "x"}, {"sku": "y"}]})
+
+        assert response.status_code == 200
+        assert response.json()["elem_types"] == ["Item", "Item"]
+        assert response.json()["skus"] == ["x", "y"]
 
 
 class ProccessMapController(Controller):
@@ -228,6 +378,23 @@ def test_single_param_dict_of_items(test_client_factory):
     with create_client(
         routes=[Path("/map", handler=ProccessMapController, methods=["POST"])],
         settings_module=EncoderSettings,
+    ) as client:
+        response = client.post("/map", json={"a": {"sku": "A"}, "b": {"sku": "B"}})
+
+        assert response.status_code == 200
+
+        body = response.json()
+
+        assert body["keys"] == ["a", "b"]
+        assert body["types"] == ["Item", "Item"]
+        assert body["skus"] == ["A", "B"]
+
+
+def test_single_param_dict_of_items_in_app(test_client_factory):
+    with create_client(
+        routes=[Path("/map", handler=ProccessMapController, methods=["POST"])],
+        settings_module=DependencySettings,
+        infer_body=True,
     ) as client:
         response = client.post("/map", json={"a": {"sku": "A"}, "b": {"sku": "B"}})
 
@@ -266,6 +433,23 @@ def test_single_param_var_tuple_of_items(test_client_factory):
         assert body["skus"] == ["t1", "t2"]
 
 
+def test_single_param_var_tuple_of_items_in_app(test_client_factory):
+    with create_client(
+        routes=[Path("/tuple", handler=ProccessTupleController, methods=["POST"])],
+        settings_module=DependencySettings,
+        infer_body=True,
+    ) as client:
+        response = client.post("/tuple", json=[{"sku": "t1"}, {"sku": "t2"}])
+
+        assert response.status_code == 200
+
+        body = response.json()
+
+        assert body["is_tuple"] is True
+        assert body["types"] == ["Item", "Item"]
+        assert body["skus"] == ["t1", "t2"]
+
+
 class ProcessItemsWithMetaController(Controller):
     async def post(self, items: list[dict[str, Any]]):
         return items
@@ -275,6 +459,29 @@ def test_infer_body_nested_json_strings_in_form(test_client_factory):
     with create_client(
         routes=[Path("/items-meta", handler=ProcessItemsWithMetaController)],
         settings_module=EncoderSettings,
+    ) as client:
+        response = client.post(
+            "/items-meta",
+            data={
+                "items[0].sku": "test1",
+                "items[0].meta": '{"x": 1}',
+                "items[1].sku": "test2",
+                "items[1].meta": '{"x": 2}',
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json() == [
+            {"sku": "test1", "meta": {"x": 1}},
+            {"sku": "test2", "meta": {"x": 2}},
+        ]
+
+
+def test_infer_body_nested_json_strings_in_form_in_app(test_client_factory):
+    with create_client(
+        routes=[Path("/items-meta", handler=ProcessItemsWithMetaController)],
+        settings_module=DependencySettings,
+        infer_body=True,
     ) as client:
         response = client.post(
             "/items-meta",

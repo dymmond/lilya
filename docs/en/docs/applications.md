@@ -62,6 +62,7 @@ Use one or the other, not both.
 if you are deprecating a whole [Included](./routing.md#include) Lilya application in favour of a new one. The flag
 should indicate that all the paths should be considered deprecated.
 * **redirect_slashes** - Flag to enable/disable redirect slashes for the handlers. It is enabled by default.
+* **infer_body** - Flag to enable/disable global infer for requests body using tools like Pydantic/msgspec or any other, automatically.
 
 ## Decorating routes directly in the app
 

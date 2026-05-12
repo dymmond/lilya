@@ -464,7 +464,7 @@ class BaseLilya:
                 middleware=middleware,
                 permissions=permissions,
                 exception_handlers=exception_handlers,
-                include_in_schema=include_in_schema if include_in_schema is not None else True,
+                include_in_schema=(include_in_schema if include_in_schema is not None else True),
                 deprecated=deprecated if deprecated is not None else False,
             )
         )
@@ -499,7 +499,7 @@ class BaseLilya:
                 middleware=middleware,
                 permissions=permissions,
                 exception_handlers=exception_handlers,
-                include_in_schema=include_in_schema if include_in_schema is not None else True,
+                include_in_schema=(include_in_schema if include_in_schema is not None else True),
                 deprecated=deprecated if deprecated is not None else False,
             )
         )
@@ -1145,6 +1145,14 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
                 """
             ),
         ] = None,
+        infer_body: Annotated[
+            bool | None,
+            Doc(
+                """
+                Allows Lilya to set the body inference and body parsing
+                """
+            ),
+        ] = False,
     ) -> None:
         self.populate_global_context = populate_global_context
         self.settings_module: Settings | None = None
@@ -1218,6 +1226,11 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
         _on_startup = None
         _on_shutdown = None
 
+        self.infer_body = infer_body
+
+        if infer_body is not False and infer_body is not None:
+            self.settings.infer_body = infer_body
+
         if _lifespan is None:
             # Always initialize from settings/explicit args and normalize
             _raw_startup = self.load_settings_value("on_startup", on_startup)
@@ -1242,7 +1255,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
                 on_startup=_on_startup,
                 on_shutdown=_on_shutdown,
                 lifespan=_lifespan,
-                include_in_schema=include_in_schema if include_in_schema is not None else True,
+                include_in_schema=(include_in_schema if include_in_schema is not None else True),
                 settings_module=self.settings_module,
                 before_request=self.before_request_callbacks,
                 after_request=self.after_request_callbacks,
