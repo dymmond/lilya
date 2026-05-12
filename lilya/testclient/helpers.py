@@ -40,6 +40,7 @@ def create_client(
     openapi_config: Any | None = None,
     enable_intercept_global_exceptions: bool = True,
     dependency_overrides: dict[str, Any] | None = None,
+    infer_body: bool = False,
     **kwargs: Any,
 ) -> TestClient:
     """
@@ -74,6 +75,7 @@ def create_client(
             enable_openapi=enable_openapi,
             openapi_config=openapi_config,
             enable_intercept_global_exceptions=enable_intercept_global_exceptions,
+            infer_body=infer_body,
             **kwargs,
         ),
         base_url=base_url,
@@ -118,6 +120,7 @@ def create_async_client(
     openapi_config: Any | None = None,
     enable_intercept_global_exceptions: bool = True,
     dependency_overrides: dict[str, Any] | None = None,
+    infer_body: bool = False,
     **kwargs: Any,
 ) -> AsyncTestClient:
     """
@@ -148,6 +151,7 @@ def create_async_client(
             enable_openapi=enable_openapi,
             openapi_config=openapi_config,
             enable_intercept_global_exceptions=enable_intercept_global_exceptions,
+            infer_body=infer_body,
             **kwargs,
         ),
         base_url=base_url,
