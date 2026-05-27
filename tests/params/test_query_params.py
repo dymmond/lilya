@@ -241,3 +241,133 @@ def test_parse_bool_false(test_client_factory):
 
         response = client.get("/")
         assert response.json() == {"flag": False}
+
+
+def validate_list(value):
+    if isinstance(value, list):
+        return value
+    if isinstance(value, str):
+        return [value]
+
+
+def test_parse_list_single(test_client_factory):
+    async def list_param(role: Query = Query(description="A list of roles", cast=list)) -> None:
+        return {"role": role}
+
+    with create_client(routes=[Path("/", list_param)]) as client:
+        response = client.get("/?role=test")
+
+        assert response.json() == {"role": ["test"]}
+
+
+def test_parse_list_with_validator(test_client_factory):
+    async def list_param(
+        role: Query = Query(description="A list of roles", cast=validate_list),
+    ) -> None:
+        return {"role": role}
+
+    with create_client(routes=[Path("/", list_param)]) as client:
+        response = client.get("/?role=test")
+
+        assert response.json() == {"role": ["test"]}
+
+
+def test_parse_list(test_client_factory):
+    async def list_param(role: Query = Query(description="A list of roles", cast=list)) -> None:
+        return {"role": role}
+
+    with create_client(routes=[Path("/", list_param)]) as client:
+        response = client.get("/?role=test&role=test2")
+
+        assert response.json() == {"role": ["test", "test2"]}
+
+
+def test_parse_list_with_validator_multiple(test_client_factory):
+    async def list_param(
+        role: Query = Query(description="A list of roles", cast=validate_list),
+    ) -> None:
+        return {"role": role}
+
+    with create_client(routes=[Path("/", list_param)]) as client:
+        response = client.get("/?role=test&role=test2")
+
+        assert response.json() == {"role": ["test", "test2"]}
+
+
+def test_parse_typed_list_single(test_client_factory):
+    async def list_param(role: Query = Query(description="A list of roles", cast=list[str])):
+        return {"role": role}
+
+    with create_client(routes=[Path("/", list_param)]) as client:
+        response = client.get("/?role=test")
+
+        assert response.json() == {"role": ["test"]}
+
+
+def test_parse_typed_list_multiple(test_client_factory):
+    async def list_param(score: Query = Query(description="A list of scores", cast=list[int])):
+        return {"score": score}
+
+    with create_client(routes=[Path("/", list_param)]) as client:
+        response = client.get("/?score=1&score=2")
+
+        assert response.json() == {"score": [1, 2]}
+
+
+def test_parse_complex_typed_list(test_client_factory):
+    async def list_param(
+        item: Query = Query(description="Mixed list", cast=list[str | int | dict[str, str]]),
+    ):
+        return {"item": item}
+
+    with create_client(routes=[Path("/", list_param)]) as client:
+        response = client.get(
+            "/",
+            params=[
+                ("item", "admin"),
+                ("item", "1"),
+                ("item", '{"name":"lilya"}'),
+            ],
+        )
+
+        assert response.json() == {"item": ["admin", 1, {"name": "lilya"}]}
+
+
+def test_parse_dict(test_client_factory):
+    async def dict_param(filters: Query = Query(description="Filters", cast=dict)):
+        return {"filters": filters}
+
+    with create_client(routes=[Path("/", dict_param)]) as client:
+        response = client.get("/", params={"filters": '{"role":"admin","active":true}'})
+
+        assert response.json() == {"filters": {"role": "admin", "active": True}}
+
+
+def test_parse_typed_dict(test_client_factory):
+    async def dict_param(filters: Query = Query(description="Filters", cast=dict[str, int])):
+        return {"filters": filters}
+
+    with create_client(routes=[Path("/", dict_param)]) as client:
+        response = client.get("/", params={"filters": '{"page":"2","limit":10}'})
+
+        assert response.json() == {"filters": {"page": 2, "limit": 10}}
+
+
+def test_parse_invalid_typed_list(test_client_factory):
+    async def list_param(score: Query = Query(description="A list of scores", cast=list[int])):
+        return {"score": score}
+
+    with create_client(routes=[Path("/", list_param)]) as client:
+        response = client.get("/?score=1&score=not-a-number")
+
+        assert response.status_code == 422
+
+
+def test_query_default_uses_cast(test_client_factory):
+    async def default_param(page: Query = Query(default="3", cast=int)):
+        return {"page": page}
+
+    with create_client(routes=[Path("/", default_param)]) as client:
+        response = client.get("/")
+
+        assert response.json() == {"page": 3}

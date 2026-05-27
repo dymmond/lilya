@@ -1,5 +1,14 @@
 # Release Notes
 
+## 0.26.2
+
+### Fixed
+
+- Query, header, and cookie parameter casting now handles repeated values correctly, preserving list-style inputs instead of nesting them.
+- Parameter casting now supports typed collection casts such as `list[str]`, `dict[str, int]`, and nested union collections like `list[str | int | dict[str, str]]`.
+- `cast=list` now treats a single string value as a one-item list instead of splitting it into characters.
+- Default parameter values are now passed through their configured cast when applicable.
+
 ## 0.26.1
 
 ### Added
