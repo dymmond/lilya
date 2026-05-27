@@ -29,6 +29,14 @@ async def header_casted(content_length: int = Header(value="Content-Length", cas
     return {"length": content_length}
 
 
+async def header_typed_list(role: list[str] = Header(value="X-ROLE", cast=list[str])):
+    return {"role": role}
+
+
+async def header_typed_dict(meta: dict[str, int] = Header(value="X-META", cast=dict[str, int])):
+    return {"meta": meta}
+
+
 async def header_invalid_cast(content_length: int = Header(value="Content-Length", cast=int)):
     return {"length": content_length}
 
@@ -64,6 +72,33 @@ def test_header_casted():
         response = client.get("/", headers={"Content-Length": "123"})
 
         assert response.json() == {"length": 123}
+
+
+def test_header_typed_list_single(test_client_factory):
+    with create_client(
+        routes=[Path("/", header_typed_list)], settings_module=EncoderSettings
+    ) as client:
+        response = client.get("/", headers={"X-ROLE": "admin"})
+
+        assert response.json() == {"role": ["admin"]}
+
+
+def test_header_typed_list_multiple(test_client_factory):
+    with create_client(
+        routes=[Path("/", header_typed_list)], settings_module=EncoderSettings
+    ) as client:
+        response = client.get("/", headers=[("X-ROLE", "admin"), ("X-ROLE", "staff")])
+
+        assert response.json() == {"role": ["admin", "staff"]}
+
+
+def test_header_typed_dict(test_client_factory):
+    with create_client(
+        routes=[Path("/", header_typed_dict)], settings_module=EncoderSettings
+    ) as client:
+        response = client.get("/", headers={"X-META": '{"page":"2","limit":10}'})
+
+        assert response.json() == {"meta": {"page": 2, "limit": 10}}
 
 
 def test_header_invalid_cast(test_client_factory):

@@ -37,7 +37,7 @@ from lilya.exceptions import (
     UnprocessableEntity,
     WebSocketException,
 )
-from lilya.params import Cookie, Header, Query
+from lilya.params import Cookie, Header, Query, get_cast_name
 from lilya.requests import Request
 from lilya.responses import Ok, Response
 from lilya.serializers import serializer
@@ -58,6 +58,22 @@ SIGNATURE_TO_LIST = SignatureDefault.to_list()
 INDEX_REGEX = re.compile(r"^(.+)\[(\d+)\]$")
 _SIG_CACHE_ATTR = "__lilya_resolved_signature__"
 _PLAN_CACHE_ATTR = "__lilya_handler_plan__"
+
+
+def _resolve_bound_param_value(field: Query | Header | Cookie, raw_value: Any) -> Any:
+    if raw_value is None:
+        default = getattr(field, "default", None)
+        return (
+            field.resolve(default, field.cast) if field.cast and default is not None else default
+        )
+
+    if field.cast:
+        return field.resolve(raw_value, field.cast)
+
+    if isinstance(raw_value, list) and len(raw_value) == 1:
+        return raw_value[0]
+    return raw_value
+
 
 ZeroArgAsyncHandler = Callable[[], Awaitable[Any]]
 KwargsAsyncHandler = Callable[..., Awaitable[Any]]
@@ -486,24 +502,13 @@ class BaseHandler:
                         if field.required and raw_value is None:
                             raise UnprocessableEntity(f"Missing mandatory query parameter '{key}'")
 
-                        if raw_value is None:
-                            fast_params[n] = getattr(field, "default", None)
-                        else:
-                            try:
-                                if field.cast and isinstance(raw_value, list):
-                                    fast_params[n] = [raw_value]
-                                elif field.cast:
-                                    fast_params[n] = field.resolve(raw_value, field.cast)
-                                else:
-                                    fast_params[n] = (
-                                        raw_value[0]
-                                        if isinstance(raw_value, list) and len(raw_value) == 1
-                                        else raw_value
-                                    )
-                            except (TypeError, ValueError):
-                                raise UnprocessableEntity(
-                                    f"Invalid value for query parameter '{key}': expected {field.cast.__name__}"
-                                ) from None
+                        try:
+                            fast_params[n] = _resolve_bound_param_value(field, raw_value)
+                        except (TypeError, ValueError):
+                            raise UnprocessableEntity(
+                                f"Invalid value for query parameter '{key}': "
+                                f"expected {get_cast_name(field.cast)}"
+                            ) from None
 
                     # 3) Context (if requested)
                     if needs_context:
@@ -652,25 +657,12 @@ class BaseHandler:
             if field.required and raw_value is None:
                 raise UnprocessableEntity(f"Missing mandatory query parameter '{key}'") from None
 
-            # Fallback to default
-            if raw_value is None:
-                request_params[name] = field.default if hasattr(field, "default") else None
-                continue
-
-            # Apply casting if defined
             try:
-                if field.cast and isinstance(raw_value, list):
-                    request_params[name] = [raw_value]
-                elif field.cast:
-                    request_params[name] = field.resolve(raw_value, field.cast)
-                else:
-                    if isinstance(raw_value, list) and len(raw_value) == 1:
-                        request_params[name] = raw_value[0]
-                    else:
-                        request_params[name] = raw_value
+                request_params[name] = _resolve_bound_param_value(field, raw_value)
             except (TypeError, ValueError):
                 raise UnprocessableEntity(
-                    f"Invalid value for query parameter '{key}': expected {field.cast.__name__}"
+                    f"Invalid value for query parameter '{key}': "
+                    f"expected {get_cast_name(field.cast)}"
                 ) from None
 
         return request_params

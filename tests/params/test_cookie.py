@@ -29,6 +29,16 @@ async def cookie_casted(visitor: int = Cookie(value="visit_count", cast=int)):
     return {"visitor": visitor}
 
 
+async def cookie_typed_list(scope: list[str] = Cookie(value="scope", cast=list[str])):
+    return {"scope": scope}
+
+
+async def cookie_typed_dict(
+    settings: dict[str, bool] = Cookie(value="settings", cast=dict[str, bool]),
+):
+    return {"settings": settings}
+
+
 async def cookie_invalid_cast(visitor: int = Cookie(value="visit_count", cast=int)):
     return {"visitor": visitor}
 
@@ -80,6 +90,22 @@ def test_cookie_casted(test_client_factory):
     ) as client:
         response = client.get("/", cookies={"visit_count": "5"})
         assert response.json() == {"visitor": 5}
+
+
+def test_cookie_typed_list(test_client_factory):
+    with create_client(
+        routes=[Path("/", cookie_typed_list)], settings_module=EncoderSettings
+    ) as client:
+        response = client.get("/", cookies={"scope": "read"})
+        assert response.json() == {"scope": ["read"]}
+
+
+def test_cookie_typed_dict(test_client_factory):
+    with create_client(
+        routes=[Path("/", cookie_typed_dict)], settings_module=EncoderSettings
+    ) as client:
+        response = client.get("/", cookies={"settings": '{"dark":"true","beta":false}'})
+        assert response.json() == {"settings": {"dark": True, "beta": False}}
 
 
 def test_cookie_invalid_cast(test_client_factory):
