@@ -220,7 +220,7 @@ protection works depending on your needs **XHR/fetch** or **traditional HTML for
 
 `CSRFMiddleware` implements the **double‑submit cookie** pattern:
 
-* On **safe methods** (default: `GET`, `HEAD`) it **sets** a CSRF cookie (default name: `csrftoken`) if missing.
+* On **safe methods** (default: `GET`, `HEAD`, `QUERY`) it **sets** a CSRF cookie (default name: `csrftoken`) if missing.
 * On **unsafe methods** (`POST`, `PUT`, `PATCH`, `DELETE`) it **validates** an incoming token from:
     1. The request header **`X-CSRFToken`** (preferred for XHR/fetch), or
     2. A form field (default name **`csrf_token`**) in **`application/x-www-form-urlencoded`** or **`multipart/form-data`** bodies.

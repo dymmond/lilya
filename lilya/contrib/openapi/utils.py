@@ -6,7 +6,7 @@ from pydantic.json_schema import GenerateJsonSchema
 
 from lilya._internal._encoders import json_encode
 from lilya._utils import is_class_and_subclass
-from lilya.contrib.openapi.constants import REF_TEMPLATE, WRITING_METHODS
+from lilya.contrib.openapi.constants import REF_TEMPLATE, REQUEST_BODY_METHODS
 from lilya.contrib.openapi.helpers import get_definitions
 from lilya.contrib.openapi.params import Query, ResponseParam
 from lilya.controllers import Controller
@@ -56,7 +56,7 @@ def get_openapi(
     app: Any,
     title: str,
     version: str,
-    openapi_version: str = "3.0.0",
+    openapi_version: str = "3.2.0",
     routes: Sequence[Any],
     summary: str | None = None,
     description: str | None = None,
@@ -191,7 +191,7 @@ def get_openapi(
                 else:
                     operation["parameters"].append(query_param)
 
-            if m_lower in WRITING_METHODS:
+            if m_lower in REQUEST_BODY_METHODS:
                 request_body = _normalize_request_body_operation(
                     request_body=meta.get("request_body", {}),
                     media_type=meta.get("media_type"),

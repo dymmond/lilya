@@ -207,7 +207,7 @@ You can provide `request_body` as:
 * A JSON Schema dictionary.
 * A complete OpenAPI `requestBody` object (with `content`).
 
-For writing methods (`POST`, `PUT`, `PATCH`), the request body is now emitted even if you omit explicit `responses`.
+For request-body methods (`QUERY`, `POST`, `PUT`, `PATCH`), the request body is now emitted even if you omit explicit `responses`.
 
 #### File Uploads (Multipart)
 
@@ -600,16 +600,16 @@ The `OpenAPIConfig` model encapsulates all settings that control how Lilya gener
 
 ##### `openapi_version: str | None`
 
-* **Description**: The OpenAPI specification version to declare at the top of the JSON (for example, `"3.1.0"` or `"3.0.0"`).
+* **Description**: The OpenAPI specification version to declare at the top of the JSON (for example, `"3.2.0"`).
 * **Type**: `str` (nullable)
-* **Default**: `"3.1.0"`
+* **Default**: `"3.2.0"`
 * **Usage**:
 
   * In the JSON:
 
     ```json
     {
-      "openapi": "3.1.0",
+      "openapi": "3.2.0",
       …
     }
     ```

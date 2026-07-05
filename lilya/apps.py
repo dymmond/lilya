@@ -218,7 +218,7 @@ class BaseLilya:
             list[str] | None,
             Doc(
                 """
-                List of HTTP verbs (GET, POST, PUT, DELETE, HEAD...) allowed in
+                List of HTTP verbs (GET, QUERY, POST, PUT, DELETE, HEAD...) allowed in
                 the route.
                 """
             ),

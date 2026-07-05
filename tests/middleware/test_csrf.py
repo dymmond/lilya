@@ -40,6 +40,17 @@ def test_csrf_successful_flow() -> None:
         assert response.status_code == status.HTTP_200_OK
 
 
+def test_query_is_safe_by_default() -> None:
+    with create_client(
+        routes=[Path(path="/", handler=get_handler, methods=["GET", "QUERY"])],
+        middleware=[DefineMiddleware(CSRFMiddleware, secret=get_random_secret_key())],
+    ) as client:
+        response = client.query("/", json={"filter": "active"})
+
+    assert response.status_code == HTTP_200_OK
+    assert response.cookies.get("csrftoken") is not None
+
+
 @pytest.mark.parametrize(
     "method",
     ["POST", "PUT", "DELETE", "PATCH"],

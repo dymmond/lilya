@@ -89,7 +89,7 @@ class OpenAPIConfig(BaseModel):
         dict[str, str | Any] | None,
         Doc(
             """
-            API contact information. This is an OpenAPI schema contact, meaning, in a dictionary format compatible with OpenAPI or an instance of `lilya.openapi.schemas.v3_1_0.contact.Contact`.
+            API contact information in a dictionary format compatible with OpenAPI.
             """
         ),
     ] = {"name": "Lilya", "url": "https://lilya.dev", "email": "admin@myapp.com"}
@@ -105,7 +105,7 @@ class OpenAPIConfig(BaseModel):
         dict[str, str | Any] | None,
         Doc(
             """
-            API Licensing information. This is an OpenAPI schema licence, meaning, in a dictionary format compatible with OpenAPI or an instance of `lilya.openapi.schemas.v3_1_0.license.License`.
+            API Licensing information in a dictionary format compatible with OpenAPI.
             """
         ),
     ] = None
@@ -113,7 +113,7 @@ class OpenAPIConfig(BaseModel):
         Any | None,
         Doc(
             """
-            API Security requirements information. This is an OpenAPI schema security, meaning, in a dictionary format compatible with OpenAPI or an instance of `lilya.openapi.schemas.v3_1_0.security_requirement.SecurityScheme`.
+            API Security requirements information in a dictionary format compatible with OpenAPI.
             """
         ),
     ] = None
@@ -137,12 +137,12 @@ class OpenAPIConfig(BaseModel):
         str,
         Doc(
             """
-            The version of the OpenAPI being used. Lilya uses the version 3.1.0 by
+            The version of the OpenAPI being used. Lilya uses the version 3.2.0 by
             default and tis can be useful if you want to trick some of the existing tools
             that require a lower version.
             """
         ),
-    ] = "3.1.0"
+    ] = "3.2.0"
     openapi_url: Annotated[
         str | None,
         Doc(

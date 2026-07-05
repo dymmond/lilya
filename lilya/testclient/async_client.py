@@ -310,6 +310,19 @@ class AsyncTestClient(httpx.AsyncClient):
         """
         return await self.request("POST", url, **kwargs)
 
+    async def query(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+        """
+        Sends an asynchronous QUERY request.
+
+        Args:
+            url (URLTypes): The URL to request.
+            **kwargs (Any): Additional arguments passed to `request`.
+
+        Returns:
+            httpx.Response: The response object.
+        """
+        return await self.request("QUERY", url, **kwargs)
+
     async def put(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
         """
         Sends an asynchronous PUT request.
