@@ -29,7 +29,7 @@ class BaseController(BaseHandler):
     before_request: list[Callable[..., Coroutine[Any, Any, None]]] = []
     after_request: list[Callable[..., Coroutine[Any, Any, None]]] = []
 
-    __is_controller__: bool = True
+    __is_controller__: ClassVar[bool] = True
 
     def handle_signature(self) -> None:
         """

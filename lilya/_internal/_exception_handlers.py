@@ -62,7 +62,7 @@ def wrap_app_handling_exceptions(
 
     def get_conn() -> Request | WebSocket:
         if callable(conn):
-            return conn()
+            return cast(Request | WebSocket, conn())
         return conn
 
     async def wrapped_app(scope: Scope, receive: Receive, send: Send) -> None:
