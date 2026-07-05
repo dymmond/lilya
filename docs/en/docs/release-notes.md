@@ -1,5 +1,19 @@
 # Release Notes
 
+## 0.27.0
+
+### Added
+
+- First-class support for the HTTP `QUERY` method standardized by RFC 10008, including route registration with `methods=["QUERY"]`, `@app.query()` decorators, controller dispatch, middleware visibility, and client helpers.
+- `QUERY` request bodies are available through Lilya's normal request parsing APIs, including JSON and raw body access.
+- New [HTTP QUERY documentation](./query-method.md) covering safe/idempotent semantics, when to use `QUERY` instead of `GET` or `POST`, request bodies, OpenAPI behavior, and client/proxy caveats.
+
+### Changed
+
+- OpenAPI schema generation and documentation surfaces now default to OpenAPI `3.2.0`.
+- `CSRFMiddleware` treats `QUERY` as a safe method by default.
+- `CORSMiddleware(allow_methods=["*"])` now includes `QUERY`.
+
 ## 0.26.2
 
 ### Fixed

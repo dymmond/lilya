@@ -370,6 +370,19 @@ class TestClient(httpx.Client):
         """
         return self._process_request(method="HEAD", url=url, **kwargs)  # type: ignore
 
+    def query(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+        """
+        Sends a QUERY request.
+
+        Args:
+            url (URLTypes): The URL to send the request to.
+            **kwargs (Any): Additional arguments passed to `request`.
+
+        Returns:
+            httpx.Response: The response from the server.
+        """
+        return self._process_request(method="QUERY", url=url, **kwargs)  # type: ignore
+
     def post(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
         """
         Sends a POST request.

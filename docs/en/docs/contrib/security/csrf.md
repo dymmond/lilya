@@ -38,7 +38,7 @@ app = Lilya(
 
 ## How it Works
 
-On **safe methods** (by default `GET`, `HEAD`):
+On **safe methods** (by default `GET`, `HEAD`, `QUERY`):
 
 * If the CSRF cookie (default name: `csrftoken`) is **missing**, the middleware **injects** it into the response.
 
@@ -65,7 +65,7 @@ CSRFMiddleware(
     cookie_name: str | None = "csrftoken",
     header_name: str | None = "X-CSRFToken",
     cookie_path: str | None = "/",
-    safe_methods: set[str] | None = {"GET", "HEAD"},
+    safe_methods: set[str] | None = {"GET", "HEAD", "QUERY"},
     secure: bool = False,
     httponly: bool = False,
     samesite: Literal["lax", "strict", "none"] = "lax",
@@ -80,7 +80,7 @@ CSRFMiddleware(
 * **secret** *(required)*: Server key to HMAC‑sign tokens.
 * **cookiename**: Name of the CSRF cookie (default: `csrftoken`).
 * **headername**: Header for XHR/fetch token (default: `X‑CSRFToken`).
-* **safemethods**: Methods that skip CSRF validation (default: `{"GET", "HEAD"}`).
+* **safemethods**: Methods that skip CSRF validation (default: `{"GET", "HEAD", "QUERY"}`).
 * **secure / httponly / samesite / domain / cookiepath**: Cookie attributes.
     * Set **`secure=True`** in production.
     * Set **`httponly=False`** if your templates need to **read** the cookie (for hidden inputs).

@@ -6,6 +6,7 @@ from lilya.contrib.openapi.decorator import openapi
 from lilya.contrib.openapi.params import Query
 from lilya.contrib.openapi.utils import get_openapi
 from lilya.routing import Include, Path
+from lilya.testclient import TestClient
 
 
 # Dummy handler functions
@@ -40,7 +41,7 @@ class UploadRequestBody(BaseModel):
 def test_basic_path_async_without_decorator():
     app = Lilya(routes=[Path("/simple", async_handler)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
     assert "/simple" in spec["paths"]
     op = spec["paths"]["/simple"]["get"]
@@ -60,11 +61,25 @@ def test_basic_path_sync_with_summary():
 
     app = Lilya(routes=[Path("/sync", my_sync)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
     op = spec["paths"]["/sync"]["get"]
 
     assert op["summary"] == "Sync summary"
+
+
+def test_openapi_docs_surfaces_use_3_2_schema():
+    app = Lilya(routes=[Path("/simple", async_handler)], enable_openapi=True)
+    client = TestClient(app)
+
+    schema_response = client.get("/openapi.json")
+    assert schema_response.status_code == 200
+    assert schema_response.json()["openapi"] == "3.2.0"
+
+    for docs_url in ("/docs/swagger", "/docs/redoc", "/docs/elements", "/docs/rapidoc"):
+        response = client.get(docs_url)
+        assert response.status_code == 200
+        assert "/openapi.json" in response.text
 
 
 def test_path_parameter():
@@ -74,7 +89,7 @@ def test_path_parameter():
 
     app = Lilya(routes=[Path("/users/{user}", get_user)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
     params = spec["paths"]["/users/{user}"]["get"]["parameters"]
 
@@ -89,7 +104,7 @@ def test_query_parameter_string():
 
     app = Lilya(routes=[Path("/search", search)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
     params = spec["paths"]["/search"]["get"]["parameters"]
 
@@ -113,7 +128,7 @@ def test_query_parameter_array():
 
     app = Lilya(routes=[Path("/tags", list_tags)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
     params = spec["paths"]["/tags"]["get"]["parameters"]
     p = next(p for p in params if p["name"] == "tags")
@@ -140,7 +155,7 @@ def test_query_parameter_object():
 
     app = Lilya(routes=[Path("/filter", filter_items)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
     params = spec["paths"]["/filter"]["get"]["parameters"]
     p = next(p for p in params if p["name"] == "filter")
@@ -157,7 +172,7 @@ def test_path_and_query_combined():
 
     app = Lilya(routes=[Path("/detail/{user}", get_detail)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
     params = spec["paths"]["/detail/{user}"]["get"]["parameters"]
     names = {p["name"] for p in params}
@@ -172,7 +187,7 @@ def test_single_response_model():
 
     app = Lilya(routes=[Path("/a", get_a)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
 
     resp = spec["paths"]["/a"]["get"]["responses"]["200"]
@@ -196,7 +211,7 @@ def test_multiple_responses():
 
     app = Lilya(routes=[Path("/multi", get_multiple)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
     codes = set(spec["paths"]["/multi"]["get"]["responses"].keys())
 
@@ -210,7 +225,7 @@ def test_deprecated_flag():
 
     app = Lilya(routes=[Path("/old", old)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
 
     assert spec["paths"]["/old"]["get"]["deprecated"] is True
@@ -223,7 +238,7 @@ def test_tags_field():
 
     app = Lilya(routes=[Path("/tagged", tagged)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
 
     assert spec["paths"]["/tagged"]["get"]["tags"] == ["tag1", "tag2"]
@@ -238,7 +253,7 @@ def test_security_field():
 
     app = Lilya(routes=[Path("/secure", secure)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
 
     assert spec["paths"]["/secure"]["get"]["security"] == sec
@@ -251,7 +266,7 @@ def test_operation_id_override():
 
     app = Lilya(routes=[Path("/opid", opid)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
 
     assert spec["paths"]["/opid"]["get"]["operationId"] == "customID"
@@ -264,7 +279,7 @@ def test_description_field():
 
     app = Lilya(routes=[Path("/desc", desc)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
 
     assert spec["paths"]["/desc"]["get"]["description"] == "A detailed description"
@@ -277,7 +292,7 @@ def test_include_one_level():
 
     app = Lilya(routes=[Include("/nest", routes=[Path("/leaf", leaf)])], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
 
     assert "/nest/leaf" in spec["paths"]
@@ -293,7 +308,7 @@ def test_nested_include_two_levels():
         enable_openapi=True,
     )
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
 
     assert "/level1/level2/deep" in spec["paths"]
@@ -307,7 +322,7 @@ def test_child_lilya_one_level():
     child_app = Lilya(routes=[Path("/hello", child_hello)], enable_openapi=True)
     app = Lilya(routes=[Include("/child", app=child_app)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
 
     assert "/child/hello" in spec["paths"]
@@ -323,7 +338,7 @@ def test_child_lilya_nested_include():
     )
     app = Lilya(routes=[Include("/child", app=child_app)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
 
     assert "/child/nest/deep" in spec["paths"]
@@ -340,7 +355,7 @@ def test_mixed_include_child():
         enable_openapi=True,
     )
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
 
     assert "/a/b" in spec["paths"]
@@ -357,7 +372,7 @@ def test_skip_include_in_schema():
         enable_openapi=True,
     )
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
 
     assert "/vis" in spec["paths"]
@@ -371,17 +386,33 @@ def test_multiple_methods():
 
     app = Lilya(routes=[Path("/bm", both, methods=["GET", "POST"])], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
     methods = set(spec["paths"]["/bm"].keys())
 
     assert methods == {"get", "post"}
 
 
+def test_query_method_with_request_body_is_included():
+    @openapi(request_body=ModelA)
+    async def query_items(request):
+        return {"items": []}
+
+    app = Lilya(routes=[Path("/items", query_items, methods=["QUERY"])], enable_openapi=True)
+    spec = get_openapi(
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
+    )
+    operation = spec["paths"]["/items"]["query"]
+
+    assert "requestBody" in operation
+    assert "application/json" in operation["requestBody"]["content"]
+    assert operation["responses"]["200"]["description"] == "Successful response"
+
+
 def test_no_decorator_still_included():
     app = Lilya(routes=[Path("/plain", async_handler)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
 
     assert "/plain" in spec["paths"]
@@ -398,13 +429,13 @@ def test_top_level_servers_tags():
         app=app,
         title="Test",
         version="2.0",
-        openapi_version="3.1.0",
+        openapi_version="3.2.0",
         routes=app.routes,
         tags=[{"name": "t1"}, {"name": "t2"}],
         servers=[{"url": "https://api.example.com"}],
     )
 
-    assert spec["openapi"] == "3.1.0"
+    assert spec["openapi"] == "3.2.0"
     assert spec["info"]["version"] == "2.0"
     assert any(server["url"] == "https://api.example.com" for server in spec["servers"])
     assert any(tag["name"] == "t1" for tag in spec["tags"])
@@ -421,7 +452,7 @@ def test_response_media_type_override():
 
     app = Lilya(routes=[Path("/create", create)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
     resp = spec["paths"]["/create"]["get"]["responses"]["201"]
 
@@ -438,7 +469,7 @@ def test_request_body_is_emitted_without_explicit_responses():
         enable_openapi=True,
     )
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
     operation = spec["paths"]["/create-with-body"]["post"]
 
@@ -460,7 +491,7 @@ def test_request_body_upload_uses_multipart_for_binary_schema():
         enable_openapi=True,
     )
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
     request_body = spec["paths"]["/upload"]["post"]["requestBody"]
     schema = request_body["content"]["multipart/form-data"]["schema"]
@@ -491,7 +522,7 @@ def test_request_body_accepts_raw_openapi_object():
         enable_openapi=True,
     )
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
     operation = spec["paths"]["/upload-raw"]["post"]
 
@@ -504,7 +535,7 @@ def test_default_response_no_decorator():
 
     app = Lilya(routes=[Path("/plain2", plain)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
     resp = spec["paths"]["/plain2"]["get"]["responses"]["200"]
 
@@ -518,7 +549,7 @@ def test_path_param_hyphen_underscore():
 
     app = Lilya(routes=[Path("/u-{user_id}/i_{item_id}", mix)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
     params = spec["paths"]["/u-{user_id}/i_{item_id}"]["get"]["parameters"]
     names = {p["name"] for p in params}
@@ -538,7 +569,7 @@ def test_multiple_query_params():
 
     app = Lilya(routes=[Path("/mq", multi_q)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
     params = spec["paths"]["/mq"]["get"]["parameters"]
     names = {p["name"] for p in params}
@@ -553,7 +584,7 @@ def test_overlap_path_query_id():
 
     app = Lilya(routes=[Path("/overlap/{id}", overlap)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
     params = spec["paths"]["/overlap/{id}"]["get"]["parameters"]
     # Expect only one 'id' in path, not query
@@ -576,7 +607,7 @@ def test_decorator_handles_sync_and_async():
 
     app = Lilya(routes=[Path("/s", sync_h), Path("/a", async_h)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
 
     assert "/s" in spec["paths"] and "/a" in spec["paths"]
@@ -592,7 +623,7 @@ def test_deep_nested_child():
     level1 = Lilya(routes=[Include("/lvl2", app=level2)], enable_openapi=True)
     app = Lilya(routes=[Include("/lvl1", app=level1)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
 
     assert "/lvl1/lvl2/lvl3/leaf" in spec["paths"]
@@ -605,7 +636,7 @@ def test_default_method_get():
 
     app = Lilya(routes=[Path("/d", d)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
 
     assert "get" in spec["paths"]["/d"]
@@ -618,7 +649,7 @@ def test_explicit_delete_method():
 
     app = Lilya(routes=[Path("/rm", rem, methods=["DELETE"])], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
     assert "delete" in spec["paths"]["/rm"]
 
@@ -630,7 +661,7 @@ def test_hyphen_namespace_path():
 
     app = Lilya(routes=[Include("/user-group", routes=[Path("/info", hn)])], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
 
     assert "/user-group/info" in spec["paths"]
@@ -643,7 +674,7 @@ def test_complex_path_multiple_params():
 
     app = Lilya(routes=[Path("/x/{a}/y/{b}/z/{c}", cp)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
     params = spec["paths"]["/x/{a}/y/{b}/z/{c}"]["get"]["parameters"]
     names = {p["name"] for p in params if p["in"] == "path"}
@@ -659,7 +690,7 @@ def test_excludes_head_method():
     # Force HEAD method to appear in methods -> HEAD should not be documented
     app = Lilya(routes=[Path("/h", head_test, methods=["GET", "HEAD"])], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
 
     assert "get" in spec["paths"]["/h"]
@@ -673,7 +704,7 @@ def test_include_in_schema_default_true():
 
     app = Lilya(routes=[Path("/inc", inc)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
 
     assert "/inc" in spec["paths"]
@@ -686,7 +717,7 @@ def test_override_include_in_schema_false():
 
     app = Lilya(routes=[Path("/x", not_included, include_in_schema=False)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
 
     assert "/x" not in spec["paths"]
@@ -702,7 +733,7 @@ def test_top_level_description_info():
         app=app,
         title="Test",
         version="1.0",
-        openapi_version="3.0.0",
+        openapi_version="3.2.0",
         routes=app.routes,
         description="API desc",
     )
@@ -723,7 +754,7 @@ def test_top_level_terms_contact_license():
         app=app,
         title="Test",
         version="1.0",
-        openapi_version="3.0.0",
+        openapi_version="3.2.0",
         routes=app.routes,
         terms_of_service=top_terms,
         contact=top_contact,
@@ -746,7 +777,7 @@ def test_webhooks_top_level():
         app=app,
         title="Test",
         version="1.0",
-        openapi_version="3.0.0",
+        openapi_version="3.2.0",
         routes=app.routes,
         webhooks=wh,
     )
@@ -761,7 +792,7 @@ def test_path_param_uppercase():
 
     app = Lilya(routes=[Path("/u/{UserID}", up)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
     params = spec["paths"]["/u/{UserID}"]["get"]["parameters"]
 
@@ -775,7 +806,7 @@ def test_query_without_schema_defaults_string():
 
     app = Lilya(routes=[Path("/qf", qf)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
     p = spec["paths"]["/qf"]["get"]["parameters"][0]
 
@@ -789,7 +820,7 @@ def test_query_required_flag():
 
     app = Lilya(routes=[Path("/qr", qr)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
     p = spec["paths"]["/qr"]["get"]["parameters"][0]
 
@@ -802,7 +833,7 @@ def test_handler_missing_openapi_meta():
 
     app = Lilya(routes=[Path("/nm", no_meta)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
 
     assert spec["paths"]["/nm"]["get"]["operationId"] == "no_meta"
@@ -816,7 +847,7 @@ def test_path_normalization_double_slash():
     # Path constructor will clean "//a///b" to "/a/b"
     app = Lilya(routes=[Path("//a///b", ds)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
 
     assert "/a/b" in spec["paths"]
@@ -840,7 +871,7 @@ def test_deep_nested_includes_with_siblings():
         enable_openapi=True,
     )
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
 
     assert "/a/b/leaf1" in spec["paths"]
@@ -854,7 +885,7 @@ def test_query_name_with_dashes():
 
     app = Lilya(routes=[Path("/ud", ud)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
     p = spec["paths"]["/ud"]["get"]["parameters"][0]
 
@@ -864,7 +895,7 @@ def test_query_name_with_dashes():
 def test_spec_contains_info_and_paths():
     app = Lilya(routes=[Path("/ip", async_handler)], enable_openapi=True)
     spec = get_openapi(
-        app=app, title="InfoCheck", version="v1", openapi_version="3.0.0", routes=app.routes
+        app=app, title="InfoCheck", version="v1", openapi_version="3.2.0", routes=app.routes
     )
 
     assert "info" in spec and "paths" in spec
@@ -887,7 +918,7 @@ def test_multiple_siblings_child_apps():
         routes=[Include("/c1", app=child1), Include("/c2", app=child2)], enable_openapi=True
     )
     spec = get_openapi(
-        app=app, title="Test", version="1.0", openapi_version="3.0.0", routes=app.routes
+        app=app, title="Test", version="1.0", openapi_version="3.2.0", routes=app.routes
     )
 
     assert "/c1/one" in spec["paths"]

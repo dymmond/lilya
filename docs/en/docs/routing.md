@@ -106,6 +106,7 @@ The `customer_id` declared in the `path` was obtained by accessing the `request`
 **Single-method decorators**
 
 * `get`
+* `query`
 * `head`
 * `post`
 * `put`
@@ -132,9 +133,10 @@ async def get_user(user_id: int):
     return {"user_id": user_id}
 
 
-@app.route("/users", methods=["POST"])
-async def create_user(request):
-    return {"ok": True}
+@app.query("/users/search")
+async def search_users(request):
+    filters = await request.json()
+    return {"filters": filters}
 
 
 @app.websocket("/ws")

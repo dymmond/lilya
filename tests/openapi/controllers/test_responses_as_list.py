@@ -42,7 +42,7 @@ def test_responses_decorator(test_client_factory):
         assert response.status_code == 200
 
         assert response.json() == {
-            "openapi": "3.1.0",
+            "openapi": "3.2.0",
             "info": {
                 "title": "Lilya",
                 "version": client.app.version,

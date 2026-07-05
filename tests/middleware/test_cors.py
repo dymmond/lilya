@@ -278,7 +278,7 @@ def test_cors_preflight_allow_all_methods(
         "Access-Control-Request-Method": "POST",
     }
 
-    for method in ("DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"):
+    for method in ("DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT", "QUERY"):
         response = client.options("/", headers=headers)
         assert response.status_code == 200
         assert method in response.headers["access-control-allow-methods"]
@@ -295,7 +295,16 @@ def test_cors_allow_all_methods(
             Path(
                 "/",
                 handler=homepage,
-                methods=["delete", "get", "head", "options", "patch", "post", "put"],
+                methods=[
+                    "delete",
+                    "get",
+                    "head",
+                    "options",
+                    "patch",
+                    "post",
+                    "put",
+                    "query",
+                ],
             )
         ],
         middleware=[DefineMiddleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"])],
@@ -308,7 +317,7 @@ def test_cors_allow_all_methods(
     for method in ("patch", "post", "put"):
         response = getattr(client, method)("/", headers=headers, json={})
         assert response.status_code == 200
-    for method in ("delete", "get", "head", "options"):
+    for method in ("delete", "get", "head", "options", "query"):
         response = getattr(client, method)("/", headers=headers)
         assert response.status_code == 200
 

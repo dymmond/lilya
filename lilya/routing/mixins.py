@@ -95,6 +95,49 @@ class RoutingMethodsMixin:
             after_request=after_request,
         )
 
+    def query(
+        self,
+        path: str,
+        name: str | None = None,
+        middleware: Sequence[DefineMiddleware] | None = None,
+        permissions: Sequence[DefinePermission] | None = None,
+        exception_handlers: Mapping[Any, ExceptionHandler] | None = None,
+        dependencies: Dependencies | None = None,
+        include_in_schema: bool = True,
+        before_request: Sequence[Callable[..., Any]] | None = None,
+        after_request: Sequence[Callable[..., Any]] | None = None,
+    ) -> Callable[..., Any]:
+        """
+        Decorator for defining a QUERY route.
+
+        Args:
+            path (str): The URL path pattern for the route.
+            name (str | None, optional): The name of the route. Defaults to None.
+            middleware (Sequence[DefineMiddleware] | None, optional): The middleware functions to apply to the route. Defaults to None.
+            permissions (Sequence[DefinePermission] | None, optional): The permissions required for the route. Defaults to None.
+            exception_handlers (Mapping[Any, ExceptionHandler] | None, optional): The exception handlers for the route. Defaults to None.
+            dependencies (Dependencies | None, optional): Dependencies to inject into the route handler. Defaults to None.
+            include_in_schema (bool, optional): Whether to include the route in the API schema. Defaults to True.
+            before_request (Sequence[Callable[..., Any]] | None, optional): Functions to run before the request is processed. Defaults to None.
+            after_request (Sequence[Callable[..., Any]] | None, optional): Functions to run after the request is processed. Defaults to None.
+
+        Returns:
+            Callable[..., Any]: The decorated function.
+        """
+
+        return self.forward_single_method_route(
+            path=path,
+            method="QUERY",
+            name=name,
+            middleware=middleware,
+            permissions=permissions,
+            exception_handlers=exception_handlers,
+            dependencies=dependencies,
+            include_in_schema=include_in_schema,
+            before_request=before_request,
+            after_request=after_request,
+        )
+
     def post(
         self,
         path: str,

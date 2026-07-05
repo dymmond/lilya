@@ -49,7 +49,7 @@ class CSRFMiddleware(MiddlewareProtocol):
         self.cookie_name = cookie_name or "csrftoken"
         self.header_name = header_name or "X-CSRFToken"
         self.cookie_path = cookie_path or "/"
-        self.safe_methods = safe_methods or {"GET", "HEAD"}
+        self.safe_methods = safe_methods or {"GET", "HEAD", "QUERY"}
         self.cookie_secure = secure
         self.cookie_httponly = httponly
         self.cookie_samesite = samesite

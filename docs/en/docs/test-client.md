@@ -23,6 +23,13 @@ You can use any of the `httpx` standard API like authentication, session cookies
 {!> ../../../docs_src/testclient/example2.py !}
 ```
 
+For the HTTP `QUERY` method, use the dedicated helper or the generic request API:
+
+```python
+response = client.query("/items", json={"where": {"status": "active"}})
+response = client.request("QUERY", "/items", content=b"select=name&limit=10")
+```
+
 **TestClient**
 
 ```python
@@ -52,6 +59,12 @@ Another example:
 
 ```python
 {!> ../../../docs_src/testclient/async_example2.py !}
+```
+
+`AsyncTestClient` also supports `QUERY`:
+
+```python
+response = await client.query("/items", json={"limit": 10})
 ```
 
 ## Lifespan events

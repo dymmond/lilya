@@ -97,6 +97,7 @@ class Match(IntEnum):
 
 class HTTPMethod(StrEnum):
     GET = "GET"
+    QUERY = "QUERY"
     POST = "POST"
     PUT = "PUT"
     PATCH = "PATCH"
@@ -112,6 +113,7 @@ class HTTPMethod(StrEnum):
 
 class HTTPCorsEnum(StrEnum):
     GET = "GET"
+    QUERY = "QUERY"
     POST = "POST"
     PUT = "PUT"
     PATCH = "PATCH"
