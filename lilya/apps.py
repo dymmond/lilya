@@ -124,8 +124,8 @@ class BaseLilya:
             )
 
         app = self.router
-        for middleware_class, args, options in reversed(middleware):
-            app = middleware_class(app=app, *args, **options)
+        for middleware_class in reversed(middleware):
+            app = middleware_class(app)
 
         return app
 
