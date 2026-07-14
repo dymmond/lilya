@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Annotated, Any
 
 from lilya import status
 from lilya._internal._events import AsyncLifespan, handle_lifespan_events
-from lilya._internal._middleware import wrap_middleware
+from lilya._internal._middleware import apply_asgi_stack, wrap_middleware
 from lilya._internal._path import get_route_path
 from lilya._internal._permissions import wrap_permission
 from lilya.compat import is_async_callable
@@ -182,9 +182,7 @@ class BaseRouter:
         Returns:
             None
         """
-        if middleware is not None:
-            for cls, args, options in reversed(middleware):
-                self.middleware_stack = cls(app=self.middleware_stack, *args, **options)
+        self.middleware_stack = apply_asgi_stack(self.middleware_stack, middleware)
 
     def _apply_permissions(self, permissions: Sequence[DefinePermission] | None) -> None:
         """
@@ -196,9 +194,7 @@ class BaseRouter:
         Returns:
             None
         """
-        if permissions is not None:
-            for cls, args, options in reversed(self.permissions):
-                self.middleware_stack = cls(app=self.middleware_stack, *args, **options)
+        self.middleware_stack = apply_asgi_stack(self.middleware_stack, permissions)
 
     def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         return self.url_path_for(name, **path_params)

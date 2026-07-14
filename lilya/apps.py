@@ -6,7 +6,7 @@ from typing import Annotated, Any, ClassVar, ParamSpec, cast
 
 from lilya import status
 from lilya._internal._connection import Connection  # noqa
-from lilya._internal._middleware import wrap_middleware  # noqa
+from lilya._internal._middleware import apply_asgi_stack, wrap_middleware  # noqa
 from lilya._internal._permissions import wrap_permission  # noqa
 from lilya._utils import is_class_and_subclass
 from lilya.compat import import_string  # noqa
@@ -123,11 +123,7 @@ class BaseLilya:
                 DefineMiddleware(LilyaExceptionMiddleware, handlers=exception_handlers),
             )
 
-        app = self.router
-        for middleware_class, args, options in reversed(middleware):
-            app = middleware_class(app=app, *args, **options)
-
-        return app
+        return apply_asgi_stack(self.router, middleware)
 
     def _get_error_handler(self) -> Callable[[Request, Exception], Response] | None:
         """

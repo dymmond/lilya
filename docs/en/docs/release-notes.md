@@ -6,6 +6,10 @@
 
 - Property `scheduler` to AsynczConfig for easy access.
 
+### Fixed
+
+- Isolated ASGI scopes across Lilya middleware, permission, include, route, host, and websocket stack boundaries so nested apps with their own middleware, including `SessionMiddleware`, keep local precedence without leaking `scope` mutations upstream.
+
 ## 0.27.0
 
 ### Added

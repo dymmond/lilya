@@ -6,7 +6,7 @@ import re
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
-from lilya._internal._middleware import wrap_middleware
+from lilya._internal._middleware import apply_asgi_stack, wrap_middleware
 from lilya._internal._path import clean_path, compile_path, get_route_path, replace_params
 from lilya._internal._permissions import wrap_permission
 from lilya._internal._responses import BaseHandler
@@ -163,9 +163,7 @@ class WebSocketPath(BaseHandler, BasePath):
         Returns:
             None
         """
-        if middleware is not None:
-            for cls, args, options in reversed(middleware):
-                self.app = cls(app=self.app, *args, **options)
+        self.app = apply_asgi_stack(self.app, middleware)
 
     def _apply_permissions(self, permissions: Sequence[DefinePermission] | None) -> None:
         """
@@ -177,9 +175,7 @@ class WebSocketPath(BaseHandler, BasePath):
         Returns:
             None
         """
-        if permissions is not None:
-            for cls, args, options in reversed(permissions):
-                self.app = cls(app=self.app, *args, **options)
+        self.app = apply_asgi_stack(self.app, permissions)
 
     def search(self, scope: Scope) -> tuple[Match, Scope]:
         """

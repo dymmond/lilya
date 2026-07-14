@@ -12,7 +12,7 @@ import re
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any, cast
 
-from lilya._internal._middleware import wrap_middleware
+from lilya._internal._middleware import apply_asgi_stack, wrap_middleware
 from lilya._internal._path import (
     clean_path,
     compile_path,
@@ -216,9 +216,7 @@ class Path(BaseHandler, BasePath):
         Returns:
             None
         """
-        if middleware is not None:
-            for cls, args, options in reversed(middleware):
-                self.app = cls(app=self.app, *args, **options)
+        self.app = apply_asgi_stack(self.app, middleware)
 
     def _apply_permissions(self, permissions: Sequence[DefinePermission] | None) -> None:
         """
@@ -230,9 +228,7 @@ class Path(BaseHandler, BasePath):
         Returns:
             None
         """
-        if permissions is not None:
-            for cls, args, options in reversed(permissions):
-                self.app = cls(app=self.app, *args, **options)
+        self.app = apply_asgi_stack(self.app, permissions)
 
     def path_for(self, name: str, /, **path_params: Any) -> URLPath:
         """
