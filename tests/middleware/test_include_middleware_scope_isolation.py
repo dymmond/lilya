@@ -376,6 +376,39 @@ def test_route_metadata_is_preserved_when_child_raises() -> None:
     assert scope["route_path_template"] == "/raised"
 
 
+def test_route_metadata_syncs_once_for_streaming_messages() -> None:
+    sync_count = 0
+
+    class CountingScopeIsolationMiddleware(ScopeIsolationMiddleware):
+        def sync_route_metadata(self, source_scope: Scope, target_scope: Scope) -> None:
+            nonlocal sync_count
+            sync_count += 1
+            super().sync_route_metadata(source_scope, target_scope)
+
+    async def streaming_app(scope: Scope, receive: Receive, send: Send) -> None:
+        scope["route_path_template"] = "/stream"
+        await send({"type": "http.response.start", "status": 200, "headers": []})
+        await send({"type": "http.response.body", "body": b"one", "more_body": True})
+        await send({"type": "http.response.body", "body": b"two", "more_body": False})
+
+    async def receive() -> Message:
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    observed_route_templates = []
+
+    async def send(message: Message) -> None:
+        observed_route_templates.append(scope.get("route_path_template", MISSING))
+
+    scope: Scope = {"type": "http", "headers": []}
+    isolated_app = CountingScopeIsolationMiddleware(streaming_app)
+
+    asyncio.run(isolated_app(scope, receive, send))
+
+    assert observed_route_templates == ["/stream", "/stream", "/stream"]
+    assert scope["route_path_template"] == "/stream"
+    assert sync_count == 2
+
+
 def test_middleware_and_permission_positional_arguments_are_supported(
     test_client_factory: TestClientFactory,
 ) -> None:

@@ -75,9 +75,13 @@ class ScopeIsolationMiddleware:
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         child_scope = copy_scope_for_middleware(scope)
+        route_metadata_synced = False
 
         async def send_with_route_metadata(message: Any) -> None:
-            self.sync_route_metadata(child_scope, scope)
+            nonlocal route_metadata_synced
+            if not route_metadata_synced:
+                self.sync_route_metadata(child_scope, scope)
+                route_metadata_synced = True
             await send(message)
 
         try:
