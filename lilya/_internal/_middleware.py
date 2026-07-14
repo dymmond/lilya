@@ -61,12 +61,29 @@ class ScopeIsolationMiddleware:
     def __init__(self, app: ASGIApp) -> None:
         self.app = app
 
+    def sync_route_metadata(self, source_scope: Scope, target_scope: Scope) -> None:
+        """
+        Copy Lilya-owned route metadata from the child scope into its parent scope.
+
+        These keys are intentionally whitelisted: response-side middleware and error
+        instrumentation need route metadata, but generic child scope mutations must remain
+        isolated from upstream middleware.
+        """
+        for key in ROUTE_SCOPE_KEYS:
+            if key in source_scope:
+                target_scope[key] = source_scope[key]
+
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         child_scope = copy_scope_for_middleware(scope)
-        await self.app(child_scope, receive, send)
-        for key in ROUTE_SCOPE_KEYS:
-            if key in child_scope:
-                scope[key] = child_scope[key]
+
+        async def send_with_route_metadata(message: Any) -> None:
+            self.sync_route_metadata(child_scope, scope)
+            await send(message)
+
+        try:
+            await self.app(child_scope, receive, send_with_route_metadata)
+        finally:
+            self.sync_route_metadata(child_scope, scope)
 
 
 def apply_asgi_stack(app: ASGIApp, stack: Sequence[Any] | None) -> ASGIApp:
@@ -87,5 +104,5 @@ def apply_asgi_stack(app: ASGIApp, stack: Sequence[Any] | None) -> ASGIApp:
 
     for cls, args, options in reversed(stack):
         child_app = app if hasattr(app, "__is_controller__") else ScopeIsolationMiddleware(app)
-        app = ScopeIsolationMiddleware(cls(app=child_app, *args, **options))
+        app = ScopeIsolationMiddleware(cls(child_app, *args, **options))
     return app

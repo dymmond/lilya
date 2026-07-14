@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Callable, Sequence
 from typing import Any
 
@@ -11,6 +12,7 @@ from starlette.requests import Request as StarletteRequest
 from starlette.responses import JSONResponse as StarletteJSONResponse
 from starlette.routing import Route
 
+from lilya._internal._middleware import ScopeIsolationMiddleware
 from lilya.apps import ChildLilya, Lilya
 from lilya.authentication import AuthCredentials, AuthenticationBackend, BasicUser
 from lilya.middleware import DefineMiddleware
@@ -21,6 +23,8 @@ from lilya.middleware.exceptions import ExceptionMiddleware
 from lilya.middleware.sessions import SessionMiddleware
 from lilya.middleware.trustedhost import TrustedHostMiddleware
 from lilya.middleware.trustedreferrer import TrustedReferrerMiddleware
+from lilya.permissions import DefinePermission
+from lilya.protocols.permissions import PermissionProtocol
 from lilya.requests import Connection, Request
 from lilya.responses import JSONResponse
 from lilya.routing import Include, Path
@@ -89,6 +93,48 @@ class OuterHeaderObserverMiddleware:
         await self.app(scope, receive, send_wrapper)
 
 
+class RouteTemplateSnapshotMiddleware:
+    def __init__(self, app: ASGIApp, header: str = "x-route-template") -> None:
+        self.app = app
+        self.header = header.encode("latin-1")
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        async def send_wrapper(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                message["headers"] = [
+                    *message["headers"],
+                    (
+                        self.header,
+                        str(scope.get("route_path_template", MISSING)).encode("latin-1"),
+                    ),
+                ]
+            await send(message)
+
+        await self.app(scope, receive, send_wrapper)
+
+
+class PositionalScopeMiddleware:
+    def __init__(self, app: ASGIApp, key: str, value: str) -> None:
+        self.app = app
+        self.key = key
+        self.value = value
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        scope[self.key] = self.value
+        await self.app(scope, receive, send)
+
+
+class PositionalScopePermission(PermissionProtocol):
+    def __init__(self, app: ASGIApp, key: str, value: str) -> None:
+        self.app = app
+        self.key = key
+        self.value = value
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        scope[self.key] = self.value
+        await self.app(scope, receive, send)
+
+
 class FixedAuthBackend(AuthenticationBackend):
     async def authenticate(self, request: Connection) -> tuple[AuthCredentials, BasicUser]:
         return AuthCredentials(["authenticated"]), BasicUser("scoped-user")
@@ -119,6 +165,15 @@ async def scope_echo(request: Request) -> JSONResponse:
             "stack": request.scope.get("lilya_asyncexitstack") is not None,
             "user": _scope_value(request.scope, "user"),
             "x_real_ip": request.headers.get("x-real-ip", MISSING),
+        }
+    )
+
+
+async def positional_scope_echo(request: Request) -> JSONResponse:
+    return JSONResponse(
+        {
+            "middleware": request.scope.get("middleware_positional", MISSING),
+            "permission": request.scope.get("permission_positional", MISSING),
         }
     )
 
@@ -284,6 +339,71 @@ def test_include_session_preserves_fastapi_child_session_scope(
 
     assert response.json() == {"session": {"owner": "fastapi"}}
     assert response.headers["x-include-session-owner"] == "include"
+
+
+def test_route_metadata_is_available_to_response_side_middleware(
+    test_client_factory: TestClientFactory,
+) -> None:
+    app = Lilya(
+        routes=[Path("/items/{item_id}", scope_echo)],
+        middleware=[DefineMiddleware(RouteTemplateSnapshotMiddleware)],
+    )
+    client = test_client_factory(app)
+
+    response = client.get("/items/123")
+
+    assert response.status_code == 200
+    assert response.headers["x-route-template"] == "/items/{item_id}"
+
+
+def test_route_metadata_is_preserved_when_child_raises() -> None:
+    async def raising_app(scope: Scope, receive: Receive, send: Send) -> None:
+        scope["route_path_template"] = "/raised"
+        raise RuntimeError("boom")
+
+    async def receive() -> Message:
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    async def send(message: Message) -> None:
+        pass
+
+    scope: Scope = {"type": "http", "headers": []}
+    isolated_app = ScopeIsolationMiddleware(raising_app)
+
+    with pytest.raises(RuntimeError, match="boom"):
+        asyncio.run(isolated_app(scope, receive, send))
+
+    assert scope["route_path_template"] == "/raised"
+
+
+def test_middleware_and_permission_positional_arguments_are_supported(
+    test_client_factory: TestClientFactory,
+) -> None:
+    app = Lilya(
+        routes=[Path("/", positional_scope_echo)],
+        middleware=[
+            DefineMiddleware(
+                PositionalScopeMiddleware,
+                "middleware_positional",
+                "middleware-value",
+            )
+        ],
+        permissions=[
+            DefinePermission(
+                PositionalScopePermission,
+                "permission_positional",
+                "permission-value",
+            )
+        ],
+    )
+    client = test_client_factory(app)
+
+    response = client.get("/")
+
+    assert response.json() == {
+        "middleware": "middleware-value",
+        "permission": "permission-value",
+    }
 
 
 @pytest.mark.parametrize(
