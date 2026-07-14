@@ -1,5 +1,11 @@
 # Release Notes
 
+## 0.27.1
+
+### Added
+
+- Property `scheduler` to AsynczConfig for easy access.
+
 ## 0.27.0
 
 ### Added

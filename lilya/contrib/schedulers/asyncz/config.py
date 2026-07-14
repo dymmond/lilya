@@ -127,6 +127,13 @@ class AsynczConfig(SchedulerConfig):
         """
         self.handler.shutdown(**kwargs)
 
+    @property
+    def scheduler(self) -> SchedulerType:
+        """
+        Returns the scheduler instance.
+        """
+        return self.handler
+
 
 class Task:
     """
