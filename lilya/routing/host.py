@@ -7,7 +7,7 @@ import re
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
-from lilya._internal._middleware import wrap_middleware
+from lilya._internal._middleware import apply_asgi_stack, wrap_middleware
 from lilya._internal._path import compile_path, replace_params
 from lilya._internal._permissions import wrap_permission
 from lilya.compat import is_async_callable
@@ -87,9 +87,7 @@ class Host(BasePath):
         Returns:
             None
         """
-        if middleware is not None:
-            for cls, args, options in reversed(middleware):
-                self.app = cls(app=self.app, *args, **options)
+        self.app = apply_asgi_stack(self.app, middleware)
 
     def _apply_permissions(self, permissions: Sequence[DefinePermission] | None) -> None:
         """
@@ -101,9 +99,7 @@ class Host(BasePath):
         Returns:
             None
         """
-        if permissions is not None:
-            for cls, args, options in reversed(permissions):
-                self.app = cls(app=self.app, *args, **options)
+        self.app = apply_asgi_stack(self.app, permissions)
 
     @property
     def routes(self) -> list[BasePath]:
