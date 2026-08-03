@@ -28,7 +28,7 @@ jobs:
           pip install -e ".[testing,cli]"
 
       - name: Run benchmarks
-        uses: CodSpeedHQ/action@v4
+        uses: CodSpeedHQ/action@v5.0.1
         env:
           LILYA_SETTINGS_MODULE: tests.settings.AppTestSettings
         with:
