@@ -10,9 +10,9 @@ import websockets
 from lilya.types import Receive, Scope, Send
 
 try:
-    import httpx
+    import httpx2
 except ImportError as e:
-    raise ImportError("httpx is required for lilya.contrib.proxy") from e
+    raise ImportError("httpx2 is required for lilya.contrib.proxy") from e
 
 
 class Relay:
@@ -20,7 +20,7 @@ class Relay:
     ASGI relay middleware for Lilya.
 
     This component forwards incoming ASGI requests to an upstream server
-    using `httpx.AsyncClient` and streams the response back to the caller.
+    using `httpx2.AsyncClient` and streams the response back to the caller.
 
     Key features
     ------------
@@ -59,19 +59,19 @@ class Relay:
         upstream_prefix: str = "/",
         preserve_host: bool = False,
         rewrite_set_cookie_domain: Callable[[str], str | None] | None = None,
-        timeout: httpx.Timeout | float = httpx.Timeout(10, connect=5, read=10, write=10),
-        limits: httpx.Limits = httpx.Limits(max_connections=100, max_keepalive_connections=20),
+        timeout: httpx2.Timeout | float = httpx2.Timeout(10, connect=5, read=10, write=10),
+        limits: httpx2.Limits = httpx2.Limits(max_connections=100, max_keepalive_connections=20),
         follow_redirects: bool = False,
         extra_request_headers: dict[str, str] | None = None,
         drop_request_headers: Iterable[str] | None = None,
         drop_response_headers: Iterable[str] | None = None,
         allow_request_headers: Iterable[str] | None = None,
         allow_response_headers: Iterable[str] | None = None,
-        transport: httpx.BaseTransport | None = None,
+        transport: httpx2.BaseTransport | None = None,
         max_retries: int = 0,
         retry_backoff_factor: float = 0.2,
         retry_statuses: Sequence[int] = (502, 503, 504),
-        retry_exceptions: tuple[type[Exception], ...] = (httpx.ConnectError, httpx.ReadTimeout),
+        retry_exceptions: tuple[type[Exception], ...] = (httpx2.ConnectError, httpx2.ReadTimeout),
         logger: logging.Logger | None = None,
     ) -> None:
         """
@@ -81,26 +81,26 @@ class Relay:
             preserve_host: If True, keep original `Host` header; otherwise rewrite to upstream host.
             rewrite_set_cookie_domain: Callback to rewrite cookie Domain; return "" to drop Domain,
                 or return None to leave cookie unchanged.
-            timeout: httpx.Timeout or float seconds for upstream requests.
-            limits: httpx connection pool limits.
+            timeout: httpx2.Timeout or float seconds for upstream requests.
+            limits: httpx2 connection pool limits.
             follow_redirects: Whether to follow upstream redirects.
             extra_request_headers: Extra headers to add to each request.
             drop_request_headers: Case-insensitive names to strip from requests.
             drop_response_headers: Case-insensitive names to strip from responses.
             allow_request_headers: If provided, only these headers are forwarded (plus computed ones).
             allow_response_headers: If provided, only these headers are forwarded back.
-            transport: Optional custom httpx transport (e.g., ASGITransport in tests).
+            transport: Optional custom httpx2 transport (e.g., ASGITransport in tests).
             max_retries: Max total retries (0 = disabled).
             retry_backoff_factor: Base seconds for exponential backoff (sleep = factor * 2**(attempt-1)).
             retry_statuses: HTTP statuses that should be retried.
             retry_exceptions: Exception types that should be retried.
             logger: Optional logger for structured logs.
         """
-        self._base_url = httpx.URL(target_base_url.rstrip("/"))
+        self._base_url = httpx2.URL(target_base_url.rstrip("/"))
         self._upstream_prefix = upstream_prefix
         self._preserve_host = preserve_host
         self._rewrite_cookie_domain = rewrite_set_cookie_domain
-        self._timeout = timeout if isinstance(timeout, httpx.Timeout) else httpx.Timeout(timeout)
+        self._timeout = timeout if isinstance(timeout, httpx2.Timeout) else httpx2.Timeout(timeout)
         self._limits = limits
         self._follow_redirects = follow_redirects
         self._extra_request_headers = extra_request_headers or {}
@@ -108,7 +108,7 @@ class Relay:
         self._drop_response_headers = {h.lower() for h in (drop_response_headers or ())}
         self._allow_request_headers = {h.lower() for h in (allow_request_headers or [])} or None
         self._allow_response_headers = {h.lower() for h in (allow_response_headers or [])} or None
-        self._client: httpx.AsyncClient | None = None
+        self._client: httpx2.AsyncClient | None = None
         self._transport = transport
 
         # Retries
@@ -136,7 +136,7 @@ class Relay:
         """
         Initialize the proxy's underlying HTTP client.
 
-        Creates a persistent `httpx.AsyncClient` with the configured
+        Creates a persistent `httpx2.AsyncClient` with the configured
         timeouts, connection limits, redirect behavior, and (optionally)
         a custom transport. This must be called before the proxy can
         forward any HTTP requests.
@@ -152,7 +152,7 @@ class Relay:
             )
         """
         if self._client is None:
-            self._client = httpx.AsyncClient(
+            self._client = httpx2.AsyncClient(
                 timeout=self._timeout,
                 limits=self._limits,
                 follow_redirects=self._follow_redirects,
@@ -163,7 +163,7 @@ class Relay:
         """
         Dispose of the underlying HTTP client.
 
-        Closes the internal `httpx.AsyncClient`, releasing all
+        Closes the internal `httpx2.AsyncClient`, releasing all
         connection pool resources and preventing further requests.
         After shutdown, the proxy cannot handle HTTP traffic until
         `startup()` is called again.
@@ -227,9 +227,9 @@ class Relay:
           - **Timeouts** are mapped to 504 Gateway Timeout.
           - **Retryable statuses** (e.g. 502, 503, 504) raise `HTTPStatusError`
             and trigger exponential backoff until `max_retries` is exceeded.
-          - **Retryable exceptions** (e.g. `httpx.ConnectError`) are retried
+          - **Retryable exceptions** (e.g. `httpx2.ConnectError`) are retried
             with backoff.
-          - Other `httpx.RequestError`s are returned immediately as 502.
+          - Other `httpx2.RequestError`s are returned immediately as 502.
 
         Args:
             scope: The ASGI connection scope for the request.
@@ -258,7 +258,7 @@ class Relay:
                     method, upstream_url, request_headers, request_body, send
                 )
                 return
-            except httpx.HTTPStatusError as exc:
+            except httpx2.HTTPStatusError as exc:
                 self._log_event(
                     "upstream_retryable_status",
                     url=str(upstream_url),
@@ -270,7 +270,7 @@ class Relay:
                     continue
                 await self._send_text(send, exc.response.status_code, exc.response.text)
                 return
-            except httpx.TimeoutException as exc:
+            except httpx2.TimeoutException as exc:
                 # Map timeouts to 504 Gateway Timeout
                 self._log_event(
                     "upstream_timeout",
@@ -295,8 +295,8 @@ class Relay:
                     continue
                 await self._send_text(send, 502, f"Upstream error: {exc}")
                 return
-            except httpx.RequestError as exc:
-                # Non-retryable httpx error
+            except httpx2.RequestError as exc:
+                # Non-retryable httpx2 error
                 self._log_event("upstream_error", url=str(upstream_url), error=str(exc))
                 await self._send_text(send, 502, f"Upstream error: {exc}")
                 return
@@ -345,7 +345,7 @@ class Relay:
             prefix += "/"
         return prefix + path.lstrip("/")
 
-    def _build_upstream_url(self, scope: Scope) -> httpx.URL:
+    def _build_upstream_url(self, scope: Scope) -> httpx2.URL:
         """
         Construct the full upstream URL for a given ASGI request.
 
@@ -364,7 +364,7 @@ class Relay:
             scope: The ASGI connection scope containing request metadata.
 
         Returns:
-            An `httpx.URL` object representing the target upstream URL.
+            An `httpx2.URL` object representing the target upstream URL.
 
         Example:
             If base_url="http://auth.local", upstream_prefix="/api", and
@@ -494,7 +494,7 @@ class Relay:
     async def _forward_to_upstream(
         self,
         method: str,
-        url: httpx.URL,
+        url: httpx2.URL,
         headers: dict[str, str],
         content: AsyncIterator[bytes] | None,
         send: Send,
@@ -502,25 +502,25 @@ class Relay:
         """
         Perform a single upstream HTTP request and relay the response.
 
-        Opens a streaming request to the upstream server using httpx and
+        Opens a streaming request to the upstream server using httpx2 and
         forwards the response headers and body to the client.
 
         - If the status code is in `retry_statuses`, raises
-          `httpx.HTTPStatusError` to trigger the retry loop.
+          `httpx2.HTTPStatusError` to trigger the retry loop.
         - If `rewrite_set_cookie_domain` is provided, rewrites `Set-Cookie`
           headers before sending them back.
         - Streams response body in chunks to avoid buffering large payloads.
 
         Raises:
-            httpx.HTTPStatusError: For retryable statuses.
-            httpx.RequestError: For network or protocol errors.
+            httpx2.HTTPStatusError: For retryable statuses.
+            httpx2.RequestError: For network or protocol errors.
         """
 
         assert self._client is not None
 
         async with self._client.stream(method, url, headers=headers, content=content) as resp:
             if resp.status_code in self._retry_statuses:
-                raise httpx.HTTPStatusError(
+                raise httpx2.HTTPStatusError(
                     f"Retryable status: {resp.status_code}",
                     request=resp.request,
                     response=resp,
@@ -583,7 +583,7 @@ class Relay:
                 str(ws_url),
                 extra_headers=request_headers,
                 open_timeout=getattr(self._timeout, "connect", 10.0)
-                if isinstance(self._timeout, httpx.Timeout)
+                if isinstance(self._timeout, httpx2.Timeout)
                 else float(self._timeout),
                 close_timeout=None,
                 ping_interval=None,
@@ -669,7 +669,7 @@ class Relay:
             tg.start_soon(downstream_to_upstream)
             tg.start_soon(upstream_to_downstream)
 
-    def _build_upstream_ws_url(self, scope: Scope) -> httpx.URL:
+    def _build_upstream_ws_url(self, scope: Scope) -> httpx2.URL:
         """
         Build the upstream WebSocket URL from the ASGI scope.
 
@@ -683,7 +683,7 @@ class Relay:
                 details such as `scheme`, `path`, and `query_string`.
 
         Returns:
-            A fully-qualified `httpx.URL` pointing to the upstream WebSocket.
+            A fully-qualified `httpx2.URL` pointing to the upstream WebSocket.
 
         Example:
             If the proxy is configured with base_url="http://upstream.local"
@@ -779,7 +779,7 @@ class Relay:
 
     def _rewrite_response_cookies(
         self,
-        response: httpx.Response,
+        response: httpx2.Response,
         headers: list[tuple[str, str]],
     ) -> list[tuple[str, str]]:
         """
@@ -797,7 +797,7 @@ class Relay:
             - If no cookies are present, returns headers unchanged.
 
         Args:
-            response: The upstream `httpx.Response` object whose headers may
+            response: The upstream `httpx2.Response` object whose headers may
                 contain one or more `Set-Cookie` fields.
             headers: The current header list destined for the downstream client.
 

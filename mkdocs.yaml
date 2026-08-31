@@ -57,7 +57,7 @@ plugins:
           show_root_heading: true
           show_if_no_docstring: true
           preload_modules:
-          - httpx
+          - httpx2
           - a2wsgi
           inherited_members: true
           members_order: source

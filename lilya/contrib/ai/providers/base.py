@@ -8,7 +8,7 @@ from lilya.contrib.ai.exceptions import AIProviderError
 from lilya.contrib.ai.types import AIResponse, AIResponseChunk, PromptRequest
 
 if TYPE_CHECKING:
-    import httpx
+    import httpx2
 
 
 class AIProvider(Protocol):
@@ -68,7 +68,7 @@ class BaseHTTPProvider(BaseAIProvider):
         """
         self._timeout = timeout
         self._headers = headers or {}
-        self._client: httpx.AsyncClient | None = None
+        self._client: httpx2.AsyncClient | None = None
 
     async def startup(self) -> None:
         """
@@ -85,20 +85,20 @@ class BaseHTTPProvider(BaseAIProvider):
             await self._client.aclose()
             self._client = None
 
-    def _build_client(self) -> httpx.AsyncClient:
+    def _build_client(self) -> httpx2.AsyncClient:
         """
-        Create the shared `httpx.AsyncClient`.
+        Create the shared `httpx2.AsyncClient`.
         """
         try:
-            import httpx
+            import httpx2
         except ImportError as exc:
             raise RuntimeError(
-                "httpx is required for lilya.contrib.ai. Install the `lilya[ai]` extra."
+                "httpx2 is required for lilya.contrib.ai. Install the `lilya[ai]` extra."
             ) from exc
 
-        return httpx.AsyncClient(timeout=self._timeout, headers=self._headers)
+        return httpx2.AsyncClient(timeout=self._timeout, headers=self._headers)
 
-    async def _get_client(self) -> httpx.AsyncClient:
+    async def _get_client(self) -> httpx2.AsyncClient:
         """
         Retrieve or lazily create the internal HTTP client.
         """
@@ -107,7 +107,7 @@ class BaseHTTPProvider(BaseAIProvider):
         return self._client
 
     @staticmethod
-    async def _iter_sse_data(response: httpx.Response) -> AsyncIterator[str]:
+    async def _iter_sse_data(response: httpx2.Response) -> AsyncIterator[str]:
         """
         Iterate server-sent-event `data:` payloads from an HTTP response.
         """

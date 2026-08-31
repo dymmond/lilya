@@ -22,14 +22,14 @@ With `Relay`, you mount a single catch‑all route on App 2 (e.g., `/auth`) that
 - **Cookie rewriting**: Adjust or strip `Domain` on `Set-Cookie`.
 - **WebSocket proxying**: (optional) Proxy WS traffic bidirectionally.
 - **Observability**: Structured logging hooks for retries, errors, and timeouts.
-- **Test-friendly**: In-memory with `httpx.ASGITransport` or WS echo servers.
+- **Test-friendly**: In-memory with `httpx2.ASGITransport` or WS echo servers.
 
 ### Before continuing
 
-Lilya uses `httpx` to create the `Relay` object. This means, to work with it **you must**:
+Lilya uses `httpx2` to create the `Relay` object. This means, to work with it **you must**:
 
 ```shell
-pip install httpx
+pip install httpx2
 ```
 
 ## Quickstart
@@ -99,19 +99,19 @@ Relay(
     upstream_prefix: str = "/",
     preserve_host: bool = False,
     rewrite_set_cookie_domain: Callable[[str], str] | None = None,
-    timeout: httpx.Timeout | float = httpx.Timeout(10, connect=5, read=10, write=10),
-    limits: httpx.Limits = httpx.Limits(max_connections=100, max_keepalive_connections=20),
+    timeout: httpx2.Timeout | float = httpx2.Timeout(10, connect=5, read=10, write=10),
+    limits: httpx2.Limits = httpx2.Limits(max_connections=100, max_keepalive_connections=20),
     follow_redirects: bool = False,
     extra_request_headers: dict[str, str] | None = None,
     drop_request_headers: Iterable[str] = (),
     drop_response_headers: Iterable[str] = (),
     allow_request_headers: Iterable[str] | None = None,
     allow_response_headers: Iterable[str] | None = None,
-    transport: httpx.BaseTransport | None = None,
+    transport: httpx2.BaseTransport | None = None,
     max_retries: int = 0,
     retry_backoff_factor: float = 0.2,
     retry_statuses: Sequence[int] = (502, 503, 504),
-    retry_exceptions: tuple[type[Exception], ...] = (httpx.ConnectError, httpx.ReadTimeout),
+    retry_exceptions: tuple[type[Exception], ...] = (httpx2.ConnectError, httpx2.ReadTimeout),
     logger: logging.Logger | None = None,
 )
 ```
@@ -125,17 +125,17 @@ Relay(
     - Return **`None`**:  no changes;
     - Return **`""`**:  **drop** the `Domain` attribute (binds cookie to current host);
     - Return **`"example.com"`**:  set `Domain=example.com`.
-- `timeout`: `httpx.Timeout` or float. **Recommended**: keep connect/read/write specified.
-- `limits`: `httpx.Limits` for connection pooling and keepalive.
+- `timeout`: `httpx2.Timeout` or float. **Recommended**: keep connect/read/write specified.
+- `limits`: `httpx2.Limits` for connection pooling and keepalive.
 - `follow_redirects`: Whether to follow upstream redirects or pass them through. Default: `False` (proxied as‑is).
 - `extra_request_headers`: Dict to **add/override** headers sent to upstream (e.g., service auth token).
 - `drop_request_headers`: Iterable of header names to **strip** from the inbound request.
 - `drop_response_headers`: Iterable of header names to **strip** from the upstream response.
-- `transport`: Inject an `httpx.BaseTransport` (e.g., `httpx.ASGITransport(app=upstream_app)`) for **in‑memory tests**.
+- `transport`: Inject an `httpx2.BaseTransport` (e.g., `httpx2.ASGITransport(app=upstream_app)`) for **in‑memory tests**.
 
 **Lifecycle**:
 
-- `await proxy.startup()` — creates a shared `httpx.AsyncClient`.
+- `await proxy.startup()` — creates a shared `httpx2.AsyncClient`.
 - `await proxy.shutdown()` — closes the client.
 
 ## WebSocket Support
@@ -211,7 +211,7 @@ Upstream often sets cookies with `Domain=auth.example.com`. If your public host 
 
 ## Error mapping
 
-Any `httpx.RequestError` (connect errors, DNS, refused, etc.) is returned as **`502 Bad Gateway`**.
+Any `httpx2.RequestError` (connect errors, DNS, refused, etc.) is returned as **`502 Bad Gateway`**.
 
 You can extend the implementation to:
 
@@ -309,7 +309,7 @@ proxy = Relay(
 
 ## Testing guide
 
-You can test the entire chain **in‑memory** (no sockets) with `httpx.ASGITransport`.
+You can test the entire chain **in‑memory** (no sockets) with `httpx2.ASGITransport`.
 
 ### Dummy upstream (ASGI app)
 
@@ -319,7 +319,7 @@ Use AnyIO primitives (not `asyncio.sleep`) so tests run on both asyncio and trio
 # tests/conftest.py (excerpt)
 import anyio
 import json
-import httpx
+import httpx2
 import pytest
 from lilya import Lilya
 from lilya.routing import Include
@@ -406,7 +406,7 @@ def upstream_app():
 
 @pytest.fixture
 def proxy_and_app(upstream_app):
-    upstream_transport = httpx.ASGITransport(app=upstream_app)
+    upstream_transport = httpx2.ASGITransport(app=upstream_app)
     proxy = Relay(
         "http://auth-service.local",
         upstream_prefix="/",
@@ -426,8 +426,8 @@ def proxy_and_app(upstream_app):
 async def client(proxy_and_app):
     proxy, app, _ = proxy_and_app
     await proxy.startup()
-    transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as c:
+    transport = httpx2.ASGITransport(app=app)
+    async with httpx2.AsyncClient(transport=transport, base_url="http://testserver") as c:
         yield c
     await proxy.shutdown()
 ```
@@ -486,8 +486,8 @@ async def test_preserve_host_false_sets_upstream_host(proxy_and_app):
     proxy, app, _ = proxy_and_app
     await proxy.startup()
     try:
-        transport = httpx.ASGITransport(app=app)
-        async with httpx.AsyncClient(transport=transport, base_url="http://public.host") as c:
+        transport = httpx2.ASGITransport(app=app)
+        async with httpx2.AsyncClient(transport=transport, base_url="http://public.host") as c:
             r = await c.get("/auth/echo")
             assert r.json()["headers"]["host"] == "auth-service.local"
     finally:
@@ -528,12 +528,12 @@ async def test_upstream_error_maps_to_502(proxy_and_app, monkeypatch):
     await proxy.startup()
     try:
         def stream_replace(*_a, **_k):
-            req = httpx.Request("GET", "http://auth-service.local/echo")
-            return RaiseOnEnter(httpx.ConnectError("boom", request=req))
+            req = httpx2.Request("GET", "http://auth-service.local/echo")
+            return RaiseOnEnter(httpx2.ConnectError("boom", request=req))
         monkeypatch.setattr(proxy._client, "stream", stream_replace)
 
-        transport = httpx.ASGITransport(app=app)
-        async with httpx.AsyncClient(transport=transport, base_url="http://test") as cli:
+        transport = httpx2.ASGITransport(app=app)
+        async with httpx2.AsyncClient(transport=transport, base_url="http://test") as cli:
             r = await cli.get("/auth/echo")
         assert r.status_code == 502 and "Upstream error" in r.text
     finally:
@@ -576,10 +576,10 @@ async def test_ws_proxy(proxy_and_app):
 
 ### Relay not started. Call startup() on app startup.
 
-- **Cause**: App lifespan didn't run (common when using `httpx.ASGITransport(app=app)`).
+- **Cause**: App lifespan didn't run (common when using `httpx2.ASGITransport(app=app)`).
 - **Fix**:
     - Call `await proxy.startup()` in your test fixture, and `await proxy.shutdown()` on teardown; **or**
-    - Use `ASGITransport(app=app)` and enable the lifespan (if supported by your httpx version).
+    - Use `ASGITransport(app=app)` and enable the lifespan (if supported by your httpx2 version).
 
 ### `TypeError: object _AsyncGeneratorContextManager can't be used in 'await' expression`
 
@@ -599,15 +599,15 @@ async def test_ws_proxy(proxy_and_app):
 ### Only one `Set-Cookie` header observed
 
 - **Cause**: Reading cookies with `.get("set-cookie")` which joins values.
-- **Fix**: Use `headers.get_list("set-cookie")` (httpx), `headers.getlist(...)`, or `headers.raw`.
+- **Fix**: Use `headers.get_list("set-cookie")` (httpx2), `headers.getlist(...)`, or `headers.raw`.
 
 ## Performance & tuning
 
-- **Connection pooling**: Tweak `httpx.Limits(max_connections=..., max_keepalive_connections=...)`.
+- **Connection pooling**: Tweak `httpx2.Limits(max_connections=..., max_keepalive_connections=...)`.
 - **Timeouts**: Set explicit `connect`, `read`, `write`, and total budgets based on upstream SLAs.
 - **Streaming**: This proxy **streams** both request and response bodies to minimize memory. Avoid buffering large payloads.
 - **Keep‑alive**: Default keep‑alive reduces latency under load.
-- **Backpressure**: Streaming via `httpx.AsyncClient.stream` naturally applies backpressure across the ASGI boundary.
+- **Backpressure**: Streaming via `httpx2.AsyncClient.stream` naturally applies backpressure across the ASGI boundary.
 
 ## Observability
 

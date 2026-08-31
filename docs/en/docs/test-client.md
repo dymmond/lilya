@@ -17,7 +17,7 @@ $ pip install Lilya[test]
 {!> ../../../docs_src/testclient/example1.py !}
 ```
 
-You can use any of the `httpx` standard API like authentication, session cookies and file uploads.
+You can use any of the `httpx2` standard API like authentication, session cookies and file uploads.
 
 ```python
 {!> ../../../docs_src/testclient/example2.py !}
@@ -36,7 +36,7 @@ response = client.request("QUERY", "/items", content=b"select=name&limit=10")
 {!> ../../../docs_src/testclient/example3.py !}
 ```
 
-`httpx` is a great library created by the same author of `Starlette` and `Django Rest Framework`.
+`httpx2` is Pydantic's continuation of HTTPX and retains its familiar client API.
 
 !!! Info
     By default the TestClient raise any exceptions that occur in the application.

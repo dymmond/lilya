@@ -5,7 +5,7 @@ from typing import Any
 
 import msgspec
 import pytest
-from httpx import ASGITransport, AsyncClient
+from httpx2 import ASGITransport, AsyncClient
 from pydantic import BaseModel
 
 from lilya.apps import Lilya

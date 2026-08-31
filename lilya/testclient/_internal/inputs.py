@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Any, TypedDict
 
-import httpx
-from httpx._types import (
+import httpx2
+from httpx2._types import (
     AuthTypes,
     CookieTypes,
     HeaderTypes,
@@ -25,8 +25,8 @@ class RequestInputs(TypedDict, total=False):
     headers: HeaderTypes | None
     cookies: CookieTypes | None
     follow_redirects: bool | None
-    auth: AuthTypes | httpx._client.UseClientDefault
-    timeout: TimeoutTypes | httpx._client.UseClientDefault
+    auth: AuthTypes | httpx2._client.UseClientDefault
+    timeout: TimeoutTypes | httpx2._client.UseClientDefault
     extensions: dict[str, Any] | None
 
 
@@ -39,7 +39,7 @@ RequestInputsDefaultValues = {
     "headers": None,
     "cookies": None,
     "follow_redirects": None,
-    "auth": httpx._client.USE_CLIENT_DEFAULT,
-    "timeout": httpx._client.USE_CLIENT_DEFAULT,
+    "auth": httpx2._client.USE_CLIENT_DEFAULT,
+    "timeout": httpx2._client.USE_CLIENT_DEFAULT,
     "extensions": None,
 }

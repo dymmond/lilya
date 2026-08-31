@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any, Literal, cast
 
-import httpx
+import httpx2
 
 from lilya.apps import Lilya
 from lilya.conf.global_settings import Settings
@@ -33,7 +33,7 @@ def create_client(
     redirect_slashes: bool = True,
     debug: bool = False,
     root_path: str = "",
-    cookies: httpx._types.CookieTypes | None = None,
+    cookies: httpx2._types.CookieTypes | None = None,
     before_request: Sequence[Callable[..., Any]] | None = None,
     after_request: Sequence[Callable[..., Any]] | None = None,
     enable_openapi: bool = True,
@@ -113,7 +113,7 @@ def create_async_client(
     redirect_slashes: bool = True,
     debug: bool = False,
     root_path: str = "",
-    cookies: httpx._types.CookieTypes | None = None,
+    cookies: httpx2._types.CookieTypes | None = None,
     before_request: Sequence[Callable[..., Any]] | None = None,
     after_request: Sequence[Callable[..., Any]] | None = None,
     enable_openapi: bool = True,

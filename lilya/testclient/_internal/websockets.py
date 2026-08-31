@@ -18,17 +18,17 @@ from lilya.websockets import WebSocketDisconnect
 __all__ = ["WebSocketDenialResponse", "WebSocketTestSession", "WebSocketDisconnect"]
 
 try:
-    import httpx
+    import httpx2
 except ModuleNotFoundError:  # pragma: no cover
     raise RuntimeError(
-        "The lilya.testclient module requires the httpx package to be installed.\n"
+        "The lilya.testclient module requires the httpx2 package to be installed.\n"
         "You can install this with:\n"
-        "    $ pip install httpx\n"
+        "    $ pip install httpx2\n"
     ) from None
 
 
 class WebSocketDenialResponse(  # type: ignore[misc]
-    httpx.Response,
+    httpx2.Response,
     WebSocketDisconnect,
 ):
     """

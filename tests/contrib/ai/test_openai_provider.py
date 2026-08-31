@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-import httpx
+import httpx2
 import pytest
 
 from lilya.contrib.ai import (
@@ -25,18 +25,18 @@ pytestmark = pytest.mark.asyncio
 def build_provider(handler, provider_cls=OpenAIProvider, config=None):
     config = config or OpenAIConfig(api_key="secret")
     provider = provider_cls(config)
-    provider._client = httpx.AsyncClient(transport=httpx.MockTransport(handler), headers={})
+    provider._client = httpx2.AsyncClient(transport=httpx2.MockTransport(handler), headers={})
     return provider
 
 
 async def test_openai_provider_parses_chat_completion_response():
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         payload = json.loads(request.content.decode())
         assert request.url.path == "/v1/chat/completions"
         assert payload["model"] == "gpt-4o-mini"
         assert payload["messages"][0]["role"] == "system"
         assert payload["messages"][1]["content"] == "hello"
-        return httpx.Response(
+        return httpx2.Response(
             200,
             json={
                 "model": "gpt-4o-mini",
@@ -80,10 +80,10 @@ async def test_openai_provider_streams_chunks():
         ]
     )
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         payload = json.loads(request.content.decode())
         assert payload["stream"] is True
-        return httpx.Response(200, text=body, headers={"content-type": "text/event-stream"})
+        return httpx2.Response(200, text=body, headers={"content-type": "text/event-stream"})
 
     provider = build_provider(handler)
     chunks = [
@@ -100,9 +100,9 @@ async def test_openai_provider_streams_chunks():
 async def test_openai_compatible_provider_supports_groq_name_and_url():
     captured = {}
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         captured["host"] = str(request.url)
-        return httpx.Response(
+        return httpx2.Response(
             200,
             json={
                 "model": "llama-3.3-70b-versatile",
@@ -126,9 +126,9 @@ async def test_openai_compatible_provider_supports_groq_name_and_url():
 async def test_openai_compatible_provider_supports_mistral_name_and_url():
     captured = {}
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         captured["host"] = str(request.url)
-        return httpx.Response(
+        return httpx2.Response(
             200,
             json={
                 "model": "mistral-small-latest",
@@ -157,8 +157,8 @@ async def test_openai_provider_requires_model():
 
 
 async def test_openai_provider_rejects_invalid_response():
-    def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, json={"choices": []})
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        return httpx2.Response(200, json={"choices": []})
 
     provider = build_provider(handler)
 
