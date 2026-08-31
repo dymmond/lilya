@@ -1,16 +1,14 @@
 # Release Notes
 
-## 0.27.2
+### Added
+
+- Property `scheduler` to AsynczConfig for easy access.
+
+## 0.27.1
 
 ### Changed
 
 - Replaced HTTPX with HTTPX2, Pydantic's continuation of the HTTPX project, across Lilya's test client and HTTP-backed integrations.
-
-## 0.27.1
-
-### Added
-
-- Property `scheduler` to AsynczConfig for easy access.
 
 ### Fixed
 
