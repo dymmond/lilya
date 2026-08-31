@@ -99,11 +99,12 @@ def test_request_headers(test_client_factory):
 
     client = test_client_factory(app)
     response = client.get("/", headers={"host": "example.org"})
+    accept_encoding = "gzip, deflate, zstd" if sys.version_info >= (3, 14) else "gzip, deflate"
     assert response.json() == {
         "headers": {
             "host": "example.org",
             "user-agent": "testclient",
-            "accept-encoding": "gzip, deflate",
+            "accept-encoding": accept_encoding,
             "accept": "*/*",
             "connection": "keep-alive",
         }
