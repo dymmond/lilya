@@ -11,10 +11,10 @@ from urllib.parse import urljoin
 
 import anyio
 import anyio.from_thread
-import httpx
+import httpx2
 from anyio.abc import ObjectReceiveStream, ObjectSendStream
 from anyio.streams.stapled import StapledObjectStream
-from httpx._types import (
+from httpx2._types import (
     AuthTypes,
     CookieTypes,
     HeaderTypes,
@@ -34,23 +34,23 @@ from lilya.testclient.exceptions import UpgradeException
 from lilya.types import ASGIApp
 
 try:
-    import httpx
+    import httpx2
 
 except ModuleNotFoundError:  # pragma: no cover
     raise RuntimeError(
-        "The lilya.testclient module requires the httpx package to be installed.\n"
+        "The lilya.testclient module requires the httpx2 package to be installed.\n"
         "You can install this with:\n"
-        "    $ pip install httpx\n"
+        "    $ pip install httpx2\n"
     ) from None
 
 _AUTH_USER_KEY = "__lilya_testclient_authenticated_user__"
 
 
-class TestClient(httpx.Client):
+class TestClient(httpx2.Client):
     """
     A robust and flexible test client designed for making HTTP requests to an ASGI application.
 
-    This client extends `httpx.Client` to provide a seamless testing experience for ASGI
+    This client extends `httpx2.Client` to provide a seamless testing experience for ASGI
     applications, handling the complexities of ASGI lifespan events, authentication state
     management, and asynchronous backend integration (supporting both asyncio and trio).
 
@@ -227,18 +227,18 @@ class TestClient(httpx.Client):
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
         cookies: CookieTypes | None = None,
-        auth: (AuthTypes | httpx._client.UseClientDefault) = httpx._client.USE_CLIENT_DEFAULT,
+        auth: (AuthTypes | httpx2._client.UseClientDefault) = httpx2._client.USE_CLIENT_DEFAULT,
         follow_redirects: bool | None = None,
         timeout: (
-            TimeoutTypes | httpx._client.UseClientDefault
-        ) = httpx._client.USE_CLIENT_DEFAULT,
+            TimeoutTypes | httpx2._client.UseClientDefault
+        ) = httpx2._client.USE_CLIENT_DEFAULT,
         extensions: dict[str, Any] | None = None,
         stream: bool = False,
-    ) -> httpx.Response:
+    ) -> httpx2.Response:
         """
         Builds and sends a network request to the ASGI application.
 
-        This method overrides the standard `httpx.Client.request` to provide specific
+        This method overrides the standard `httpx2.Client.request` to provide specific
         handling for the TestClient, including URL merging and stream handling.
 
         Args:
@@ -256,25 +256,25 @@ class TestClient(httpx.Client):
                 Defaults to None.
             cookies (CookieTypes | None, optional): Cookies to include in the request.
                 Defaults to None.
-            auth (AuthTypes | httpx._client.UseClientDefault, optional): Authentication
-                credentials. Defaults to httpx._client.USE_CLIENT_DEFAULT.
+            auth (AuthTypes | httpx2._client.UseClientDefault, optional): Authentication
+                credentials. Defaults to httpx2._client.USE_CLIENT_DEFAULT.
             follow_redirects (bool | None, optional): Whether to follow redirects.
                 Defaults to None.
-            timeout (TimeoutTypes | httpx._client.UseClientDefault, optional): Timeout
-                configuration. Defaults to httpx._client.USE_CLIENT_DEFAULT.
+            timeout (TimeoutTypes | httpx2._client.UseClientDefault, optional): Timeout
+                configuration. Defaults to httpx2._client.USE_CLIENT_DEFAULT.
             extensions (dict[str, Any] | None, optional): Extensions to include in the request.
                 Defaults to None.
             stream (bool, optional): Whether to stream the response content. Defaults to False.
 
         Returns:
-            httpx.Response: The response received from the application.
+            httpx2.Response: The response received from the application.
         """
         url = self._merge_url(url)
-        redirect: bool | httpx._client.UseClientDefault = httpx._client.USE_CLIENT_DEFAULT
+        redirect: bool | httpx2._client.UseClientDefault = httpx2._client.USE_CLIENT_DEFAULT
         if follow_redirects is not None:
             redirect = follow_redirects
 
-        # httpx 0.28+ deprecated per-request cookies= parameter
+        # httpx2 0.28+ deprecated per-request cookies= parameter
         # Save current cookies, merge per-request cookies, then restore after request
         if cookies is not None:
             _saved_cookies = dict(self.cookies)
@@ -318,7 +318,7 @@ class TestClient(httpx.Client):
                 self.cookies.clear()
                 self.cookies.update(_saved_cookies)
 
-    def _process_request(self, method: str, url: URLTypes, **kwargs: Any) -> httpx.Response:
+    def _process_request(self, method: str, url: URLTypes, **kwargs: Any) -> httpx2.Response:
         """
         Internal helper to process a request with default values.
 
@@ -332,7 +332,7 @@ class TestClient(httpx.Client):
             **kwargs (Any): Additional keyword arguments for the request.
 
         Returns:
-            httpx.Response: The resulting response object.
+            httpx2.Response: The resulting response object.
         """
         if not kwargs:
             kwargs = RequestInputsDefaultValues  # type: ignore
@@ -344,7 +344,7 @@ class TestClient(httpx.Client):
 
         return self.request(method=method, url=url, **kwargs)  # type: ignore
 
-    def get(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+    def get(self, url: URLTypes, **kwargs: Any) -> httpx2.Response:
         """
         Sends a GET request.
 
@@ -353,11 +353,11 @@ class TestClient(httpx.Client):
             **kwargs (Any): Additional arguments passed to `request`.
 
         Returns:
-            httpx.Response: The response from the server.
+            httpx2.Response: The response from the server.
         """
         return self._process_request(method="GET", url=url, **kwargs)  # type: ignore
 
-    def head(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+    def head(self, url: URLTypes, **kwargs: Any) -> httpx2.Response:
         """
         Sends a HEAD request.
 
@@ -366,11 +366,11 @@ class TestClient(httpx.Client):
             **kwargs (Any): Additional arguments passed to `request`.
 
         Returns:
-            httpx.Response: The response from the server.
+            httpx2.Response: The response from the server.
         """
         return self._process_request(method="HEAD", url=url, **kwargs)  # type: ignore
 
-    def query(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+    def query(self, url: URLTypes, **kwargs: Any) -> httpx2.Response:
         """
         Sends a QUERY request.
 
@@ -379,11 +379,11 @@ class TestClient(httpx.Client):
             **kwargs (Any): Additional arguments passed to `request`.
 
         Returns:
-            httpx.Response: The response from the server.
+            httpx2.Response: The response from the server.
         """
         return self._process_request(method="QUERY", url=url, **kwargs)  # type: ignore
 
-    def post(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+    def post(self, url: URLTypes, **kwargs: Any) -> httpx2.Response:
         """
         Sends a POST request.
 
@@ -392,11 +392,11 @@ class TestClient(httpx.Client):
             **kwargs (Any): Additional arguments passed to `request`.
 
         Returns:
-            httpx.Response: The response from the server.
+            httpx2.Response: The response from the server.
         """
         return self._process_request(method="POST", url=url, **kwargs)  # type: ignore
 
-    def put(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+    def put(self, url: URLTypes, **kwargs: Any) -> httpx2.Response:
         """
         Sends a PUT request.
 
@@ -405,11 +405,11 @@ class TestClient(httpx.Client):
             **kwargs (Any): Additional arguments passed to `request`.
 
         Returns:
-            httpx.Response: The response from the server.
+            httpx2.Response: The response from the server.
         """
         return self._process_request(method="PUT", url=url, **kwargs)  # type: ignore
 
-    def patch(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+    def patch(self, url: URLTypes, **kwargs: Any) -> httpx2.Response:
         """
         Sends a PATCH request.
 
@@ -418,11 +418,11 @@ class TestClient(httpx.Client):
             **kwargs (Any): Additional arguments passed to `request`.
 
         Returns:
-            httpx.Response: The response from the server.
+            httpx2.Response: The response from the server.
         """
         return self._process_request(method="PATCH", url=url, **kwargs)  # type: ignore
 
-    def delete(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+    def delete(self, url: URLTypes, **kwargs: Any) -> httpx2.Response:
         """
         Sends a DELETE request.
 
@@ -431,11 +431,11 @@ class TestClient(httpx.Client):
             **kwargs (Any): Additional arguments passed to `request`.
 
         Returns:
-            httpx.Response: The response from the server.
+            httpx2.Response: The response from the server.
         """
         return self._process_request(method="DELETE", url=url, **kwargs)  # type: ignore
 
-    def options(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+    def options(self, url: URLTypes, **kwargs: Any) -> httpx2.Response:
         """
         Sends an OPTIONS request.
 
@@ -444,7 +444,7 @@ class TestClient(httpx.Client):
             **kwargs (Any): Additional arguments passed to `request`.
 
         Returns:
-            httpx.Response: The response from the server.
+            httpx2.Response: The response from the server.
         """
         return self._process_request(method="OPTIONS", url=url, **kwargs)  # type: ignore
 

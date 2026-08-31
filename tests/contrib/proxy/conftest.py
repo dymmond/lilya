@@ -1,7 +1,7 @@
 import asyncio
 import json
 
-import httpx
+import httpx2
 import pytest
 
 from lilya.apps import Lilya
@@ -139,11 +139,11 @@ def proxy_and_app(upstream_app):
     Starts the proxy client on fixture entry and closes on exit.
     Returns (proxy, app).
     """
-    # Target base is a dummy schema+host; httpx's ASGITransport ignores the host and uses the ASGI app.
+    # Target base is a dummy schema+host; httpx2's ASGITransport ignores the host and uses the ASGI app.
     # We'll pass upstream_app via transport on the client—we only need a URL with a path to join.
     target_base = "http://auth-service.local"
 
-    upstream_transport = httpx.ASGITransport(app=upstream_app)
+    upstream_transport = httpx2.ASGITransport(app=upstream_app)
     proxy = Relay(
         target_base_url=target_base,
         upstream_prefix="/",  # map /auth/<path> -> /<path> on upstream
@@ -167,15 +167,15 @@ def proxy_and_app(upstream_app):
 @pytest.fixture
 async def client(proxy_and_app):
     """
-    Provides an httpx.AsyncClient wired to the Lilya app and ensures the proxy lifecycle runs.
+    Provides an httpx2.AsyncClient wired to the Lilya app and ensures the proxy lifecycle runs.
     """
     proxy, app, upstream_app = proxy_and_app
 
     # Manually run proxy startup since ASGITransport won't trigger app lifespan automatically
     await proxy.startup()
 
-    transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
+    transport = httpx2.ASGITransport(app=app)
+    async with httpx2.AsyncClient(transport=transport, base_url="http://testserver") as client:
         yield client
 
     await proxy.shutdown()

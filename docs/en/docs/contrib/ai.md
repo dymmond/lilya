@@ -41,7 +41,7 @@ Install the AI extra:
 pip install "lilya[ai]"
 ```
 
-At the moment, the base AI integration uses `httpx` for outbound provider calls.
+At the moment, the base AI integration uses `httpx2` for outbound provider calls.
 
 ## Supported Provider Families
 
@@ -930,7 +930,7 @@ The best place to log provider failures is where application context still exist
 
 ## Troubleshooting
 
-### `RuntimeError: httpx is required for lilya.contrib.ai`
+### `RuntimeError: httpx2 is required for lilya.contrib.ai`
 
 Install the extra:
 

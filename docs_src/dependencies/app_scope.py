@@ -1,4 +1,5 @@
-from httpx import AsyncClient
+from httpx2 import AsyncClient
+
 from lilya.apps import Lilya
 from lilya.dependencies import Provide, Provides
 from lilya.enums import Scope

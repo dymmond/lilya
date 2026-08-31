@@ -1,6 +1,6 @@
 import pytest
 import pytest_asyncio
-from httpx import ASGITransport, AsyncClient
+from httpx2 import ASGITransport, AsyncClient
 
 import lilya
 from lilya.apps import Lilya

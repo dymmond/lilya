@@ -3,7 +3,7 @@ from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 
 import anyio
-import httpx
+import httpx2
 import pytest
 
 from lilya import status
@@ -392,7 +392,7 @@ def test_app_sync_gen_lifespan(test_client_factory):
         Lilya(lifespan=lifespan)
 
 
-def test_middleware_stack_init(test_client_factory: Callable[[ASGIApp], httpx.Client]):
+def test_middleware_stack_init(test_client_factory: Callable[[ASGIApp], httpx2.Client]):
     class NoOpMiddleware:
         def __init__(self, app: ASGIApp):
             self.app = app

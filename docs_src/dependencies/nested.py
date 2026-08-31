@@ -1,6 +1,8 @@
+from httpx2 import AsyncClient
+
 from lilya.apps import Lilya
 from lilya.dependencies import Provide, Provides
-from httpx import AsyncClient
+
 
 # 1) client factory
 async def get_http_client():

@@ -148,7 +148,7 @@ all = [
     # The templating engine
     "jinja2>=3.1.3",
     # AI provider HTTP integrations
-    "httpx>=0.25.0",
+    "httpx2>=2.12.0",
     # Used for the runserver CLI command
     "rich_toolkit>=0.14.7",
     # The base client for Lilya
@@ -156,7 +156,7 @@ all = [
     # The server for runserver command
     "palfrey[standard]>=0.1.1",
     # HTTP client for Lilya
-    "httpx>=0.25.0",
+    "httpx2>=2.12.0",
     # For sessions
     "itsdangerous>=2.2.0",
     # For the shell support in the CLI
@@ -168,7 +168,7 @@ all = [
 
 ai = [
     # Base HTTP transport for AI provider integrations
-    "httpx>=0.25.0",
+    "httpx2>=2.12.0",
 ]
 
 cli = [
@@ -194,7 +194,7 @@ standard = [
     # The server for runserver command
     "palfrey[standard]>=0.1.1",
 ]
-test = ["httpx>=0.25.0"]
+test = ["httpx2>=2.12.0"]
 testing = [
     "asyncz",
     "lilya[test]",

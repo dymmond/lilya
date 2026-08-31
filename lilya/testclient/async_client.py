@@ -7,10 +7,10 @@ from typing import Any, Literal, cast
 from urllib.parse import urljoin
 
 import anyio
-import httpx
+import httpx2
 from anyio.abc import ObjectReceiveStream, ObjectSendStream
 from anyio.streams.stapled import StapledObjectStream
-from httpx._types import (
+from httpx2._types import (
     AuthTypes,
     CookieTypes,
     HeaderTypes,
@@ -29,7 +29,7 @@ from lilya.testclient.exceptions import UpgradeException
 from lilya.types import ASGIApp
 
 
-class AsyncTestClient(httpx.AsyncClient):
+class AsyncTestClient(httpx2.AsyncClient):
     """
     Asynchronous version of the Lilya TestClient designed for running ASGI applications.
 
@@ -97,7 +97,7 @@ class AsyncTestClient(httpx.AsyncClient):
         self.app = asgi_app
         self.app_state: dict[str, Any] = {}
 
-        # Initialize the transport layer which bridges HTTPX requests to ASGI calls
+        # Initialize the transport layer which bridges HTTPX2 requests to ASGI calls
         transport = AsyncTestClientTransport(
             app=self.app,
             raise_server_exceptions=raise_server_exceptions,
@@ -114,8 +114,8 @@ class AsyncTestClient(httpx.AsyncClient):
             # Ensure string keys/values
             norm_headers = {str(k): str(v) for k, v in headers.items()}
         else:
-            # Let httpx normalize first, then materialize to dict[str, str]
-            norm_headers = dict(httpx.Headers(headers).items())
+            # Let httpx2 normalize first, then materialize to dict[str, str]
+            norm_headers = dict(httpx2.Headers(headers).items())
         norm_headers.setdefault("user-agent", "testclient")
 
         super().__init__(
@@ -196,18 +196,18 @@ class AsyncTestClient(httpx.AsyncClient):
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
         cookies: CookieTypes | None = None,
-        auth: (AuthTypes | httpx._client.UseClientDefault) = httpx._client.USE_CLIENT_DEFAULT,
+        auth: (AuthTypes | httpx2._client.UseClientDefault) = httpx2._client.USE_CLIENT_DEFAULT,
         follow_redirects: bool | None = None,
         timeout: (
-            TimeoutTypes | httpx._client.UseClientDefault
-        ) = httpx._client.USE_CLIENT_DEFAULT,
+            TimeoutTypes | httpx2._client.UseClientDefault
+        ) = httpx2._client.USE_CLIENT_DEFAULT,
         extensions: dict[str, Any] | None = None,
         stream: bool = False,
-    ) -> httpx.Response:
+    ) -> httpx2.Response:
         """
         Asynchronously builds and sends a network request to the ASGI application.
 
-        Overrides the standard `httpx.AsyncClient.request` to handle the specific
+        Overrides the standard `httpx2.AsyncClient.request` to handle the specific
         execution flow required for the test client, including URL merging and
         handling streaming responses.
 
@@ -221,24 +221,24 @@ class AsyncTestClient(httpx.AsyncClient):
             params (QueryParamTypes | None, optional): Query parameters. Defaults to None.
             headers (HeaderTypes | None, optional): Request headers. Defaults to None.
             cookies (CookieTypes | None, optional): Request cookies. Defaults to None.
-            auth (AuthTypes | httpx._client.UseClientDefault, optional): Auth credentials.
-                Defaults to httpx._client.USE_CLIENT_DEFAULT.
+            auth (AuthTypes | httpx2._client.UseClientDefault, optional): Auth credentials.
+                Defaults to httpx2._client.USE_CLIENT_DEFAULT.
             follow_redirects (bool | None, optional): Whether to follow redirects.
                 Defaults to None.
-            timeout (TimeoutTypes | httpx._client.UseClientDefault, optional): Request timeout.
-                Defaults to httpx._client.USE_CLIENT_DEFAULT.
+            timeout (TimeoutTypes | httpx2._client.UseClientDefault, optional): Request timeout.
+                Defaults to httpx2._client.USE_CLIENT_DEFAULT.
             extensions (dict[str, Any] | None, optional): Request extensions. Defaults to None.
             stream (bool, optional): Whether to stream the response. Defaults to False.
 
         Returns:
-            httpx.Response: The response from the ASGI application.
+            httpx2.Response: The response from the ASGI application.
         """
         url = self._merge_url(url)
-        redirect: bool | httpx._client.UseClientDefault = httpx._client.USE_CLIENT_DEFAULT
+        redirect: bool | httpx2._client.UseClientDefault = httpx2._client.USE_CLIENT_DEFAULT
         if follow_redirects is not None:
             redirect = follow_redirects
 
-        # httpx 0.28+ deprecated per-request cookies= parameter
+        # httpx2 0.28+ deprecated per-request cookies= parameter
         # Save current cookies, merge per-request cookies, then restore after request
         if cookies is not None:
             _saved_cookies = dict(self.cookies)
@@ -262,7 +262,7 @@ class AsyncTestClient(httpx.AsyncClient):
                     auth=auth,
                     timeout=timeout,
                     extensions=extensions,
-                    follow_redirects=follow_redirects or httpx._client.USE_CLIENT_DEFAULT,
+                    follow_redirects=follow_redirects or httpx2._client.USE_CLIENT_DEFAULT,
                 ).__aenter__()
 
             return await super().request(
@@ -284,7 +284,7 @@ class AsyncTestClient(httpx.AsyncClient):
                 self.cookies.clear()
                 self.cookies.update(_saved_cookies)
 
-    async def get(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+    async def get(self, url: URLTypes, **kwargs: Any) -> httpx2.Response:
         """
         Sends an asynchronous GET request.
 
@@ -293,11 +293,11 @@ class AsyncTestClient(httpx.AsyncClient):
             **kwargs (Any): Additional arguments passed to `request`.
 
         Returns:
-            httpx.Response: The response object.
+            httpx2.Response: The response object.
         """
         return await self.request("GET", url, **kwargs)
 
-    async def post(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+    async def post(self, url: URLTypes, **kwargs: Any) -> httpx2.Response:
         """
         Sends an asynchronous POST request.
 
@@ -306,11 +306,11 @@ class AsyncTestClient(httpx.AsyncClient):
             **kwargs (Any): Additional arguments passed to `request`.
 
         Returns:
-            httpx.Response: The response object.
+            httpx2.Response: The response object.
         """
         return await self.request("POST", url, **kwargs)
 
-    async def query(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+    async def query(self, url: URLTypes, **kwargs: Any) -> httpx2.Response:
         """
         Sends an asynchronous QUERY request.
 
@@ -319,11 +319,11 @@ class AsyncTestClient(httpx.AsyncClient):
             **kwargs (Any): Additional arguments passed to `request`.
 
         Returns:
-            httpx.Response: The response object.
+            httpx2.Response: The response object.
         """
         return await self.request("QUERY", url, **kwargs)
 
-    async def put(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+    async def put(self, url: URLTypes, **kwargs: Any) -> httpx2.Response:
         """
         Sends an asynchronous PUT request.
 
@@ -332,11 +332,11 @@ class AsyncTestClient(httpx.AsyncClient):
             **kwargs (Any): Additional arguments passed to `request`.
 
         Returns:
-            httpx.Response: The response object.
+            httpx2.Response: The response object.
         """
         return await self.request("PUT", url, **kwargs)
 
-    async def patch(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+    async def patch(self, url: URLTypes, **kwargs: Any) -> httpx2.Response:
         """
         Sends an asynchronous PATCH request.
 
@@ -345,11 +345,11 @@ class AsyncTestClient(httpx.AsyncClient):
             **kwargs (Any): Additional arguments passed to `request`.
 
         Returns:
-            httpx.Response: The response object.
+            httpx2.Response: The response object.
         """
         return await self.request("PATCH", url, **kwargs)
 
-    async def delete(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+    async def delete(self, url: URLTypes, **kwargs: Any) -> httpx2.Response:
         """
         Sends an asynchronous DELETE request.
 
@@ -358,11 +358,11 @@ class AsyncTestClient(httpx.AsyncClient):
             **kwargs (Any): Additional arguments passed to `request`.
 
         Returns:
-            httpx.Response: The response object.
+            httpx2.Response: The response object.
         """
         return await self.request("DELETE", url, **kwargs)
 
-    async def head(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+    async def head(self, url: URLTypes, **kwargs: Any) -> httpx2.Response:
         """
         Sends an asynchronous HEAD request.
 
@@ -371,11 +371,11 @@ class AsyncTestClient(httpx.AsyncClient):
             **kwargs (Any): Additional arguments passed to `request`.
 
         Returns:
-            httpx.Response: The response object.
+            httpx2.Response: The response object.
         """
         return await self.request("HEAD", url, **kwargs)
 
-    async def options(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+    async def options(self, url: URLTypes, **kwargs: Any) -> httpx2.Response:
         """
         Sends an asynchronous OPTIONS request.
 
@@ -384,7 +384,7 @@ class AsyncTestClient(httpx.AsyncClient):
             **kwargs (Any): Additional arguments passed to `request`.
 
         Returns:
-            httpx.Response: The response object.
+            httpx2.Response: The response object.
         """
         return await self.request("OPTIONS", url, **kwargs)
 
@@ -439,7 +439,7 @@ class AsyncTestClient(httpx.AsyncClient):
         """
         raw = kwargs.get("headers", {})
         headers: dict[str, str] = (
-            dict(httpx.Headers(raw).items())
+            dict(httpx2.Headers(raw).items())
             if not isinstance(raw, dict)
             else {str(k): str(v) for k, v in raw.items()}
         )

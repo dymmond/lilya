@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-import httpx
+import httpx2
 import pytest
 
 from lilya.contrib.ai import (
@@ -19,18 +19,18 @@ pytestmark = pytest.mark.asyncio
 
 def build_provider(handler):
     provider = AnthropicProvider(AnthropicConfig(api_key="secret"))
-    provider._client = httpx.AsyncClient(transport=httpx.MockTransport(handler), headers={})
+    provider._client = httpx2.AsyncClient(transport=httpx2.MockTransport(handler), headers={})
     return provider
 
 
 async def test_anthropic_provider_parses_response_and_hoists_system_prompt():
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         payload = json.loads(request.content.decode())
         assert request.url.path == "/v1/messages"
         assert payload["system"] == "You are helpful.\n\nSpeak briefly."
         assert payload["messages"] == [{"role": "user", "content": "hello"}]
         assert payload["max_tokens"] == 1024
-        return httpx.Response(
+        return httpx2.Response(
             200,
             json={
                 "model": "claude-3-5-sonnet-latest",
@@ -65,10 +65,10 @@ async def test_anthropic_provider_streams_chunks():
         ]
     )
 
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         payload = json.loads(request.content.decode())
         assert payload["stream"] is True
-        return httpx.Response(200, text=body, headers={"content-type": "text/event-stream"})
+        return httpx2.Response(200, text=body, headers={"content-type": "text/event-stream"})
 
     provider = build_provider(handler)
     chunks = [
@@ -83,10 +83,10 @@ async def test_anthropic_provider_streams_chunks():
 
 
 async def test_anthropic_provider_uses_request_max_tokens():
-    def handler(request: httpx.Request) -> httpx.Response:
+    def handler(request: httpx2.Request) -> httpx2.Response:
         payload = json.loads(request.content.decode())
         assert payload["max_tokens"] == 256
-        return httpx.Response(
+        return httpx2.Response(
             200,
             json={
                 "model": "claude-3-5-sonnet-latest",
@@ -115,8 +115,8 @@ async def test_anthropic_provider_requires_model():
 
 
 async def test_anthropic_provider_rejects_invalid_response():
-    def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, json={"content": []})
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        return httpx2.Response(200, json={"content": []})
 
     provider = build_provider(handler)
 

@@ -1,6 +1,6 @@
 import logging
 
-import httpx
+import httpx2
 import pytest
 
 pytestmark = pytest.mark.anyio
@@ -79,8 +79,8 @@ async def test_preserve_host_false_sets_upstream_host(proxy_and_app):
     await proxy.startup()
 
     # Default is preserve_host=False
-    transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://public.host") as c:
+    transport = httpx2.ASGITransport(app=app)
+    async with httpx2.AsyncClient(transport=transport, base_url="http://public.host") as c:
         response = await c.get("/auth/echo")
 
         assert response.status_code == 200
@@ -98,8 +98,8 @@ async def test_preserve_host_true_keeps_original_host(proxy_and_app):
     # Toggle preserve_host at runtime for the test
     proxy._preserve_host = True  # or recreate proxy with preserve_host=True
 
-    transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://frontend.local") as cli:
+    transport = httpx2.ASGITransport(app=app)
+    async with httpx2.AsyncClient(transport=transport, base_url="http://frontend.local") as cli:
         response = await cli.get("/auth/echo", headers={"Host": "frontend.local"})
 
         assert response.status_code == 200
@@ -117,7 +117,7 @@ async def test_cookie_domain_rewrite_drops_domain(client):
 
     assert response.status_code == 200
 
-    # httpx: use get_list for multi-headers
+    # httpx2: use get_list for multi-headers
     if hasattr(response.headers, "get_list"):
         cookies = response.headers.get_list("set-cookie")
 
@@ -151,14 +151,14 @@ async def test_upstream_error_maps_to_502(proxy_and_app, monkeypatch):
     try:
         # Patch the instance method to raise immediately
         def boom(*args, **kwargs):
-            req = httpx.Request("GET", "http://auth-service.local/echo")
-            raise httpx.ConnectError("boom", request=req)
+            req = httpx2.Request("GET", "http://auth-service.local/echo")
+            raise httpx2.ConnectError("boom", request=req)
 
         assert proxy._client is not None
         monkeypatch.setattr(proxy._client, "stream", boom)
 
-        transport = httpx.ASGITransport(app=app)
-        async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as cli:
+        transport = httpx2.ASGITransport(app=app)
+        async with httpx2.AsyncClient(transport=transport, base_url="http://testserver") as cli:
             response = await cli.get("/auth/echo")
 
         assert response.status_code == 502
@@ -187,14 +187,14 @@ async def test_timeout_maps_to_504(proxy_and_app, monkeypatch):
 
     # Force all requests to timeout
     def boom(*args, **kwargs):
-        raise httpx.ReadTimeout("timeout", request=httpx.Request("GET", "http://dummy/"))
+        raise httpx2.ReadTimeout("timeout", request=httpx2.Request("GET", "http://dummy/"))
 
     assert proxy._client is not None
     monkeypatch.setattr(proxy._client, "stream", boom)
 
-    transport = httpx.ASGITransport(app=app)
+    transport = httpx2.ASGITransport(app=app)
 
-    async with httpx.AsyncClient(transport=transport, base_url="http://test") as cli:
+    async with httpx2.AsyncClient(transport=transport, base_url="http://test") as cli:
         r = await cli.get("/auth/echo")
         assert r.status_code == 504
         assert "Gateway Timeout" in r.text
@@ -215,7 +215,7 @@ async def test_retry_on_status_and_backoff(monkeypatch, proxy_and_app):
         def __init__(self, status_code):
             self.status_code = status_code
             self.headers = {}
-            self.request = httpx.Request("GET", "http://dummy/")
+            self.request = httpx2.Request("GET", "http://dummy/")
 
         async def aclose(self):
             return
@@ -238,8 +238,8 @@ async def test_retry_on_status_and_backoff(monkeypatch, proxy_and_app):
 
     monkeypatch.setattr(proxy._client, "stream", fake_stream)
 
-    transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://test") as cli:
+    transport = httpx2.ASGITransport(app=app)
+    async with httpx2.AsyncClient(transport=transport, base_url="http://test") as cli:
         r = await cli.get("/auth/echo")
 
     assert r.status_code == 200
@@ -255,8 +255,8 @@ async def test_header_allowlist_mode(proxy_and_app):
     proxy._allow_response_headers = {"content-type"}
 
     await proxy.startup()
-    transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://test") as cli:
+    transport = httpx2.ASGITransport(app=app)
+    async with httpx2.AsyncClient(transport=transport, base_url="http://test") as cli:
         r = await cli.get("/auth/echo", headers={"Custom-Header": "ok", "X-Other": "bad"})
 
     data = r.json()
@@ -279,13 +279,13 @@ async def test_structured_logging_emits(caplog, proxy_and_app, monkeypatch):
     await proxy.startup()
 
     def boom(*args, **kwargs):
-        raise httpx.RequestError("boom", request=httpx.Request("GET", "http://dummy/"))
+        raise httpx2.RequestError("boom", request=httpx2.Request("GET", "http://dummy/"))
 
     assert proxy._client is not None
     monkeypatch.setattr(proxy._client, "stream", boom)
 
-    transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://test") as cli:
+    transport = httpx2.ASGITransport(app=app)
+    async with httpx2.AsyncClient(transport=transport, base_url="http://test") as cli:
         await cli.get("/auth/echo")
 
     logs = [rec.message for rec in caplog.records if "reverse_proxy" in rec.message]
