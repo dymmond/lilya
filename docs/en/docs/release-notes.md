@@ -1,5 +1,16 @@
 # Release Notes
 
+## 0.28.0
+
+### Changed
+
+- Raised the minimum supported AnyIO version to 4.15.0.
+
+### Fixed
+
+- Added explicit imports for AnyIO's lazily loaded `abc` and `to_thread` submodules, and
+  migrated `BlockingPortal` annotations to their supported `anyio.from_thread` location.
+
 ## 0.27.1
 
 ### Added

@@ -9,6 +9,7 @@ from functools import wraps
 from typing import Any
 
 import anyio
+import anyio.to_thread
 from anyio.from_thread import start_blocking_portal
 
 from lilya._internal._encoders import json_encode  # noqa

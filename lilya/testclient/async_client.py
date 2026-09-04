@@ -7,6 +7,7 @@ from typing import Any, Literal, cast
 from urllib.parse import urljoin
 
 import anyio
+import anyio.abc
 import httpx2
 from anyio.abc import ObjectReceiveStream, ObjectSendStream
 from anyio.streams.stapled import StapledObjectStream

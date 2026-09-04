@@ -6,6 +6,7 @@ from email.message import EmailMessage as PyEmailMessage
 from email.utils import make_msgid
 
 import anyio
+import anyio.to_thread
 
 from lilya.contrib.mail.backends.base import BaseMailBackend
 from lilya.contrib.mail.message import EmailMessage as LilyaEmailMessage

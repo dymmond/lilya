@@ -29,6 +29,7 @@ from typing import IO, Any, Literal, NoReturn, cast
 from urllib.parse import quote
 
 import anyio
+import anyio.to_thread
 
 from lilya import status
 from lilya._internal._helpers import HeaderHelper
