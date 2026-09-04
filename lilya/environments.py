@@ -19,7 +19,11 @@ except ImportError:
         from yaml import SafeLoader, YAMLError  # type: ignore[assignment]
     except ImportError:
         SafeLoader = None  # type: ignore[assignment, misc]
-        YAMLError = None  # type: ignore[assignment, misc]
+
+        class _MissingYAMLError(Exception):
+            pass
+
+        YAMLError = _MissingYAMLError  # type: ignore[assignment, misc]
 
 T = TypeVar("T")
 Cast = Callable[[Any], T]
