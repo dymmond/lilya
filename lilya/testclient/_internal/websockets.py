@@ -8,6 +8,7 @@ from concurrent.futures import Future
 from functools import cached_property
 
 import anyio
+import anyio.abc
 import anyio.from_thread  # noqa
 
 from lilya.serializers import serializer

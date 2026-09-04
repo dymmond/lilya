@@ -5,6 +5,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 import anyio
+import anyio.to_thread
 
 from lilya._internal._inspect import func_accepts_kwargs
 from lilya.compat import is_async_callable

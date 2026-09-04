@@ -60,7 +60,7 @@ class TestClient(httpx2.Client):
 
     __test__ = False
     task: Future[None]
-    portal: anyio.abc.BlockingPortal | None = None
+    portal: anyio.from_thread.BlockingPortal | None = None
 
     def __init__(
         self,
@@ -198,7 +198,7 @@ class TestClient(httpx2.Client):
         return getattr(self.app, "routes", [])
 
     @contextlib.contextmanager
-    def _portal_factory(self) -> Generator[anyio.abc.BlockingPortal, None, None]:
+    def _portal_factory(self) -> Generator[anyio.from_thread.BlockingPortal, None, None]:
         """
         A context manager that provides a blocking portal for cross-thread async execution.
 
@@ -207,7 +207,7 @@ class TestClient(httpx2.Client):
         async backend.
 
         Yields:
-            anyio.abc.BlockingPortal: The blocking portal instance.
+            anyio.from_thread.BlockingPortal: The blocking portal instance.
         """
         if self.portal is not None:
             yield self.portal
