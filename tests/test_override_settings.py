@@ -1,4 +1,5 @@
 import asyncio
+import functools
 import inspect
 import types
 
@@ -56,6 +57,27 @@ async def test_generator_based_coroutine_uses_async_settings_wrapper(marked):
     assert asyncio.iscoroutinefunction(legacy_test) is marked
 
     wrapped = override_settings(environment="legacy_test")(legacy_test)
+    assert inspect.iscoroutinefunction(wrapped)
+    await wrapped()
+    assert observed == ["legacy_test"]
+
+
+@pytest.mark.parametrize("as_callable_instance", [False, True])
+async def test_wrapped_generator_coroutine_uses_async_settings_wrapper(as_callable_instance):
+    observed = []
+
+    @types.coroutine
+    def legacy_test(*_args):
+        if False:
+            yield
+        observed.append(settings.environment)
+
+    class LegacyCallable:
+        __call__ = legacy_test
+
+    target = LegacyCallable() if as_callable_instance else functools.partial(legacy_test)
+    wrapped = override_settings(environment="legacy_test")(target)
+
     assert inspect.iscoroutinefunction(wrapped)
     await wrapped()
     assert observed == ["legacy_test"]
