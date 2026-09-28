@@ -4,8 +4,8 @@
 
 ### Fixed
 
-- Validate the JWT audience when callers pass an expected `audience` to `Token.decode()`, while preserving existing behavior when no audience is supplied.
-- Preserve async execution for generator-based coroutine test functions wrapped by `override_settings`.
+- Validate expected JWT audience and issuer values in `Token.decode()` even if decode options attempt to disable those checks, while preserving existing behavior when neither value is supplied.
+- Preserve async execution for generator-based coroutine test functions wrapped by `override_settings`, including partials and callable instances.
 
 ### Changed
 

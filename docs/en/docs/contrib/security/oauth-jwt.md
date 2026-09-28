@@ -112,7 +112,7 @@ Create a utility function to hash a user's password, another to check if a given
 
 ## Handling JWT Tokens
 
-Lilya's `lilya.contrib.security.jwt.token.Token` helper validates an expected audience when you pass `audience=` to `Token.decode()`. Configure and pass the audience expected by your service when several services share a signing key. Calls without an expected audience continue to skip audience validation.
+Lilya's `lilya.contrib.security.jwt.token.Token` helper validates expected `audience=` and `issuer=` values passed to `Token.decode()`. Configure and pass the audience expected by your service when several services share a signing key. Calls without an expected audience continue to skip audience validation.
 
 Import the necessary modules.
 
