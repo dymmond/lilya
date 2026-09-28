@@ -79,7 +79,7 @@ class DirectiveGroup(SayerGroup):
 
     @staticmethod
     def _collect_remaining_args(ctx: click.Context) -> list[str]:
-        protected: typing.Iterable[str] = getattr(ctx, "protected_args", ())
+        protected: typing.Sequence[str] = getattr(ctx, "protected_args", ())
         if protected:
             warnings.warn(
                 "click.Context.protected_args is deprecated; Lilya CLI now "

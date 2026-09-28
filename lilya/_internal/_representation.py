@@ -6,7 +6,7 @@ class BaseRepr:
     __slots__ = ()
 
     def __to_representation__(self) -> Any:
-        keys = self.__slots__
+        keys = getattr(type(self), "__slots__", ())
         if not keys and hasattr(self, "__dict__"):
             keys = self.__dict__.keys()  # type: ignore
         attrs = ((s, getattr(self, s)) for s in keys)  # type: ignore

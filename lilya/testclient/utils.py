@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import inspect
 from collections.abc import Callable
 from functools import wraps
 from typing import TYPE_CHECKING, Any
@@ -108,7 +110,11 @@ class override_settings:
             Any: The result of the test function.
 
         """
-        if is_async_callable(func):
+        code = getattr(func, "__code__", None)
+        is_generator_coroutine = inspect.isgeneratorfunction(func) and bool(
+            code and code.co_flags & inspect.CO_ITERABLE_COROUTINE
+        )
+        if is_async_callable(func) or asyncio.iscoroutinefunction(func) or is_generator_coroutine:
 
             @wraps(func)
             async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
