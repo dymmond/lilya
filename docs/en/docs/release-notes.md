@@ -1,5 +1,16 @@
 # Release Notes
 
+## 0.29.0
+
+### Fixed
+
+- Validate expected JWT audience and issuer values in `Token.decode()` even if decode options attempt to disable those checks, while preserving existing behavior when neither value is supplied.
+- Preserve async execution for generator-based coroutine test functions wrapped by `override_settings`, including partials and callable instances.
+
+### Changed
+
+- Update the development and test environments to `ty` 0.0.84.
+
 ## 0.28.0
 
 ### Changed

@@ -112,6 +112,8 @@ Create a utility function to hash a user's password, another to check if a given
 
 ## Handling JWT Tokens
 
+Lilya's `lilya.contrib.security.jwt.token.Token` helper validates expected `audience=` and `issuer=` values passed to `Token.decode()`. Configure and pass the expected `audience` and `issuer` for your service when several services share a signing key. If neither expected value is supplied, the corresponding validations are skipped.
+
 Import the necessary modules.
 
 Generate a random secret key to sign the JWT tokens.

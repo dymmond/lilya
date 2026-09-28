@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import asyncio
+import inspect
 from collections.abc import Callable
-from functools import wraps
+from functools import partial, wraps
 from typing import TYPE_CHECKING, Any
 
 from lilya.compat import is_async_callable
@@ -108,7 +110,20 @@ class override_settings:
             Any: The result of the test function.
 
         """
-        if is_async_callable(func):
+        target = func
+        while isinstance(target, partial):
+            target = target.func
+        generator_target = target if inspect.isgeneratorfunction(target) else target.__call__
+        code = getattr(generator_target, "__code__", None)
+        is_generator_coroutine = inspect.isgeneratorfunction(generator_target) and bool(
+            code and code.co_flags & inspect.CO_ITERABLE_COROUTINE
+        )
+        if (
+            is_async_callable(func)
+            or asyncio.iscoroutinefunction(target)
+            or asyncio.iscoroutinefunction(generator_target)
+            or is_generator_coroutine
+        ):
 
             @wraps(func)
             async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
