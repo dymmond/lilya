@@ -101,7 +101,7 @@ class MultiDict(BaseMultiDict, MultiMixin[T], Generic[T]):
 class ImmutableMultiDict(MultiDictProxy[T], MultiMixin[T], Generic[T]):
     def __init__(
         self,
-        args: (MultiMapping | Mapping[str, Any] | Iterable[tuple[str, Any]] | Any | None) = None,
+        args: MultiMapping[T] | Mapping[str, T] | Iterable[tuple[str, T]] | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(BaseMultiDict(args or {}))

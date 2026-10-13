@@ -2,6 +2,7 @@ from collections.abc import Awaitable, Callable, Mapping, MutableMapping, Sequen
 from contextlib import AbstractAsyncContextManager
 from typing import (
     Any,
+    Protocol,
     TypeVar,
 )
 
@@ -26,7 +27,11 @@ WebSocketExceptionHandler = Callable[[Any, Exception], Awaitable[None]]
 ExceptionHandler = HTTPExceptionHandler | WebSocketExceptionHandler
 CallableDecorator = TypeVar("CallableDecorator", bound=Callable[..., Any])
 AnyCallable = Callable[..., Any]
-Dependencies = dict[str, Callable[..., Any]] | dict[str, Any] | Any
+Dependencies = Mapping[str, object]
+
+
+class OpenAPIConfigProtocol(Protocol):
+    def enable(self, app: Any) -> None: ...
 
 
 class Empty: ...

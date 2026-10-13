@@ -95,7 +95,7 @@ class Response:
         content: Any = None,
         status_code: int = status.HTTP_200_OK,
         headers: Mapping[str, str] | None = None,
-        cookies: Mapping[str, str] | Any | None = None,
+        cookies: Mapping[str, str] | None = None,
         media_type: str | None = None,
         background: Task | None = None,
         encoders: Sequence[Encoder | type[Encoder]] | None = None,
@@ -207,16 +207,14 @@ class Response:
             return b""
         return content.encode(self.charset)  # type: ignore
 
-    def make_headers(
-        self, content_headers: Mapping[str, str] | dict[str, str] | None = None
-    ) -> None:
+    def make_headers(self, content_headers: Mapping[str, str] | None = None) -> None:
         """
         Initializes the headers based on RFC specifications by setting appropriate conditions and restrictions.
 
         Args:
-            content_headers (Union[Mapping[str, str], Dict[str, str], None], optional): Additional headers to include (default is None).
+            content_headers (Mapping[str, str] | None, optional): Additional headers to include (default is None).
         """
-        headers: dict[str, str] = {} if content_headers is None else content_headers  # type: ignore
+        headers = {} if content_headers is None else dict(content_headers)
 
         if self.status_code is not None and HeaderHelper.has_entity_header_status(
             self.status_code
@@ -423,9 +421,7 @@ class DispositionResponse(Response):
                 return content_disposition
         return None
 
-    def make_headers(
-        self, content_headers: Mapping[str, str] | dict[str, str] | None = None
-    ) -> None:
+    def make_headers(self, content_headers: Mapping[str, str] | None = None) -> None:
         super().make_headers(content_headers)
         content_disposition = self.make_content_disposition_header(
             content_disposition_type=self.content_disposition_type,

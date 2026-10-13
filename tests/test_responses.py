@@ -5,6 +5,7 @@ import time
 import typing
 from asyncio import Queue
 from http.cookies import SimpleCookie
+from types import MappingProxyType
 
 import anyio
 import msgpack
@@ -76,6 +77,12 @@ def test_text_response(test_client_factory):
     client = test_client_factory(app)
     response = client.get("/")
     assert response.text == "hello, world"
+
+
+def test_response_accepts_read_only_mapping_headers():
+    response = Response("hello", headers=MappingProxyType({"x-test": "value"}))
+
+    assert response.headers["x-test"] == "value"
 
 
 def test_async_text_response(test_client_factory):
