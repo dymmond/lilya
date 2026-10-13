@@ -153,7 +153,7 @@ class Request(Connection):
         """
         self._assert_multipart()
         if self._media is Empty:
-            content_type_header = self.headers.get("Content-type", "")
+            content_type_header = self.headers.get("content-type", "")
             content_type, opts = parse_options_header(content_type_header)
             self._media = dict(opts, content_type=content_type)  # type: ignore
         return cast(dict[str, Any], self._media)
@@ -177,7 +177,7 @@ class Request(Connection):
         self._assert_multipart()
 
         if self._content_type is Empty:
-            content_type = self.headers.get("Content-Type", "")
+            content_type = self.headers.get("content-type", "")
             self._content_type, _ = parse_options_header(content_type)
         return cast(bytes, self._content_type).decode(self.charset)
 
@@ -283,7 +283,7 @@ class Request(Connection):
         """
         if self._form is None:
             self._assert_multipart()
-            content_type_header = self.headers.get("Content-Type")
+            content_type_header = self.headers.get("content-type")
             content_type: bytes
             content_type, _ = parse_options_header(content_type_header)
             if content_type == b"multipart/form-data":

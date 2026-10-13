@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
@@ -204,8 +205,9 @@ class GraphBuilder:
         """
         path_str = getattr(route_path, "path", None) or getattr(route_path, "pattern", None)
         methods = getattr(route_path, "methods", None)
-        if methods is None and hasattr(route_path, "http_methods"):
-            methods = route_path.http_methods
+        if not isinstance(methods, Iterable):
+            methods = getattr(route_path, "http_methods", None)
+        methods = tuple(methods) if isinstance(methods, Iterable) else ()
 
         node = GraphNode(
             id=_make_node_id("route"),
@@ -213,7 +215,7 @@ class GraphBuilder:
             ref=route_path,
             metadata={
                 "path": path_str,
-                "methods": tuple(methods) if methods is not None else (),
+                "methods": methods,
             },
         )
         self._nodes.append(node)

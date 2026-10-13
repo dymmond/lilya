@@ -161,8 +161,12 @@ class Path(BaseHandler, BasePath):
         return self._signature
 
     @signature.setter
-    def signature(self, value: inspect.Signature) -> None:
-        self._signature = value
+    def signature(self, value: inspect.Signature | None) -> None:
+        if value is None:
+            if hasattr(self, "_signature"):
+                del self._signature
+        else:
+            self._signature = value
 
     def handle_signature(self) -> None:
         """

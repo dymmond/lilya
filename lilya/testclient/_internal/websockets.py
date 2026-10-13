@@ -49,7 +49,7 @@ class WebSocketTestSession:
         self,
         app: ASGI3App,
         scope: Scope,
-        portal_factory: PortalFactoryType,
+        portal_factory: PortalFactoryType | None,
     ) -> None:
         """
         Initialize the WebSocketTestSession.
@@ -57,7 +57,7 @@ class WebSocketTestSession:
         Args:
             app (ASGI3App): The ASGI3 application.
             scope (Scope): The ASGI scope.
-            portal_factory (PortalFactoryType): The portal factory.
+            portal_factory (PortalFactoryType | None): The portal factory, when the session runs the app.
         """
         self.app = app
         self.scope = scope
@@ -74,8 +74,11 @@ class WebSocketTestSession:
         Returns:
             WebSocketTestSession: The WebSocketTestSession object.
         """
+        portal_factory = self.portal_factory
+        if portal_factory is None:
+            raise RuntimeError("This WebSocket session is only available for scope inspection.")
         self.exit_stack = contextlib.ExitStack()
-        self.portal = self.exit_stack.enter_context(self.portal_factory())
+        self.portal = self.exit_stack.enter_context(portal_factory())
 
         try:
             _: Future[None] = self.portal.start_task_soon(self._run)

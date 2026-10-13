@@ -418,7 +418,7 @@ class MultiPartParser:
         Returns:
             FormData: Parsed form data.
         """
-        _, params = parse_options_header(self.headers["Content-Type"])
+        _, params = parse_options_header(self.headers["content-type"])
         self._parse_content_type_header(params)
         boundary = self._get_multipart_boundary(params)
 

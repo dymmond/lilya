@@ -1,5 +1,25 @@
 # Release Notes
 
+## 0.30.0
+
+### Added
+
+- Add `get_settings(SettingsClass)` for lazy, precisely typed access to custom global settings.
+- Add list and dict compatibility checks for public routing, middleware, permission, dependency, OpenAPI, response, and multidict APIs.
+
+### Changed
+
+- Update the development and test environments to `ty` 0.0.86.
+- Add Python 3.15 to the supported and tested Python versions.
+- Improve inferred types for environment values, dependencies, routes, and OpenAPI configuration.
+
+### Fixed
+
+- Preserve custom settings attributes on the lazy global settings proxy and expose `Settings` from `lilya.conf`.
+- Accept read-only response header mappings without mutating the caller's input.
+- Preserve case-insensitive HTTP header behavior and duplicate-key `MultiDict` semantics with newer `multidict` releases, fixing multipart parsing and mixed-case header access.
+- Use Redis `SET` with an expiration option instead of deprecated `SETEX`.
+
 ## 0.29.0
 
 ### Fixed

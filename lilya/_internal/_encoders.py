@@ -25,7 +25,7 @@ class EncoderProtocol(Protocol):
     def is_type(self, value: Any) -> bool:
         """Check if encoder is applicable for values this type"""
 
-    def serialize(self, value: Any) -> Any:
+    def serialize(self, value: Any, /) -> Any:
         """ "Prepare for serialization."""
 
 
@@ -198,7 +198,7 @@ class TimedeltaEncoder(Encoder):
         return timedelta(seconds=float(value))
 
 
-DEFAULT_ENCODER_TYPES: deque[EncoderProtocol] = deque(
+DEFAULT_ENCODER_TYPES: deque[EncoderProtocol] = deque[EncoderProtocol](
     (
         DataclassEncoder(),
         NamedTupleEncoder(),

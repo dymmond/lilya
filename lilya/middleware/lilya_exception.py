@@ -9,7 +9,7 @@ from lilya.protocols.middleware import MiddlewareProtocol
 from lilya.requests import Request
 from lilya.responses import Response
 from lilya.serializers import serializer
-from lilya.types import ASGIApp, Receive, Scope, Send
+from lilya.types import ASGIApp, Message, Receive, Scope, Send
 
 
 @dataclass
@@ -84,7 +84,7 @@ class LilyaExceptionMiddleware(MiddlewareProtocol):
 
         response_started = False
 
-        async def send_wrapper(message: dict[str, Any]) -> None:
+        async def send_wrapper(message: Message) -> None:
             nonlocal response_started
             if message.get("type") == "http.response.start":
                 response_started = True

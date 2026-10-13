@@ -627,7 +627,7 @@ class AsyncTestClientTransport(httpx2.AsyncBaseTransport):
             "extensions": {"websocket.http.response": {}},
         }
         self._inject_authenticated_user(scope)
-        return WebSocketTestSession(self.app, scope, portal_factory=None)  # type: ignore[arg-type]
+        return WebSocketTestSession(self.app, scope, portal_factory=None)
 
     def _build_http_scope(
         self,

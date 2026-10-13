@@ -25,7 +25,7 @@ from email.utils import format_datetime, formatdate
 from inspect import isawaitable, isclass
 from io import FileIO
 from mimetypes import guess_type
-from typing import IO, Any, Literal, NoReturn, cast
+from typing import IO, Any, Literal, NoReturn, Protocol, TypedDict, cast, runtime_checkable
 from urllib.parse import quote
 
 import anyio
@@ -65,9 +65,35 @@ SyncContentStream = Iterable[Content]
 AsyncContentStream = AsyncIterable[Content]
 ContentStream = AsyncContentStream | SyncContentStream
 
+
+class ResponseTransformKwargs(TypedDict, total=False):
+    json_encode_fn: Callable[..., Any] | None
+    post_transform_fn: Callable[[Any], Any] | None
+    with_encoders: Sequence[EncoderProtocol | MoldingProtocol] | None
+    exclude_none: bool
+
+
+@runtime_checkable
+class _AsyncClosable(Protocol):
+    def aclose(self) -> Awaitable[None]: ...
+
+
+@runtime_checkable
+class _Closable(Protocol):
+    def close(self) -> None: ...
+
+
+def _get_cleanup_handler(value: object) -> Callable[[], None | Awaitable[None]] | None:
+    if isinstance(value, _AsyncClosable):
+        return value.aclose
+    if isinstance(value, _Closable):
+        return value.close
+    return None
+
+
 _empty: tuple[Any, ...] = ()
 
-RESPONSE_TRANSFORM_KWARGS: ContextVar[dict | None] = ContextVar(
+RESPONSE_TRANSFORM_KWARGS: ContextVar[ResponseTransformKwargs | None] = ContextVar(
     "RESPONSE_TRANSFORM_KWARGS", default=None
 )
 
@@ -155,7 +181,9 @@ class Response:
 
     @classmethod
     @contextlib.contextmanager
-    def with_transform_kwargs(cls, params: dict | None, /) -> Generator[None, None, None]:
+    def with_transform_kwargs(
+        cls, params: ResponseTransformKwargs | None, /
+    ) -> Generator[None, None, None]:
         token = RESPONSE_TRANSFORM_KWARGS.set(params)
         try:
             yield
@@ -990,10 +1018,7 @@ class FileResponse(DispositionResponse):
             if getattr(cast(Any, path), "name", None):
                 self.path = cast(FileIO, path).name
         # use path not self.path which is a string
-        if hasattr(path, "aclose"):
-            self.cleanup_handler = path.aclose
-        elif hasattr(path, "close"):
-            self.cleanup_handler = path.close
+        self.cleanup_handler = _get_cleanup_handler(path)
         self.deduce_media_type_from_body = deduce_media_type_from_body
         self.status_code = status_code
         self.allow_range_requests = allow_range_requests
@@ -1292,11 +1317,7 @@ class SimpleFileResponse(Response):
             )
         else:
             # close filedescriptors in case of anonymous, nameless files
-            cleanup_handler = None
-            if hasattr(content, "aclose"):
-                cleanup_handler = content.aclose
-            elif hasattr(content, "close"):
-                cleanup_handler = content.close
+            cleanup_handler = _get_cleanup_handler(content)
             content_disposition = DispositionResponse.make_content_disposition_header(
                 content_disposition_type=content_disposition_type,
                 filename=filename,
@@ -1576,7 +1597,7 @@ def make_response(
     headers: Mapping[str, str] | None = None,
     background: Task | None = None,
     encoders: Sequence[Encoder | type[Encoder]] | None = None,
-    json_encode_extra_kwargs: dict | None = None,  # noqa: B006
+    json_encode_extra_kwargs: ResponseTransformKwargs | None = None,
 ) -> Response:
     """
     Build JSON responses from a given content and

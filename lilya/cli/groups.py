@@ -7,7 +7,7 @@ import typing
 import warnings
 from collections.abc import Callable
 from functools import wraps
-from typing import TypeVar
+from typing import TypeVar, cast
 
 import click
 from sayer import error
@@ -69,7 +69,10 @@ class DirectiveGroup(SayerGroup):
         as one of the params of any subcommand.
         """
         args = self._collect_remaining_args(ctx)
-        cmd_name, cmd, args = self.resolve_command(ctx, args)  # type: ignore[misc]
+        resolved_command = cast(
+            tuple[str | None, click.Command, list[str]], self.resolve_command(ctx, args)
+        )
+        cmd_name, cmd, args = resolved_command
         sub_ctx = cmd.make_context(cmd_name, args, parent=ctx)
 
         settings = sub_ctx.params.get("settings")

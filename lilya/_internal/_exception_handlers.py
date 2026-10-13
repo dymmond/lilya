@@ -23,7 +23,7 @@ from lilya.types import (
 )
 from lilya.websockets import WebSocket
 
-ExceptionHandlers = dict[type[Exception], ExceptionHandler]
+ExceptionHandlers = dict[type, ExceptionHandler]
 StatusHandlers = dict[int, ExceptionHandler]
 
 

@@ -53,6 +53,7 @@ P = ParamSpec("P")
 class BaseLilya:
     router_class: ClassVar[type[Router] | None] = Router
     router: Router
+    debug: bool
     register_as_global_instance: ClassVar[bool] = False
     populate_global_context: (
         Callable[[Connection], dict[str, Any] | Awaitable[dict[str, Any]]] | None
