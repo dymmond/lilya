@@ -99,15 +99,15 @@ def test_load_types_boolean():
 
     assert_type(loader("BOOLEAN", cast=bool), bool)
     assert_type(loader("BOOLEAN_DEFAULT", cast=bool, default=False), bool)
-    assert_type(loader("BOOLEAN_NONE", cast=bool, default=None), str | bool)
-    assert_type(loader("BOOLEAN_NONE", cast=bool, default=None), str | bool)
+    assert_type(loader("BOOLEAN_NONE", cast=bool, default=None), bool | None)
+    assert_type(loader("BOOLEAN_NONE", cast=bool, default=None), bool | None)
 
 
 def test_load_types_boolean_ignore_case_true_raises_error():
     loader = EnvironLoader(environ={"BOOLEAN": "1"}, ignore_case=False)
 
     with pytest.raises(KeyError):
-        assert_type(loader("boolean"), bool)
+        assert_type(loader("boolean"), str)
 
     with pytest.raises(KeyError):
         assert_type(loader("boolean_cast", cast=bool), bool)
@@ -117,7 +117,7 @@ def test_load_types_boolean_ignore_case_true_raises_error_via_env_function():
     loader = EnvironLoader(environ={"BOOLEAN": "1"}, ignore_case=False)
 
     with pytest.raises(KeyError):
-        assert_type(loader.env("boolean"), bool)
+        assert_type(loader.env("boolean"), str)
 
     with pytest.raises(KeyError):
         assert_type(loader.env("boolean_cast", cast=bool), bool)
@@ -128,14 +128,14 @@ def test_load_types_boolean_via_env_function():
 
     assert_type(loader.env("BOOLEAN", cast=bool), bool)
     assert_type(loader.env("BOOLEAN_DEFAULT", cast=bool, default=False), bool)
-    assert_type(loader.env("BOOLEAN_NONE", cast=bool, default=None), str | bool)
-    assert_type(loader.env("BOOLEAN_NONE", cast=bool, default=None), str | bool)
+    assert_type(loader.env("BOOLEAN_NONE", cast=bool, default=None), bool | None)
+    assert_type(loader.env("BOOLEAN_NONE", cast=bool, default=None), bool | None)
 
 
 def test_raises_error() -> None:
     loader = EnvironLoader()
 
-    def cast_to_float(v: Any) -> int:
+    def cast_to_float(v: Any) -> float:
         return float(v)
 
     with pytest.raises(ValueError):

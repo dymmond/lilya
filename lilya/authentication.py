@@ -107,9 +107,8 @@ def requires(
             @functools.wraps(func)
             async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
                 """The wrapper for an async route handler."""
-                conn: Connection | None = (
-                    kwargs.get(connection_param) if connection_param else None  # type: ignore
-                )
+                connection_value = kwargs.get(connection_param) if connection_param else None
+                conn = connection_value if isinstance(connection_value, Connection) else None
 
                 if conn is not None:
                     # Type narrowing for WebSocket
@@ -133,9 +132,8 @@ def requires(
             @functools.wraps(func)
             def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
                 """The wrapper for a sync route handler."""
-                conn: Connection | None = (
-                    kwargs.get(connection_param) if connection_param else None  # type: ignore
-                )
+                connection_value = kwargs.get(connection_param) if connection_param else None
+                conn = connection_value if isinstance(connection_value, Connection) else None
 
                 if conn is not None:
                     # Type narrowing for Request (handled sync)

@@ -189,7 +189,7 @@ def _get_cache_target(func: Any) -> Any:
 
 
 def _lookup_exception_handler(
-    exc_handlers: dict[type[Exception], ExceptionHandler], exc: Exception
+    exc_handlers: dict[type, ExceptionHandler], exc: Exception
 ) -> ExceptionHandler | None:
     """
     Looks up an exception handler for a given exception type in a handler map.
@@ -205,7 +205,7 @@ def _lookup_exception_handler(
 
 def _get_exception_handlers_from_scope(
     scope: Scope,
-) -> tuple[dict[type[Exception], ExceptionHandler], dict[int, ExceptionHandler]]:
+) -> tuple[dict[type, ExceptionHandler], dict[int, ExceptionHandler]]:
     """
     Fetches (exception_handlers, status_handlers) from the ASGI scope.
 
@@ -214,7 +214,7 @@ def _get_exception_handlers_from_scope(
     """
     try:
         return cast(
-            tuple[dict[type[Exception], ExceptionHandler], dict[int, ExceptionHandler]],
+            tuple[dict[type, ExceptionHandler], dict[int, ExceptionHandler]],
             scope["lilya.exception_handlers"],
         )
     except KeyError:
@@ -961,6 +961,9 @@ class BaseHandler:
                 )
                 return {name: self._structure_to_annotation(encoder_object, candidate)}
         else:
+            if not isinstance(json_data, dict):
+                raise ValueError("Expected a JSON object for multiple body parameters.")
+
             for name in body_param_names:
                 if name in SIGNATURE_TO_LIST:
                     continue

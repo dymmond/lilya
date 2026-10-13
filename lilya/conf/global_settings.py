@@ -25,7 +25,7 @@ from lilya.contrib.documentation import Doc
 from lilya.logging import LoggingConfig, StandardLoggingConfig
 from lilya.protocols.cache import CacheBackend
 from lilya.serializers import SerializerConfig, StandardSerializerConfig
-from lilya.types import ApplicationType, Dependencies, ExceptionHandler
+from lilya.types import ApplicationType, Dependencies, ExceptionHandler, OpenAPIConfigProtocol
 
 if TYPE_CHECKING:
     from lilya.middleware.base import DefineMiddleware
@@ -911,7 +911,7 @@ class Settings(Internal):
         return StandardSerializerConfig()
 
     @property
-    def openapi_config(self) -> Any | None:
+    def openapi_config(self) -> OpenAPIConfigProtocol | None:
         """
         An instance of [OpenAPIConfig](https://lilya.dev/openapi/).
 

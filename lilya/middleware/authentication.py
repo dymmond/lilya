@@ -42,8 +42,8 @@ class BaseAuthMiddleware(ABC, MiddlewareProtocol):
         on_error: Callable[[Connection, AuthenticationError], Response] | None = None,
     ) -> None:
         self.app = app
-        self.on_error: Callable[[Connection, Exception], Response] = (
-            on_error if on_error is not None else self.default_on_error  # type: ignore[assignment]
+        self.on_error: Callable[[Connection, AuthenticationError], Response] = (
+            on_error if on_error is not None else self.default_on_error
         )
         self.scopes: set[str] = {ScopeType.HTTP, ScopeType.WEBSOCKET}
 
@@ -75,7 +75,12 @@ class BaseAuthMiddleware(ABC, MiddlewareProtocol):
         """Authorize users here."""
 
     async def _process_exception(
-        self, scope: Scope, receive: Receive, send: Send, connection: Connection, exc: Exception
+        self,
+        scope: Scope,
+        receive: Receive,
+        send: Send,
+        connection: Connection,
+        exc: AuthenticationError,
     ) -> None:
         """
         Handles exceptions that occur during the processing of a request or WebSocket connection.

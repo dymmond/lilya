@@ -40,6 +40,7 @@ from lilya.types import (
     Dependencies,
     ExceptionHandler,
     Lifespan,
+    OpenAPIConfigProtocol,
     Receive,
     Scope,
     Send,
@@ -52,6 +53,7 @@ P = ParamSpec("P")
 class BaseLilya:
     router_class: ClassVar[type[Router] | None] = Router
     router: Router
+    debug: bool
     register_as_global_instance: ClassVar[bool] = False
     populate_global_context: (
         Callable[[Connection], dict[str, Any] | Awaitable[dict[str, Any]]] | None
@@ -672,7 +674,7 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
             ),
         ] = None,
         routes: Annotated[
-            Sequence[Any] | None,
+            Sequence[BasePath] | None,
             Doc(
                 """
                 A global `list` of lilya routes. Those routes may vary and those can
@@ -1335,10 +1337,10 @@ class Lilya(RoutingMethodsMixin, BaseLilya):
         self.dependency_overrides.clear()
         self.router.dependency_overrides.clear()
 
-    def configure_openapi(self, openapi_config: Any | None = None) -> None:
+    def configure_openapi(self, openapi_config: OpenAPIConfigProtocol | None = None) -> None:
         from lilya.contrib.openapi.config import OpenAPIConfig
 
-        config_to_use = openapi_config or OpenAPIConfig()
+        config_to_use = openapi_config if openapi_config is not None else OpenAPIConfig()
         config_to_use.enable(self)
 
     @property

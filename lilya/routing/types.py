@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 from collections.abc import Callable, Sequence
+from functools import partial
 from typing import TYPE_CHECKING, Any, TypeVar
 
 from lilya.datastructures import ScopeHandler, SendReceiveSniffer
@@ -67,7 +68,7 @@ def get_name(handler: Callable[..., Any]) -> str:
     """
     Returns the name of a given handler.
     """
-    if hasattr(handler, "func"):
+    while isinstance(handler, partial):
         handler = handler.func
 
     return (

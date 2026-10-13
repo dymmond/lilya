@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC
-from collections.abc import Generator, Iterable, Mapping, Sequence
+from collections.abc import Generator, Iterable, Iterator, Mapping, Sequence
 from copy import copy
 from http.cookies import SimpleCookie
 from typing import Any, Final, Generic, Literal, TypeVar, cast
@@ -73,6 +73,12 @@ class MultiDict(BaseMultiDict, MultiMixin[T], Generic[T]):
     ) -> None:
         super().__init__(args or {})
 
+    def keys(self) -> list[str]:
+        return [key for key in super().keys() for _ in self.getall(key)]
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self.keys())
+
     def to_immutable(self) -> ImmutableMultiDict[T]:
         """Create an immutable dictionary view."""
         return ImmutableMultiDict[T](self)
@@ -101,10 +107,16 @@ class MultiDict(BaseMultiDict, MultiMixin[T], Generic[T]):
 class ImmutableMultiDict(MultiDictProxy[T], MultiMixin[T], Generic[T]):
     def __init__(
         self,
-        args: (MultiMapping | Mapping[str, Any] | Iterable[tuple[str, Any]] | Any | None) = None,
+        args: MultiMapping[T] | Mapping[str, T] | Iterable[tuple[str, T]] | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(BaseMultiDict(args or {}))
+
+    def keys(self) -> list[str]:
+        return [key for key in super().keys() for _ in self.getall(key)]
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self.keys())
 
     def mutablecopy(self) -> MultiDict[T]:
         """Create a mutable copy as a.
@@ -137,7 +149,7 @@ class FormMultiDict(ImmutableMultiDict[Any]):
                 await value.close()
 
 
-class Header(MultiDict, CIMultiDict):
+class Header(CIMultiDict, MultiMixin[str]):
     """Container used for both request and response headers.
     It is a subclass of  [CIMultiDict](https://multidict.readthedocs.io/en/stable/multidict.html#cimultidictproxy)
 
@@ -160,6 +172,9 @@ class Header(MultiDict, CIMultiDict):
 
         headers: list[tuple[str, Any]] = self.parse_headers(value)
         super().__init__(headers)
+
+    def keys(self) -> list[str]:
+        return [key for key in super().keys() for _ in self.getall(key)]
 
     def parse_headers(self, value: Any) -> list[tuple[str, Any]]:
         """
@@ -198,6 +213,18 @@ class Header(MultiDict, CIMultiDict):
     def get_all(self, key: str) -> list[Any]:
         """Convenience method mapped to getall()."""
         return self.getall(key, default=[])
+
+    def to_immutable(self) -> ImmutableMultiDict[str]:
+        """Create an immutable dictionary view."""
+        return ImmutableMultiDict[str](self.multi_items())
+
+    def getlist(self, key: str) -> list[str]:
+        """Return all values for a key, preserving the MultiDict API."""
+        return self.getall(key, default=[])
+
+    def poplist(self, key: str) -> list[str]:
+        """Remove and return all values for a key, preserving the MultiDict API."""
+        return self.popall(key)
 
     @classmethod
     def from_scope(cls, scope: Any) -> Header:

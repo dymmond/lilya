@@ -6,7 +6,7 @@ import re
 import warnings
 from collections.abc import Callable, Generator
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import Any, TypeVar, overload
 
 from multidict import MultiDict
 
@@ -26,6 +26,7 @@ except ImportError:
         YAMLError = _MissingYAMLError  # type: ignore[assignment, misc]
 
 T = TypeVar("T")
+D = TypeVar("D")
 Cast = Callable[[Any], T]
 
 # Pre-compiled regex for parsing 'key=value' pairs from .env files.
@@ -431,7 +432,13 @@ class EnvironLoader(MultiDict):
             else:
                 super().__setitem__(k, str(v))
 
-    def _cast(self, key: str, value: Any, cast: Cast[T] | None) -> T | Any:
+    @overload
+    def _cast(self, key: str, value: Any, cast: Cast[T]) -> T: ...
+
+    @overload
+    def _cast(self, key: str, value: Any, cast: None) -> Any: ...
+
+    def _cast(self, key: str, value: Any, cast: Cast[T] | None) -> Any:
         """
         Casts a value to a specified type with detailed error handling.
 
@@ -459,7 +466,22 @@ class EnvironLoader(MultiDict):
                 f"Cannot cast value '{value}' for key '{key}' to type '{cast.__name__}'."
             ) from e
 
-    def env(self, key: str, cast: Cast[T] | None = None, default: Any = Empty) -> T | Any:
+    @overload
+    def env(self, key: str, cast: Cast[T], default: _Empty = Empty) -> T: ...
+
+    @overload
+    def env(self, key: str, cast: Cast[T], default: D) -> T | D: ...
+
+    @overload
+    def env(self, key: str, cast: None, default: D) -> str | D: ...
+
+    @overload
+    def env(self, key: str, *, default: D) -> str | D: ...
+
+    @overload
+    def env(self, key: str, cast: None = None, default: _Empty = Empty) -> str: ...
+
+    def env(self, key: str, cast: Cast[T] | None = None, default: Any = Empty) -> Any:
         """
         Retrieves a variable, optionally casting it and providing a default.
 
@@ -501,7 +523,22 @@ class EnvironLoader(MultiDict):
 
         raise KeyError(f"'{key}' not found in environment and no default was provided.")
 
-    def __call__(self, key: str, cast: Cast[T] | None = None, default: Any = Empty) -> T | Any:
+    @overload
+    def __call__(self, key: str, cast: Cast[T], default: _Empty = Empty) -> T: ...
+
+    @overload
+    def __call__(self, key: str, cast: Cast[T], default: D) -> T | D: ...
+
+    @overload
+    def __call__(self, key: str, cast: None, default: D) -> str | D: ...
+
+    @overload
+    def __call__(self, key: str, *, default: D) -> str | D: ...
+
+    @overload
+    def __call__(self, key: str, cast: None = None, default: _Empty = Empty) -> str: ...
+
+    def __call__(self, key: str, cast: Cast[T] | None = None, default: Any = Empty) -> Any:
         """A convenient alias for the `env()` method."""
         return self.env(key=key, cast=cast, default=default)
 

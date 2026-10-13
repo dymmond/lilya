@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import inspect
 from collections.abc import Callable
 from functools import partial, wraps
@@ -120,8 +119,10 @@ class override_settings:
         )
         if (
             is_async_callable(func)
-            or asyncio.iscoroutinefunction(target)
-            or asyncio.iscoroutinefunction(generator_target)
+            or inspect.iscoroutinefunction(target)
+            or inspect.iscoroutinefunction(generator_target)
+            or bool(getattr(target, "_is_coroutine", False))
+            or bool(getattr(generator_target, "_is_coroutine", False))
             or is_generator_coroutine
         ):
 

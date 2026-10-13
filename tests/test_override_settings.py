@@ -54,7 +54,7 @@ async def test_generator_based_coroutine_uses_async_settings_wrapper(marked):
     if marked:
         legacy_test._is_coroutine = asyncio.coroutines._is_coroutine
     assert not inspect.iscoroutinefunction(legacy_test)
-    assert asyncio.iscoroutinefunction(legacy_test) is marked
+    assert bool(getattr(legacy_test, "_is_coroutine", False)) is marked
 
     wrapped = override_settings(environment="legacy_test")(legacy_test)
     assert inspect.iscoroutinefunction(wrapped)

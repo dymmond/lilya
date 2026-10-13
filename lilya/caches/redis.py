@@ -109,7 +109,7 @@ class RedisCache(CacheBackend):
             data = cast(str, data).encode("utf-8")
 
         if ttl:
-            await self.async_client.setex(key, ttl, data)
+            await self.async_client.set(key, data, ex=ttl)
         else:
             await self.async_client.set(key, data)
 
