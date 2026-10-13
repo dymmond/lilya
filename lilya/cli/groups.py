@@ -4,7 +4,6 @@ import inspect
 import os
 import sys
 import typing
-import warnings
 from collections.abc import Callable
 from functools import wraps
 from typing import TypeVar, cast
@@ -82,14 +81,8 @@ class DirectiveGroup(SayerGroup):
 
     @staticmethod
     def _collect_remaining_args(ctx: click.Context) -> list[str]:
-        protected: typing.Sequence[str] = getattr(ctx, "protected_args", ())
+        protected: typing.Sequence[str] = ctx.__dict__.get("_protected_args", ())
         if protected:
-            warnings.warn(
-                "click.Context.protected_args is deprecated; Lilya CLI now "
-                "falls back to Context.args automatically.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
             return [*protected, *ctx.args]
         return list(ctx.args)
 
