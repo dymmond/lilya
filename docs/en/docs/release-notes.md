@@ -1,5 +1,16 @@
 # Release Notes
 
+## 0.29.1
+
+### Fixed
+
+- Fix case insensitive header retrieval.
+- Improved documentation of datastructures.
+
+### Changed
+
+- Deprecate `get_all` because it is quite similar to `getall` and has a different syntax.
+
 ## 0.29.0
 
 ### Fixed
