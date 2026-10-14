@@ -128,7 +128,8 @@ class SessionMiddleware(MiddlewareProtocol):
         if message["type"] == "http.response.start":
             headers = Header.ensure_header_instance(scope=message)
             if all(
-                not h.startswith(f"{self.session_cookie}=") for h in headers.get_all("set-cookie")
+                not h.startswith(f"{self.session_cookie}=")
+                for h in headers.getall("set-cookie", default=())
             ):  # Check if already set
                 if scope["session"]:
                     data = self.encode_session(scope["session"])

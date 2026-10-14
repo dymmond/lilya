@@ -1049,7 +1049,7 @@ class FileResponse(DispositionResponse):
         received_headers = Header.ensure_header_instance(scope)
         if_range: str = received_headers.get("if-range", "")
         # succeeds if_range is matching or empty
-        return not if_range or if_range == cast(str, self.headers["etag"])
+        return not if_range or if_range == self.headers["etag"]
 
     def get_content_ranges_and_multipart(
         self, scope: Scope, /, **kwargs: Any

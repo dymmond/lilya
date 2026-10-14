@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from abc import ABC
+import warnings
 from collections.abc import Generator, Iterable, Mapping, Sequence
 from copy import copy
 from http.cookies import SimpleCookie
@@ -33,22 +33,27 @@ class invertedset(frozenset):
 ALL: Final = invertedset()
 
 
-class MultiMixin(Generic[T], MultiMapping[T], ABC):
-    """Mixin providing common methods for multi dicts"""
+class MultiMixin(MultiMapping[T], Generic[T]):
+    """
 
-    def dump(self) -> dict[str, Any]:
+    Abstract mixin providing common methods for multi dicts.
+
+    Subclasses need to implement MultiMapping.
+    """
+
+    def dump(self) -> dict[str, T]:
         """
         Returns the dictionary without duplicates.
         """
         return dict(self.items())
 
-    def dump_list(self) -> list[Any]:
+    def dump_list(self) -> list[T]:
         """
         Returns the dictionary without duplicates.
         """
         return list(self.dump().items())
 
-    def dict(self) -> dict[str, list[Any]]:
+    def dict(self) -> dict[str, list[T]]:
         """Return the multi-dict as a dict of lists."""
         return {k: self.getall(k) for k in set(self.keys())}
 
@@ -77,12 +82,14 @@ class MultiDict(BaseMultiDict, MultiMixin[T], Generic[T]):
         """Create an immutable dictionary view."""
         return ImmutableMultiDict[T](self)
 
-    def getlist(self, key: Any) -> list[Any]:
-        return [item_value for item_key, item_value in list(self.multi_items()) if item_key == key]
+    def getlist(self, key: str) -> list[T]:
+        """Create a copy from the getall value of the key."""
+        return list(self.getall(key, default=()))
 
-    def poplist(self, key: Any) -> list[Any]:
-        values = [v for k, v in list(self.multi_items()) if k == key]
-        self.pop(key)
+    def poplist(self, key: str) -> list[T]:
+        """Create a copy from the getall value of the key and pop key."""
+        values = self.getlist(key)
+        self.pop(key, None)
         return values
 
     def __eq__(self, other: Any) -> bool:
@@ -137,7 +144,8 @@ class FormMultiDict(ImmutableMultiDict[Any]):
                 await value.close()
 
 
-class Header(MultiDict, CIMultiDict):
+# CIMultiDict must be before MultiDict
+class Header(CIMultiDict[str], MultiDict[str]):
     """Container used for both request and response headers.
     It is a subclass of  [CIMultiDict](https://multidict.readthedocs.io/en/stable/multidict.html#cimultidictproxy)
 
@@ -161,11 +169,12 @@ class Header(MultiDict, CIMultiDict):
         headers: list[tuple[str, Any]] = self.parse_headers(value)
         super().__init__(headers)
 
-    def parse_headers(self, value: Any) -> list[tuple[str, Any]]:
+    @classmethod
+    def parse_headers(cls, value: Any) -> list[tuple[str, str]]:
         """
         Parses the headers and validates if its bytes or str.
         """
-        headers: list[tuple[str, Any]] = []
+        headers: list[tuple[str, str]] = []
 
         if isinstance(value, dict):
             for k, v in value.items():
@@ -193,10 +202,17 @@ class Header(MultiDict, CIMultiDict):
         if key.startswith("_"):
             return cast(str, self.__getattribute__(key))
         key = key.rstrip("_").replace("_", "-")
-        return ",".join(self.getall(key, default=[]))
+        return ",".join(self.getall(key, default=()))
 
     def get_all(self, key: str) -> list[Any]:
         """Convenience method mapped to getall()."""
+        # The method name is not well chosen.
+        # It can lead to confusion and the method is also not configurable.
+        warnings.warn(
+            "Deprecated: use `getall(key, default=[])` or `getlist(key)` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self.getall(key, default=[])
 
     @classmethod
@@ -253,7 +269,7 @@ class Header(MultiDict, CIMultiDict):
         except (ValueError, AttributeError):
             return False
         # required for handling case insensitivity
-        return any(v == val for val in self.get_all(k))
+        return any(v == val for val in self.getall(k, default=()))
 
     def get_encoded_multi_items(self) -> list[tuple[bytes, bytes]]:
         """
