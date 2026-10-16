@@ -116,11 +116,11 @@ def test_multidict():
     assert query["a"] == "123"
     assert "456" in query.getall("a")
     assert query.getall("a") == ["123", "456"]
-    assert list(query.keys()) == ["a", "a", "b"]
+    assert list(query.keys()) == ["a", "b"]
     assert list(query.values()) == ["123", "456", "789"]
     assert list(query.items()) == [("a", "123"), ("a", "456"), ("b", "789")]
     assert len(query) == 3
-    assert list(query) == ["a", "a", "b"]
+    assert list(query) == ["a", "b"]
     assert dict(query) == {"a": "123", "b": "789"}
     assert str(query) == "MultiDict([('a', '123'), ('a', '456'), ('b', '789')])"
     assert repr(query) == "MultiDict([('a', '123'), ('a', '456'), ('b', '789')])"
@@ -213,11 +213,11 @@ def test_queryparams():
     assert query["a"] == "123"
     assert query.get("a") == "123"
     assert query.getall("a") == ["123", "456"]
-    assert list(query.keys()) == ["a", "a", "b"]
+    assert list(query.keys()) == ["a", "b"]
     assert list(query.values()) == ["123", "456", "789"]
     assert list(query.items()) == [("a", "123"), ("a", "456"), ("b", "789")]
     assert len(query) == 3
-    assert list(query) == ["a", "a", "b"]
+    assert list(query) == ["a", "b"]
     assert query.dump() == {"a": "456", "b": "789"}
     assert str(query) == "a=123&a=456&b=789"
     assert repr(query) == "QueryParam('a=123&a=456&b=789')"

@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import contextlib
 import inspect
-import sys
 from collections.abc import Callable, Coroutine, Sequence
 from functools import cached_property, lru_cache, wraps
 from types import GeneratorType
-from typing import Any, TypeVar, cast
+from typing import Any, Self, TypeVar, cast
 
 from lilya._internal._scopes import scope_manager
 from lilya.compat import is_async_callable, run_sync
@@ -17,11 +16,6 @@ from lilya.websockets import WebSocket
 T = TypeVar("T")
 
 SIGNATURE_TO_LIST = SignatureDefault.to_list()
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
 
 
 @lru_cache(maxsize=1024)

@@ -70,7 +70,7 @@ class MultiMixin(MultiMapping[T], Generic[T]):
         return list(self.multi_items())
 
 
-class MultiDict(BaseMultiDict, MultiMixin[T], Generic[T]):
+class MultiDict(BaseMultiDict[T], MultiMixin[T], Generic[T]):
     def __init__(
         self,
         args: MultiMapping | Mapping[str, T] | Iterable[tuple[str, T]] | None = None,
