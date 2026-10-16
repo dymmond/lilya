@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from freezegun import freeze_time
@@ -18,7 +18,7 @@ def test_token_expiry():
 
 def test_decode_validates_requested_audience():
     key = "shared-signing-key-at-least-32-bytes"
-    expiration = datetime.now(timezone.utc) + timedelta(minutes=5)
+    expiration = datetime.now(UTC) + timedelta(minutes=5)
     token = Token(exp=expiration, sub="1", aud="service-B").encode(key, "HS256")
     token_without_audience = Token(exp=expiration, sub="1").encode(key, "HS256")
 
@@ -36,7 +36,7 @@ def test_decode_validates_requested_audience():
 
 def test_decode_validates_requested_issuer():
     key = "shared-signing-key-at-least-32-bytes"
-    expiration = datetime.now(timezone.utc) + timedelta(minutes=5)
+    expiration = datetime.now(UTC) + timedelta(minutes=5)
     token = Token(exp=expiration, sub="1", iss="issuer-B").encode(key, "HS256")
     token_without_issuer = Token(exp=expiration, sub="1").encode(key, "HS256")
 

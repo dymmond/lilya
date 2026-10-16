@@ -636,7 +636,7 @@ def test_file_response_with_fd(tmpdir, test_client_factory):
 
 def test_set_cookie(test_client_factory, monkeypatch):
     # Mock time used as a reference for `Expires` by stdlib `SimpleCookie`.
-    mocked_now = dt.datetime(2037, 1, 22, 12, 0, 0, tzinfo=dt.timezone.utc)
+    mocked_now = dt.datetime(2037, 1, 22, 12, 0, 0, tzinfo=dt.UTC)
     monkeypatch.setattr(time, "time", lambda: mocked_now.timestamp())
 
     async def app(scope, receive, send):
@@ -667,7 +667,7 @@ def test_set_cookie(test_client_factory, monkeypatch):
 
 def test_set_cookie_multiple(test_client_factory, monkeypatch):
     # Mock time used as a reference for `Expires` by stdlib `SimpleCookie`.
-    mocked_now = dt.datetime(2037, 1, 22, 12, 0, 0, tzinfo=dt.timezone.utc)
+    mocked_now = dt.datetime(2037, 1, 22, 12, 0, 0, tzinfo=dt.UTC)
     monkeypatch.setattr(time, "time", lambda: mocked_now.timestamp())
 
     async def app(scope, receive, send):
@@ -709,7 +709,7 @@ def test_set_cookie_multiple(test_client_factory, monkeypatch):
 
 def test_set_cookie_multiple_with_session(test_client_factory, monkeypatch):
     # Mock time used as a reference for `Expires` by stdlib `SimpleCookie`.
-    mocked_now = dt.datetime(2037, 1, 22, 12, 0, 0, tzinfo=dt.timezone.utc)
+    mocked_now = dt.datetime(2037, 1, 22, 12, 0, 0, tzinfo=dt.UTC)
     monkeypatch.setattr(time, "time", lambda: mocked_now.timestamp())
 
     async def home():
@@ -769,7 +769,7 @@ def test_set_cookie_multiple_with_session(test_client_factory, monkeypatch):
 
 def test_set_cookie_multiple_with_session_deduped(test_client_factory, monkeypatch):
     # Mock time used as a reference for `Expires` by stdlib `SimpleCookie`.
-    mocked_now = dt.datetime(2037, 1, 22, 12, 0, 0, tzinfo=dt.timezone.utc)
+    mocked_now = dt.datetime(2037, 1, 22, 12, 0, 0, tzinfo=dt.UTC)
     monkeypatch.setattr(time, "time", lambda: mocked_now.timestamp())
 
     async def home():
@@ -830,14 +830,14 @@ def test_set_cookie_multiple_with_session_deduped(test_client_factory, monkeypat
 @pytest.mark.parametrize(
     "expires",
     [
-        pytest.param(dt.datetime(2037, 1, 22, 12, 0, 10, tzinfo=dt.timezone.utc), id="datetime"),
+        pytest.param(dt.datetime(2037, 1, 22, 12, 0, 10, tzinfo=dt.UTC), id="datetime"),
         pytest.param("Thu, 22 Jan 2037 12:00:10 GMT", id="str"),
         pytest.param(10, id="int"),
     ],
 )
 def test_expires_on_set_cookie(test_client_factory, monkeypatch, expires):
     # Mock time used as a reference for `Expires` by stdlib `SimpleCookie`.
-    mocked_now = dt.datetime(2037, 1, 22, 12, 0, 0, tzinfo=dt.timezone.utc)
+    mocked_now = dt.datetime(2037, 1, 22, 12, 0, 0, tzinfo=dt.UTC)
     monkeypatch.setattr(time, "time", lambda: mocked_now.timestamp())
 
     async def app(scope, receive, send):

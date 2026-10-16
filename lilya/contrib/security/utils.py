@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 def convert_time(date: datetime) -> datetime:
@@ -6,7 +6,7 @@ def convert_time(date: datetime) -> datetime:
     Converts the date into a UTC compatible format.
     """
     if date.tzinfo is not None:
-        date.astimezone(timezone.utc)
+        date.astimezone(UTC)
     return date.replace(microsecond=0)
 
 

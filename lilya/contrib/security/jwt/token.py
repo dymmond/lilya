@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import jwt
@@ -15,7 +15,7 @@ class Token(BaseModel):
     """
 
     exp: datetime
-    iat: datetime = Field(default_factory=lambda: convert_time(datetime.now(timezone.utc)))
+    iat: datetime = Field(default_factory=lambda: convert_time(datetime.now(UTC)))
     sub: constr(min_length=1) | conint(ge=1) | None = None  # type: ignore
     iss: str | None = None
     aud: str | None = None
@@ -27,7 +27,7 @@ class Token(BaseModel):
         When a token is issued, needs to be date in the future.
         """
         date = convert_time(date)
-        if date.timestamp() >= convert_time(datetime.now(timezone.utc)).timestamp():
+        if date.timestamp() >= convert_time(datetime.now(UTC)).timestamp():
             return date
         raise ValueError("The exp must be a date in the future.")  # pragma: no cover
 
@@ -35,7 +35,7 @@ class Token(BaseModel):
     def validate_iat(cls, date: datetime) -> datetime:  # pragma: no cover
         """Ensures that the `Issued At` it's nt bigger than the current time."""
         date = convert_time(date)
-        if date.timestamp() <= convert_time(datetime.now(timezone.utc)).timestamp():
+        if date.timestamp() <= convert_time(datetime.now(UTC)).timestamp():
             return date
         raise ValueError("iat must be a current or past time")
 
