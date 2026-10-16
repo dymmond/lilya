@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import inspect
 from collections.abc import Callable
 from functools import partial, wraps
@@ -118,12 +117,7 @@ class override_settings:
         is_generator_coroutine = inspect.isgeneratorfunction(generator_target) and bool(
             code and code.co_flags & inspect.CO_ITERABLE_COROUTINE
         )
-        if (
-            is_async_callable(func)
-            or asyncio.iscoroutinefunction(target)
-            or asyncio.iscoroutinefunction(generator_target)
-            or is_generator_coroutine
-        ):
+        if is_async_callable(func) or is_generator_coroutine:
 
             @wraps(func)
             async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
