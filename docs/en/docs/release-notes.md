@@ -1,6 +1,6 @@
 # Release Notes
 
-## 0.29.1
+## 0.30.0
 
 ### Fixed
 
@@ -8,8 +8,13 @@
 
 ### Changed
 
+- Add python 3.15 to test-matrix.
 - Improved inline documentation of datastructures and its methods.
 - Deprecate `get_all` because it is quite similar to `getall` and has a different syntax.
+
+### Removed
+
+- Support for python 3.11.
 
 ## 0.29.0
 
