@@ -5,10 +5,10 @@
 ### Fixed
 
 - Fix case insensitive header retrieval.
-- Improved documentation of datastructures.
 
 ### Changed
 
+- Improved inline documentation of datastructures and its methods.
 - Deprecate `get_all` because it is quite similar to `getall` and has a different syntax.
 
 ## 0.29.0
