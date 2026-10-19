@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from collections.abc import Generator, Iterable, Mapping, Sequence, Set
+from collections.abc import Generator, Iterable, Mapping, Sequence
 from copy import copy
 from http.cookies import SimpleCookie
 from typing import Any, Final, Generic, Literal, TypeVar, cast
@@ -41,9 +41,9 @@ class MultiMixin(MultiMapping[T], Generic[T]):
     Subclasses need to implement MultiMapping.
     """
 
-    def unique_keys(self) -> Set[str]:
-        """Set of unique resolving keys."""
-        return set(self.keys())
+    def unique_keys(self) -> Generator[str, None, None]:
+        """Generate unique resolving keys."""
+        yield from self.keys()
 
     def dump(self) -> dict[str, T]:
         """
@@ -63,14 +63,24 @@ class MultiMixin(MultiMapping[T], Generic[T]):
         return self.to_dict()
 
     def multi_items(self) -> Generator[tuple[str, T], None, None]:
-        """Get all keys and values, including duplicates."""
-        yield from self.items()
+        """
+        Get all keys and values, including duplicates.
+
+        Difference to .items():
+            in case of case-insensitivity only the first encountered key spelling is used.
+        """
+        for key in self.unique_keys():
+            for val in self.getall(key):
+                yield key, val
 
     def get_multi_items(self) -> list[tuple[str, T]]:
         """
-        Returns a list of values from the multi items
+        Returns a list of values from the multi items.
+
+        Difference to list(.items()):
+            in case of case-insensitivity only the first encountered key spelling is used.
         """
-        return list(self.items())
+        return list(self.multi_items())
 
 
 class MultiDict(BaseMultiDict[T], MultiMixin[T], Generic[T]):
@@ -92,7 +102,7 @@ class MultiDict(BaseMultiDict[T], MultiMixin[T], Generic[T]):
     def poplist(self, key: str) -> list[T]:
         """Create a copy from the getall value of the key and pop key."""
         values = self.getlist(key)
-        self.pop(key, None)
+        self.pop(key)
         return values
 
     def __eq__(self, other: Any) -> bool:
@@ -207,15 +217,13 @@ class Header(CIMultiDict[str], MultiDict[str]):
         key = key.rstrip("_").replace("_", "-")
         return ",".join(self.getall(key, default=()))
 
-    def unique_keys(self) -> Set[str]:
-        """Set of unique resolving keys."""
+    def unique_keys(self) -> Generator[str, None, None]:
+        """Generate unique resolving keys."""
         seen: set[str] = set()
-        keys: set[str] = set()
         for key in self.keys():
             if (key_lower := key.lower()) not in seen:
                 seen.add(key_lower)
-                keys.add(key)
-        return keys
+                yield key
 
     def get_all(self, key: str) -> list[Any]:
         """Convenience method mapped to getall()."""

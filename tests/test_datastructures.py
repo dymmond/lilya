@@ -375,7 +375,13 @@ def test_header_get():
         ("content-length", "6"),
         ("Connection", "close"),
         ("X-Fo", "bAr"),
-        ("X-fo", "foo"),
+        ("X-Fo", "foo"),
+    ]
+    assert multi.get_encoded_multi_items() == [
+        (b"content-length", b"6"),
+        (b"Connection", b"close"),
+        (b"X-Fo", b"bAr"),
+        (b"X-Fo", b"foo"),
     ]
 
 
