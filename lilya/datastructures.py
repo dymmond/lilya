@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from collections.abc import Generator, Iterable, Mapping, Sequence
+from collections.abc import Generator, Iterable, Mapping, Sequence, Set
 from copy import copy
 from http.cookies import SimpleCookie
 from typing import Any, Final, Generic, Literal, TypeVar, cast
@@ -41,13 +41,17 @@ class MultiMixin(MultiMapping[T], Generic[T]):
     Subclasses need to implement MultiMapping.
     """
 
+    def unique_keys(self) -> Set[str]:
+        """Set of unique resolving keys."""
+        return set(self.keys())
+
     def dump(self) -> dict[str, T]:
         """
         Returns the dictionary without duplicates.
         """
-        return dict(self.items())
+        return {key: self.getall(key)[-1] for key in self.unique_keys()}
 
-    def dump_list(self) -> list[T]:
+    def dump_list(self) -> list[tuple[str, T]]:
         """
         Returns the dictionary without duplicates.
         """
@@ -55,19 +59,18 @@ class MultiMixin(MultiMapping[T], Generic[T]):
 
     def dict(self) -> dict[str, list[T]]:
         """Return the multi-dict as a dict of lists."""
-        return {k: self.getall(k) for k in set(self.keys())}
+        # redirect to to_dict
+        return self.to_dict()
 
     def multi_items(self) -> Generator[tuple[str, T], None, None]:
         """Get all keys and values, including duplicates."""
-        for key in set(self.keys()):
-            for value in self.getall(key):
-                yield key, value
+        yield from self.items()
 
     def get_multi_items(self) -> list[tuple[str, T]]:
         """
         Returns a list of values from the multi items
         """
-        return list(self.multi_items())
+        return list(self.items())
 
 
 class MultiDict(BaseMultiDict[T], MultiMixin[T], Generic[T]):
@@ -203,6 +206,16 @@ class Header(CIMultiDict[str], MultiDict[str]):
             return cast(str, self.__getattribute__(key))
         key = key.rstrip("_").replace("_", "-")
         return ",".join(self.getall(key, default=()))
+
+    def unique_keys(self) -> Set[str]:
+        """Set of unique resolving keys."""
+        seen: set[str] = set()
+        keys: set[str] = set()
+        for key in self.keys():
+            if (key_lower := key.lower()) not in seen:
+                seen.add(key_lower)
+                keys.add(key)
+        return keys
 
     def get_all(self, key: str) -> list[Any]:
         """Convenience method mapped to getall()."""
