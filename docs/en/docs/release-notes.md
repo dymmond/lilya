@@ -14,7 +14,7 @@
 
 ### Removed
 
-- Support for python 3.11.
+- Support for python 3.10.
 
 ## 0.29.0
 
