@@ -10,7 +10,8 @@
 
 - Add python 3.15 to test-matrix.
 - Improved inline documentation of datastructures and its methods.
-- Deprecate `get_all` because it is quite similar to `getall` and has a different syntax.
+- Deprecate `get_all` from `Headers` because it is quite similar to `getall`, has a different syntax and is not available in the other multidict subclasses,
+  which can easily lead to bugs.
 
 ### Removed
 
