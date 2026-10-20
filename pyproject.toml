@@ -151,7 +151,7 @@ all = [
     # Used for the runserver CLI command
     "rich_toolkit>=0.14.7",
     # The base client for Lilya
-    "sayer>=0.7.4",
+    "sayer>=0.8.2",
     # The server for runserver command
     "palfrey[standard]>=0.1.1",
     # HTTP client for Lilya
@@ -176,7 +176,7 @@ cli = [
     # Used for the runserver CLI command
     "rich_toolkit>=0.14.7",
     # The base client for Lilya
-    "sayer>=0.7.4",
+    "sayer>=0.8.2",
     # The server for runserver command
     "palfrey[standard]>=0.1.1",
 ]
@@ -189,7 +189,7 @@ standard = [
     # Used for the runserver CLI command
     "rich_toolkit>=0.14.7",
     # The base client for Lilya
-    "sayer>=0.7.4",
+    "sayer>=0.8.2",
     # The server for runserver command
     "palfrey[standard]>=0.1.1",
 ]
@@ -221,7 +221,7 @@ testing = [
     "pytest-xdist>=3.6.1",
     "pytest-mock>=3.12.0",
     "python-multipart>=0.0.13",
-    "ty==0.0.84",
+    "ty==0.0.91",
     "pyyaml>=6.0,<7.0.0",
     "msgpack",
     # Type checker support
@@ -238,8 +238,8 @@ testing = [
 ]
 
 docs = [
-    "sayer>=0.7.4",
     "zensical>=0.0.23,<0.2.0",
+    "sayer>=0.8.2",
     "griffe-typingdoc>=0.2.2,<1.0",
     "mkdocs-meta-descriptions-plugin>=2.3.0",
     "mkdocstrings>=0.28.3",
@@ -256,9 +256,8 @@ path = "lilya/__init__.py"
 [tool.hatch.envs.default]
 features = ["all", "testing", "docs", "openapi"]
 dependencies = [
-    "ty==0.0.84",
     "ruff>=0.3.0,<5.0.0",
-    "pre-commit>=3.3.1,<4.0.0",
+    "pre-commit>=3.3.1,<5.0.0",
     "devtools>=0.12.2",
     "ipython",
     "ptpython",

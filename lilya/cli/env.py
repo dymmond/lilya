@@ -54,9 +54,8 @@ class DirectiveEnv:
     command_path: str | None = None
     module_info: ModuleInfo | None = None
 
-    def load_from_env(
-        self, path: str | None = None, cwd: None | str | Path = None
-    ) -> DirectiveEnv:
+    @classmethod
+    def load_from_env(cls, path: str | None = None, cwd: None | str | Path = None) -> DirectiveEnv:
         """
         Loads the environment variables into the scaffold.
         """
@@ -77,12 +76,12 @@ class DirectiveEnv:
             ...
 
         _path = os.getenv(LILYA_DISCOVER_APP) if not path else path
-        _app = self.find_app(path=_path, cwd=cwd)
+        _app = cls.find_app(path=_path, cwd=cwd)
 
         if not _app.app_location or not _app.discovery_file:
             module_info = ModuleInfo()
         else:
-            module_info = self.get_module_data_from_path(
+            module_info = cls.get_module_data_from_path(
                 _app.app_location, _app.path, _app.discovery_file
             )
 
@@ -94,8 +93,9 @@ class DirectiveEnv:
             module_info=module_info,
         )
 
+    @staticmethod
     def get_module_data_from_path(
-        self, path: Path, module_import: str, discovery_file: str
+        path: Path, module_import: str, discovery_file: str
     ) -> ModuleInfo:
         """
         Returns the module information based on the path provided.
@@ -138,7 +138,8 @@ class DirectiveEnv:
             discovery_file=discovery_file,
         )
 
-    def import_app_from_string(cls, path: str | None = None) -> Scaffold:
+    @staticmethod
+    def import_app_from_string(path: str | None = None) -> Scaffold:
         if path is None:
             raise EnvError(
                 "Path cannot be None. Set env `LILYA_DEFAULT_APP` or use `--app` instead."
@@ -152,13 +153,15 @@ class DirectiveEnv:
             lilya = _monkay.instance
         return Scaffold(path=path, app=app, lilya_app=lilya)
 
-    def _get_folders(self, path: Path) -> list[str]:
+    @staticmethod
+    def _get_folders(path: Path) -> list[str]:
         """
         Lists all the folders and checks if there is any file from the DISCOVERY_FILES available
         """
         return [directory.path for directory in os.scandir(path) if directory.is_dir()]
 
-    def _find_app_in_folder(self, path: Path, cwd: Path) -> Scaffold | None:
+    @staticmethod
+    def _find_app_in_folder(path: Path, cwd: Path) -> Scaffold | None:
         """
         Iterates inside the folder and looks up to the DISCOVERY_FILES.
         """
@@ -224,7 +227,8 @@ class DirectiveEnv:
                         )
         return None
 
-    def find_app(self, path: str | None, cwd: Path) -> Scaffold:
+    @classmethod
+    def find_app(cls, path: str | None, cwd: Path) -> Scaffold:
         """
         Loads the application based on the path provided via env var.
 
@@ -232,19 +236,19 @@ class DirectiveEnv:
         """
 
         if path:
-            return self.import_app_from_string(path)
+            return cls.import_app_from_string(path)
 
         # Check current folder
-        scaffold: Scaffold | None = self._find_app_in_folder(cwd, cwd)
+        scaffold: Scaffold | None = cls._find_app_in_folder(cwd, cwd)
         if scaffold:
             return scaffold
 
         # Goes into auto discovery mode for one level, only.
-        folders = self._get_folders(cwd)
+        folders = cls._get_folders(cwd)
 
         for folder in folders:
             folder_path = cwd / folder
-            scaffold = self._find_app_in_folder(folder_path, cwd)
+            scaffold = cls._find_app_in_folder(folder_path, cwd)
 
             if scaffold:
                 break

@@ -9,11 +9,16 @@ from typing import TYPE_CHECKING, Annotated, Any, TypeVar
 import click
 from sayer import Argument, Option, command, error
 
+from lilya import cli as cli_module
 from lilya._internal._events import generate_lifespan_events
 from lilya.cli.base import BaseDirective
 from lilya.cli.constants import APP_PARAMETER, LILYA_DISCOVER_APP
 from lilya.cli.env import DirectiveEnv
-from lilya.cli.utils import fetch_directive
+from lilya.cli.utils import (
+    evaluate_directive,
+    fetch_directives_via_module,
+    fetch_directives_via_path,
+)
 from lilya.context import G, g_context
 from lilya.types import ASGIApp, Lifespan
 
@@ -77,13 +82,21 @@ async def run(
         )
         sys.exit(1)
 
-    directive = (
-        fetch_directive(name, env.command_path, True)
-        if name is not None
-        else fetch_directive(directive_args[0], env.command_path, True)
+    directives = fetch_directives_via_module("lilya")
+    directives.update(
+        fetch_directives_via_path(
+            env.command_path or "", ignore={cli_module.__spec__.origin, *directives}
+        )
     )
-    if not directive:
-        error(f"Unknown directive: {name!r}")
+    directive_obj = None
+    if name is None:
+        passed_name = directive_args[0]
+    else:
+        passed_name = name
+    if passed_name:
+        directive_obj = evaluate_directive(directives, passed_name)
+    if not directive_obj:
+        error(f"Unknown directive: `{name!r}`")
         sys.exit(1)
 
     # Execute the directive
@@ -100,7 +113,7 @@ async def run(
         env.lilya_app.router.on_shutdown,
         env.lilya_app.router.lifespan_context,
     )
-    await execute_lifespan(env.app, lifespan, directive, program_name, position)
+    await execute_lifespan(env.app, lifespan, directive_obj, program_name, position)
 
 
 def get_position() -> int:

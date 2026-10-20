@@ -105,8 +105,7 @@ class DirectiveGroup(SayerGroup):
             value in sys.argv for value in EXCLUDED_DIRECTIVES
         ):
             try:
-                directive = DirectiveEnv()
-                app_env = directive.load_from_env(path=app, cwd=path)
+                app_env = DirectiveEnv.load_from_env(path=app, cwd=path)
                 ctx.obj = app_env
             except EnvError as e:
                 if not any(value in sys.argv for value in IGNORE_DIRECTIVES):
