@@ -2,14 +2,12 @@ from __future__ import annotations
 
 import inspect
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar
 
 from lilya.datastructures import ScopeHandler, SendReceiveSniffer
 from lilya.types import Scope
 
 if TYPE_CHECKING:
-    from typing_extensions import ParamSpec
-
     from lilya.routing.base import BasePath
 
     P = ParamSpec("P")

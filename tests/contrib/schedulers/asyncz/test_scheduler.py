@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -120,7 +120,7 @@ def scheduler_class(monkeypatch):
     scheduler_class._setup = MagicMock()
     # by patching out _setup task_defaults are not initialized anymore
     scheduler_class.task_defaults = TaskDefaultStruct()
-    scheduler_class.timezone = timezone.utc
+    scheduler_class.timezone = UTC
     scheduler_class.loggers = default_loggers_class()
     scheduler_class.logger_name = "asyncz.schedulers"
     return scheduler_class

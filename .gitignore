@@ -43,3 +43,6 @@ example.sqlite
 *.zip
 *.backup.*
 opencode.json
+
+# links or folders
+.venv

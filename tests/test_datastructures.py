@@ -116,11 +116,11 @@ def test_multidict():
     assert query["a"] == "123"
     assert "456" in query.getall("a")
     assert query.getall("a") == ["123", "456"]
-    assert list(query.keys()) == ["a", "a", "b"]
+    assert list(query.keys()) == ["a", "b"]
     assert list(query.values()) == ["123", "456", "789"]
     assert list(query.items()) == [("a", "123"), ("a", "456"), ("b", "789")]
     assert len(query) == 3
-    assert list(query) == ["a", "a", "b"]
+    assert list(query) == ["a", "b"]
     assert dict(query) == {"a": "123", "b": "789"}
     assert str(query) == "MultiDict([('a', '123'), ('a', '456'), ('b', '789')])"
     assert repr(query) == "MultiDict([('a', '123'), ('a', '456'), ('b', '789')])"
@@ -213,11 +213,11 @@ def test_queryparams():
     assert query["a"] == "123"
     assert query.get("a") == "123"
     assert query.getall("a") == ["123", "456"]
-    assert list(query.keys()) == ["a", "a", "b"]
+    assert list(query.keys()) == ["a", "b"]
     assert list(query.values()) == ["123", "456", "789"]
     assert list(query.items()) == [("a", "123"), ("a", "456"), ("b", "789")]
     assert len(query) == 3
-    assert list(query) == ["a", "a", "b"]
+    assert list(query) == ["a", "b"]
     assert query.dump() == {"a": "456", "b": "789"}
     assert str(query) == "a=123&a=456&b=789"
     assert repr(query) == "QueryParam('a=123&a=456&b=789')"
@@ -332,12 +332,57 @@ async def test_upload_file_repr():
 
 def test_header_in():
     # required for palfrey
-    multi = Header([(b"content-length", b"6"), (b"Connection", b"close")])
+    multi = Header(
+        [
+            (b"content-length", b"6"),
+            (b"Connection", b"close"),
+            (b"X-Fo", b"bAr"),
+            (b"X-fo", b"foo"),
+        ]
+    )
     assert "ConnecTion" in multi
     assert b"ConnecTion" in multi
     assert (b"Connection", b"close") in multi
     assert (b"ConnecTion", b"close") in multi
     assert (b"foo", b"close") not in multi
+    assert (b"X-FO", b"bAr") in multi
+    assert (b"X-fo", b"bAr") in multi
+    assert (b"X-fo", b"bar") not in multi
+
+
+def test_header_get():
+    multi = Header(
+        [
+            (b"content-length", b"6"),
+            (b"Connection", b"close"),
+            (b"X-Fo", b"bAr"),
+            (b"X-fo", b"foo"),
+        ]
+    )
+    assert multi.getone("ConnecTion") == "close"
+    assert multi.getone("X-fo") == "bAr"
+    assert multi.to_dict() == {
+        "content-length": ["6"],
+        "Connection": ["close"],
+        "X-Fo": ["bAr", "foo"],
+    }
+    assert multi.dump() == {
+        "content-length": "6",
+        "Connection": "close",
+        "X-Fo": "foo",
+    }
+    assert multi.get_multi_items() == [
+        ("content-length", "6"),
+        ("Connection", "close"),
+        ("X-Fo", "bAr"),
+        ("X-Fo", "foo"),
+    ]
+    assert multi.get_encoded_multi_items() == [
+        (b"content-length", b"6"),
+        (b"Connection", b"close"),
+        (b"X-Fo", b"bAr"),
+        (b"X-Fo", b"foo"),
+    ]
 
 
 @pytest.mark.anyio
@@ -360,7 +405,7 @@ async def test_upload_file_repr_headers():
 def test_multi_to_dict(multi_dict: type[MultiDict | ImmutableMultiDict]) -> None:
     multi = multi_dict([("a", "a"), ("a", "a2"), ("b", "b")])
 
-    assert multi.dict() == {"a": ["a", "a2"], "b": ["b"]}
+    assert multi.to_dict() == {"a": ["a", "a2"], "b": ["b"]}
 
 
 @pytest.mark.parametrize("multi_dict", [MultiDict, ImmutableMultiDict, Header, QueryParam])
@@ -375,13 +420,13 @@ def test_multi_items(multi_dict: type[MultiDict | ImmutableMultiDict]) -> None:
 def test_to_immutable(multi_dict) -> None:
     data = [("a", "a"), ("a", "a2"), ("b", "b")]
     multi = multi_dict[str](data)
-    assert multi.to_immutable().dict() == ImmutableMultiDict(data).dict()
+    assert multi.to_immutable().to_dict() == ImmutableMultiDict(data).to_dict()
 
 
 def test_to_immutable_multi_dict_as_mutable() -> None:
     data = [("a", "a"), ("a", "a2"), ("b", "b")]
     multi = ImmutableMultiDict[str](data)
-    assert multi.mutablecopy().dict() == MultiDict(data).dict()
+    assert multi.mutablecopy().to_dict() == MultiDict(data).to_dict()
 
 
 @pytest.mark.anyio

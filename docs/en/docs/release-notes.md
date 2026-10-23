@@ -1,5 +1,22 @@
 # Release Notes
 
+## 0.30.0
+
+### Fixed
+
+- Fix case insensitive header retrieval.
+
+### Changed
+
+- Add python 3.15 to test-matrix.
+- Improved inline documentation of datastructures and its methods.
+- Deprecate `get_all` from `Header` because it is quite similar to `getall`, has a different syntax and is not available in the other multidict subclasses,
+  which can easily lead to bugs.
+
+### Removed
+
+- Support for python 3.10.
+
 ## 0.29.0
 
 ### Fixed

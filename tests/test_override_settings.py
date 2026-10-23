@@ -1,4 +1,3 @@
-import asyncio
 import functools
 import inspect
 import types
@@ -41,8 +40,7 @@ class TestInClassAsync:
         assert settings.__class__.__name__ == "AppTestSettings"
 
 
-@pytest.mark.parametrize("marked", [False, True])
-async def test_generator_based_coroutine_uses_async_settings_wrapper(marked):
+async def test_generator_based_coroutine_uses_async_settings_wrapper():
     observed = []
 
     @types.coroutine
@@ -51,10 +49,7 @@ async def test_generator_based_coroutine_uses_async_settings_wrapper(marked):
             yield
         observed.append(settings.environment)
 
-    if marked:
-        legacy_test._is_coroutine = asyncio.coroutines._is_coroutine
     assert not inspect.iscoroutinefunction(legacy_test)
-    assert asyncio.iscoroutinefunction(legacy_test) is marked
 
     wrapped = override_settings(environment="legacy_test")(legacy_test)
     assert inspect.iscoroutinefunction(wrapped)

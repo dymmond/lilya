@@ -7,7 +7,7 @@ name = "lilya"
 description = "Yet another ASGI toolkit that delivers"
 long_description = "Yet another ASGI toolkit that delivers"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dynamic = ['version']
 authors = [{ name = "Tiago Silva", email = "tiago.arasilva@gmail.com" }]
 classifiers = [
@@ -29,18 +29,17 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: BSD License",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
     "Topic :: Internet :: WWW/HTTP",
 ]
 dependencies = [
     "anyio>=4.15.0,<5",
-    "multidict>=6.0.4,<8.0.0",
-    "typing_extensions>=3.10.0; python_version < '3.11'",
+    "multidict>=7.1.0,<8.0.0",
     "monkay>=0.4.0",
 ]
 keywords = [
@@ -225,7 +224,6 @@ testing = [
     "ty==0.0.84",
     "pyyaml>=6.0,<7.0.0",
     "msgpack",
-    "typing_extensions>=3.10.0",
     # Type checker support
     "types-PyYAML",
     "msgpack-types",
@@ -247,7 +245,6 @@ docs = [
     "mkdocstrings>=0.28.3",
     "mkdocstrings-python>=2.0.3",
     "pyyaml>=6.0,<7.0.0",
-    "typing_extensions>=3.10.0",
 ]
 
 openapi = ["pydantic>=2.11.5,<3"]
@@ -260,7 +257,6 @@ path = "lilya/__init__.py"
 features = ["all", "testing", "docs", "openapi"]
 dependencies = [
     "ty==0.0.84",
-    "typing_extensions>=3.10.0",
     "ruff>=0.3.0,<5.0.0",
     "pre-commit>=3.3.1,<4.0.0",
     "devtools>=0.12.2",
