@@ -239,7 +239,7 @@ testing = [
 
 docs = [
     "sayer>=0.7.4",
-    "zensical>=0.0.23,<0.1.0",
+    "zensical>=0.0.23,<0.2.0",
     "griffe-typingdoc>=0.2.2,<1.0",
     "mkdocs-meta-descriptions-plugin>=2.3.0",
     "mkdocstrings>=0.28.3",
