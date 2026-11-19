@@ -2,4 +2,4 @@ from warnings import warn
 
 from .directives import directives as directives
 
-warn("Use `directives` instead", DeprecationWarning, stacklevel=1)
+warn("`list` is deprecated. Use `directives` instead.", DeprecationWarning, stacklevel=2)

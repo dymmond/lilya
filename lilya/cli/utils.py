@@ -16,6 +16,7 @@ from sayer.utils.directives import (
 )
 
 from lilya.cli.base import BaseDirective
+from lilya.cli.directives.operations._constants import IGNORED_INTERNAL_DIRECTIVES
 from lilya.cli.exceptions import DirectiveError
 
 
@@ -24,7 +25,7 @@ def extractor_directive(module: ModuleType, relative: Path, *, internal: bool):
     is_internal_operations = module.__name__.startswith("lilya.cli.directives.operations")
     if is_internal_operations and internal:
         # ignore these modules
-        if module.__name__.rsplit(".")[-1] in {"list", "run", "directives"}:
+        if module.__name__.rsplit(".")[-1] in IGNORED_INTERNAL_DIRECTIVES:
             return None
         for attr in dir(module):
             obj = getattr(module, attr)
