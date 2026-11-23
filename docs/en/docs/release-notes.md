@@ -1,5 +1,18 @@
 # Release Notes
 
+## 0.31.0
+
+### Fixed
+
+- Directives, when lilya was found in the searched folder.
+
+### Changed
+
+- Switch to the extracted directives logic of sayer.
+- Rename `appication_directives` to `custom_directives`.
+- Rename `list` to `directives`.
+- Deprecate `list` directive name.
+
 ## 0.30.0
 
 ### Fixed
